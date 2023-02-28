@@ -151,6 +151,7 @@
 @stop
 @section('js')
     @include('js.employee')
+    @include('js.address')
     <script>
         toastr.options = {
             "positionClass": "toast-bottom-right",
@@ -331,8 +332,119 @@
 
                 insertUpdateEmployee(params);
             });
+            $("#btn_save_address").click(function () {
+                let is_valid = true;
+                $("#address_error").addClass("d-none");
+                $(".is-invalid").removeClass("is-invalid");
+                $(".error_list").empty();
+
+                const residential_house = $("#residential_house").val().trim();
+                const residential_street = $("#residential_street").val().trim();
+                const residential_subdivision_village = $("#residential_subdivision_village").val().trim();
+                const residential_barangay = $("#residential_barangay").val().trim();
+                const residential_city = $("#residential_city").val().trim();
+                const residential_province = $("#residential_province").val().trim();
+                const residential_zipcode = $("#residential_zipcode").val().trim();
+
+                const permanent_house = $("#permanent_house").val().trim();
+                const permanent_street = $("#permanent_street").val().trim();
+                const permanent_subdivision_village = $("#permanent_subdivision_village").val().trim();
+                const permanent_barangay = $("#permanent_barangay").val().trim();
+                const permanent_city = $("#permanent_city").val().trim();
+                const permanent_province = $("#permanent_province").val().trim();
+                const permanent_zipcode = $("#permanent_zipcode").val().trim();
+
+
+                if (residential_street == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential street is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+                if (residential_barangay == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential barangay is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (residential_city == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential city is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (residential_province == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential province is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (residential_zipcode == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential zipcode is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+
+                if (residential_street == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential street is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+                if (residential_barangay == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential barangay is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (permanent_city == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential city is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (permanent_province == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential province is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (permanent_zipcode == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Residential zipcode is required</li>");
+                    $("#form_fname").addClass("is-invalid");
+                }
+
+                if (!is_valid) {
+                    $("#address_error").removeClass("d-none");
+                    $("body").animate({scrollTop: $('#address_error').offset().top}, 200);
+                    return;
+                }
+
+                const params = [{
+                    house_no: residential_house,
+                    street: residential_street,
+                    subdivision_village: residential_subdivision_village,
+                    barangay: residential_barangay,
+                    city: residential_city,
+                    province: residential_province,
+                    zipcode: residential_zipcode,
+                    address_type: "Residential"
+                }, {
+                    house_no: permanent_house,
+                    street: permanent_street,
+                    subdivision_village: permanent_subdivision_village,
+                    barangay: permanent_barangay,
+                    city: permanent_city,
+                    province: permanent_province,
+                    zipcode: permanent_zipcode,
+                    address_type: "Permanent"
+                }]
+
+                insertUpdateAddress(params);
+            });
 
             getEmployeeDetails();
+            getAddress();
         });
     </script>
 @stop
