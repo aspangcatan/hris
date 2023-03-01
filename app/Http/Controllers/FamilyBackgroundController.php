@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Children;
 use App\Models\FamilyBackground;
 use Illuminate\Http\Request;
 
@@ -12,8 +13,9 @@ class FamilyBackgroundController extends Controller
     {
         try {
             $user_id = 1116;
-            $family_background = FamilyBackgroundController::where('user_id', $user_id)->get();
-            return response(['code' => 200, 'results' => $family_background]);
+            $family_background = FamilyBackground::where('user_id', $user_id)->get();
+            $children = Children::where('user_id', $user_id)->get();
+            return response(['code' => 200, 'family_background' => $family_background, 'children' => $children]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -23,7 +25,7 @@ class FamilyBackgroundController extends Controller
     {
         try {
             $user_id = 1116;
-            $family_background = FamilyBackgroundController::where('user_id', $user_id)->first();
+            $family_background = FamilyBackground::where('user_id', $user_id)->first();
             if (!$family_background) {
                 $family_background = new FamilyBackground;
                 $family_background->user_id = $user_id;
@@ -47,6 +49,38 @@ class FamilyBackgroundController extends Controller
             $family_background->mother_ext_name = $request->mother_ext_name;
             $family_background->save();
             return response(['code' => 200, 'message' => 'Family Backgrounds updated']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function insertUpdateChildren(Request $request)
+    {
+        try {
+            $user_id = 1116;
+            $children = Children::find($request->id);
+            if (!$children) {
+                $children = new Children;
+                $children->user_id = $user_id;
+            }
+            $children->name = $request->name;
+            $children->birthdate = $request->birthdate;
+            $children->save();
+            return response(['code' => 200, 'message' => 'Childrens information updated', 'id' => $children->id]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function deleteChildren(Request $request)
+    {
+        try {
+            $children = Children::find($request->id);
+            if (!$children) {
+                return response(['code' => 500, 'message' => 'Children ID dont exists']);
+            }
+            $children->forceDelete();
+            return response(['code' => 200, 'message' => 'Children deleted']);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

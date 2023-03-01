@@ -91,6 +91,7 @@
 <!-- Template Main JS File -->
 <script src="assets/js/main.js"></script>
 <script src="js/jquery.min.js"></script>
+<script src="js/moment.min.js"></script>
 <script src="js/toastr.min.js"></script>
 @yield('js')
 </body>
