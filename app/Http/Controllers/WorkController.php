@@ -38,7 +38,7 @@ class WorkController extends Controller
             $work->is_government = $request->is_government;
             $work->is_current_work = $request->is_current_work;
             $work->save();
-            return response(['code' => 200, 'message' => 'Work Experiences updated']);
+            return response(['code' => 200, 'message' => 'Work Experiences updated','id'=>$work->id]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

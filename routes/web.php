@@ -44,3 +44,15 @@ Route::delete('/civil_service/delete',[\App\Http\Controllers\CivilServiceControl
 Route::get('/work_experience/get',[\App\Http\Controllers\WorkController::class,'getWork'])->name('getWork');
 Route::post('/work_experience/update',[\App\Http\Controllers\WorkController::class,'insertUpdateWork'])->name('insertUpdateWork');
 Route::delete('/work_experience/delete',[\App\Http\Controllers\WorkController::class,'deleteWork'])->name('deleteWork');
+#VOLUNTARY WORKS
+Route::get('/voluntary/get',[\App\Http\Controllers\VoluntaryController::class,'getVoluntary'])->name('getVoluntary');
+Route::post('/voluntary/update',[\App\Http\Controllers\VoluntaryController::class,'insertUpdateVoluntary'])->name('insertUpdateVoluntary');
+Route::delete('/voluntary/delete',[\App\Http\Controllers\VoluntaryController::class,'deleteVoluntary'])->name('deleteVoluntary');
+#LEARNING & DEVELOPMENT
+Route::get('/learning/get',[\App\Http\Controllers\LearningController::class,'getLearning'])->name('getLearning');
+Route::post('/learning/update',[\App\Http\Controllers\LearningController::class,'insertUpdateLearning'])->name('insertUpdateLearning');
+Route::delete('/learning/delete',[\App\Http\Controllers\LearningController::class,'deleteLearning'])->name('deleteLearning');
+#REFERENCES
+Route::get('/reference/get',[\App\Http\Controllers\ReferenceController::class,'getReference'])->name('getReference');
+Route::post('/reference/update',[\App\Http\Controllers\ReferenceController::class,'insertUpdateReference'])->name('insertUpdateReference');
+Route::delete('/reference/delete',[\App\Http\Controllers\ReferenceController::class,'deleteReference'])->name('deleteReference');

@@ -35,7 +35,7 @@ class CivilServiceController extends Controller
             $civil_service->license_no = $request->license_no;
             $civil_service->license_expiry = $request->license_expiry;
             $civil_service->save();
-            return response(['code' => 200, 'message' => 'Civil service updated']);
+            return response(['code' => 200, 'message' => 'Civil service updated','id'=>$civil_service->id]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

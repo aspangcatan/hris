@@ -59,7 +59,6 @@
     }
 
     function insertUpdateEmployee(params) {
-        console.log(params);
         fetch('{{ route('insertUpdateEmployee') }}', {
             method: "POST",
             headers: {

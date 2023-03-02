@@ -5,7 +5,6 @@
         })
             .then(res => res.json())
             .then(data => {
-                console.log(data);
                 if (data.code == 500) {
                     alert(data.message);
                     return;
@@ -96,6 +95,17 @@
                     $("#work_id_" + params.id + " td:eq(7)").text(is_government);
                     $("#work_id_" + params.id + " td:eq(8)").text(params.is_current_work);
                 }
+
+                work_id = 0;
+                $("#work_position").val("");
+                $("#work_agency").val("");
+                $("#work_from").val("");
+                $("#work_to").val("");
+                $("#work_salary").val("");
+                $("#work_salary_grade").val("");
+                $("#work_appointment_status").val("");
+                $("#work_government").val("");
+                $("#work_current_work").val("");
 
                 toastr.success(data.message, "Success");
             }).catch(err => {

@@ -91,6 +91,14 @@
                     $("#civil_service_" + params.id + " td:eq(5)").text(license_expiry);
                 }
 
+                civil_service_id = 0;
+                $("#civil_service_career_service").val("");
+                $("#civil_service_rating").val("");
+                $("#civil_service_examination_date").val("");
+                $("#civil_service_examination_place").val("");
+                $("#civil_service_license_no").val("");
+                $("#civil_service_license_expiry").val("");
+
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);
