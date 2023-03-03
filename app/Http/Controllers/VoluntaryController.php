@@ -11,8 +11,8 @@ class VoluntaryController extends Controller
     public function getVoluntary()
     {
         try {
-            $user_id = 1116;
-            $voluntary = Voluntary::where('user_id', $user_id)->get();
+            
+            $voluntary = Voluntary::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $voluntary]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -22,11 +22,11 @@ class VoluntaryController extends Controller
     public function insertUpdateVoluntary(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $voluntary = Voluntary::find($request->id);
             if (!$voluntary) {
                 $voluntary = new Voluntary;
-                $voluntary->user_id = $user_id;
+                $voluntary->user_id = Auth::id();
             }
             $voluntary->organization_address = $request->organization_address;
             $voluntary->working_from = $request->working_from;

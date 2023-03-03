@@ -12,8 +12,8 @@ class AddressController extends Controller
     public function getAddress(Request $request)
     {
         try {
-            $user_id = 1116;
-            $addresses = Address::where('user_id', $user_id)->get();
+            
+            $addresses = Address::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $addresses]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -23,13 +23,13 @@ class AddressController extends Controller
     public function insertUpdateAddress(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $address_array = $request->address;
             for($i=0; $i<count($address_array); $i++){
-                $address = Address::where([['user_id', $user_id], ['address_type', $address_array[$i]['address_type']]])->first();
+                $address = Address::where([['user_id', Auth::id()], ['address_type', $address_array[$i]['address_type']]])->first();
                 if (!$address) {
                     $address = new Address;
-                    $address->user_id = $user_id;
+                    $address->user_id = Auth::id();
                     $address->address_type = $address_array[$i]['address_type'];
                 }
 

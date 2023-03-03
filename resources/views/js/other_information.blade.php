@@ -1,0 +1,291 @@
+<script>
+    function getOtherInformation() {
+        fetch('{{route('getOtherInformation')}}', {
+            method: "GET"
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    alert(data.message);
+                    return;
+                }
+
+                const skill = data.results.skill;
+                const recognition = data.results.recognition;
+                const membership = data.results.membership;
+
+                skill.forEach(it => {
+                    const tr = `
+                            <tr id='skill_` + it.id + `'>
+                                <td>` + it.skills + `</td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editSkill(` + it.id + `)">
+                                        <i class="bi bi-pencil-fill text-success"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteSkill(` + it.id + `)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+
+                    $("#skill_list").append(tr);
+                });
+
+                recognition.forEach(it => {
+                    const tr = `
+                            <tr id='recognition_` + it.id + `'>
+                                <td>` + it.recognition + `</td>
+                                 <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editRecognition(` + it.id + `)">
+                                        <i class="bi bi-pencil-fill text-success"></i>
+                                    </button>
+                                </td>
+                                 <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteRecognition(` + it.id + `)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+
+                    $("#recognition_list").append(tr);
+                });
+
+                membership.forEach(it => {
+                    const tr = `
+                            <tr id='membership_` + it.id + `'>
+                                <td>` + it.association + `</td>
+                                 <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editMembership(` + it.id + `)">
+                                        <i class="bi bi-pencil-fill text-success"></i>
+                                    </button>
+                                </td>
+                                 <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteMembership(` + it.id + `)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+
+                    $("#membership_list").append(tr);
+                });
+
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+
+    function insertUpdateSkill(params) {
+        fetch('{{ route('insertUpdateSkill') }}', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify(params)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    toastr.error("Something went wrong", "Oops");
+                    return;
+                }
+
+                if (params.id == 0) {
+                    //APPEND NEW ROW
+                    const tr = `
+                            <tr id='skill_` + data.id + `'>
+                                <td>` + params.skills + `</td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editSkill(` + data.id + `)">
+                                        <i class="bi bi-pencil-fill text-success"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteSkill(` + data.id + `)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+
+                    $("#skill_list").append(tr);
+                } else {
+                    $("#skill_" + params.id + " td:eq(0)").text(params.skills);
+                }
+
+                skill_id = 0;
+                $("#other_information_description").val("");
+                toastr.success(data.message, "Success");
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+
+    function insertUpdateRecognition(params) {
+        fetch('{{ route('insertUpdateRecognition') }}', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify(params)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    toastr.error("Something went wrong", "Oops");
+                    return;
+                }
+
+                if (params.id == 0) {
+                    //APPEND NEW ROW
+                    const tr = `
+                            <tr id='recognition_` + data.id + `'>
+                                <td>` + params.recognition + `</td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editRecognition(` + data.id + `)">
+                                        <i class="bi bi-pencil-fill text-success"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteRecognition(` + data.id + `)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+
+                    $("#recognition_list").append(tr);
+                } else {
+                    $("#recognition_" + params.id + " td:eq(0)").text(params.recognition);
+                }
+
+                recognition_id = 0;
+                $("#other_information_description").val("");
+                toastr.success(data.message, "Success");
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+
+    function insertUpdateMembership(params) {
+        fetch('{{ route('insertUpdateMembership') }}', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify(params)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    toastr.error("Something went wrong", "Oops");
+                    return;
+                }
+
+                if (params.id == 0) {
+                    //APPEND NEW ROW
+                    const tr = `
+                            <tr id='membership_` + data.id + `'>
+                                <td>` + params.association + `</td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editMembership(` + data.id + `)">
+                                        <i class="bi bi-pencil-fill text-success"></i>
+                                    </button>
+                                </td>
+                                <td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteMembership(` + data.id + `)">
+                                        <i class="bi bi-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`;
+
+                    $("#membership_list").append(tr);
+                } else {
+                    $("#membership_" + params.id + " td:eq(0)").text(params.association);
+                }
+
+                membership_id = 0;
+                $("#other_information_description").val("");
+                toastr.success(data.message, "Success");
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+
+    function deleteSkill(id) {
+        if (!confirm("Are you sure you want to delete this?")) return;
+
+        fetch('{{ route('deleteSkill') }}', {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify({id: id})
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    toastr.error("Something went wrong", "Oops");
+                    return;
+                }
+
+                $("#skill_" + id).remove();
+                toastr.success(data.message, "Success");
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+
+    function deleteRecognition(id) {
+        if (!confirm("Are you sure you want to delete this?")) return;
+
+        fetch('{{ route('deleteRecognition') }}', {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify({id: id})
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    toastr.error("Something went wrong", "Oops");
+                    return;
+                }
+
+                $("#recognition_" + id).remove();
+                toastr.success(data.message, "Success");
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+
+    function deleteMembership(id) {
+        if (!confirm("Are you sure you want to delete this?")) return;
+
+        fetch('{{ route('deleteMembership') }}', {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify({id: id})
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    toastr.error("Something went wrong", "Oops");
+                    return;
+                }
+
+                $("#membership_" + id).remove();
+                toastr.success(data.message, "Success");
+            }).catch(err => {
+            console.log(err);
+        });
+    }
+</script>

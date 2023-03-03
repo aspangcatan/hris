@@ -125,6 +125,24 @@
         </div>
     </div>
     <div class="row mb-3">
+        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Government Issued ID</label>
+        <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="issued_id" placeholder="(e.g. Voter's ID,License No.)">
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Issued ID No.</label>
+        <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="issued_id_no">
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Date/Place of Issuance</label>
+        <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="issued_date">
+        </div>
+    </div>
+    <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Agency Employee No.</label>
         <div class="col-md-8 col-lg-9">
             <input type="text" class="form-control" id="employee_no">

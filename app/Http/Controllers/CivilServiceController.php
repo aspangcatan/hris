@@ -10,8 +10,8 @@ class CivilServiceController extends Controller
     public function getCivilService(Request $request)
     {
         try {
-            $user_id = 1116;
-            $civil_service = CivilService::where('user_id', $user_id)->get();
+            
+            $civil_service = CivilService::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $civil_service]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -21,11 +21,11 @@ class CivilServiceController extends Controller
     public function insertUpdateCivilService(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $civil_service = CivilService::find($request->id);
             if (!$civil_service) {
                 $civil_service = new CivilService;
-                $civil_service->user_id = $user_id;
+                $civil_service->user_id = Auth::id();
             }
 
             $civil_service->career_service = $request->career_service;

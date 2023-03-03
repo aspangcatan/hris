@@ -11,8 +11,8 @@ class WorkController extends Controller
     public function getWork(Request $request)
     {
         try {
-            $user_id = 1116;
-            $work = Work::where('user_id', $user_id)->get();
+            
+            $work = Work::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $work]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -22,11 +22,11 @@ class WorkController extends Controller
     public function insertUpdateWork(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $work = Work::find($request->id);
             if (!$work) {
                 $work = new Work;
-                $work->user_id = $user_id;
+                $work->user_id = Auth::id();
             }
             $work->working_from = $request->working_from;
             $work->working_to = $request->working_to;

@@ -12,9 +12,9 @@ class FamilyBackgroundController extends Controller
     public function getFamilyBackground(Request $request)
     {
         try {
-            $user_id = 1116;
-            $family_background = FamilyBackground::where('user_id', $user_id)->get();
-            $children = Children::where('user_id', $user_id)->get();
+            
+            $family_background = FamilyBackground::where('user_id', Auth::id())->get();
+            $children = Children::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'family_background' => $family_background, 'children' => $children]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -24,11 +24,11 @@ class FamilyBackgroundController extends Controller
     public function insertUpdateFamilyBackground(Request $request)
     {
         try {
-            $user_id = 1116;
-            $family_background = FamilyBackground::where('user_id', $user_id)->first();
+            
+            $family_background = FamilyBackground::where('user_id', Auth::id())->first();
             if (!$family_background) {
                 $family_background = new FamilyBackground;
-                $family_background->user_id = $user_id;
+                $family_background->user_id = Auth::id();
             }
 
             $family_background->spouse_fname = $request->spouse_fname;
@@ -57,11 +57,11 @@ class FamilyBackgroundController extends Controller
     public function insertUpdateChildren(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $children = Children::find($request->id);
             if (!$children) {
                 $children = new Children;
-                $children->user_id = $user_id;
+                $children->user_id = Auth::id();
             }
             $children->name = $request->name;
             $children->birthdate = $request->birthdate;

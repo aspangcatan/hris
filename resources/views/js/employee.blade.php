@@ -34,6 +34,9 @@
                     $("#telephone_no").val(it.telephone_no);
                     $("#mobile_no").val(it.mobile_no);
                     $("#email_address").val(it.email_address);
+                    $("#issued_id").val(it.issued_id);
+                    $("#issued_id_no").val(it.issued_id_no);
+                    $("#issued_date").val(it.issued_date);
 
                     const citizen_index = CITIZENSHIP.indexOf(it.citizenship);
                     if (citizen_index < 0) {

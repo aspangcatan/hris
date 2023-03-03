@@ -20,11 +20,11 @@ class EmployeeController extends Controller
         #CREATE USER_ID VARIABLE
         #THIS FUNCTION CAN BE REUSED IN HR
 
-        $user_id = 1116;
+        
         try {
             $employee = DB::table('hris.employees as e')
                 ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
-                ->where('e.user_id', '=', $user_id)
+                ->where('e.user_id', '=', Auth::id())
                 ->get(['u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'e.*']);
 
             return response(['code' => 200, 'results' => $employee]);
@@ -36,9 +36,9 @@ class EmployeeController extends Controller
     public function insertUpdateEmployee(Request $request)
     {
         try {
-            $user_id = 1116;
-            $user = User::find($user_id);
-            if (!$user_id) {
+            
+            $user = User::find(Auth::id());
+            if (!Auth::id()) {
                 return response(['code' => 500, 'message' => 'User ID dont exists']);
             }
             $user->fname = $request->fname;
@@ -47,10 +47,10 @@ class EmployeeController extends Controller
             $user->suffix = $request->suffix;
             $user->save();
 
-            $employee = Employee::where('user_id', $user_id)->first();
+            $employee = Employee::where('user_id', Auth::id())->first();
             if (!$employee) {
                 $employee = new Employee;
-                $employee->user_id = $user_id;
+                $employee->user_id = Auth::id();
             }
 
             $employee->birthdate = $request->birthdate;
@@ -72,6 +72,9 @@ class EmployeeController extends Controller
             $employee->telephone_no = $request->telephone_no;
             $employee->mobile_no = $request->mobile_no;
             $employee->email_address = $request->email_address;
+            $employee->issued_id = $request->issued_id;
+            $employee->issued_id_no = $request->issued_id_no;
+            $employee->issued_date = $request->issued_date;
             $employee->save();
 
             return response(['code' => 200, 'message' => 'Personal Information updated']);

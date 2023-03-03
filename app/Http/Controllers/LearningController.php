@@ -10,8 +10,8 @@ class LearningController extends Controller
     public function getLearning(Request $request)
     {
         try {
-            $user_id = 1116;
-            $learning = Learning::where('user_id', $user_id)->get();
+            
+            $learning = Learning::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $learning]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -21,11 +21,11 @@ class LearningController extends Controller
     public function insertUpdateLearning(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $learning = Learning::find($request->id);
             if (!$learning) {
                 $learning = new Learning;
-                $learning->user_id = $user_id;
+                $learning->user_id = Auth::id();
             }
             $learning->learning_title = $request->learning_title;
             $learning->attendance_from = $request->attendance_from;

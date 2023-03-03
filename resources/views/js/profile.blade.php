@@ -7,10 +7,42 @@
 @include('js.voluntary')
 @include('js.learning')
 @include('js.reference')
+@include('js.other_information')
+@include('js.survey')
 <script>
     toastr.options = {
         "positionClass": "toast-bottom-right",
     }
+
+    const SURVEYS = [
+        {question: "within the third degree?", id: "survey_1"},
+        {question: "within the fourth degree (for Local Government Unit - Career Employees)?", id: "survey_2"},
+        {question: "Have you ever been found guilty of any administrative offense?", id: "survey_3"},
+        {question: "Have you been criminally charged before any court?", id: "survey_4"},
+        {
+            question: "Have you ever been convicted of any crime or violation of any law, decree, ordinance or regulation by any court or tribunal?",
+            id: "survey_5"
+        },
+        {
+            question: "Have you ever been separated from the service in any of the following modes: resignation, retirement, dropped from the rolls, dismissal, termination, end of term, finished contract or phased out (abolition) in the public or private sector?",
+            id: "survey_6"
+        },
+        {
+            question: "Have you ever been a candidate in a national or local election held within the last year (except Barangay election)?",
+            id: "survey_7"
+        },
+        {
+            question: "Have you resigned from the government service during the three (3)-month period before the last election to promote/actively campaign for a national or local candidate?",
+            id: "survey_8"
+        },
+        {
+            question: "Have you acquired the status of an immigrant or permanent resident of another country?",
+            id: "survey_9"
+        },
+        {question: "Are you a member of any indigenous group?", id: "survey_10"},
+        {question: "Are you a person with disability?", id: "survey_11"},
+        {question: "Are you a solo parent?", id: "survey_12"},
+    ];
 
     const children_modal = new bootstrap.Modal(document.getElementById('children_modal'));
     const civil_service_modal = new bootstrap.Modal(document.getElementById('civil_service_modal'));
@@ -18,13 +50,18 @@
     const voluntary_modal = new bootstrap.Modal(document.getElementById('voluntary_modal'));
     const learning_modal = new bootstrap.Modal(document.getElementById('learning_modal'));
     const reference_modal = new bootstrap.Modal(document.getElementById('reference_modal'));
+    const other_information_modal = new bootstrap.Modal(document.getElementById('other_information_modal'));
 
     let children_id = 0;
     let civil_service_id = 0;
     let work_id = 0;
     let voluntary_id = 0;
     let learning_id = 0;
-    let reference_id=0;
+    let reference_id = 0;
+    let skill_id = 0;
+    let recognition_id = 0;
+    let membership_id = 0;
+    let other_type = "";
 
     $(document).ready(function () {
         //INITIALIZE PDS NAV TABS
@@ -37,6 +74,13 @@
             } else {
                 $(".dual-citizenship-container").removeClass("d-none");
             }
+        });
+
+        $("#btn_print_pds").click(function (){
+            window.open(
+                '{{ route('printPds') }}',
+                '_blank' // <- This is what makes it open in a new window.
+            );
         });
 
         $("#btn_add_children").click(function () {
@@ -81,7 +125,7 @@
             voluntary_modal.toggle();
         });
 
-        $("#btn_add_learning").click(function (){
+        $("#btn_add_learning").click(function () {
             learning_id = 0;
             $("#learning_title").val("");
             $("#learning_attendance_from").val("");
@@ -92,12 +136,33 @@
             learning_modal.toggle();
         });
 
-        $("#btn_add_reference").click(function (){
+        $("#btn_add_reference").click(function () {
             reference_id = 0;
             $("#reference_name").val("");
             $("#reference_address").val("");
             $("#reference_contact_no").val("");
             reference_modal.toggle();
+        });
+
+        $(".btn-add-other-information").click(function () {
+            skill_id = 0;
+            recognition_id = 0;
+            membership_id = 0
+            other_type = $(this).val();
+            $("#other_information_description").val("");
+            switch (other_type) {
+                case "skill":
+                    $("#other_information_title").text("Skills/Hobbies");
+                    break;
+                case "recognition":
+                    $("#other_information_title").text("Non-Academic Distinctions");
+                    break;
+                case "membership":
+                    $("#other_information_title").text("Association Membership");
+                    break;
+            }
+
+            other_information_modal.toggle();
         });
 
         $("#btn_save_personal").click(function () {
@@ -133,6 +198,9 @@
             const telephone_no = $("#telephone_no").val().trim();
             const mobile_no = $("#mobile_no").val().trim();
             const email_address = $("#email_address").val().trim();
+            const issued_id = $("#issued_id").val().trim();
+            const issued_id_no = $("#issued_id_no").val().trim();
+            const issued_date = $("#issued_date").val().trim();
 
             if (fname == "") {
                 is_valid = false;
@@ -224,7 +292,7 @@
 
             if (citizenship_type && citizenship_country == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Citizenship country type is required</li>");
+                $(".error_list").append("<li>Citizenship country is required</li>");
                 $("#form_citizenship_country").addClass("is-invalid");
             }
 
@@ -257,7 +325,10 @@
                 citizenship_country: citizenship_country,
                 telephone_no: telephone_no,
                 mobile_no: mobile_no,
-                email_address: email_address
+                email_address: email_address,
+                issued_id: issued_id,
+                issued_id_no: issued_id_no,
+                issued_date: issued_date
             }
 
             insertUpdateEmployee(params);
@@ -782,14 +853,14 @@
                 organization_address: organization_address,
                 working_from: working_from,
                 working_to: working_to,
-                number_hours:number_hours,
-                position:position
+                number_hours: number_hours,
+                position: position
             };
 
             insertUpdateVoluntary(params);
         });
 
-        $("#btn_save_learning").click(function (){
+        $("#btn_save_learning").click(function () {
             let is_valid = true;
             $("#learning_error").addClass("d-none");
             $(".is-invalid").removeClass("is-invalid");
@@ -843,15 +914,15 @@
                 learning_title: learning_title,
                 attendance_from: attendance_from,
                 attendance_to: attendance_to,
-                number_hours:number_hours,
-                learning_type:learning_type,
-                conducted_by:conducted_by
+                number_hours: number_hours,
+                learning_type: learning_type,
+                conducted_by: conducted_by
             };
 
             insertUpdateLearning(params);
         });
 
-        $("#btn_save_reference").click(function (){
+        $("#btn_save_reference").click(function () {
             let is_valid = true;
             $("#reference_error").addClass("d-none");
             $(".is-invalid").removeClass("is-invalid");
@@ -883,24 +954,139 @@
             }
 
             const params = {
-                id:reference_id,
-                name:name,
-                address:address,
-                contact_no:contact_no
+                id: reference_id,
+                name: name,
+                address: address,
+                contact_no: contact_no
             }
 
             insertUpdateReference(params);
         });
 
+        $("#btn_save_other_information").click(function () {
+            let is_valid = true;
+            $("#other_information_error").addClass("d-none");
+            $(".is-invalid").removeClass("is-invalid");
+            $(".error_list").empty();
+
+            const description = $("#other_information_description").val().trim();
+            if (description == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Description is required</li>");
+            }
+
+            if (!is_valid) {
+                $("#reference_error").removeClass("d-none");
+                $("body").animate({scrollTop: $('#other_information_error').offset().top}, 200);
+                return;
+            }
+
+            switch (other_type) {
+                case "skill":
+                    insertUpdateSkill({id: skill_id, skills: description});
+                    break;
+                case "recognition":
+                    insertUpdateRecognition({id: recognition_id, recognition: description})
+                    break;
+                case "membership":
+                    insertUpdateMembership({id: membership_id, association: description})
+                    break;
+            }
+        });
+
+        $("#btn_save_survey").click(function () {
+            let is_valid = true;
+            $("#survey_error").addClass("d-none");
+            $(".is-invalid").removeClass("is-invalid");
+            $(".error_list").empty();
+
+            const survey = [];
+            for (let i = 1; i <= 12; i++) {
+                const question = SURVEYS[(i - 1)].question;
+                const answer = $("input[name='survey_" + i + "']:checked").next().text().trim();
+                let details = null;
+                let extra = null;
+
+                if (answer == "") {
+                    is_valid = false;
+                    $(".error_list").append("<li>Please specify " + question + " if YES or NO</li>");
+                    continue;
+                }
+
+                if (answer == "YES") {
+                    details = $("#survey_" + i + "_details").val();
+                    extra = $("#survey_" + i + "_extra").val();
+
+                    if (details === undefined) {
+                        details = null;
+                    } else if (details == "") {
+                        is_valid = false;
+                        $(".error_list").append("<li>" + question + " " + $("#survey_" + i + "_details").prev().text() + " required</li>");
+                        $("#survey_" + i + "_details").addClass("is-invalid");
+                    }
+
+                    if (extra === undefined) {
+                        extra = null;
+                    } else if (extra == "") {
+                        is_valid = false;
+                        $(".error_list").append("<li>" + question + " " + $("#survey_" + i + "_extra").prev().text() + " required</li>");
+                        $("#survey_" + i + "_extra").addClass("is-invalid");
+                    }
+                }
+
+                survey.push({
+                    question: question,
+                    answer: answer,
+                    details: details,
+                    extra: extra,
+                });
+            }
+
+            if (!is_valid) {
+                $("#survey_error").removeClass("d-none");
+                $("body").animate({scrollTop: $('#survey_error').offset().top}, 200);
+                return;
+            }
+
+            insertUpdateSurvey({surveys: survey});
+        });
+
+        $("button.nav-link").click(function () {
+            switch ($(this).attr("data-bs-target")) {
+                case "#address":
+                    getAddress();
+                    break;
+                case "#family_background":
+                    getFamilyBackground()
+                    break;
+                case "#educational_background":
+                    getEducation()
+                    break;
+                case "#civil_service":
+                    getCivilService()
+                    break;
+                case "#work_experience":
+                    getWork()
+                    break;
+                case "#voluntary_work":
+                    getVoluntary()
+                    break;
+                case "#learning_development":
+                    getLearning()
+                    break;
+                case "#other_information":
+                    getOtherInformation()
+                    break;
+                case "#reference":
+                    getReference()
+                    break;
+                case "#survey":
+                    getSurvey();
+                    break;
+            }
+        });
+
         getEmployeeDetails();
-        getAddress();
-        getFamilyBackground();
-        getEducation();
-        getCivilService();
-        getWork();
-        getVoluntary();
-        getLearning();
-        getReference();
     });
 
     function editChildren(id) {
@@ -997,7 +1183,7 @@
         learning_modal.toggle()
     }
 
-    function editReference(id){
+    function editReference(id) {
         reference_id = id;
         const name = $("#reference_" + id + " td:eq(0)").text();
         const address = $("#reference_" + id + " td:eq(1)").text();
@@ -1007,5 +1193,32 @@
         $("#reference_address").val(address);
         $("#reference_contact_no").val(contact_no);
         reference_modal.toggle()
+    }
+
+    function editSkill(id) {
+        skill_id = id;
+        const description = $("#skill_" + id + " td:eq(0)").text().trim();
+        $("#other_information_description").val(description);
+        $("#other_information_title").text("Skills/Hobbies");
+        other_type = "skill";
+        other_information_modal.toggle();
+    }
+
+    function editRecognition(id) {
+        recognition_id = id;
+        const description = $("#recognition_" + id + " td:eq(0)").text().trim();
+        $("#other_information_description").val(description);
+        $("#other_information_title").text("Non-Academic Distinctions");
+        other_type = "recognition";
+        other_information_modal.toggle();
+    }
+
+    function editMembership(id) {
+        membership_id = id;
+        const description = $("#membership_" + id + " td:eq(0)").text().trim();
+        $("#other_information_description").val(description);
+        $("#other_information_title").text("Association Membership");
+        other_type = "membership";
+        other_information_modal.toggle();
     }
 </script>

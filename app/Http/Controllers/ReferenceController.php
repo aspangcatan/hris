@@ -10,8 +10,8 @@ class ReferenceController extends Controller
     public function getReference(Request $request)
     {
         try {
-            $user_id = 1116;
-            $references = Reference::where('user_id', $user_id)->get();
+            
+            $references = Reference::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $references]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -21,11 +21,11 @@ class ReferenceController extends Controller
     public function insertUpdateReference(Request $request)
     {
         try {
-            $user_id = 1116;
+            
             $reference = Reference::find($request->id);
             if (!$reference) {
                 $reference = new Reference;
-                $reference->user_id = $user_id;
+                $reference->user_id = Auth::id();
             }
             $reference->name = $request->name;
             $reference->address = $request->address;

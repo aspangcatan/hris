@@ -10,8 +10,8 @@ class EducationController extends Controller
     public function getEducation(Request $request)
     {
         try {
-            $user_id = 1116;
-            $educations = Education::where('user_id', $user_id)->get();
+            
+            $educations = Education::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $educations]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -21,11 +21,11 @@ class EducationController extends Controller
     public function insertUpdateEducation(Request $request)
     {
         try {
-            $user_id = 1116;
-            $education = Education::where([['user_id', $user_id], ['level', $request->level]])->first();
+            
+            $education = Education::where([['user_id', Auth::id()], ['level', $request->level]])->first();
             if (!$education) {
                 $education = new Education;
-                $education->user_id = $user_id;
+                $education->user_id = Auth::id();
                 $education->level = $request->level;
             }
             $education->school_name = $request->school_name;

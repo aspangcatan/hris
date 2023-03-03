@@ -14,45 +14,69 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('profile');
-});
+    if (Auth::check()) return redirect()->route('profile');
+    return view('login');
+})->name('login');
 
 Route::get('/logout', function () {
-    return view('home');
+    Auth::logout();
+    Session::flush();
+    return redirect()->route('login');
 })->name('logout');
 
-#EMPLOYEE
-Route::get('/employee/get',[\App\Http\Controllers\EmployeeController::class,'getEmployeeDetails'])->name('getEmployeeDetails');
-Route::post('/employee/update',[\App\Http\Controllers\EmployeeController::class,'insertUpdateEmployee'])->name('insertUpdateEmployee');
-#ADDRESS
-Route::get('/address/get',[\App\Http\Controllers\AddressController::class,'getAddress'])->name('getAddress');
-Route::post('/address/update',[\App\Http\Controllers\AddressController::class,'insertUpdateAddress'])->name('insertUpdateAddress');
-#FAMILY BACKGROUND
-Route::get('/family_background/get',[\App\Http\Controllers\FamilyBackgroundController::class,'getFamilyBackground'])->name('getFamilyBackground');
-Route::post('/family_background/update',[\App\Http\Controllers\FamilyBackgroundController::class,'insertUpdateFamilyBackground'])->name('insertUpdateFamilyBackground');
-Route::post('/children/update',[\App\Http\Controllers\FamilyBackgroundController::class,'insertUpdateChildren'])->name('insertUpdateChildren');
-Route::delete('/children/delete',[\App\Http\Controllers\FamilyBackgroundController::class,'deleteChildren'])->name('deleteChildren');
+Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 
+Route::group(['middleware' => 'auth'], function () {
+    #PRINTING
+    Route::get('/pds', [\App\Http\Controllers\PrintController::class, 'printPds'])->name('printPds');
+    #NAVIGATION
+    Route::get('/profile', function () {
+        return view('profile');
+    })->name('profile');
+
+    #EMPLOYEE
+    Route::get('/employee/get', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails'])->name('getEmployeeDetails');
+    Route::post('/employee/update', [\App\Http\Controllers\EmployeeController::class, 'insertUpdateEmployee'])->name('insertUpdateEmployee');
+#ADDRESS
+    Route::get('/address/get', [\App\Http\Controllers\AddressController::class, 'getAddress'])->name('getAddress');
+    Route::post('/address/update', [\App\Http\Controllers\AddressController::class, 'insertUpdateAddress'])->name('insertUpdateAddress');
+#FAMILY BACKGROUND
+    Route::get('/family_background/get', [\App\Http\Controllers\FamilyBackgroundController::class, 'getFamilyBackground'])->name('getFamilyBackground');
+    Route::post('/family_background/update', [\App\Http\Controllers\FamilyBackgroundController::class, 'insertUpdateFamilyBackground'])->name('insertUpdateFamilyBackground');
+    Route::post('/children/update', [\App\Http\Controllers\FamilyBackgroundController::class, 'insertUpdateChildren'])->name('insertUpdateChildren');
+    Route::delete('/children/delete', [\App\Http\Controllers\FamilyBackgroundController::class, 'deleteChildren'])->name('deleteChildren');
 #EDUCATION
-Route::get('/education/get',[\App\Http\Controllers\EducationController::class,'getEducation'])->name('getEducation');
-Route::post('/education/update',[\App\Http\Controllers\EducationController::class,'insertUpdateEducation'])->name('insertUpdateEducation');
+    Route::get('/education/get', [\App\Http\Controllers\EducationController::class, 'getEducation'])->name('getEducation');
+    Route::post('/education/update', [\App\Http\Controllers\EducationController::class, 'insertUpdateEducation'])->name('insertUpdateEducation');
 #CIVIL SERVICE
-Route::get('/civil_service/get',[\App\Http\Controllers\CivilServiceController::class,'getCivilService'])->name('getCivilService');
-Route::post('/civil_service/update',[\App\Http\Controllers\CivilServiceController::class,'insertUpdateCivilService'])->name('insertUpdateCivilService');
-Route::delete('/civil_service/delete',[\App\Http\Controllers\CivilServiceController::class,'deleteCivilService'])->name('deleteCivilService');
+    Route::get('/civil_service/get', [\App\Http\Controllers\CivilServiceController::class, 'getCivilService'])->name('getCivilService');
+    Route::post('/civil_service/update', [\App\Http\Controllers\CivilServiceController::class, 'insertUpdateCivilService'])->name('insertUpdateCivilService');
+    Route::delete('/civil_service/delete', [\App\Http\Controllers\CivilServiceController::class, 'deleteCivilService'])->name('deleteCivilService');
 #WORK EXPERIENCES
-Route::get('/work_experience/get',[\App\Http\Controllers\WorkController::class,'getWork'])->name('getWork');
-Route::post('/work_experience/update',[\App\Http\Controllers\WorkController::class,'insertUpdateWork'])->name('insertUpdateWork');
-Route::delete('/work_experience/delete',[\App\Http\Controllers\WorkController::class,'deleteWork'])->name('deleteWork');
+    Route::get('/work_experience/get', [\App\Http\Controllers\WorkController::class, 'getWork'])->name('getWork');
+    Route::post('/work_experience/update', [\App\Http\Controllers\WorkController::class, 'insertUpdateWork'])->name('insertUpdateWork');
+    Route::delete('/work_experience/delete', [\App\Http\Controllers\WorkController::class, 'deleteWork'])->name('deleteWork');
 #VOLUNTARY WORKS
-Route::get('/voluntary/get',[\App\Http\Controllers\VoluntaryController::class,'getVoluntary'])->name('getVoluntary');
-Route::post('/voluntary/update',[\App\Http\Controllers\VoluntaryController::class,'insertUpdateVoluntary'])->name('insertUpdateVoluntary');
-Route::delete('/voluntary/delete',[\App\Http\Controllers\VoluntaryController::class,'deleteVoluntary'])->name('deleteVoluntary');
+    Route::get('/voluntary/get', [\App\Http\Controllers\VoluntaryController::class, 'getVoluntary'])->name('getVoluntary');
+    Route::post('/voluntary/update', [\App\Http\Controllers\VoluntaryController::class, 'insertUpdateVoluntary'])->name('insertUpdateVoluntary');
+    Route::delete('/voluntary/delete', [\App\Http\Controllers\VoluntaryController::class, 'deleteVoluntary'])->name('deleteVoluntary');
 #LEARNING & DEVELOPMENT
-Route::get('/learning/get',[\App\Http\Controllers\LearningController::class,'getLearning'])->name('getLearning');
-Route::post('/learning/update',[\App\Http\Controllers\LearningController::class,'insertUpdateLearning'])->name('insertUpdateLearning');
-Route::delete('/learning/delete',[\App\Http\Controllers\LearningController::class,'deleteLearning'])->name('deleteLearning');
+    Route::get('/learning/get', [\App\Http\Controllers\LearningController::class, 'getLearning'])->name('getLearning');
+    Route::post('/learning/update', [\App\Http\Controllers\LearningController::class, 'insertUpdateLearning'])->name('insertUpdateLearning');
+    Route::delete('/learning/delete', [\App\Http\Controllers\LearningController::class, 'deleteLearning'])->name('deleteLearning');
 #REFERENCES
-Route::get('/reference/get',[\App\Http\Controllers\ReferenceController::class,'getReference'])->name('getReference');
-Route::post('/reference/update',[\App\Http\Controllers\ReferenceController::class,'insertUpdateReference'])->name('insertUpdateReference');
-Route::delete('/reference/delete',[\App\Http\Controllers\ReferenceController::class,'deleteReference'])->name('deleteReference');
+    Route::get('/reference/get', [\App\Http\Controllers\ReferenceController::class, 'getReference'])->name('getReference');
+    Route::post('/reference/update', [\App\Http\Controllers\ReferenceController::class, 'insertUpdateReference'])->name('insertUpdateReference');
+    Route::delete('/reference/delete', [\App\Http\Controllers\ReferenceController::class, 'deleteReference'])->name('deleteReference');
+#OTHER INFORMATION
+    Route::get('/other_information/get', [\App\Http\Controllers\OtherInformationController::class, 'getOtherInformation'])->name('getOtherInformation');
+    Route::post('/skill/update', [\App\Http\Controllers\OtherInformationController::class, 'insertUpdateSkill'])->name('insertUpdateSkill');
+    Route::post('/recognition/update', [\App\Http\Controllers\OtherInformationController::class, 'insertUpdateRecognition'])->name('insertUpdateRecognition');
+    Route::post('/membership/update', [\App\Http\Controllers\OtherInformationController::class, 'insertUpdateMembership'])->name('insertUpdateMembership');
+    Route::delete('/skill/delete', [\App\Http\Controllers\OtherInformationController::class, 'deleteSkill'])->name('deleteSkill');
+    Route::delete('/recognition/delete', [\App\Http\Controllers\OtherInformationController::class, 'deleteRecognition'])->name('deleteRecognition');
+    Route::delete('/membership/delete', [\App\Http\Controllers\OtherInformationController::class, 'deleteMembership'])->name('deleteMembership');
+#SURVEYS
+    Route::get('/survey/get', [\App\Http\Controllers\SurveyController::class, 'getSurvey'])->name('getSurvey');
+    Route::post('/survey/update', [\App\Http\Controllers\SurveyController::class, 'insertUpdateSurveys'])->name('insertUpdateSurvey');
+});

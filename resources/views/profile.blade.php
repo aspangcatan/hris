@@ -19,31 +19,27 @@
                         <h2>Kevin Anderson</h2>
                         <h3>Web Designer</h3>
                         <div class="social-links mt-2">
-                            <a href="#" class="twitter"><i class="bi bi-twitter"></i></a>
-                            <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
-                            <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
-                            <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
+                           <button class="btn btn-sm btn-success" id="btn_print_pds">Print PDS</button>
                         </div>
                     </div>
                 </div>
                 <div class="card p-2">
-                    <h5 class="card-title fw-bold ms-3">Biography</h5>
+                    <h5 class="card-title fw-bold ms-3">Vision</h5>
                     <div class="card-body">
                         <p class="fst-italic">
-                            Using third-person will make your bio sound more authoritative and objective. So, if you’re
-                            job searching in a formal industry, applying for grants, or trying to get published, you may
-                            want to stick to the third person.
-
-                            For instance, when you write a third-person bio you may start with "Jasmine Montgomery is a
-                            Senior Hiring Manager at L’Oreal based in New York. She recruits across several business
-                            units to connect with the brightest talent from around the globe." By only using your name
-                            and pronouns to speak about yourself here, you are letting your title and skill set speak
-                            for themselves.
-
-                            These bios create distance between the subject of the bio (you) and the reader, through a
-                            third person. This person could be anyone, but they usually speak in a tone that emphasizes
-                            their expertise. This means that third-person reviews can sometimes feel aloof or overly
-                            formal.
+                            Cebu South Medical Center is a premiere academic medical institution centered on excellence
+                            in Physical and Rehabilitation Medicine, Trauma, and Orthopedics in the Visayas by 2028.
+                        </p>
+                    </div>
+                </div>
+                <div class="card p-2">
+                    <h5 class="card-title fw-bold ms-3">Mission</h5>
+                    <div class="card-body">
+                        <p class="fst-italic">
+                            We shall provide the highest standards of care for Physical and Rehabilitation Medicine,
+                            Trauma, and Orthopedics is driven by a culture of learning, continuous quality improvement,
+                            and state-of-the-art technology for all. Core Values Love for God | Client-centered Care |
+                            Integrity | Excellence
                         </p>
                     </div>
                 </div>
@@ -113,7 +109,6 @@
                             </li>
                         </ul>
                         <div class="tab-content pt-2">
-
                             <div class="tab-pane fade pt-3" id="personal_information">
                                 @include('forms.personal_information')
                             </div>
@@ -145,6 +140,9 @@
                             <div class="tab-pane fade pt-3" id="reference">
                                 @include('forms.reference')
                             </div>
+                            <div class="tab-pane fade pt-3" id="survey">
+                                @include('forms.survey')
+                            </div>
                         </div><!-- End Bordered Tabs -->
                     </div>
                 </div>
@@ -157,6 +155,7 @@
     @include('modals.voluntary')
     @include('modals.learning')
     @include('modals.reference')
+    @include('modals.other_information')
 @stop
 @section('js')
     @include('js.profile')
