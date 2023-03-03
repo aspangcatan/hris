@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Reference;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ReferenceController extends Controller
 {
     public function getReference(Request $request)
     {
         try {
-            
+
             $references = Reference::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $references]);
         } catch (\Exception $exception) {
@@ -21,7 +22,7 @@ class ReferenceController extends Controller
     public function insertUpdateReference(Request $request)
     {
         try {
-            
+
             $reference = Reference::find($request->id);
             if (!$reference) {
                 $reference = new Reference;

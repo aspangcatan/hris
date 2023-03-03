@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Education;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class EducationController extends Controller
 {
     public function getEducation(Request $request)
     {
         try {
-            
+
             $educations = Education::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $educations]);
         } catch (\Exception $exception) {
@@ -21,7 +22,7 @@ class EducationController extends Controller
     public function insertUpdateEducation(Request $request)
     {
         try {
-            
+
             $education = Education::where([['user_id', Auth::id()], ['level', $request->level]])->first();
             if (!$education) {
                 $education = new Education;

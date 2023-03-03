@@ -17,6 +17,7 @@ use App\Models\Survey;
 use App\Models\User;
 use App\Models\Voluntary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 

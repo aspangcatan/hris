@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Learning;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LearningController extends Controller
 {
     public function getLearning(Request $request)
     {
         try {
-            
+
             $learning = Learning::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $learning]);
         } catch (\Exception $exception) {
@@ -21,7 +22,7 @@ class LearningController extends Controller
     public function insertUpdateLearning(Request $request)
     {
         try {
-            
+
             $learning = Learning::find($request->id);
             if (!$learning) {
                 $learning = new Learning;

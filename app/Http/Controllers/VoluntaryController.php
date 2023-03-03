@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Voluntary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class VoluntaryController extends Controller
 {
@@ -11,7 +12,7 @@ class VoluntaryController extends Controller
     public function getVoluntary()
     {
         try {
-            
+
             $voluntary = Voluntary::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $voluntary]);
         } catch (\Exception $exception) {
@@ -22,7 +23,7 @@ class VoluntaryController extends Controller
     public function insertUpdateVoluntary(Request $request)
     {
         try {
-            
+
             $voluntary = Voluntary::find($request->id);
             if (!$voluntary) {
                 $voluntary = new Voluntary;

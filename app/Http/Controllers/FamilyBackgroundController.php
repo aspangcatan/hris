@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Children;
 use App\Models\FamilyBackground;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class FamilyBackgroundController extends Controller
 {
@@ -12,7 +13,7 @@ class FamilyBackgroundController extends Controller
     public function getFamilyBackground(Request $request)
     {
         try {
-            
+
             $family_background = FamilyBackground::where('user_id', Auth::id())->get();
             $children = Children::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'family_background' => $family_background, 'children' => $children]);
@@ -24,7 +25,7 @@ class FamilyBackgroundController extends Controller
     public function insertUpdateFamilyBackground(Request $request)
     {
         try {
-            
+
             $family_background = FamilyBackground::where('user_id', Auth::id())->first();
             if (!$family_background) {
                 $family_background = new FamilyBackground;
@@ -57,7 +58,7 @@ class FamilyBackgroundController extends Controller
     public function insertUpdateChildren(Request $request)
     {
         try {
-            
+
             $children = Children::find($request->id);
             if (!$children) {
                 $children = new Children;

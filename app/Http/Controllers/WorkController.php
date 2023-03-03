@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Work;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class WorkController extends Controller
 {
@@ -11,7 +12,7 @@ class WorkController extends Controller
     public function getWork(Request $request)
     {
         try {
-            
+
             $work = Work::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $work]);
         } catch (\Exception $exception) {
@@ -22,7 +23,7 @@ class WorkController extends Controller
     public function insertUpdateWork(Request $request)
     {
         try {
-            
+
             $work = Work::find($request->id);
             if (!$work) {
                 $work = new Work;

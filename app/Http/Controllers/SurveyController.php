@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Survey;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SurveyController extends Controller
 {
     public function getSurvey(Request $request)
     {
         try {
-            
+
             $surveys = Survey::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $surveys]);
         } catch (\Exception $exception) {
@@ -21,7 +22,7 @@ class SurveyController extends Controller
     public function insertUpdateSurveys(Request $request)
     {
         try {
-            
+
             $surveys = $request->surveys;
             for ($i = 0; $i < count($surveys); $i++) {
                 $survey = Survey::where([['user_id', Auth::id()], ['question', $surveys[$i]['question']]])->first();

@@ -4,13 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\CivilService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CivilServiceController extends Controller
 {
     public function getCivilService(Request $request)
     {
         try {
-            
+
             $civil_service = CivilService::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $civil_service]);
         } catch (\Exception $exception) {
@@ -21,7 +22,7 @@ class CivilServiceController extends Controller
     public function insertUpdateCivilService(Request $request)
     {
         try {
-            
+
             $civil_service = CivilService::find($request->id);
             if (!$civil_service) {
                 $civil_service = new CivilService;

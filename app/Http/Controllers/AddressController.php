@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Address;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AddressController extends Controller
 {
@@ -12,7 +13,6 @@ class AddressController extends Controller
     public function getAddress(Request $request)
     {
         try {
-            
             $addresses = Address::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'results' => $addresses]);
         } catch (\Exception $exception) {
@@ -23,7 +23,6 @@ class AddressController extends Controller
     public function insertUpdateAddress(Request $request)
     {
         try {
-            
             $address_array = $request->address;
             for($i=0; $i<count($address_array); $i++){
                 $address = Address::where([['user_id', Auth::id()], ['address_type', $address_array[$i]['address_type']]])->first();
