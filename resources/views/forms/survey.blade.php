@@ -13,22 +13,22 @@
     <div class="questions mt-2">
         <div>a. within the third degree?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_1">
+            <input  type="radio" name="survey_1">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_1">
+            <input  type="radio" name="survey_1">
             <label class="form-check-label">NO</label>
         </div>
     </div>
     <div class="questions mt-2">
         <div>b. within the fourth degree (for Local Government Unit - Career Employees)?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_2">
+            <input  type="radio" name="survey_2">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_2">
+            <input  type="radio" name="survey_2">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -40,11 +40,11 @@
     <div class="questions mt-2">
         <div>a. Have you ever been found guilty of any administrative offense?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_3">
+            <input  type="radio" name="survey_3">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_3">
+            <input  type="radio" name="survey_3">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -55,11 +55,11 @@
     <div class="questions mt-2">
         <div>b. Have you been criminally charged before any court?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_4">
+            <input  type="radio" name="survey_4">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_4">
+            <input  type="radio" name="survey_4">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -80,11 +80,11 @@
             court or tribunal?
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_5">
+            <input  type="radio" name="survey_5">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_5">
+            <input  type="radio" name="survey_5">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -99,11 +99,11 @@
             the public or private sector?
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_6">
+            <input  type="radio" name="survey_6">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_6">
+            <input  type="radio" name="survey_6">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -117,11 +117,11 @@
             Barangay election)?
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_7">
+            <input  type="radio" name="survey_7">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_7">
+            <input  type="radio" name="survey_7">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -134,11 +134,11 @@
             to promote/actively campaign for a national or local candidate?
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_8">
+            <input  type="radio" name="survey_8">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_8">
+            <input  type="radio" name="survey_8">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -151,11 +151,11 @@
         <div>Have you acquired the status of an immigrant or permanent resident of another country?
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_9">
+            <input  type="radio" name="survey_9">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_9">
+            <input  type="radio" name="survey_9">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -170,11 +170,11 @@
     <div class="questions mt-2">
         <div>a. Are you a member of any indigenous group?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_10">
+            <input  type="radio" name="survey_10">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_10">
+            <input  type="radio" name="survey_10">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -185,11 +185,11 @@
     <div class="questions mt-2">
         <div>a. Are you a person with disability?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_11">
+            <input  type="radio" name="survey_11">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_11">
+            <input  type="radio" name="survey_11">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">
@@ -200,11 +200,11 @@
     <div class="questions mt-2">
         <div>a. Are you a solo parent?</div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_12">
+            <input  type="radio" name="survey_12">
             <label class="form-check-label">YES</label>
         </div>
         <div class="form-check">
-            <input class="form-check-input" type="radio" name="survey_12">
+            <input  type="radio" name="survey_12">
             <label class="form-check-label">NO</label>
         </div>
         <div class="mt-2">

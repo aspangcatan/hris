@@ -171,13 +171,13 @@
         <div class="col-md-8 col-lg-9">
 
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="citizenship">
+                <input type="radio" name="citizenship">
                 <label class="form-check-label" for="flexCheckDefault">
                     Filipino
                 </label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="citizenship">
+                <input type="radio" name="citizenship">
                 <label class="form-check-label" for="flexCheckDefault">
                     Dual Citizenship
                 </label>
@@ -189,13 +189,13 @@
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Citizenship Type</label>
         <div class="col-md-8 col-lg-9">
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="citizenship_type">
+                <input type="radio" name="citizenship_type">
                 <label class="form-check-label" for="flexCheckDefault">
                     by birth
                 </label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="citizenship_type">
+                <input type="radio" name="citizenship_type">
                 <label class="form-check-label" for="flexCheckDefault">
                     by naturalization
                 </label>
