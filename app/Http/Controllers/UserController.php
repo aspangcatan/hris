@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Designation;
 use App\Models\UserPrivelege;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,11 @@ class UserController extends Controller
                 $user_priv->level = "standard";
                 $user_priv->save();
             }
-
+            $designation = Designation::find(Auth::user()->designation);
+            if (!$designation)
+                session(['designation' => "N/A"]);
+            else
+                session(['designation' => $designation->description]);
             session(['access_rights' => $user_priv->level]);
             return redirect()->intended('/profile');
         }
