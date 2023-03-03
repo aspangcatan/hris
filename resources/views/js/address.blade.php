@@ -1,5 +1,6 @@
 <script>
     function getAddress() {
+        if (is_address_loaded) return;
         fetch('{{route('getAddress')}}', {
             method: "GET",
             headers: {
@@ -14,7 +15,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_address_loaded = true;
                 data.results.forEach(it => {
                     if (it.address_type == "Residential") {
                         $("#residential_house").val(it.house);

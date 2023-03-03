@@ -3,6 +3,7 @@
     const CITIZENSHIP_TYPE = ["by birth", "by naturalization"];
 
     function getEmployeeDetails() {
+        if (is_personal_loaded) return;
         fetch('{{route('getEmployeeDetails')}}', {
             method: "GET"
         })
@@ -12,6 +13,8 @@
                     alert(data.message);
                     return;
                 }
+
+                is_personal_loaded = true;
 
                 data.results.forEach(it => {
                     $("#fname").val(it.fname);

@@ -1,5 +1,6 @@
 <script>
     function getVoluntary() {
+        if (is_voluntary_loaded) return;
         fetch('{{route('getVoluntary')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_voluntary_loaded = true;
                 data.results.forEach(it => {
                     const tr = `
                             <tr id='voluntary_` + it.id + `'>
@@ -97,7 +98,7 @@
     }
 
     function deleteVoluntary(id) {
-        if(!confirm("Are you sure you want to delete this voluntary work?")) return;
+        if (!confirm("Are you sure you want to delete this voluntary work?")) return;
 
         fetch('{{ route('deleteVoluntary') }}', {
             method: "DELETE",
@@ -114,7 +115,7 @@
                     return;
                 }
 
-                $("#voluntary_"+id).remove();
+                $("#voluntary_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);

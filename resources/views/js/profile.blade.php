@@ -63,6 +63,19 @@
     let membership_id = 0;
     let other_type = "";
 
+    //FLAGS
+    let is_personal_loaded = false;
+    let is_address_loaded = false;
+    let is_family_loaded = false;
+    let is_education_loaded = false;
+    let is_civil_loaded = false;
+    let is_work_loaded = false;
+    let is_voluntary_loaded = false;
+    let is_learning_loaded = false;
+    let is_other_loaded = false;
+    let is_reference_loaded = false;
+    let is_survey_loaded = false;
+
     $(document).ready(function () {
         //INITIALIZE PDS NAV TABS
         $("#personal_information").addClass("active");
@@ -76,7 +89,7 @@
             }
         });
 
-        $("#btn_print_pds").click(function (){
+        $("#btn_print_pds").click(function () {
             window.open(
                 '{{ route('printPds') }}',
                 '_blank' // <- This is what makes it open in a new window.

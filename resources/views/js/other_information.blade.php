@@ -1,5 +1,6 @@
 <script>
     function getOtherInformation() {
+        if(is_other_loaded) return;
         fetch('{{route('getOtherInformation')}}', {
             method: "GET"
         })
@@ -10,6 +11,7 @@
                     return;
                 }
 
+                is_other_loaded = true;
                 const skill = data.results.skill;
                 const recognition = data.results.recognition;
                 const membership = data.results.membership;

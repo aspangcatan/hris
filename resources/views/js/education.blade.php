@@ -1,5 +1,6 @@
 <script>
     function getEducation() {
+        if (is_education_loaded) return;
         fetch('{{route('getEducation')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_education_loaded = true;
                 data.results.forEach(it => {
                     switch (it.level) {
                         case "Elementary":

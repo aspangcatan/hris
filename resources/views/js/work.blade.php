@@ -1,5 +1,6 @@
 <script>
     function getWork() {
+        if (is_work_loaded) return;
         fetch('{{route('getWork')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_work_loaded = true;
                 data.results.forEach(it => {
                     const working_to = (it.is_current_work == "1") ? "Present" : moment(it.working_to).format("MM/DD/YYYY");
                     const is_government = (it.is_government == "1") ? "Y" : "N";

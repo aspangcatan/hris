@@ -1,5 +1,6 @@
 <script>
     function getCivilService() {
+        if (is_civil_loaded) return;
         fetch('{{route('getCivilService')}}', {
             method: "GET"
         })
@@ -10,6 +11,7 @@
                     return;
                 }
 
+                is_civil_loaded = true;
                 data.results.forEach(it => {
                     const license_no = (it.license_no) ? it.license_no : "";
                     const license_expiry = (it.license_expiry) ? moment(it.license_expiry).format("MM/DD/YYYY") : "";
@@ -106,7 +108,7 @@
     }
 
     function deleteCivilService(id) {
-        if(!confirm("Are you sure you want to delete this career service?")) return;
+        if (!confirm("Are you sure you want to delete this career service?")) return;
 
         fetch('{{ route('deleteCivilService') }}', {
             method: "DELETE",
@@ -123,7 +125,7 @@
                     return;
                 }
 
-                $("#civil_service_"+id).remove();
+                $("#civil_service_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);

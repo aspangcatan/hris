@@ -1,5 +1,6 @@
 <script>
     function getLearning() {
+        if(is_learning_loaded) return;
         fetch('{{route('getLearning')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_learning_loaded = true;
                 data.results.forEach(it => {
                     const tr = `
                             <tr id='learning_` + it.id + `'>

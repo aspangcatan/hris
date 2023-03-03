@@ -1,5 +1,6 @@
 <script>
     function getReference() {
+        if (is_reference_loaded) return;
         fetch('{{route('getReference')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_reference_loaded = true;
                 data.results.forEach(it => {
                     const tr = `
                             <tr id='reference_` + it.id + `'>

@@ -1,5 +1,6 @@
 <script>
     function getFamilyBackground() {
+        if (is_family_loaded) return;
         fetch('{{route('getFamilyBackground')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_family_loaded = true;
                 data.family_background.forEach(it => {
                     $("#spouse_fname").val(it.spouse_fname);
                     $("#spouse_mname").val(it.spouse_mname);
@@ -123,7 +124,7 @@
     }
 
     function deleteChildren(id) {
-        if(!confirm("Are you sure you want to delete this child?")) return;
+        if (!confirm("Are you sure you want to delete this child?")) return;
 
         fetch('{{ route('deleteChildren') }}', {
             method: "DELETE",
@@ -140,7 +141,7 @@
                     return;
                 }
 
-                $("#child_id_"+id).remove();
+                $("#child_id_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);

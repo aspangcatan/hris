@@ -1,5 +1,6 @@
 <script>
     function getSurvey() {
+        if(is_survey_loaded) return;
         fetch('{{route('getSurvey')}}', {
             method: "GET"
         })
@@ -9,7 +10,7 @@
                     alert(data.message);
                     return;
                 }
-
+                is_survey_loaded = true;
                 for (let i = 0; i < data.results.length; i++) {
                     const it = data.results[i];
                     const id = getIdByQuestion(it.question);
