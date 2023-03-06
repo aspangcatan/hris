@@ -97,7 +97,9 @@
     </div>
 </div>
 
+@if(Route::currentRouteName() == "profile")
 <div class="text-end mt-5">
     <button type="button" class="btn btn-success" id="btn_save_address">SAVE CHANGES</button>
 </div>
+@endif
 

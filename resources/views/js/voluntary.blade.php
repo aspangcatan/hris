@@ -1,7 +1,7 @@
 <script>
-    function getVoluntary() {
+    function getVoluntary(id) {
         if (is_voluntary_loaded) return;
-        fetch('{{route('getVoluntary')}}', {
+        fetch('{{route('getVoluntary')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())

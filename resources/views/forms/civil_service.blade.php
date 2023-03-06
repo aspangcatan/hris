@@ -1,7 +1,9 @@
 <div id="children">
-    <div class="d-flex justify-content-end align-items-center">
-        <button class="btn btn-sm btn-primary" id="btn_add_civil_service">New</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="d-flex justify-content-end align-items-center">
+            <button class="btn btn-sm btn-primary" id="btn_add_civil_service">New</button>
+        </div>
+    @endif
     <div class="table-responsive mt-3">
         <table class="table text-center" style="font-size: 13px">
             <thead>

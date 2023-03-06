@@ -56,7 +56,7 @@
         </div>
     </div>
 </div>
-<hr />
+<hr/>
 <div class="mt-3" id="father">
     <h5 class="card-title fw-bold">Father Information</h5>
     <div class="row mb-3">
@@ -84,7 +84,7 @@
         </div>
     </div>
 </div>
-<hr />
+<hr/>
 <div class="mt-3" id="mother">
     <h5 class="card-title fw-bold">Mother Information</h5>
     <div class="row mb-3">
@@ -111,17 +111,21 @@
             <input type="text" class="form-control" id="mother_ext_name"/>
         </div>
     </div>
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success" id="btn_save_family">SAVE CHANGES</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="text-end mt-5">
+            <button type="button" class="btn btn-success" id="btn_save_family">SAVE CHANGES</button>
+        </div>
+    @endif
 </div>
 <hr/>
 <div class="mt-3" id="children">
     <div class="d-flex justify-content-between align-items-center">
         <h5 class="card-title fw-bold">Children(s) Information</h5>
-        <div>
-            <button class="btn btn-sm btn-success" id="btn_add_children">New</button>
-        </div>
+        @if(Route::currentRouteName() == "profile")
+            <div>
+                <button class="btn btn-sm btn-success" id="btn_add_children">New</button>
+            </div>
+        @endif
     </div>
 
     <div class="table-responsive">

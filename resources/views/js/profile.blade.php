@@ -1,4 +1,4 @@
-@include('js.employee')
+@include('js.personnel')
 @include('js.address')
 @include('js.family_background')
 @include('js.education')
@@ -91,7 +91,7 @@
 
         $("#btn_print_pds").click(function () {
             window.open(
-                '{{ route('printPds') }}',
+                '{{ route('printPds') }}?id=0',
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
@@ -201,6 +201,7 @@
             const sss_no = $("#sss_no").val().trim();
             const tin_no = $("#tin_no").val().trim();
             const employee_no = $("#employee_no").val().trim();
+            const employee_status = $("#employee_status").val();
             const citizenship = $("input[name='citizenship']:checked").next().text().trim();
             let citizenship_type = null;
             let citizenship_country = null;
@@ -333,6 +334,7 @@
                 sss_no: sss_no,
                 tin_no: tin_no,
                 employee_no: employee_no,
+                employee_status: employee_status,
                 citizenship: citizenship,
                 citizenship_type: citizenship_type,
                 citizenship_country: citizenship_country,
@@ -1067,39 +1069,39 @@
         $("button.nav-link").click(function () {
             switch ($(this).attr("data-bs-target")) {
                 case "#address":
-                    getAddress();
+                    getAddress(0);
                     break;
                 case "#family_background":
-                    getFamilyBackground()
+                    getFamilyBackground(0)
                     break;
                 case "#educational_background":
-                    getEducation()
+                    getEducation(0)
                     break;
                 case "#civil_service":
-                    getCivilService()
+                    getCivilService(0)
                     break;
                 case "#work_experience":
-                    getWork()
+                    getWork(0)
                     break;
                 case "#voluntary_work":
-                    getVoluntary()
+                    getVoluntary(0)
                     break;
                 case "#learning_development":
-                    getLearning()
+                    getLearning(0)
                     break;
                 case "#other_information":
-                    getOtherInformation()
+                    getOtherInformation(0)
                     break;
                 case "#reference":
-                    getReference()
+                    getReference(0)
                     break;
                 case "#survey":
-                    getSurvey();
+                    getSurvey(0);
                     break;
             }
         });
 
-        getEmployeeDetails();
+        getEmployeeDetails(0);
     });
 
     function editChildren(id) {

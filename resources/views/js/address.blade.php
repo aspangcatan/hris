@@ -1,7 +1,7 @@
 <script>
-    function getAddress() {
+    function getAddress(id) {
         if (is_address_loaded) return;
-        fetch('{{route('getAddress')}}', {
+        fetch('{{route('getAddress')}}?id=' + id, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

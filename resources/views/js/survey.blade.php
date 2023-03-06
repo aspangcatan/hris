@@ -1,7 +1,7 @@
 <script>
-    function getSurvey() {
+    function getSurvey(id) {
         if(is_survey_loaded) return;
-        fetch('{{route('getSurvey')}}', {
+        fetch('{{route('getSurvey')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())
@@ -10,6 +10,7 @@
                     alert(data.message);
                     return;
                 }
+
                 is_survey_loaded = true;
                 for (let i = 0; i < data.results.length; i++) {
                     const it = data.results[i];
@@ -44,8 +45,6 @@
         })
             .then(res => res.json())
             .then(data => {
-                console.log(params.surveys.length);
-                console.log(data);
                 if (data.code == 500) {
                     console.log(data.message);
                     toastr.error("Something went wrong", "Oops");

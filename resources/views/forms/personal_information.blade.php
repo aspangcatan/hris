@@ -148,6 +148,23 @@
             <input type="text" class="form-control" id="employee_no">
         </div>
     </div>
+    @if(Route::currentRouteName() == "employee")
+        <div class="row mb-3">
+            <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Employee Status</label>
+            <div class="col-md-8 col-lg-9">
+                <select class="form-control" id="employee_type">
+                    <option value="" selected></option>
+                    <option>Job Order</option>
+                    <option>Permanent</option>
+                    <option>Resigned</option>
+                    <option>Retired</option>
+                    <option>Temporary</option>
+                    <option>EOT</option>
+                    <option>COS</option>
+                </select>
+            </div>
+        </div>
+    @endif
     <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Telephone No.</label>
         <div class="col-md-8 col-lg-9">

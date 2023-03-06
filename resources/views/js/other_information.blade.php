@@ -1,7 +1,7 @@
 <script>
-    function getOtherInformation() {
+    function getOtherInformation(id) {
         if(is_other_loaded) return;
-        fetch('{{route('getOtherInformation')}}', {
+        fetch('{{route('getOtherInformation')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())

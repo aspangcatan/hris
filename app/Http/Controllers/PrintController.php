@@ -26,6 +26,7 @@ class PrintController extends Controller
     public function printPds(Request $request)
     {
         try {
+            $user_id = ($request->id == 0) ? Auth::id() : $request->id;
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];
             $SURVEYS = [''];
@@ -55,28 +56,28 @@ class PrintController extends Controller
 
             $references = [];
             #DATA FROM TABLES
-            $user = User::find(Auth::id(), ['fname', 'mname', 'lname', 'suffix']);
-            $employee = Employee::where('user_id', Auth::id())->get()->first();
-            $residential = Address::where([['user_id', Auth::id()], ['address_type', 'Residential']])->get()->first();
-            $permanent = Address::where([['user_id', Auth::id()], ['address_type', 'Permanent']])->get()->first();
-            $family = FamilyBackground::where('user_id', Auth::id())->get()->first();
-            $children = Children::where('user_id', Auth::id())->get();
-            $education = Education::where('user_id', Auth::id())->get();
-            $eligiblity = CivilService::where('user_id', Auth::id())->orderBy('examination_date', 'DESC')->get();
+            $user = User::find($user_id, ['fname', 'mname', 'lname', 'suffix']);
+            $employee = Employee::where('user_id', $user_id)->get()->first();
+            $residential = Address::where([['user_id', $user_id], ['address_type', 'Residential']])->get()->first();
+            $permanent = Address::where([['user_id', $user_id], ['address_type', 'Permanent']])->get()->first();
+            $family = FamilyBackground::where('user_id', $user_id)->get()->first();
+            $children = Children::where('user_id', $user_id)->get();
+            $education = Education::where('user_id', $user_id)->get();
+            $eligiblity = CivilService::where('user_id', $user_id)->orderBy('examination_date', 'DESC')->get();
             $work_experience =
                 DB::table('work_experiences')
-                    ->where('work_experiences.user_id', '=', Auth::id())
+                    ->where('work_experiences.user_id', '=', $user_id)
                     ->select('work_experiences.*')
                     ->orderBy('work_experiences.working_from', 'DESC')
                     ->get();
 
-            $voluntary_work = Voluntary::where('user_id', Auth::id())->orderBy('working_from', 'DESC')->get();
-            $learning = Learning::where('user_id', Auth::id())->orderBy('attendance_from', 'DESC')->get();
-            $skill = Skill::where('user_id', Auth::id())->get();
-            $recognition = Recognition::where('user_id', Auth::id())->get();
-            $membership = Membership::where('user_id', Auth::id())->get();
-            $survey = Survey::where('user_id', Auth::id())->get();
-            $reference = Reference::where('user_id', Auth::id())->get();
+            $voluntary_work = Voluntary::where('user_id', $user_id)->orderBy('working_from', 'DESC')->get();
+            $learning = Learning::where('user_id', $user_id)->orderBy('attendance_from', 'DESC')->get();
+            $skill = Skill::where('user_id', $user_id)->get();
+            $recognition = Recognition::where('user_id', $user_id)->get();
+            $membership = Membership::where('user_id', $user_id)->get();
+            $survey = Survey::where('user_id', $user_id)->get();
+            $reference = Reference::where('user_id', $user_id)->get();
 
             if (count($survey) > 0) $surveys = $survey;
 

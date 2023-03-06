@@ -1,89 +1,136 @@
+@include('js.personnel')
+@include('js.address')
+@include('js.family_background')
+@include('js.education')
+@include('js.civil_service')
+@include('js.work')
+@include('js.voluntary')
+@include('js.learning')
+@include('js.reference')
+@include('js.other_information')
+@include('js.survey')
 <script>
-    const CITIZENSHIP = ["Filipino", "Dual Citizenship"];
-    const CITIZENSHIP_TYPE = ["by birth", "by naturalization"];
+    const employee_modal = new bootstrap.Modal(document.getElementById('employee_modal'));
+    let employee_id = 0;
+    let page = 0;
+    //FLAGS
+    let is_personal_loaded = false;
+    let is_address_loaded = false;
+    let is_family_loaded = false;
+    let is_education_loaded = false;
+    let is_civil_loaded = false;
+    let is_work_loaded = false;
+    let is_voluntary_loaded = false;
+    let is_learning_loaded = false;
+    let is_other_loaded = false;
+    let is_reference_loaded = false;
+    let is_survey_loaded = false;
 
-    function getEmployeeDetails() {
-        if (is_personal_loaded) return;
-        fetch('{{route('getEmployeeDetails')}}', {
-            method: "GET"
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.code == 500) {
-                    alert(data.message);
-                    return;
-                }
+    $(document).ready(function () {
+        $("#personal_information").addClass("active");
+        $("#personal_information").removeClass("fade");
 
-                is_personal_loaded = true;
-
-                data.results.forEach(it => {
-                    $("#fname").val(it.fname);
-                    $("#mname").val(it.mname);
-                    $("#lname").val(it.lname);
-                    $("#suffix").val(it.suffix);
-                    $("#birthdate").val(it.birthdate);
-                    $("#birthplace").val(it.birthplace);
-                    $("#sex").val(it.sex);
-                    $("#civil_status").val(it.civil_status);
-                    $("#height").val(it.height);
-                    $("#weight").val(it.weight);
-                    $("#blood_type").val(it.blood_type);
-                    $("#gsis_id_no").val(it.gsis_id_no);
-                    $("#pagibig_id_no").val(it.pagibig_id_no);
-                    $("#philhealth_no").val(it.philhealth_no);
-                    $("#sss_no").val(it.sss_no);
-                    $("#tin_no").val(it.tin_no);
-                    $("#employee_no").val(it.employee_no);
-                    $("#telephone_no").val(it.telephone_no);
-                    $("#mobile_no").val(it.mobile_no);
-                    $("#email_address").val(it.email_address);
-                    $("#issued_id").val(it.issued_id);
-                    $("#issued_id_no").val(it.issued_id_no);
-                    $("#issued_date").val(it.issued_date);
-
-                    const citizen_index = CITIZENSHIP.indexOf(it.citizenship);
-                    if (citizen_index < 0) {
-                        $("input[name='citizenship']").prop("checked", false);
-                    } else {
-                        $("input[name='citizenship']:eq(" + citizen_index + ")").prop("checked", true).change();
-                        if (it.citizenship == "Dual Citizenship") {
-                            const citizen_type_index = CITIZENSHIP_TYPE.indexOf(it.citizenship_type);
-                            if (citizen_type_index < 0) {
-                                $("input[name='citizenship_type']").prop("checked", false);
-                            } else {
-                                $("input[name='citizenship_type']:eq(" + citizen_type_index + ")").prop("checked", true);
-                            }
-
-                            $("#citizenship_country").val(it.citizenship_country);
-                        }
-                    }
-
-                });
-            }).catch(err => {
-            console.log(err);
+        $("#btn_search").click(function (){
+            employee_id = 0;
+            const fname = $("#search_fname").val().trim();
+            const lname = $("#search_fname").val().trim();
+            getEmployee({fname: fname, lname: lname, page: page});
         });
-    }
 
-    function insertUpdateEmployee(params) {
-        fetch('{{ route('insertUpdateEmployee') }}', {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            body: JSON.stringify(params)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.code == 500) {
-                    console.log(data.message)
-                    toastr.error("Something went wrong", "Oops");
-                    return;
-                }
-
-                toastr.success(data.message, "Success");
-            }).catch(err => {
-            console.log(err);
+        $("#btn_next").click(function () {
+            page++;
+            const fname = $("#search_fname").val().trim();
+            const lname = $("#search_fname").val().trim();
+            getEmployee({fname: fname, lname: lname, page: page});
+            $("#btn_prev").removeClass("d-none");
         });
+
+        $("#btn_prev").click(function () {
+            if (page == 0) return;
+            if (page == 1) {
+                $("#btn_prev").addClass("d-none");
+            }
+            page--;
+            const fname = $("#search_fname").val().trim();
+            const lname = $("#search_fname").val().trim();
+            getEmployee({fname: fname, lname: lname, page: page});
+        });
+
+        $("#btn_save_personal").click(function () {
+            const employee_type = $("#employee_type").val();
+            if (employee_type == "") {
+                alert("Please specify Employee status");
+                return;
+            }
+
+            updateEmployeeStatus({user_id: employee_id, employee_type: employee_type})
+        });
+
+        $("#btn_print_pds").click(function () {
+            window.open(
+                '{{ route('printPds') }}?id=' + employee_id,
+                '_blank' // <- This is what makes it open in a new window.
+            );
+        });
+
+        $("button.nav-link").click(function () {
+            switch ($(this).attr("data-bs-target")) {
+                case "#address":
+                    getAddress();
+                    break;
+                case "#family_background":
+                    getFamilyBackground()
+                    break;
+                case "#educational_background":
+                    getEducation()
+                    break;
+                case "#civil_service":
+                    getCivilService()
+                    break;
+                case "#work_experience":
+                    getWork()
+                    break;
+                case "#voluntary_work":
+                    getVoluntary()
+                    break;
+                case "#learning_development":
+                    getLearning()
+                    break;
+                case "#other_information":
+                    getOtherInformation()
+                    break;
+                case "#reference":
+                    getReference()
+                    break;
+                case "#survey":
+                    getSurvey();
+                    break;
+            }
+        });
+
+        getEmployee({fname: "", lname: "", page: page});
+
+    });
+
+    function editEmployee(id) {
+        employee_id = id;
+        is_personal_loaded = false;
+        is_address_loaded = false;
+        is_family_loaded = false;
+        is_education_loaded = false;
+        is_civil_loaded = false;
+        is_work_loaded = false;
+        is_voluntary_loaded = false;
+        is_learning_loaded = false;
+        is_other_loaded = false;
+        is_reference_loaded = false;
+        is_survey_loaded = false;
+        employee_modal.toggle();
+        getEmployeeDetails(employee_id);
+        const image = $("#employee_" + id + " td:eq(0) img").attr("src");
+        const fname = $("#employee_" + id + " td:eq(1)").text().trim();
+        const lname = $("#employee_" + id + " td:eq(3)").text().trim();
+        $("#employee_img").attr("src", image);
+        $("#employee_name").text(fname + " " + lname);
     }
 </script>

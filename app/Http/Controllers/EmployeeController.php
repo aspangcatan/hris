@@ -20,11 +20,11 @@ class EmployeeController extends Controller
         #CREATE USER_ID VARIABLE
         #THIS FUNCTION CAN BE REUSED IN HR
 
-        
+        $user_id = ($request->id == 0) ? Auth::id() : $request->id;
         try {
             $employee = DB::table('hris.employees as e')
                 ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
-                ->where('e.user_id', '=', Auth::id())
+                ->where('e.user_id', '=', $user_id)
                 ->get(['u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'e.*']);
 
             return response(['code' => 200, 'results' => $employee]);
@@ -36,7 +36,7 @@ class EmployeeController extends Controller
     public function insertUpdateEmployee(Request $request)
     {
         try {
-            
+
             $user = User::find(Auth::id());
             if (!Auth::id()) {
                 return response(['code' => 500, 'message' => 'User ID dont exists']);
@@ -78,6 +78,38 @@ class EmployeeController extends Controller
             $employee->save();
 
             return response(['code' => 200, 'message' => 'Personal Information updated']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function getEmployee(Request $request)
+    {
+        try {
+            $employees = DB::table('hris.employees as e')
+                ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
+                ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->join('tdh_user.section as s', 'u.section', '=', 's.id')
+                ->skip($request->page * 10)
+                ->take(11)
+                ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
+
+            return response(['code' => 200, 'results' => $employees]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function updateEmployeeStatus(Request $request)
+    {
+        try {
+            $employee = Employee::where('user_id', $request->user_id)->first();
+            if (!$employee) {
+                return response(['code' => 500, 'message' => 'Employee ID dont exists']);
+            }
+            $employee->employee_type = $request->employee_type;
+            $employee->save();
+            return response(['code' => 200, 'message' => "Employee status updated"]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

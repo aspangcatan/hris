@@ -66,9 +66,11 @@
             <input type="text" class="form-control" id="elementary_scholarship"/>
         </div>
     </div>
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success btn-save-education" value="Elementary">SAVE CHANGES</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="text-end mt-5">
+            <button type="button" class="btn btn-success btn-save-education" value="Elementary">SAVE CHANGES</button>
+        </div>
+    @endif
 </div>
 <hr/>
 <div class="mt-3">
@@ -132,9 +134,11 @@
             <input type="text" class="form-control" id="secondary_scholarship"/>
         </div>
     </div>
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success btn-save-education" value="Secondary">SAVE CHANGES</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="text-end mt-5">
+            <button type="button" class="btn btn-success btn-save-education" value="Secondary">SAVE CHANGES</button>
+        </div>
+    @endif
 </div>
 <hr/>
 <div class="mt-3">
@@ -198,9 +202,13 @@
             <input type="text" class="form-control" id="vocational_scholarship"/>
         </div>
     </div>
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success btn-save-education" value="Vocational/Trade Course">SAVE CHANGES</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="text-end mt-5">
+            <button type="button" class="btn btn-success btn-save-education" value="Vocational/Trade Course">SAVE
+                CHANGES
+            </button>
+        </div>
+    @endif
 </div>
 <hr/>
 <div class="mt-3">
@@ -264,9 +272,11 @@
             <input type="text" class="form-control" id="college_scholarship"/>
         </div>
     </div>
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success btn-save-education" value="College">SAVE CHANGES</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="text-end mt-5">
+            <button type="button" class="btn btn-success btn-save-education" value="College">SAVE CHANGES</button>
+        </div>
+    @endif
 </div>
 <hr/>
 <div class="mt-3">
@@ -330,7 +340,10 @@
             <input type="text" class="form-control" id="graduate_scholarship"/>
         </div>
     </div>
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success btn-save-education" value="Graduate Studies">SAVE CHANGES</button>
-    </div>
+    @if(Route::currentRouteName() == "profile")
+        <div class="text-end mt-5">
+            <button type="button" class="btn btn-success btn-save-education" value="Graduate Studies">SAVE CHANGES
+            </button>
+        </div>
+    @endif
 </div>

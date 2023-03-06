@@ -1,7 +1,7 @@
 <script>
-    function getEducation() {
+    function getEducation(id) {
         if (is_education_loaded) return;
-        fetch('{{route('getEducation')}}', {
+        fetch('{{route('getEducation')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())

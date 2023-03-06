@@ -1,7 +1,7 @@
 <script>
-    function getCivilService() {
+    function getCivilService(id) {
         if (is_civil_loaded) return;
-        fetch('{{route('getCivilService')}}', {
+        fetch('{{route('getCivilService')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())

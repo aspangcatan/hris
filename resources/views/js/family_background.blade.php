@@ -1,7 +1,7 @@
 <script>
-    function getFamilyBackground() {
+    function getFamilyBackground(id) {
         if (is_family_loaded) return;
-        fetch('{{route('getFamilyBackground')}}', {
+        fetch('{{route('getFamilyBackground')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())

@@ -1,7 +1,7 @@
 <script>
-    function getWork() {
+    function getWork(id) {
         if (is_work_loaded) return;
-        fetch('{{route('getWork')}}', {
+        fetch('{{route('getWork')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())
