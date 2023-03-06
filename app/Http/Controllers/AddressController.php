@@ -13,7 +13,8 @@ class AddressController extends Controller
     public function getAddress(Request $request)
     {
         try {
-            $addresses = Address::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0)?Auth::id():$request->id;
+            $addresses = Address::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => $addresses]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

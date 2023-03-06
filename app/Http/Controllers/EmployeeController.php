@@ -101,7 +101,7 @@ class EmployeeController extends Controller
                 ->take(11)
                 ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
 
-            return response(['code' => 200, 'results' => $employees, 'filters' => $search]);
+            return response(['code' => 200, 'results' => $employees]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

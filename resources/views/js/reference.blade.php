@@ -1,7 +1,7 @@
 <script>
-    function getReference() {
+    function getReference(id) {
         if (is_reference_loaded) return;
-        fetch('{{route('getReference')}}', {
+        fetch('{{route('getReference')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())

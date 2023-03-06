@@ -11,8 +11,8 @@ class CivilServiceController extends Controller
     public function getCivilService(Request $request)
     {
         try {
-
-            $civil_service = CivilService::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0)?Auth::id():$request->id;
+            $civil_service = CivilService::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => $civil_service]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

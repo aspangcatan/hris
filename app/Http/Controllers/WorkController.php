@@ -12,8 +12,8 @@ class WorkController extends Controller
     public function getWork(Request $request)
     {
         try {
-
-            $work = Work::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0) ? Auth::id() : $request->id;
+            $work = Work::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => $work]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
@@ -39,7 +39,7 @@ class WorkController extends Controller
             $work->is_government = $request->is_government;
             $work->is_current_work = $request->is_current_work;
             $work->save();
-            return response(['code' => 200, 'message' => 'Work Experiences updated','id'=>$work->id]);
+            return response(['code' => 200, 'message' => 'Work Experiences updated', 'id' => $work->id]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

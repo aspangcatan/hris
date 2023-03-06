@@ -95,7 +95,6 @@
                                         <div class="tab-pane fade pt-3" id="personal_information">
                                             @include('forms.personal_information')
                                         </div>
-
                                         <div class="tab-pane fade pt-3" id="address">
                                             @include('forms.address')
                                         </div>

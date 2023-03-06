@@ -13,10 +13,10 @@ class OtherInformationController extends Controller
     public function getOtherInformation(Request $request)
     {
         try {
-
-            $skill = Skill::where('user_id', Auth::id())->get();
-            $recognition = Recognition::where('user_id', Auth::id())->get();
-            $membership = Membership::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0)?Auth::id():$request->id;
+            $skill = Skill::where('user_id', $user_id)->get();
+            $recognition = Recognition::where('user_id', $user_id)->get();
+            $membership = Membership::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => ['skill' => $skill, 'recognition' => $recognition, 'membership' => $membership]]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

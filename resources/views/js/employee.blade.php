@@ -10,6 +10,36 @@
 @include('js.other_information')
 @include('js.survey')
 <script>
+    const SURVEYS = [
+        {question: "within the third degree?", id: "survey_1"},
+        {question: "within the fourth degree (for Local Government Unit - Career Employees)?", id: "survey_2"},
+        {question: "Have you ever been found guilty of any administrative offense?", id: "survey_3"},
+        {question: "Have you been criminally charged before any court?", id: "survey_4"},
+        {
+            question: "Have you ever been convicted of any crime or violation of any law, decree, ordinance or regulation by any court or tribunal?",
+            id: "survey_5"
+        },
+        {
+            question: "Have you ever been separated from the service in any of the following modes: resignation, retirement, dropped from the rolls, dismissal, termination, end of term, finished contract or phased out (abolition) in the public or private sector?",
+            id: "survey_6"
+        },
+        {
+            question: "Have you ever been a candidate in a national or local election held within the last year (except Barangay election)?",
+            id: "survey_7"
+        },
+        {
+            question: "Have you resigned from the government service during the three (3)-month period before the last election to promote/actively campaign for a national or local candidate?",
+            id: "survey_8"
+        },
+        {
+            question: "Have you acquired the status of an immigrant or permanent resident of another country?",
+            id: "survey_9"
+        },
+        {question: "Are you a member of any indigenous group?", id: "survey_10"},
+        {question: "Are you a person with disability?", id: "survey_11"},
+        {question: "Are you a solo parent?", id: "survey_12"},
+    ];
+
     const employee_modal = new bootstrap.Modal(document.getElementById('employee_modal'));
     let employee_id = 0;
     let page = 0;
@@ -27,10 +57,8 @@
     let is_survey_loaded = false;
 
     $(document).ready(function () {
-        $("#personal_information").addClass("active");
-        $("#personal_information").removeClass("fade");
 
-        $("#btn_search").click(function (){
+        $("#btn_search").click(function () {
             employee_id = 0;
             const fname = $("#search_fname").val().trim();
             const lname = $("#search_lname").val().trim();
@@ -76,34 +104,34 @@
         $("button.nav-link").click(function () {
             switch ($(this).attr("data-bs-target")) {
                 case "#address":
-                    getAddress();
+                    getAddress(employee_id);
                     break;
                 case "#family_background":
-                    getFamilyBackground()
+                    getFamilyBackground(employee_id)
                     break;
                 case "#educational_background":
-                    getEducation()
+                    getEducation(employee_id)
                     break;
                 case "#civil_service":
-                    getCivilService()
+                    getCivilService(employee_id)
                     break;
                 case "#work_experience":
-                    getWork()
+                    getWork(employee_id)
                     break;
                 case "#voluntary_work":
-                    getVoluntary()
+                    getVoluntary(employee_id)
                     break;
                 case "#learning_development":
-                    getLearning()
+                    getLearning(employee_id)
                     break;
                 case "#other_information":
-                    getOtherInformation()
+                    getOtherInformation(employee_id)
                     break;
                 case "#reference":
-                    getReference()
+                    getReference(employee_id)
                     break;
                 case "#survey":
-                    getSurvey();
+                    getSurvey(employee_id);
                     break;
             }
         });
@@ -126,6 +154,19 @@
         is_reference_loaded = false;
         is_survey_loaded = false;
         employee_modal.toggle();
+
+        $(".tab-pane").removeClass("active");
+        $(".nav-link.active").removeClass("active");
+        $("#employee_modal .nav-link:eq(0)").addClass("active");
+        $("#personal_information").addClass("active");
+        $("#personal_information").removeClass("fade");
+
+        $("#employee_modal input").val("");
+        $("#employee_modal input[type='checkbox']").prop("checked", false);
+        $("#employee_modal input[type='radio']").prop("checked", false);
+        $("#employee_modal select").val("");
+        $("#employee_modal table>tbody").empty();
+
         getEmployeeDetails(employee_id);
         const image = $("#employee_" + id + " td:eq(0) img").attr("src");
         const fname = $("#employee_" + id + " td:eq(1)").text().trim();

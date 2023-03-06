@@ -11,8 +11,8 @@ class SurveyController extends Controller
     public function getSurvey(Request $request)
     {
         try {
-
-            $surveys = Survey::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0) ? Auth::id() : $request->id;
+            $surveys = Survey::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => $surveys]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

@@ -10,7 +10,6 @@
         })
             .then(res => res.json())
             .then(data => {
-                console.log(data);
                 if (data.code == 500) {
                     alert(data.message);
                     return;

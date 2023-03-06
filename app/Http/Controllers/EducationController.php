@@ -11,8 +11,8 @@ class EducationController extends Controller
     public function getEducation(Request $request)
     {
         try {
-
-            $educations = Education::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0)?Auth::id():$request->id;
+            $educations = Education::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => $educations]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

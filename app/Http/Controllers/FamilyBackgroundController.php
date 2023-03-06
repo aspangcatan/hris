@@ -13,8 +13,8 @@ class FamilyBackgroundController extends Controller
     public function getFamilyBackground(Request $request)
     {
         try {
-
-            $family_background = FamilyBackground::where('user_id', Auth::id())->get();
+            $user_id = ($request->id == 0)?Auth::id():$request->id;
+            $family_background = FamilyBackground::where('user_id', $user_id)->get();
             $children = Children::where('user_id', Auth::id())->get();
             return response(['code' => 200, 'family_background' => $family_background, 'children' => $children]);
         } catch (\Exception $exception) {
