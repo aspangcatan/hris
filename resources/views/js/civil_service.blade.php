@@ -15,26 +15,31 @@
                 data.results.forEach(it => {
                     const license_no = (it.license_no) ? it.license_no : "";
                     const license_expiry = (it.license_expiry) ? moment(it.license_expiry).format("MM/DD/YYYY") : "";
-                    const tr = `
-                            <tr id='civil_service_` + it.id + `'>
-                                <td>` + it.career_service + `</td>
-                                <td>` + it.rating + `</td>
-                                <td>` + moment(it.examination_date).format("MM/DD/YYYY") + `</td>
-                                <td>` + it.examination_place + `</td>
-                                <td>` + license_no + `</td>
-                                <td>` + license_expiry + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editCivilService(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteCivilService(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
-
+                    let tr = `<tr id='civil_service_` + it.id + `'>`;
+                    tr += `<td>` + it.career_service + `</td>`;
+                    tr += `<td>` + it.rating + `</td>`
+                    tr += `<td>` + moment(it.examination_date).format("MM/DD/YYYY") + `</td>`;
+                    tr += `<td>` + it.examination_place + `</td>`;
+                    tr += `<td>` + license_no + `</td>`;
+                    tr += `<td>` + license_no + `</td>`;
+                    tr += `<td>` + license_expiry + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td>
+                        <button type='button' class="btn btn-sm" style="background: transparent"
+                                onClick="editCivilService(` + it.id + `)">
+                            <i class="bi bi-pencil-fill text-success"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button type='button' class="btn btn-sm" style="background: transparent"
+                                onClick="deleteCivilService(` + it.id + `)">
+                            <i class="bi bi-trash text-danger"></i>
+                        </button>
+                    </td>`;
+                    @else
+                        tr += `<td colspan="2"></td>`;
+                    @endif
+                        tr += `</tr>`;
                     $("#civil_service_list").append(tr);
                 });
             }).catch(err => {
@@ -64,24 +69,24 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='civil_service_` + data.id + `'>
-                                <td>` + params.career_service + `</td>
-                                <td>` + params.rating + `</td>
-                                <td>` + moment(params.examination_date).format("MM/DD/YYYY") + `</td>
-                                <td>` + params.examination_place + `</td>
-                                <td>` + license_no + `</td>
-                                <td>` + license_expiry + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editCivilService(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteCivilService(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='civil_service_` + data.id + `'>
+                <td>` + params.career_service + `</td>
+                <td>` + params.rating + `</td>
+                <td>` + moment(params.examination_date).format("MM/DD/YYYY") + `</td>
+                <td>` + params.examination_place + `</td>
+                <td>` + license_no + `</td>
+                <td>` + license_expiry + `</td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editCivilService(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteCivilService(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#civil_service_list").append(tr);
                 } else {

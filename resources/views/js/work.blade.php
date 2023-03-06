@@ -14,28 +14,33 @@
                 data.results.forEach(it => {
                     const working_to = (it.is_current_work == "1") ? "Present" : moment(it.working_to).format("MM/DD/YYYY");
                     const is_government = (it.is_government == "1") ? "Y" : "N";
-                    const tr = `
-                            <tr id='work_id_` + it.id + `'>
-                                <td>` + it.position + `</td>
-                                <td>` + it.agency + `</td>
-                                <td>` + moment(it.working_from).format("MM/DD/YYYY") + `</td>
-                                <td>` + working_to + `</td>
-                                <td>` + it.monthly_salary + `</td>
-                                <td class="d-none">` + it.salary_grade + `</td>
-                                <td>` + it.appointment_status + `</td>
-                                <td>` + is_government + `</td>
-                                <td class="d-none">` + it.is_current_work + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editWork(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteWork(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                    let tr = `<tr id='work_id_` + it.id + `'>`;
+                    tr += `<td>` + it.position + `</td>`;
+                    tr += `<td>` + it.agency + `</td>`;
+                    tr += `<td>` + moment(it.working_from).format("MM/DD/YYYY") + `</td>`;
+                    tr += `<td>` + working_to + `</td>`;
+                    tr += `<td>` + it.monthly_salary + `</td>`;
+                    tr += `<td class="d-none">` + it.salary_grade + `</td>`;
+                    tr += `<td>` + it.appointment_status + `</td>`;
+                    tr += `<td>` + is_government + `</td>`;
+                    tr += `<td class="d-none">` + it.is_current_work + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td>
+                                <button type='button' class="btn btn-sm" style="background: transparent"
+                                        onClick="editWork(` + it.id + `)">
+                                    <i class="bi bi-pencil-fill text-success"></i>
+                                </button>
+                           </td>
+                           <td>
+                                <button type='button' class="btn btn-sm" style="background: transparent"
+                                        onClick="deleteWork(` + it.id + `)">
+                                    <i class="bi bi-trash text-danger"></i>
+                                </button>
+                           </td>`
+                    @else
+                        tr += `<td colspan="2" </td>`
+                    @endif
+                        tr += `</tr>`;
                     $("#work_list").append(tr);
                 });
             }).catch(err => {
@@ -63,27 +68,27 @@
                 const is_government = (params.params_government == "1") ? "Y" : "N";
                 if (params.id == 0) {
                     const tr = `
-                            <tr id='work_id_` + data.id + `'>
-                                <td>` + params.position + `</td>
-                                <td>` + params.agency + `</td>
-                                <td>` + moment(params.working_from).format("MM/DD/YYYY") + `</td>
-                                <td>` + working_to + `</td>
-                                <td>` + params.monthly_salary + `</td>
-                                <td class="d-none">` + params.salary_grade + `</td>
-                                <td>` + params.appointment_status + `</td>
-                                <td>` + is_government + `</td>
-                                <td class="d-none">` + params.is_current_work + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editWork(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteWork(` + params.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='work_id_` + data.id + `'>
+                <td>` + params.position + `</td>
+                <td>` + params.agency + `</td>
+                <td>` + moment(params.working_from).format("MM/DD/YYYY") + `</td>
+                <td>` + working_to + `</td>
+                <td>` + params.monthly_salary + `</td>
+                <td class="d-none">` + params.salary_grade + `</td>
+                <td>` + params.appointment_status + `</td>
+                <td>` + is_government + `</td>
+                <td class="d-none">` + params.is_current_work + `</td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editWork(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteWork(` + params.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
                     $("#work_list").append(tr);
                 } else {
                     $("#work_id_" + params.id + " td:eq(0)").text(params.position);

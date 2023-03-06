@@ -1,6 +1,6 @@
 <script>
     function getOtherInformation(id) {
-        if(is_other_loaded) return;
+        if (is_other_loaded) return;
         fetch('{{route('getOtherInformation')}}?id=' + id, {
             method: "GET"
         })
@@ -17,59 +17,73 @@
                 const membership = data.results.membership;
 
                 skill.forEach(it => {
-                    const tr = `
-                            <tr id='skill_` + it.id + `'>
-                                <td>` + it.skills + `</td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editSkill(` + it.id + `)">
+                    let tr = `<tr id='skill_` + it.id + `'>`;
+                    tr += `<td>` + it.skills + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td style="width: 4%">
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                            onClick="editSkill(` + it.id + `)">
                                         <i class="bi bi-pencil-fill text-success"></i>
                                     </button>
                                 </td>
                                 <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteSkill(` + it.id + `)">
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                            onClick="deleteSkill(` + it.id + `)">
                                         <i class="bi bi-trash text-danger"></i>
                                     </button>
-                                </td>
-                            </tr>`;
+                                </td>`
+                    @else
+                        tr += `<td colspan="2" </td>`
+                    @endif
+                        tr += `</tr>`;
 
                     $("#skill_list").append(tr);
                 });
 
                 recognition.forEach(it => {
-                    const tr = `
-                            <tr id='recognition_` + it.id + `'>
-                                <td>` + it.recognition + `</td>
-                                 <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editRecognition(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                 <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteRecognition(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                    let tr = `<tr id='recognition_` + it.id + `'>`;
+                    tr += `<td>` + it.recognition + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += ` <td style="width: 4%">
+                        <button type='button' class="btn btn-sm" style="background: transparent"
+                                onClick="editRecognition(` + it.id + `)">
+                            <i class="bi bi-pencil-fill text-success"></i>
+                        </button>
+                    </td>
+                    <td style="width: 4%">
+                        <button type='button' class="btn btn-sm" style="background: transparent"
+                                onClick="deleteRecognition(` + it.id + `)">
+                            <i class="bi bi-trash text-danger"></i>
+                        </button>
+                    </td>`
+                    @else
+                        tr += `<td colspan="2" </td>`
+                    @endif
+                        tr += `</tr>`;
 
                     $("#recognition_list").append(tr);
                 });
 
                 membership.forEach(it => {
-                    const tr = `
-                            <tr id='membership_` + it.id + `'>
-                                <td>` + it.association + `</td>
-                                 <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editMembership(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                 <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteMembership(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
-
+                    let tr = `<tr id='membership_` + it.id + `'>`;
+                    tr += `<td>` + it.association + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td style="width: 4%">
+                        <button type='button' class="btn btn-sm" style="background: transparent"
+                                onClick="editMembership(` + it.id + `)">
+                            <i class="bi bi-pencil-fill text-success"></i>
+                        </button>
+                    </td>
+                    <td style="width: 4%">
+                        <button type='button' class="btn btn-sm" style="background: transparent"
+                                onClick="deleteMembership(` + it.id + `)">
+                            <i class="bi bi-trash text-danger"></i>
+                        </button>
+                    </td>`
+                    @else
+                        tr += `<td colspan="2" </td>`
+                    @endif
+                        tr += `</tr>`;
                     $("#membership_list").append(tr);
                 });
 
@@ -97,19 +111,19 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='skill_` + data.id + `'>
-                                <td>` + params.skills + `</td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editSkill(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteSkill(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='skill_` + data.id + `'>
+                <td>` + params.skills + `</td>
+                <td style="width: 4%">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editSkill(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td style="width: 4%">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteSkill(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#skill_list").append(tr);
                 } else {
@@ -143,19 +157,19 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='recognition_` + data.id + `'>
-                                <td>` + params.recognition + `</td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editRecognition(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteRecognition(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='recognition_` + data.id + `'>
+                <td>` + params.recognition + `</td>
+                <td style="width: 4%">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editRecognition(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td style="width: 4%">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteRecognition(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#recognition_list").append(tr);
                 } else {
@@ -189,19 +203,19 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='membership_` + data.id + `'>
-                                <td>` + params.association + `</td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editMembership(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteMembership(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='membership_` + data.id + `'>
+                <td>` + params.association + `</td>
+                <td style="width: 4%">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editMembership(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td style="width: 4%">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteMembership(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#membership_list").append(tr);
                 } else {

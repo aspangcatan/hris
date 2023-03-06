@@ -12,23 +12,27 @@
                 }
                 is_reference_loaded = true;
                 data.results.forEach(it => {
-                    const tr = `
-                            <tr id='reference_` + it.id + `'>
-                                <td>` + it.name + `</td>
-                                <td>` + it.address + `</td>
-                                <td>` + it.contact_no + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editReference(` + it.id + `)">
+                    let tr = `<tr id='reference_` + it.id + `'>`;
+                    tr += `<td>` + it.name + `</td>`;
+                    tr += `<td>` + it.address + `</td>`;
+                    tr += `<td>` + it.contact_no + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td>
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                            onClick="editReference(` + it.id + `)">
                                         <i class="bi bi-pencil-fill text-success"></i>
                                     </button>
                                 </td>
                                 <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteReference(` + it.id + `)">
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                            onClick="deleteReference(` + it.id + `)">
                                         <i class="bi bi-trash text-danger"></i>
                                     </button>
-                                </td>
-                            </tr>`;
-
+                                </td>`
+                    @else
+                        tr += `<td colspan="2" </td>`
+                    @endif
+                        tr += `</tr>`;
                     $("#reference_list").append(tr);
                 });
             }).catch(err => {
@@ -55,21 +59,21 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='reference_` + data.id + `'>
-                                <td>` + params.name + `</td>
-                                <td>` + params.address + `</td>
-                                <td>` + params.contact_no + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editReference(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteReference(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='reference_` + data.id + `'>
+                <td>` + params.name + `</td>
+                <td>` + params.address + `</td>
+                <td>` + params.contact_no + `</td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editReference(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteReference(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#reference_list").append(tr);
                 } else {

@@ -1,6 +1,6 @@
 <script>
     function getLearning(id) {
-        if(is_learning_loaded) return;
+        if (is_learning_loaded) return;
         fetch('{{route('getLearning')}}?id=' + id, {
             method: "GET"
         })
@@ -12,25 +12,30 @@
                 }
                 is_learning_loaded = true;
                 data.results.forEach(it => {
-                    const tr = `
-                            <tr id='learning_` + it.id + `'>
-                                <td>` + it.learning_title + `</td>
-                                <td>` + moment(it.attendance_from).format("MM/DD/YYYY") + `</td>
-                                <td>` + moment(it.attendance_to).format("MM/DD/YYYY") + `</td>
-                                <td>` + it.number_hours + `</td>
-                                <td>` + it.learning_type + `</td>
-                                <td>` + it.conducted_by + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editLearning(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
+                    let tr = `<tr id='learning_` + it.id + `'>`;
+                    tr += `<td>` + it.learning_title + `</td>`;
+                    tr += `<td>` + moment(it.attendance_from).format("MM/DD/YYYY") + `</td>`;
+                    tr += `<td>` + moment(it.attendance_to).format("MM/DD/YYYY") + `</td>`;
+                    tr += `<td>` + it.number_hours + `</td>`;
+                    tr += `<td>` + it.learning_type + `</td>`;
+                    tr += `<td>` + it.conducted_by + `</td>`;
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td>
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                    onClick="editLearning(` + it.id + `)">
+                                      <i class="bi bi-pencil-fill text-success"></i>
                                     </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteLearning(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
+                               </td>
+                               <td>
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                           onClick="deleteLearning(` + it.id + `)">
+                                    <i class="bi bi-trash text-danger"></i>
                                     </button>
-                                </td>
-                            </tr>`;
+                               </td>`
+                    @else
+                        tr += `<td colspan="2" </td>`
+                    @endif
+                        tr += `</tr>`;
 
                     $("#learning_list").append(tr);
                 });
@@ -58,24 +63,24 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='learning_` + data.id + `'>
-                                <td>` + params.learning_title + `</td>
-                                <td>` + moment(params.attendance_from).format("MM/DD/YYYY") + `</td>
-                                <td>` + moment(params.attendance_to).format("MM/DD/YYYY") + `</td>
-                                <td>` + params.number_hours + `</td>
-                                <td>` + params.learning_type + `</td>
-                                <td>` + params.conducted_by + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editLearning(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteLearning(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='learning_` + data.id + `'>
+                <td>` + params.learning_title + `</td>
+                <td>` + moment(params.attendance_from).format("MM/DD/YYYY") + `</td>
+                <td>` + moment(params.attendance_to).format("MM/DD/YYYY") + `</td>
+                <td>` + params.number_hours + `</td>
+                <td>` + params.learning_type + `</td>
+                <td>` + params.conducted_by + `</td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editLearning(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteLearning(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#learning_list").append(tr);
                 } else {
@@ -102,7 +107,7 @@
     }
 
     function deleteLearning(id) {
-        if(!confirm("Are you sure you want to delete this learning & development?")) return;
+        if (!confirm("Are you sure you want to delete this learning & development?")) return;
 
         fetch('{{ route('deleteLearning') }}', {
             method: "DELETE",
@@ -119,7 +124,7 @@
                     return;
                 }
 
-                $("#learning_"+id).remove();
+                $("#learning_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);

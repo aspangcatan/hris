@@ -31,22 +31,27 @@
                 });
 
                 data.children.forEach(it => {
-                    const tr = `
-                            <tr id='child_id_` + it.id + `'>
-                                <td>` + it.name + `</td>
-                                <td>` + moment(it.birthdate).format("MM/DD/YYYY") + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editChildren(` + it.id + `)">
+                    let tr = `<tr id='child_id_` + it.id + `'>`;
+                    tr += `<td>` + it.name + `</td>`;
+                    tr += `<td>` + moment(it.birthdate).format("MM/DD/YYYY") + `</td>`;
+
+                    @if(Route::currentRouteName() == "profile")
+                        tr += `<td>`;
+                    tr += `<button type='button' class="btn btn-sm" style="background: transparent"
+                                            onClick="editChildren(` + it.id + `)">
                                         <i class="bi bi-pencil-fill text-success"></i>
                                     </button>
                                 </td>
                                 <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteChildren(` + it.id + `)">
+                                    <button type='button' class="btn btn-sm" style="background: transparent"
+                                            onClick="deleteChildren(` + it.id + `)">
                                         <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
-
+                                    </button>`;
+                    tr += `</td>`;
+                    @else
+                        tr += `<td colspan="2"></td>`;
+                    @endif
+                        tr += `</tr>`;
                     $("#children_list").append(tr);
                 });
             }).catch(err => {
@@ -96,20 +101,20 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                            <tr id='child_id_` + data.id + `'>
-                                <td>` + params.name + `</td>
-                                <td>` + moment(params.birthdate).format("MM/DD/YYYY") + `</td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editChildren(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteChildren(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>
-                            </tr>`;
+                <tr id='child_id_` + data.id + `'>
+                <td>` + params.name + `</td>
+                <td>` + moment(params.birthdate).format("MM/DD/YYYY") + `</td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editChildren(` + data.id + `)">
+                <i class="bi bi-pencil-fill text-success"></i>
+                </button>
+                </td>
+                <td>
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteChildren(` + data.id + `)">
+                <i class="bi bi-trash text-danger"></i>
+                </button>
+                </td>
+                </tr>`;
 
                     $("#children_list").append(tr);
                 } else {
