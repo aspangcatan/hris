@@ -122,6 +122,7 @@
         )
             .then(res => res.json())
             .then(data => {
+                console.log(data);
                 $("#pagination_container").addClass("d-none")
                 $("#employee_list").empty();
                 $("#btn_next").addClass("d-none");

@@ -33,14 +33,14 @@
         $("#btn_search").click(function (){
             employee_id = 0;
             const fname = $("#search_fname").val().trim();
-            const lname = $("#search_fname").val().trim();
+            const lname = $("#search_lname").val().trim();
             getEmployee({fname: fname, lname: lname, page: page});
         });
 
         $("#btn_next").click(function () {
             page++;
             const fname = $("#search_fname").val().trim();
-            const lname = $("#search_fname").val().trim();
+            const lname = $("#search_lname").val().trim();
             getEmployee({fname: fname, lname: lname, page: page});
             $("#btn_prev").removeClass("d-none");
         });
@@ -52,7 +52,7 @@
             }
             page--;
             const fname = $("#search_fname").val().trim();
-            const lname = $("#search_fname").val().trim();
+            const lname = $("#search_lname").val().trim();
             getEmployee({fname: fname, lname: lname, page: page});
         });
 

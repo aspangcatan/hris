@@ -6,11 +6,13 @@
                 <span>Profile</span>
             </a>
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ route('employee') }}">
-                <i class="bi bi-grid"></i>
-                <span>Employee</span>
-            </a>
-        </li>
+        @if(session('access_rights') == "hr")
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('employee') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Employee</span>
+                </a>
+            </li>
+        @endif
     </ul>
 </aside><!-- End Sidebar-->

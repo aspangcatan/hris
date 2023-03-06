@@ -26,6 +26,10 @@ class PrintController extends Controller
     public function printPds(Request $request)
     {
         try {
+            if (session("access_rights") == "standard" && $request->id > 0) {
+                return "Permission denied";
+            }
+
             $user_id = ($request->id == 0) ? Auth::id() : $request->id;
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];

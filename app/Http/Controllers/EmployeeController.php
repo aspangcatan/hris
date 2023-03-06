@@ -86,15 +86,22 @@ class EmployeeController extends Controller
     public function getEmployee(Request $request)
     {
         try {
+            $search = [];
+            if ($request->fname != "")
+                $search[] = ["u.fname", "LIKE", "%" . $request->fname . "%"];
+            if ($request->lname != "")
+                $search[] = ["u.lname", "LIKE", "%" . $request->lname . "%"];
+
             $employees = DB::table('hris.employees as e')
                 ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
                 ->join('tdh_user.section as s', 'u.section', '=', 's.id')
+                ->where($search)
                 ->skip($request->page * 10)
                 ->take(11)
                 ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
 
-            return response(['code' => 200, 'results' => $employees]);
+            return response(['code' => 200, 'results' => $employees, 'filters' => $search]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
