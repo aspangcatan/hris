@@ -8,7 +8,7 @@
                         <div class="col-xl-12">
                             <div class="card">
                                 <div class="d-flex justify-content-end" style="font-size: 32px !important;">
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    <button type="button" class="btn" style="background: transparent" data-bs-dismiss="modal" aria-label="Close">X</button>
                                 </div>
                                 <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
                                     <img alt="Profile" class="rounded-circle" id="employee_img">
