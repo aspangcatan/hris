@@ -356,7 +356,7 @@ class PrintController extends Controller
                 $references[$i] = ['name' => $name, 'address' => $address, 'contact_no' => $contact_no];
             }
 
-            $pdf = Pdf::loadView('pdf.pdf', ['user' => $user, 'employee' => $employee,
+            $pdf = Pdf::loadView('pdf.pds', ['user' => $user, 'employee' => $employee,
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,

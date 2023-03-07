@@ -58,6 +58,14 @@
 
     $(document).ready(function () {
 
+        $("input[name='citizenship']").change(function () {
+            if ($(this).next().text().trim() == "Filipino") {
+                $(".dual-citizenship-container").addClass("d-none");
+            } else {
+                $(".dual-citizenship-container").removeClass("d-none");
+            }
+        });
+
         $("#btn_search").click(function () {
             employee_id = 0;
             const fname = $("#search_fname").val().trim();

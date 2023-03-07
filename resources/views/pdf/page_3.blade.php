@@ -29,7 +29,7 @@
         @foreach($voluntary_work as $key)
             <tr>
                 <td style="height: 33px !important;"
-                    class="border-dark v-center text-center fw-bold"> {{ strtoupper($key['organization_address']) }}</td>
+                    class="border-dark v-center text-center fw-bold">{{ strtoupper($key['organization_address']) }}</td>
                 <td class="border-dark v-center text-center fw-bold"> {{ $key['working_from'] }}</td>
                 <td class="border-dark v-center text-center fw-bold"> {{ $key['working_to'] }}</td>
                 <td class="border-dark v-center text-center fw-bold"> {{ $key['number_hours'] }}</td>

@@ -7,34 +7,107 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <style>
-        html, body {
-            width: 975px;
-            height: 563px;
+        @page {
+            size: 612pt 1008pt !important;
         }
+
+        label.checkbox-label input[type=checkbox] {
+            position: relative;
+            vertical-align: middle;
+            bottom: 1px;
+        }
+
+        html, body {
+            font-size: 9.5px;
+            margin: 0px !important;
+            padding: 2px !important;
+            font-family: "Times New Roman" !important;
+        }
+
+        input {
+            vertical-align: middle !important;
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed !important;
+            border-spacing: 0; /* Removes the cell spacing via CSS */
+            border-collapse: collapse; /* Optional - if you don't want to have double border where cells touch */
+        }
+
+        table td {
+            margin: 0px !important;
+            height: 23px !important;
+            padding: 1px !important;
+            vertical-align: middle !important;
+            overflow-wrap: break-word !important;
+        }
+
+        table.survey td {
+            margin: 0px !important;
+            height: 5px !important;
+            padding: 2px !important;
+            vertical-align: top !important;
+        }
+
+        table.reference td {
+            margin: 0px !important;
+            padding: 0px !important;
+            height: 3px !important;
+            vertical-align: middle !important;
+        }
+
+        table.government_id td {
+            margin: 0px !important;
+            padding: 0px !important;
+            height: unset !important;
+            vertical-align: middle !important;
+        }
+
+        input[type='checkbox'] {
+            height: 12px;
+            width: 12px;
+        }
+
+        .gray {
+            background: rgb(234, 234, 234) !important;
+        }
+
+        .title {
+            font-weight: bold;
+            color: white;
+            border-top: solid 1px black;
+            border-bottom: solid 1px black;
+        }
+
+        .underline {
+            border: 0;
+            outline: 0;
+            background: transparent;
+            border-bottom: 1px solid black;
+        }
+
+        .rectangle {
+            border: solid 2px black;
+            text-align: center;
+        }
+
+        .photo {
+            margin-left: auto;
+            margin-right: auto;
+            height: 170.07874016px;
+            width: 132.28346457px;
+        }
+
     </style>
 </head>
 <body>
-<div id="page_1" style="border:1px solid black;padding:5px">
-    <div style="font-weight: bold">CS Form No. 212</div>
-    <div>Revised 2017</div>
-    <div style="text-align: center;font-weight: bold;font-size: 24px">PERSONAL DATA SHEET</div>
-    <div style="margin-top:20px;font-weight: bold;font-size: 12px">WARNING: Any misrepresentation made in the Personal
-        Data Sheet and the Work Experience Sheet shall cause the filling of administrative/criminal case/s<br/>against
-        the person concerned.
-    </div>
-    <div style="font-size:12px;font-weight: bold">READ THE ATTACHED GUIDE TO FILLING OUT THE PERSONAL DATA SHEET (PDS)
-        BEFORE ACCOMPLISHING THE PDS FORM.
-    </div>
-    <div style="font-size: 10px">
-        <div style="display: inline-block;width: 80%">
-            <span>Print legibly . Tick appropriate boxes</span>
-            <input style="display: inline;height:10px;width: 10px;margin-top: -20px" type="checkbox"/>
-            <span>) and use separate sheet if necessary. Indicate N/A if not applicable.</span>
-            <span style="font-weight: bold">DO NOT ABBREVIATE.</span>
-            <span style="margin-left: 50px">1. CS ID No</span>
-        </div>
-        <div style="text-align: right;display:inline-block;width: 19%">(Do not fill up. For CSC use only)</div>
-    </div>
-</div>
+@include('pdf.pds_1');
+<div style="page-break-before: always !important;"></div>
+@include('pdf.pds_2');
+<div style="page-break-before: always !important;"></div>
+@include('pdf.pds_3');
+<div style="page-break-before: always !important;"></div>
+@include('pdf.pds_4');
 </body>
 </html>

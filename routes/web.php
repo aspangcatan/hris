@@ -24,6 +24,10 @@ Route::get('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
+Route::get('/view_pds', function () {
+    return view('pdf.pds');
+});
+
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 
 Route::group(['middleware' => 'auth'], function () {
