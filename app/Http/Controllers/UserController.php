@@ -22,13 +22,13 @@ class UserController extends Controller
                 $user_priv->syscode = "hris";
                 $user_priv->level = "standard";
                 $user_priv->save();
+            }
 
-                $employee = Employee::where('user_id', Auth::id())->first();
-                if (!$employee) {
-                    $employee = new Employee();
-                    $employee->user_id = Auth::id();
-                    $employee->save();
-                }
+            $employee = Employee::where('user_id', Auth::id())->first();
+            if (!$employee) {
+                $employee = new Employee();
+                $employee->user_id = Auth::id();
+                $employee->save();
             }
             $designation = Designation::find(Auth::user()->designation);
             if (!$designation)
