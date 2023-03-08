@@ -6,8 +6,9 @@
             </td>
         </tr>
         <tr style="text-align: center" class="gray">
-            <td rowspan="2" style="vertical-align: top !important;border-right: solid 1px black">
-                <div>30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS<br/>
+            <td rowspan="2" style="border-right: solid 1px black">
+                <div style="font-size: 8.5px">
+                    30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS<br/>
                     (Write in full)
                 </div>
             </td>
@@ -35,8 +36,8 @@
                 <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
                 <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
                 <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['number_hours']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
-                <td style="width: 27%;" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
+                <td style="width: 10%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
+                <td style="width: 24%;" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">

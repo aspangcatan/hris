@@ -7,7 +7,7 @@
             </td>
         </tr>
         <tr style="text-align: center" class="gray">
-            <td rowspan="2" style="vertical-align: top !important;border-right: solid 1px black">
+            <td rowspan="2" style="border-right: solid 1px black">
                 <div>29. NAME & ADDRESS OF ORGANIZATION<br/>
                     (Write in full)
                 </div>
@@ -50,8 +50,9 @@
             </td>
         </tr>
         <tr style="text-align: center" class="gray">
-            <td rowspan="2" style="vertical-align: top !important;border-right: solid 1px black">
-                <div>30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS<br/>
+            <td rowspan="2" style="border-right: solid 1px black">
+                <div style="font-size: 8.5px">
+                    30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS<br/>
                     (Write in full)
                 </div>
             </td>
@@ -103,7 +104,7 @@
                 32. NON-ACADEMIC DISTINCTIONS/RECOGNITION<br/>
                 (Write in full)
             </td>
-            <td>
+            <td style="font-size: 7.5px">
                 33. MEMBERSHIP IN ASSOCIATION/ORGANIZATION<br/>
                 (Write in full)
             </td>

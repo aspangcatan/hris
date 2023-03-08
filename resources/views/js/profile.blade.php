@@ -402,32 +402,32 @@
             }
 
 
-            if (residential_street == "") {
+            if (permanent_street == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Residential street is required</li>");
+                $(".error_list").append("<li>Permanent street is required</li>");
                 $("#form_fname").addClass("is-invalid");
             }
-            if (residential_barangay == "") {
+            if (permanent_barangay == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Residential barangay is required</li>");
+                $(".error_list").append("<li>Permanent barangay is required</li>");
                 $("#form_fname").addClass("is-invalid");
             }
 
             if (permanent_city == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Residential city is required</li>");
+                $(".error_list").append("<li>Permanent city is required</li>");
                 $("#form_fname").addClass("is-invalid");
             }
 
             if (permanent_province == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Residential province is required</li>");
+                $(".error_list").append("<li>Permanent province is required</li>");
                 $("#form_fname").addClass("is-invalid");
             }
 
             if (permanent_zipcode == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Residential zipcode is required</li>");
+                $(".error_list").append("<li>Permanent zipcode is required</li>");
                 $("#form_fname").addClass("is-invalid");
             }
 

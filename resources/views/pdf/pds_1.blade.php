@@ -291,7 +291,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($residential)
-                        {{ strtoupper($residential->house_no) }}
+                        @if($residential->house_no)
+                            {{ strtoupper($residential->house_no) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -301,7 +305,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-vallue">
                     @if($residential)
-                        {{ strtoupper($residential->street) }}
+                        @if($residential->street)
+                            {{ strtoupper($residential->street) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -313,7 +321,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;">
                 <div class="center-value">
                     @if($residential)
-                        {{ strtoupper($residential->subdivision_village) }}
+                        @if($residential->subdivision_village)
+                            {{ strtoupper($residential->subdivision_village) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -323,7 +335,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;">
                 <div class="center-value">
                     @if($residential)
-                        {{ strtoupper($residential->barangay) }}
+                        @if($residential->barangay)
+                            {{ strtoupper($residential->barangay) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -346,7 +362,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($residential)
-                        {{ strtoupper($residential->city) }}
+                        @if($residential->city)
+                            {{ strtoupper($residential->city) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -356,7 +376,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($residential)
-                        {{ strtoupper($residential->province) }}
+                        @if($residential->province)
+                            {{ strtoupper($residential->province) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -379,7 +403,11 @@
             <td colspan="2">
                 <div class="value">
                     @if($residential)
-                        {{ $residential->zip_code }}
+                        @if($residential->zip_code)
+                            {{ strtoupper($residential->zip_code) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -406,7 +434,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($permanent)
-                        {{ $permanent->house_no }}
+                        @if($permanent->house_no)
+                            {{ strtoupper($permanent->house_no) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -416,7 +448,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($permanent)
-                        {{ $permanent->street }}
+                        @if($permanent->street)
+                            {{ strtoupper($permanent->street) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -439,7 +475,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($permanent)
-                        {{ $permanent->subdivision_village }}
+                        @if($permanent->subdivision_village)
+                            {{ strtoupper($permanent->subdivision_village) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -449,7 +489,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($permanent)
-                        {{ $permanent->barangay }}
+                        @if($permanent->barangay)
+                            {{ strtoupper($permanent->barangay) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -472,7 +516,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($permanent)
-                        {{ $permanent->city }}
+                        @if($permanent->city)
+                            {{ strtoupper($permanent->city) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -482,7 +530,11 @@
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
                     @if($permanent)
-                        {{ $permanent->province }}
+                        @if($permanent->province)
+                            {{ strtoupper($permanent->province) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -505,7 +557,11 @@
             <td colspan="2" style="border-top:solid 1px black;">
                 <div class="value">
                     @if($permanent)
-                        {{ $permanent->zip_code }}
+                        @if($permanent->zip_code)
+                            {{ strtoupper($permanent->zip_code) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
@@ -943,12 +999,18 @@
         @foreach($educations as $education)
             <tr style="border-top: solid 1px  black">
                 <td style="width: 20%;border-right: solid 1px black" class="gray">{{ $education['level'] }}</td>
-                <td style="width: 25%;border-right: solid 1px black" class="center-value">{{ strtoupper($education['school_name']) }}</td>
-                <td style="width: 20%;border-right: solid 1px black" class="center-value">{{ strtoupper($education['education_degree']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $education['attendance_from'] }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $education['attendance_to'] }}</td>
-                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($education['highest_level']) }}</td>
-                <td style="width: 6%;border-right: solid 1px black" class="center-value">{{ $education['year_graduated'] }}</td>
+                <td style="width: 25%;border-right: solid 1px black"
+                    class="center-value">{{ strtoupper($education['school_name']) }}</td>
+                <td style="width: 20%;border-right: solid 1px black"
+                    class="center-value">{{ strtoupper($education['education_degree']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black"
+                    class="center-value">{{ $education['attendance_from'] }}</td>
+                <td style="width: 7%;border-right: solid 1px black"
+                    class="center-value">{{ $education['attendance_to'] }}</td>
+                <td style="width: 8%;border-right: solid 1px black"
+                    class="center-value">{{ strtoupper($education['highest_level']) }}</td>
+                <td style="width: 6%;border-right: solid 1px black"
+                    class="center-value">{{ $education['year_graduated'] }}</td>
                 <td style="width: 7%;" class="center-value">{{ $education['scholarship'] }}</td>
             </tr>
         @endforeach

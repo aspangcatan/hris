@@ -7,7 +7,7 @@
             </td>
         </tr>
         <tr style="text-align: center" class="gray">
-            <td rowspan="2" style="vertical-align: top !important;border-right: solid 1px black">
+            <td rowspan="2" style="border-right: solid 1px black">
                 <div>27. CAREER SERVICE/RA 1080 (BOARD/BAR) UNDER<br/>
                     SPECIAL LAWS/CES/CSEE<br/>
                     BARANGAY ELIGIBILITY/DRIVER'S LICENSE
@@ -53,7 +53,7 @@
             </td>
         </tr>
         <tr style="text-align: center" class="gray">
-            <td colspan="2" style="vertical-align: top !important;border-right: solid 1px black">
+            <td colspan="2" style="border-right: solid 1px black">
                 <div>28. INCLUSIVE DATES<br/>
                     (mm/dd/yyyy)
                 </div>
@@ -68,7 +68,7 @@
             </td>
             <td rowspan="2" style=";border-right: solid 1px black">MONTHLY<br/>SALARY
             </td>
-            <td rowspan="2" style="border-right: solid 1px black">SALARY/JOB/<br/>PAY GRADE(if<br/>applicable)&<br/>STEP
+            <td rowspan="2" style="border-right: solid 1px black;font-size: 9px !important;">SALARY/JOB/<br/>PAY GRADE(if<br/>applicable)&<br/>STEP
                 (Format<br/>"00-0")/<br/>INCREMENT
             </td>
             <td rowspan="2" style="border-right: solid 1px black">STATUS OF<br/>APPOINTMENT</td>
