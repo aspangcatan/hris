@@ -303,7 +303,7 @@
                 <div style="border-top:solid 1px  gray">House/Block/Lot No.</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div class="center-vallue">
+                <div class="center-value">
                     @if($residential)
                         @if($residential->street)
                             {{ strtoupper($residential->street) }}
