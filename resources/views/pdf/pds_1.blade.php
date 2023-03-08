@@ -697,7 +697,7 @@
             </td>
             <td style="width: 25%;border-right: solid 1px black">
                 <div class="center-value">
-                    {{ $childrens[0]['name'] }}
+                    {{ strtoupper($childrens[0]['name']) }}
                 </div>
             </td>
             <td style="width: 13%">
@@ -724,7 +724,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[1]['name'] }}
+                {{ strtoupper($childrens[1]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[1]['birthdate'] }}
@@ -748,7 +748,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[2]['name'] }}
+                {{ strtoupper($childrens[2]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[2]['birthdate'] }}
@@ -772,7 +772,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[3]['name'] }}
+                {{ strtoupper($childrens[3]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[3]['birthdate'] }}
@@ -796,7 +796,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[5]['name'] }}
+                {{ strtoupper($childrens[5]['name']) }}
             </td>
             <td style="width: 13%">
                 {{ $childrens[5]['birthdate'] }}
@@ -818,7 +818,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[6]['name'] }}
+                {{ strtoupper($childrens[6]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[6]['birthdate'] }}
@@ -856,7 +856,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[7]['name'] }}
+                {{ strtoupper($childrens[7]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[7]['birthdate'] }}
@@ -880,7 +880,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[8]['name'] }}
+                {{ strtoupper($childrens[8]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[8]['birthdate'] }}
@@ -890,7 +890,7 @@
             <td style="border-right: solid 1px black" class="gray">25. MOTHER'S MAIDEN NAME</td>
             <td style="border-right: solid 1px black" colspan="2"></td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[9]['name'] }}
+                {{ strtoupper($childrens[9]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[9]['birthdate'] }}
@@ -914,7 +914,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[10]['name'] }}
+                {{ strtoupper($childrens[10]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[10]['birthdate'] }}
@@ -938,7 +938,7 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black" class="center-value">
-                {{ $childrens[11]['name'] }}
+                {{ strtoupper($childrens[11]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
                 {{ $childrens[11]['birthdate'] }}

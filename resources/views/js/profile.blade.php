@@ -490,27 +490,27 @@
 
             if (spouse_lname == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Spouse firstname is required</li>");
+                $(".error_list").append("<li>Spouse lastname is required</li>");
             }
 
             if (father_fname == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Spouse firstname is required</li>");
+                $(".error_list").append("<li>Father firstname is required</li>");
             }
 
             if (father_lname == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Spouse firstname is required</li>");
+                $(".error_list").append("<li>Father lastname is required</li>");
             }
 
             if (mother_fname == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Spouse firstname is required</li>");
+                $(".error_list").append("<li>Mother firstname is required</li>");
             }
 
             if (mother_lname == "") {
                 is_valid = false;
-                $(".error_list").append("<li>Spouse firstname is required</li>");
+                $(".error_list").append("<li>Mother firstname is required</li>");
             }
 
             if (!is_valid) {

@@ -69,23 +69,23 @@
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
-                <tr id='civil_service_` + data.id + `'>
-                <td>` + params.career_service + `</td>
-                <td>` + params.rating + `</td>
-                <td>` + moment(params.examination_date).format("MM/DD/YYYY") + `</td>
-                <td>` + params.examination_place + `</td>
-                <td>` + license_no + `</td>
-                <td>` + license_expiry + `</td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editCivilService(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteCivilService(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
-                </td>
+                    <tr id='civil_service_` + data.id + `'>
+                    <td>` + params.career_service + `</td>
+                    <td>` + params.rating + `</td>
+                    <td>` + moment(params.examination_date).format("MM/DD/YYYY") + `</td>
+                    <td>` + params.examination_place + `</td>
+                    <td>` + license_no + `</td>
+                    <td>` + license_expiry + `</td>
+                    <td>
+                        <button type='button' class="btn btn-sm" style="background: transparent" onClick="editCivilService(` + data.id + `)">
+                            <i class="bi bi-pencil-fill text-success"></i>
+                        </button>
+                    </td>
+                    <td>
+                        <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteCivilService(` + data.id + `)">
+                            <i class="bi bi-trash text-danger"></i>
+                        </button>
+                    </td>
                 </tr>`;
 
                     $("#civil_service_list").append(tr);
