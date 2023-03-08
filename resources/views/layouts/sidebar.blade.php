@@ -14,23 +14,25 @@
                 </a>
             </li>
         @endif
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#">
-                <i class="bi bi-grid"></i>
-                <span>DTR <span class="ms-2 badge bg-danger">Soon</span></span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#">
-                <i class="bi bi-grid"></i>
-                <span>Leave <span class="ms-2 badge bg-danger">Soon</span></span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="#">
-                <i class="bi bi-grid"></i>
-                <span>Payroll <span class="ms-2 badge bg-danger">Soon</span></span>
-            </a>
-        </li>
+        @if(session('access_rights') == "admin")
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#">
+                    <i class="bi bi-grid"></i>
+                    <span>DTR <span class="ms-2 badge bg-danger">Soon</span></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#">
+                    <i class="bi bi-grid"></i>
+                    <span>Leave <span class="ms-2 badge bg-danger">Soon</span></span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#">
+                    <i class="bi bi-grid"></i>
+                    <span>Payroll <span class="ms-2 badge bg-danger">Soon</span></span>
+                </a>
+            </li>
+        @endif
     </ul>
 </aside><!-- End Sidebar-->
