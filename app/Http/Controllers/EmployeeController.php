@@ -99,6 +99,8 @@ class EmployeeController extends Controller
                 ->where($search)
                 ->skip($request->page * 10)
                 ->take(11)
+                ->orderBy('u.fname','ASC')
+                ->orderBy('u.lname','ASC')
                 ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
 
             return response(['code' => 200, 'results' => $employees]);

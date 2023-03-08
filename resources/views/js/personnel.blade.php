@@ -114,6 +114,10 @@
     }
 
     function getEmployee(params) {
+        $("#btn_next").prop("disabled", true);
+        $("#btn_prev").prop("disabled", true);
+        $("#employee_list").empty();
+        $("#employee_list").append("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
         fetch('{{ route('getEmployee') }}?fname=' + params.fname +
             "&lname=" + params.lname +
             "&page=" + params.page, {
@@ -122,16 +126,19 @@
         )
             .then(res => res.json())
             .then(data => {
+                $("#btn_next").prop("disabled", false);
+                $("#btn_prev").prop("disabled", false);
                 $("#pagination_container").addClass("d-none")
                 $("#employee_list").empty();
                 $("#btn_next").addClass("d-none");
+                $("#employee_list").empty();
                 if (data.results.length < 1) {
+
                     $("#employee_list").append("<tr><td colspan='6'>No record found</td></tr>");
                     return;
                 }
 
                 $("#pagination_container").removeClass("d-none")
-
                 let max_visible = data.results.length;
                 if (max_visible == 11) {
                     max_visible = 10;
@@ -139,10 +146,7 @@
                 }
 
                 $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
-
-                $("#employee_list").empty();
-
-                for(let i=0; i<max_visible; i++){
+                for (let i = 0; i < max_visible; i++) {
                     const it = data.results[i];
                     const path = '{{ url('/avatar/')}}';
                     const suffix = (it.suffix) ? it.suffix : "";
