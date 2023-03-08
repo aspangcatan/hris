@@ -579,7 +579,7 @@
                     @endif
                 </div>
             </td>
-            <td style="text-align: center;border-right: solid 1px black" class="gray">19. TELEPHONE NO.</td>
+            <td style="border-right: solid 1px black" class="gray">19. TELEPHONE NO.</td>
             <td colspan="2">
                 <div class="value">
                     @if($employee->telephone_no)
@@ -601,7 +601,7 @@
                     @endif
                 </div>
             </td>
-            <td style="text-align: center;border-right: solid 1px black" class="gray">20. MOBILE NO.</td>
+            <td style="border-right: solid 1px black" class="gray">20. MOBILE NO.</td>
             <td colspan="2">
                 <div class="value">
                     @if($employee->mobile_no)
@@ -623,7 +623,7 @@
                     @endif
                 </div>
             </td>
-            <td style="text-align: center;border-right: solid 1px black" class="gray">21. E-MAIL ADDRESS (if any)</td>
+            <td style="border-right: solid 1px black" class="gray">21. E-MAIL ADDRESS (if any)</td>
             <td colspan="2">
                 <div class="value">
                     @if($employee->email_address)
