@@ -30,12 +30,12 @@
         </tr>
         @foreach($eligibility as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 30%;border-right: solid 1px black">{{ strtoupper($key['career_service']) }}</td>
-                <td style="width: 10%;border-right: solid 1px black">{{ strtoupper($key['rating']) }}</td>
-                <td style="width: 10%;border-right: solid 1px black">{{ strtoupper($key['examination_date']) }}</td>
-                <td style="width: 30%;border-right: solid 1px black">{{ strtoupper($key['examination_place']) }}</td>
-                <td style="width: 10%;border-right: solid 1px black">{{ strtoupper($key['license_no'] )}}</td>
-                <td style="width: 10%;">{{ strtoupper($key['license_expiry']) }}</td>
+                <td style="width: 30%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['career_service']) }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['rating']) }}</td>
+                <td style="width: 12%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['examination_date']) }}</td>
+                <td style="width: 30%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['examination_place']) }}</td>
+                <td style="width: 10%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['license_no'] )}}</td>
+                <td style="width: 10%;" class="center-value">{{ strtoupper($key['license_expiry']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
@@ -80,14 +80,14 @@
         </tr>
         @foreach($work_experience as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 8%;border-right: solid 1px black">{{ strtoupper($key['working_from']) }}</td>
-                <td style="width: 8%;border-right: solid 1px black">{{ strtoupper($key['working_to']) }}</td>
-                <td style="width: 24%;border-right: solid 1px black">{{ strtoupper($key['position']) }}</td>
-                <td style="width: 24%;border-right: solid 1px black">{{ strtoupper($key['agency']) }}</td>
-                <td style="width: 8%;border-right: solid 1px black">{{ strtoupper($key['monthly_salary']) }}</td>
-                <td style="width: 8%;border-right: solid 1px black">{{ strtoupper($key['salary_grade']) }}</td>
-                <td style="width: 12%;border-right: solid 1px black">{{ strtoupper($key['appointment_status']) }}</td>
-                <td style="width: 8%;">{{ strtoupper($key['is_government']) }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['working_from']) }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['working_to']) }}</td>
+                <td style="width: 22%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['position']) }}</td>
+                <td style="width: 26%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['agency']) }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['monthly_salary']) }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['salary_grade']) }}</td>
+                <td style="width: 12%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['appointment_status']) }}</td>
+                <td style="width: 8%;" class="center-value">{{ strtoupper($key['is_government']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">

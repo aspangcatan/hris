@@ -363,6 +363,12 @@ class PrintController extends Controller
                 'reference' => $references]);
 
             return $pdf->stream('invoice.pdf', array("Attachment" => false));
+
+//            return view('pdf.pds', ['user' => $user, 'employee' => $employee,
+//                'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
+//                'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
+//                'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
+//                'reference' => $references]);
         } catch (\Exception $exception) {
             return $exception->getMessage();
         }

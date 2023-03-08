@@ -1,4 +1,4 @@
-<div id="page_4" style="border:1px solid black;font-size: 13px">
+<div id="page_4" style="border:1px solid black;font-size: 12px">
     <table style="border-top:solid 1px black" class="survey">
         <tr>
             <td style="width: 67%;border-right: solid 1px black">34. Are you related by consanguinity or affinity to the
@@ -54,7 +54,9 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            {{ $survey[1]['details'] }}
+                            <div class="value">
+                                {{ $survey[1]['details'] }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -116,11 +118,19 @@
                         <table style="vertical-align: middle;">
                             <tr>
                                 <td style="width: 40%;text-align: right">Date Filed:</td>
-                                <td style="border-bottom: solid 1px black">{{ $survey[3]['details'] }}</td>
+                                <td style="border-bottom: solid 1px black">
+                                    <div class="value">
+                                        {{ $survey[3]['details'] }}
+                                    </div>
+                                </td>
                             </tr>
                             <tr>
                                 <td style=";text-align: right">Status of Case/s:</td>
-                                <td style="border-bottom: solid 1px black">{{ $survey[3]['extra'] }}</td>
+                                <td style="border-bottom: solid 1px black">
+                                    <div class="value">
+                                        {{ $survey[3]['extra'] }}
+                                    </div>
+                                </td>
                             </tr>
                         </table>
                     </div>
@@ -151,7 +161,9 @@
                     </div>
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
-                        <div style="border-bottom: solid 1px black;width: 98%">{{ $survey[4]['details'] }}</div>
+                        <div style="border-bottom: solid 1px black;width: 98%">
+                            <div class="value">{{ $survey[4]['details'] }}</div>
+                        </div>
                     </div>
                 </div>
             </td>
@@ -182,7 +194,9 @@
                     </div>
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
-                        <div style="border-bottom: solid 1px black;width: 98%">{{ $survey[5]['details'] }}</div>
+                        <div style="border-bottom: solid 1px black;width: 98%">
+                            <div class="value">{{ $survey[5]['details'] }}</div>
+                        </div>
                     </div>
                 </div>
             </td>
@@ -211,7 +225,9 @@
                     </div>
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
-                        <div style="border-bottom: solid 1px black;width: 98%">{{ $survey[6]['details'] }}</div>
+                        <div style="border-bottom: solid 1px black;width: 98%">
+                            <div class="value">{{ $survey[6]['details'] }}</div>
+                        </div>
                     </div>
                 </div>
             </td>
@@ -242,7 +258,7 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            {{ $survey[7]['details'] }}
+                            <div class="value">{{ $survey[7]['details'] }}</div>
                         </div>
                     </div>
                 </div>
@@ -273,7 +289,7 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details (country):</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            {{ $survey[8]['details'] }}
+                            <div class="value">{{ $survey[8]['details'] }}</div>
                         </div>
                     </div>
                 </div>
@@ -311,7 +327,9 @@
                 <table style="vertical-align: middle">
                     <tr>
                         <td style="width: 63%">If YES, please specify:</td>
-                        <td style="border-bottom: solid 1px black">{{ $survey[9]['details'] }}</td>
+                        <td style="border-bottom: solid 1px black">
+                            <div class="value">{{ $survey[9]['details'] }}</div>
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -340,7 +358,9 @@
                 <table style="vertical-align: middle">
                     <tr>
                         <td style="width: 63%">If YES, please specify ID No:</td>
-                        <td style="border-bottom: solid 1px black">{{ $survey[10]['details'] }}</td>
+                        <td style="border-bottom: solid 1px black">
+                            <div class="value">{{ $survey[10]['details'] }}</div>
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -369,7 +389,9 @@
                 <table style="vertical-align: middle">
                     <tr>
                         <td style="width: 63%">If YES, please specify ID No:</td>
-                        <td style="border-bottom: solid 1px black">{{ strtoupper($survey[11]['details']) }}</td>
+                        <td style="border-bottom: solid 1px black">
+                            <div class="value">{{ strtoupper($survey[11]['details']) }}</div>
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -382,22 +404,22 @@
                     41. REFERENCES <span style="color:red">(Person not related by consanguinity or affinity to applicant /appointee)</span>
                 </td>
             </tr>
-            <tr style="text-align: center;border-bottom: solid 1px black">
-                <td style="border-top: solid 1px black;width: 43%;border-right: solid 1px black" class="gray">
+            <tr style="text-align: center;border-bottom: solid 1px black;font-size: 9px !important;">
+                <td style="border-top: solid 1px black;width: 50%;border-right: solid 1px black" class="gray">
                     NAME
                 </td>
-                <td style="border-top: solid 1px black;width: 20%;border-right: solid 1px black" class="gray">
+                <td style="border-top: solid 1px black;width: 35%;border-right: solid 1px black" class="gray">
                     ADDRESS
                 </td>
-                <td style="border-top: solid 1px black;width: 10%;border-right: solid 1px black" class="gray">
+                <td style="border-top: solid 1px black;width: 15%;border-right: solid 1px black" class="gray">
                     TEL. NO.
                 </td>
             </tr>
             @foreach($reference as $key)
-                <tr>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;">{{ strtoupper($key['name']) }}</td>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;">{{ strtoupper($key['address']) }}</td>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;">{{ strtoupper($key['contact_no']) }}</td>
+                <tr style="font-size: 9px !important;">
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;" class="center-value">{{ strtoupper($key['name']) }}</td>
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;" class="center-value">{{ strtoupper($key['address']) }}</td>
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;" class="center-value">{{ strtoupper($key['contact_no']) }}</td>
                 </tr>
             @endforeach
             <tr style="border-top: solid 1px black">
@@ -436,31 +458,37 @@
                             <tr style="border-top: solid 1px black">
                                 <td style="width: 55%">Government Issued ID:</td>
                                 <td style="width: 45%">
-                                    @if($employee)
-                                        {{ strtoupper($employee->issued_id) }}
-                                    @else
-                                        N/A
-                                    @endif
+                                    <div class="value">
+                                        @if($employee)
+                                            {{ strtoupper($employee->issued_id) }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             <tr style="border-top: solid 1px black">
                                 <td>ID/License/Passport No.</td>
                                 <td>
-                                    @if($employee)
-                                        {{ $employee->issued_id_no }}
-                                    @else
-                                        N/A
-                                    @endif
+                                    <div class="value">
+                                        @if($employee)
+                                            {{ $employee->issued_id_no }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                             <tr style="border-top: solid 1px black">
                                 <td>Date/Place of Issuance:</td>
                                 <td>
-                                    @if($employee)
-                                        {{ strtoupper($employee->issued_date) }}
-                                    @else
-                                        N/A
-                                    @endif
+                                    <div class="value">
+                                        @if($employee)
+                                            {{ strtoupper($employee->issued_date) }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         </table>

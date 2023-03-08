@@ -30,11 +30,11 @@
         </tr>
         @foreach($voluntary_work as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 45%;border-right: solid 1px black">{{ strtoupper($key['organization_address']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ $key['working_from'] }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ $key['working_to'] }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ $key['number_hours'] }}</td>
-                <td style="width: 34%;">{{ strtoupper($key['position']) }}</td>
+                <td style="width: 45%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['organization_address']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['working_from'] }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['working_to'] }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['number_hours'] }}</td>
+                <td style="width: 34%;" class="center-value">{{ strtoupper($key['position']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
@@ -75,12 +75,12 @@
         </tr>
         @foreach($learning as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 45%;border-right: solid 1px black">{{ strtoupper($key['learning_title']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['attendance_from']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['attendance_to']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['number_hours']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['learning_type']) }}</td>
-                <td style="width: 27%;">{{ strtoupper($key['conducted_by']) }}</td>
+                <td style="width: 45%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_title']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['number_hours']) }}</td>
+                <td style="width: 10%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
+                <td style="width: 24%;" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
@@ -107,30 +107,27 @@
                 33. MEMBERSHIP IN ASSOCIATION/ORGANIZATION<br/>
                 (Write in full)
             </td>
-
         </tr>
         @foreach($skill as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 25%;border-right: solid 1px black">{{ strtoupper($key['skill']) }}</td>
+                <td style="width: 24%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['skill']) }}</td>
                 <td colspan="2"
-                    style="width: 50%;border-right: solid 1px black">{{ strtoupper($key['recognition']) }}</td>
-                <td style="width: 25%">{{ strtoupper($key['association']) }}</td>
+                    style="width: 52%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['recognition']) }}</td>
+                <td style="width: 24%" class="center-value">{{ strtoupper($key['association']) }}</td>
             </tr>
         @endforeach
-
         <tr style="border-top: solid 1px  black;text-align: center">
             <td colspan="4" style="color:red;font-weight: bold;height:  unset !important;" class="gray">(Continue on
                 separate sheet if necessary)
             </td>
         </tr>
         <tr style="border-top: solid 1px black;">
-            <td style="width:25%;text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
+            <td style="width: 24%;text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
                 SIGNATURE
             </td>
-            <td style="width:35%;border-right: solid 1px black"></td>
-            <td style="width:15%;border-right: solid 1px black;text-align: center;font-weight: bold" class="gray">DATE
-            </td>
-            <td style="width: 25%"></td>
+            <td style="width:32%;border-right: solid 1px black"></td>
+            <td style="width:20%;border-right: solid 1px black;text-align: center;font-weight: bold" class="gray">DATE</td>
+            <td style="width: 24%;"></td>
         </tr>
     </table>
 </div>

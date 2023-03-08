@@ -76,6 +76,8 @@
         .title {
             font-weight: bold;
             color: white;
+            padding: 2px !important;
+            height: unset !important;
             border-top: solid 1px black;
             border-bottom: solid 1px black;
         }
@@ -99,15 +101,25 @@
             width: 132.28346457px;
         }
 
+        .value {
+            margin-left: 5px;
+            font-weight: bold;
+        }
+
+        .center-value {
+            text-align: center;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
-@include('pdf.pds_1');
+@include('pdf.pds_1')
 <div style="page-break-before: always !important;"></div>
-@include('pdf.pds_2');
+@include('pdf.pds_2')
 <div style="page-break-before: always !important;"></div>
-@include('pdf.pds_3');
+@include('pdf.pds_3')
 <div style="page-break-before: always !important;"></div>
-@include('pdf.pds_4');
+@include('pdf.pds_4')
 </body>
 </html>

@@ -31,12 +31,12 @@
         </tr>
         @foreach($learning as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 45%;border-right: solid 1px black">{{ strtoupper($key['learning_title']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['attendance_from']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['attendance_to']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['number_hours']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ strtoupper($key['learning_type']) }}</td>
-                <td style="width: 27%;">{{ strtoupper($key['conducted_by']) }}</td>
+                <td style="width: 45%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_title']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['number_hours']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
+                <td style="width: 27%;" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">

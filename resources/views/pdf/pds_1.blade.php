@@ -40,16 +40,20 @@
         <tr>
             <td style="border-top:solid 1px black" class="gray">2. SURNAME</td>
             <td style="border-bottom: solid 1px black;border-left: solid 1px black;"
-                colspan="2">{{ strtoupper($user->lname) }}</td>
+                colspan="2">
+                <div class="value">{{ strtoupper($user->lname) }}</div>
+            </td>
         </tr>
         <tr>
             <td style="width: 20%;margin-left: 10px" class="gray">
                 <div style="margin-left: 10px;">FIRSTNAME</div>
             </td>
-            <td style="border-bottom: solid 1px black;border-left: solid 1px black;">{{ strtoupper($user->fname) }}</td>
+            <td style="border-bottom: solid 1px black;border-left: solid 1px black;">
+                <div class="value">{{ strtoupper($user->fname) }}</div>
+            </td>
             <td style="width: 25%;border-bottom: solid 1px black;border-left: solid 1px black;" class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
-                <div>
+                <div class="value">
                     @if($user->suffix)
                         {{ strtoupper($user->suffix) }}
                     @else
@@ -62,7 +66,9 @@
             <td class="gray">
                 <div style="margin-left: 10px;">MIDDLENAME</div>
             </td>
-            <td style="border-left: solid 1px black;" colspan="2">{{ strtoupper($user->mname) }}</td>
+            <td style="border-left: solid 1px black;" colspan="2">
+                <div class="value">{{ strtoupper($user->mname) }}</div>
+            </td>
         </tr>
     </table>
     <table style="border-top:solid 1px black">
@@ -71,11 +77,13 @@
                     style="margin-left: 10px;">(mm/dd/yyyy)</span></td>
             <td style="height: unset !important;width: 25%;border-left: solid 1px black;border-right:solid 1px black;border-bottom: solid 1px black"
                 rowspan="2">
-                @if($employee->birthdate)
-                    {{ date('m/d/Y', strtotime($employee->birthdate)) }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->birthdate)
+                        {{ date('m/d/Y', strtotime($employee->birthdate)) }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="height: unset !important;width: 23%;border-right: solid 1px black" class="gray">16. CITIZENSHIP
             </td>
@@ -143,11 +151,13 @@
             <td style="border-bottom: solid 1px black;border-right: solid 1px black;" class="gray">4. PLACE OF BIRTH
             </td>
             <td style="border-bottom: solid 1px black;border-right: solid 1px black;">
-                @if($employee->birthplace)
-                    {{ strtoupper($employee->birthplace) }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->birthplace)
+                        {{ strtoupper($employee->birthplace) }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="text-align: center;border-right: solid 1px black" class="gray">
                 If holder of dual citizenship
@@ -190,11 +200,13 @@
                 please indicate the details.
             </td>
             <td style="text-align: center;font-weight: bold">
-                @if($employee->citizenship_country)
-                    {{ strtoupper($employee->citizenship_country) }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->citizenship_country)
+                        {{ strtoupper($employee->citizenship_country) }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
         </tr>
     </table>
@@ -277,7 +289,7 @@
                 <div style="margin-top: 5px">17. RESIDENTIAL ADDRESS</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($residential)
                         {{ strtoupper($residential->house_no) }}
                     @else
@@ -287,7 +299,7 @@
                 <div style="border-top:solid 1px  gray">House/Block/Lot No.</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-vallue">
                     @if($residential)
                         {{ strtoupper($residential->street) }}
                     @else
@@ -299,7 +311,7 @@
         </tr>
         <tr style="text-align: center">
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;">
-                <div>
+                <div class="center-value">
                     @if($residential)
                         {{ strtoupper($residential->subdivision_village) }}
                     @else
@@ -309,7 +321,7 @@
                 <div style="border-top:solid 1px gray">Subdivision/Village</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;">
-                <div>
+                <div class="center-value">
                     @if($residential)
                         {{ strtoupper($residential->barangay) }}
                     @else
@@ -322,15 +334,17 @@
         <tr>
             <td style="border-top:solid 1px black;border-right: solid 1px black;" class="gray">7. HEIGHT (m)</td>
             <td style="border-top:solid 1px black;border-right:solid 1px black">
-                @if($employee->height)
-                    {{ $employee->height }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->height)
+                        {{ $employee->height }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="border-right: solid 1px black" class="gray"></td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($residential)
                         {{ strtoupper($residential->city) }}
                     @else
@@ -340,7 +354,7 @@
                 <div style="border-top:solid 1px gray">City/Municipality</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom:solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($residential)
                         {{ strtoupper($residential->province) }}
                     @else
@@ -353,19 +367,23 @@
         <tr>
             <td style="border-top:solid 1px black;border-right: solid 1px black;" class="gray">8. WEIGHT (kg)</td>
             <td style="border-top:solid 1px black;border-right:solid 1px black">
-                @if($employee->weight)
-                    {{ $employee->weight }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->weight)
+                        {{ $employee->weight }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="border-right: solid 1px black;text-align: center" class="gray">ZIP CODE</td>
             <td colspan="2">
-                @if($residential)
-                    {{ $residential->zip_code }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($residential)
+                        {{ $residential->zip_code }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
         </tr>
 
@@ -374,17 +392,19 @@
                 <div style="margin-top: 5px">9. BLOOD TYPE</div>
             </td>
             <td style="border-right: solid 1px black;width:25%">
-                @if($employee->blood_type)
-                    {{ $employee->blood_type }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->blood_type)
+                        {{ $employee->blood_type }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="border-right: solid 1px black;width: 17%;vertical-align: top !important;" class="gray">
                 <div style="margin-top: 5px">18. PERMANENT ADDRESS</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($permanent)
                         {{ $permanent->house_no }}
                     @else
@@ -394,7 +414,7 @@
                 <div style="border-top:solid 1px  gray">House/Block/Lot No.</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($permanent)
                         {{ $permanent->street }}
                     @else
@@ -407,15 +427,17 @@
         <tr>
             <td style="border-top: solid 1px black;border-right: solid 1px black" class="gray">10. GSIS ID No.</td>
             <td style="border-top: solid 1px black;border-right: solid 1px black;">
-                @if($employee->gsis_id_no)
-                    {{ $employee->gsis_id_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->gsis_id_no)
+                        {{ $employee->gsis_id_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="border-right: solid 1px black" class="gray"></td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($permanent)
                         {{ $permanent->subdivision_village }}
                     @else
@@ -425,7 +447,7 @@
                 <div style="border-top:solid 1px  gray">Subdivision/Village</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($permanent)
                         {{ $permanent->barangay }}
                     @else
@@ -437,10 +459,18 @@
         </tr>
         <tr>
             <td style="border-top:solid 1px black;border-right: solid 1px black;" class="gray">11. PAG-IBIG ID NO.</td>
-            <td style="border-top:solid 1px black;border-right:solid 1px black"></td>
+            <td style="border-top:solid 1px black;border-right:solid 1px black">
+                <div class="value">
+                    @if($employee->pagibig_id_no)
+                        {{ $employee->pagibig_id_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
+            </td>
             <td style="border-right: solid 1px black" class="gray"></td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($permanent)
                         {{ $permanent->city }}
                     @else
@@ -450,7 +480,7 @@
                 <div style="border-top:solid 1px  gray">City/Municipality</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
-                <div>
+                <div class="center-value">
                     @if($permanent)
                         {{ $permanent->province }}
                     @else
@@ -463,73 +493,89 @@
         <tr>
             <td style="border-top:solid 1px black;border-right: solid 1px black;" class="gray">12. PHILHEALTH NO.</td>
             <td style="border-top:solid 1px black;border-right:solid 1px black">
-                @if($employee->philhealth_no)
-                    {{ $employee->philhealth_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->philhealth_no)
+                        {{ $employee->philhealth_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="border-right: solid 1px black;text-align: center" class="gray">ZIP CODE</td>
             <td colspan="2" style="border-top:solid 1px black;">
-                @if($permanent)
-                    {{ $permanent->zip_code }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($permanent)
+                        {{ $permanent->zip_code }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
         </tr>
         <tr style="border-top:solid 1px black;">
             <td style="border-right: solid 1px black;" class="gray">13. SSS NO.</td>
             <td style="border-right:solid 1px black">
-                @if($employee->sss_no)
-                    {{ $employee->sss_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->sss_no)
+                        {{ $employee->sss_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="text-align: center;border-right: solid 1px black" class="gray">19. TELEPHONE NO.</td>
             <td colspan="2">
-                @if($employee->telephone_no)
-                    {{ $employee->telephone_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->telephone_no)
+                        {{ $employee->telephone_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
         </tr>
         <tr style="border-top:solid 1px black;">
             <td style="border-right: solid 1px black;" class="gray">14. TIN NO.</td>
             <td style="border-right:solid 1px black">
-                @if($employee->tin_no)
-                    {{ $employee->tin_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->tin_no)
+                        {{ $employee->tin_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="text-align: center;border-right: solid 1px black" class="gray">20. MOBILE NO.</td>
             <td colspan="2">
-                @if($employee->mobile_no)
-                    {{ $employee->mobile_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->mobile_no)
+                        {{ $employee->mobile_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
         </tr>
         <tr style="border-top:solid 1px black;">
             <td style="border-right: solid 1px black;" class="gray">15. AGENCY EMPLOYEE NO.</td>
             <td style="border-right:solid 1px black">
-                @if($employee->employee_no)
-                    {{ $employee->employee_no }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->employee_no)
+                        {{ $employee->employee_no }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
             <td style="text-align: center;border-right: solid 1px black" class="gray">21. E-MAIL ADDRESS (if any)</td>
             <td colspan="2">
-                @if($employee->email_address)
-                    {{ strtoupper($employee->email_address) }}
-                @else
-                    N/A
-                @endif
+                <div class="value">
+                    @if($employee->email_address)
+                        {{ strtoupper($employee->email_address) }}
+                    @else
+                        N/A
+                    @endif
+                </div>
             </td>
         </tr>
     </table>
@@ -543,15 +589,17 @@
         <tr>
             <td style="border-right: solid 1px black" class="gray">22. SPOUSE'S SURNAME</td>
             <td style="border-right: solid 1px black" colspan="2">
-                @if($family)
-                    @if($family->spouse_lname)
-                        {{ strtoupper($family->spouse_lname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->spouse_lname)
+                            {{ strtoupper($family->spouse_lname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
             <td style="font-size: 10.5px;border-right: solid 1px black" class="gray">
                 <div style="margin-top: 2px;font-size: 8px;text-align: center">23. NAME of CHILDREN (Write full name and
@@ -565,19 +613,21 @@
                 <div style="margin-left: 15px">FIRST NAME</div>
             </td>
             <td style="width: 25%;border-right: solid 1px black;">
-                @if($family)
-                    @if($family->spouse_fname)
-                        {{ strtoupper($family->spouse_fname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->spouse_fname)
+                            {{ strtoupper($family->spouse_fname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
             <td style="width: 17%;border-right: solid 1px black;" class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
-                <div>
+                <div class="value">
                     @if($family)
                         @if($family->spouse_ext_name)
                             {{ strtoupper($family->spouse_ext_name) }}
@@ -590,10 +640,14 @@
                 </div>
             </td>
             <td style="width: 25%;border-right: solid 1px black">
-                {{ $childrens[0]['name'] }}
+                <div class="center-value">
+                    {{ $childrens[0]['name'] }}
+                </div>
             </td>
             <td style="width: 13%">
-                {{ $childrens[0]['birthdate'] }}
+                <div class="center-value">
+                    {{ $childrens[0]['birthdate'] }}
+                </div>
             </td>
         </tr>
         <tr style="border-top: solid 1px black">
@@ -601,20 +655,22 @@
                 <div style="margin-left: 15px">MIDDLE NAME</div>
             </td>
             <td colspan="2" style="border-right: solid 1px black;">
-                @if($family)
-                    @if($family->spouse_mname)
-                        {{ strtoupper($family->spouse_mname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->spouse_mname)
+                            {{ strtoupper($family->spouse_mname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[1]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[1]['birthdate'] }}
             </td>
         </tr>
@@ -623,20 +679,22 @@
                 <div style="margin-left: 15px">OCCUPATION</div>
             </td>
             <td colspan="2" style="border-right: solid 1px black;">
-                @if($family)
-                    @if($family->spouse_occupation)
-                        {{ strtoupper($family->spouse_occupation) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->spouse_occupation)
+                            {{ strtoupper($family->spouse_occupation) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[2]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[2]['birthdate'] }}
             </td>
         </tr>
@@ -645,20 +703,22 @@
                 <div style="margin-left: 15px">EMPLOYER/BUSINESS NAME</div>
             </td>
             <td colspan="2" style="border-right: solid 1px black;">
-                @if($family)
-                    @if($family->spouse_employer)
-                        {{ strtoupper($family->spouse_employer) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->spouse_employer)
+                            {{ strtoupper($family->spouse_employer) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[3]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[3]['birthdate'] }}
             </td>
         </tr>
@@ -667,17 +727,19 @@
                 <div style="margin-left: 15px">BUSINESS ADDRESS</div>
             </td>
             <td colspan="2" style="border-right: solid 1px black;">
-                @if($family)
-                    @if($family->spouse_business_address)
-                        {{ strtoupper($family->spouse_business_address) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->spouse_business_address)
+                            {{ strtoupper($family->spouse_business_address) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[5]['name'] }}
             </td>
             <td style="width: 13%">
@@ -687,20 +749,22 @@
         <tr style="border-top:solid 1px black">
             <td style="border-right: solid 1px black" class="gray">24. FATHER'S SURNAME</td>
             <td style="border-right: solid 1px black" colspan="2">
-                @if($family)
-                    @if($family->father_lname)
-                        {{ strtoupper($family->father_lname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->father_lname)
+                            {{ strtoupper($family->father_lname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[6]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[6]['birthdate'] }}
             </td>
         </tr>
@@ -709,19 +773,21 @@
                 <div style="margin-left: 15px">FIRST NAME</div>
             </td>
             <td style="width: 25%;border-right: solid 1px black;">
-                @if($family)
-                    @if($family->father_fname)
-                        {{ strtoupper($family->father_fname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->father_fname)
+                            {{ strtoupper($family->father_fname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
             <td style="width: 17%;border-right: solid 1px black;" class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
-                <div>
+                <div class="value">
                     @if($family)
                         @if($family->father_ext_name)
                             {{ strtoupper($family->father_ext_name) }}
@@ -733,10 +799,10 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[7]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[7]['birthdate'] }}
             </td>
         </tr>
@@ -745,30 +811,32 @@
                 <div style="margin-left: 15px">MIDDLE NAME</div>
             </td>
             <td colspan="2" style="border-right: solid 1px black;">
-                @if($family)
-                    @if($family->father_mname)
-                        {{ strtoupper($family->father_mname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->father_mname)
+                            {{ strtoupper($family->father_mname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[8]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[8]['birthdate'] }}
             </td>
         </tr>
         <tr style="border-top:solid 1px black">
             <td style="border-right: solid 1px black" class="gray">25. MOTHER'S MAIDEN NAME</td>
             <td style="border-right: solid 1px black" colspan="2"></td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[9]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[9]['birthdate'] }}
             </td>
         </tr>
@@ -777,20 +845,22 @@
                 <div style="margin-left: 15px">SURNAME</div>
             </td>
             <td colspan="2" style="width: 25%;border-right: solid 1px black;">
-                @if($family)
-                    @if($family->mother_lname)
-                        {{ strtoupper($family->mother_lname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->mother_lname)
+                            {{ strtoupper($family->mother_lname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[10]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[10]['birthdate'] }}
             </td>
         </tr>
@@ -799,20 +869,22 @@
                 <div style="margin-left: 15px">FIRSTNAME</div>
             </td>
             <td colspan="2" style="width: 25%;border-right: solid 1px black;">
-                @if($family)
-                    @if($family->mother_fname)
-                        {{ strtoupper($family->mother_fname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->mother_fname)
+                            {{ strtoupper($family->mother_fname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
+            <td style="width: 25%;border-right: solid 1px black" class="center-value">
                 {{ $childrens[11]['name'] }}
             </td>
-            <td style="width: 13%">
+            <td style="width: 13%" class="center-value">
                 {{ $childrens[11]['birthdate'] }}
             </td>
         </tr>
@@ -821,15 +893,17 @@
                 <div style="margin-left: 15px">MIDDLE NAME</div>
             </td>
             <td colspan="2" style="border-right: solid 1px black;">
-                @if($family)
-                    @if($family->mother_mname)
-                        {{ strtoupper($family->mother_mname) }}
+                <div class="value">
+                    @if($family)
+                        @if($family->mother_mname)
+                            {{ strtoupper($family->mother_mname) }}
+                        @else
+                            N/A
+                        @endif
                     @else
                         N/A
                     @endif
-                @else
-                    N/A
-                @endif
+                </div>
             </td>
             <td colspan="2" style="color:red;font-weight:bold;text-align: center" class="gray">(Continue on separate
                 sheet if
@@ -869,13 +943,13 @@
         @foreach($educations as $education)
             <tr style="border-top: solid 1px  black">
                 <td style="width: 20%;border-right: solid 1px black" class="gray">{{ $education['level'] }}</td>
-                <td style="width: 25%;border-right: solid 1px black">{{ strtoupper($education['school_name']) }}</td>
-                <td style="width: 20%;border-right: solid 1px black">{{ strtoupper($education['education_degree']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ $education['attendance_from'] }}</td>
-                <td style="width: 7%;border-right: solid 1px black">{{ $education['attendance_to'] }}</td>
-                <td style="width: 8%;border-right: solid 1px black">{{ strtoupper($education['highest_level']) }}</td>
-                <td style="width: 6%;border-right: solid 1px black">{{ $education['year_graduated'] }}</td>
-                <td style="width: 7%;">{{ $education['scholarship'] }}</td>
+                <td style="width: 25%;border-right: solid 1px black" class="center-value">{{ strtoupper($education['school_name']) }}</td>
+                <td style="width: 20%;border-right: solid 1px black" class="center-value">{{ strtoupper($education['education_degree']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $education['attendance_from'] }}</td>
+                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $education['attendance_to'] }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($education['highest_level']) }}</td>
+                <td style="width: 6%;border-right: solid 1px black" class="center-value">{{ $education['year_graduated'] }}</td>
+                <td style="width: 7%;" class="center-value">{{ $education['scholarship'] }}</td>
             </tr>
         @endforeach
         <tr>
