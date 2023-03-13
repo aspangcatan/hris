@@ -149,6 +149,7 @@
     @include('modals.learning')
     @include('modals.reference')
     @include('modals.other_information')
+    @include('modals.print')
 @stop
 @section('js')
     @include('js.profile')

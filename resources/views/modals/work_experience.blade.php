@@ -26,10 +26,18 @@
                         <label>Company</label>
                     </div>
                     <div class="form-floating mb-3">
+                        <select class="form-control" id="work_current_work">
+                            <option value="" selected></option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                        <label>Is this your current work? (Y/N)</label>
+                    </div>
+                    <div class="form-floating mb-3">
                         <input type="date" class="form-control" id="work_from" placeholder="">
                         <label>From</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-3" id="to_container">
                         <input type="date" class="form-control" id="work_to" placeholder="">
                         <label>To</label>
                     </div>
@@ -39,7 +47,7 @@
                     </div>
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="work_salary_grade" placeholder="">
-                        <label>Salary Grade</label>
+                        <label>Salary Grade (e.g. Step-Increment format (00-0))</label>
                     </div>
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="work_appointment_status" placeholder="">
@@ -51,15 +59,7 @@
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
-                        <label>Government Service (Y/N)</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                        <select class="form-control" id="work_current_work">
-                            <option value="" selected></option>
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                        <label>Current Work (Y/N)</label>
+                        <label>Is this government service (Y/N)</label>
                     </div>
                 </div>
                 <div class="text-center mt-4">

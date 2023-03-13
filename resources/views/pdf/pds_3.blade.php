@@ -128,7 +128,7 @@
             </td>
             <td style="width:32%;border-right: solid 1px black"></td>
             <td style="width:20%;border-right: solid 1px black;text-align: center;font-weight: bold" class="gray">DATE</td>
-            <td style="width: 24%;"></td>
+            <td style="width: 24%;text-align: center;font-weight: bold">{{ $pds_date }}</td>
         </tr>
     </table>
 </div>

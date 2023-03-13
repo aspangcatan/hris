@@ -11,7 +11,7 @@ $template = "http://" . $_SERVER['SERVER_NAME'] . "/template";
     <link rel="icon" href="{{ $template }}/images/favicon.png" sizes="16x16" type="image/png">
     <meta name="description" content=""/>
 
-    <title>CSMC E-Prescription</title>
+    <title>CSMC HRIS</title>
 
     <!-- Bootstrap core CSS -->
     <link href="{{ $template }}/css/bootstrap.css" rel="stylesheet">

@@ -51,6 +51,7 @@
     const learning_modal = new bootstrap.Modal(document.getElementById('learning_modal'));
     const reference_modal = new bootstrap.Modal(document.getElementById('reference_modal'));
     const other_information_modal = new bootstrap.Modal(document.getElementById('other_information_modal'));
+    const print_modal = new bootstrap.Modal(document.getElementById('print_modal'));
 
     let children_id = 0;
     let civil_service_id = 0;
@@ -89,9 +90,26 @@
             }
         });
 
+        $("#work_current_work").change(function () {
+            $("#to_container").removeClass("d-none");
+            if ($(this).val() == "1") {
+                $("#to_container").addClass("d-none");
+            }
+        });
+
         $("#btn_print_pds").click(function () {
+            print_modal.toggle();
+        });
+
+        $("#btn_confirm_print").click(function () {
+            let date = $("#pds_date").val();
+            if (date == "") {
+                alert("Indicate date");
+                return;
+            }
+            date = moment(date).format("MM/DD/YYYY");
             window.open(
-                '{{ route('printPds') }}?id=0',
+                '{{ route('printPds') }}?id=0&pds_date=' + date,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
@@ -228,87 +246,87 @@
                 $("#form_lname").addClass("is-invalid");
             }
 
-            if (birthdate == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Date of birth is required</li>");
-                $("#form_birthdate").addClass("is-invalid");
-            }
+            // if (birthdate == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Date of birth is required</li>");
+            //     $("#form_birthdate").addClass("is-invalid");
+            // }
+            //
+            // if (birthplace == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Place of birth is required</li>");
+            //     $("#form_birthplace").addClass("is-invalid");
+            // }
+            //
+            // if (sex == "" || sex === null) {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Sex is required</li>");
+            //     $("#form_sex").addClass("is-invalid");
+            // }
+            //
+            // if (!civil_status) {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Civil status is required</li>");
+            //     $("#form_civil_status").addClass("is-invalid");
+            // }
+            //
+            // if (height == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Height is required</li>");
+            //     $("#form_height").addClass("is-invalid");
+            // }
+            //
+            // if (weight == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Weight is required</li>");
+            //     $("#form_weight").addClass("is-invalid");
+            // }
+            //
+            // if (blood_type === null || blood_type == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Blood type is required</li>");
+            //     $("#form_blood_type").addClass("is-invalid");
+            // }
+            //
+            // if (employee_no == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Agency Employee No. is required</li>");
+            //     $("#form_employee_no").addClass("is-invalid");
+            // }
+            //
+            // if (telephone_no == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Telephone No. is required</li>");
+            //     $("#form_telephone_no").addClass("is-invalid");
+            // }
+            //
+            // if (mobile_no == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Mobile No. is required</li>");
+            //     $("#form_mobile_no").addClass("is-invalid");
+            // }
+            //
+            // if (email_address == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Email address is required</li>");
+            //     $("#form_email_address").addClass("is-invalid");
+            // }
 
-            if (birthplace == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Place of birth is required</li>");
-                $("#form_birthplace").addClass("is-invalid");
-            }
-
-            if (sex == "" || sex === null) {
-                is_valid = false;
-                $(".error_list").append("<li>Sex is required</li>");
-                $("#form_sex").addClass("is-invalid");
-            }
-
-            if (!civil_status) {
-                is_valid = false;
-                $(".error_list").append("<li>Civil status is required</li>");
-                $("#form_civil_status").addClass("is-invalid");
-            }
-
-            if (height == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Height is required</li>");
-                $("#form_height").addClass("is-invalid");
-            }
-
-            if (weight == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Weight is required</li>");
-                $("#form_weight").addClass("is-invalid");
-            }
-
-            if (blood_type === null || blood_type == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Blood type is required</li>");
-                $("#form_blood_type").addClass("is-invalid");
-            }
-
-            if (employee_no == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Agency Employee No. is required</li>");
-                $("#form_employee_no").addClass("is-invalid");
-            }
-
-            if (telephone_no == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Telephone No. is required</li>");
-                $("#form_telephone_no").addClass("is-invalid");
-            }
-
-            if (mobile_no == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Mobile No. is required</li>");
-                $("#form_mobile_no").addClass("is-invalid");
-            }
-
-            if (email_address == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Email address is required</li>");
-                $("#form_email_address").addClass("is-invalid");
-            }
-
-            if (citizenship == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Citizenship is required</li>");
-            }
-
-            if (citizenship != "" && citizenship_type == "") {
-                $(".error_list").append("<li>Please specify citizenship type</li>");
-                is_valid = false;
-            }
-
-            if (citizenship_type && citizenship_country == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Citizenship country is required</li>");
-                $("#form_citizenship_country").addClass("is-invalid");
-            }
+            // if (citizenship == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Citizenship is required</li>");
+            // }
+            //
+            // if (citizenship != "" && citizenship_type == "") {
+            //     $(".error_list").append("<li>Please specify citizenship type</li>");
+            //     is_valid = false;
+            // }
+            //
+            // if (citizenship_type && citizenship_country == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Citizenship country is required</li>");
+            //     $("#form_citizenship_country").addClass("is-invalid");
+            // }
 
             if (!is_valid) {
                 $("#personal_information_error").removeClass("d-none");
@@ -372,16 +390,16 @@
             const permanent_zipcode = $("#permanent_zipcode").val().trim();
 
 
-            if (residential_street == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Residential street is required</li>");
-                $("#form_fname").addClass("is-invalid");
-            }
-            if (residential_barangay == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Residential barangay is required</li>");
-                $("#form_fname").addClass("is-invalid");
-            }
+            // if (residential_street == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Residential street is required</li>");
+            //     $("#form_fname").addClass("is-invalid");
+            // }
+            // if (residential_barangay == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Residential barangay is required</li>");
+            //     $("#form_fname").addClass("is-invalid");
+            // }
 
             if (residential_city == "") {
                 is_valid = false;
@@ -395,23 +413,23 @@
                 $("#form_fname").addClass("is-invalid");
             }
 
-            if (residential_zipcode == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Residential zipcode is required</li>");
-                $("#form_fname").addClass("is-invalid");
-            }
+            // if (residential_zipcode == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Residential zipcode is required</li>");
+            //     $("#form_fname").addClass("is-invalid");
+            // }
 
 
-            if (permanent_street == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Permanent street is required</li>");
-                $("#form_fname").addClass("is-invalid");
-            }
-            if (permanent_barangay == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Permanent barangay is required</li>");
-                $("#form_fname").addClass("is-invalid");
-            }
+            // if (permanent_street == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Permanent street is required</li>");
+            //     $("#form_fname").addClass("is-invalid");
+            // }
+            // if (permanent_barangay == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Permanent barangay is required</li>");
+            //     $("#form_fname").addClass("is-invalid");
+            // }
 
             if (permanent_city == "") {
                 is_valid = false;
@@ -425,11 +443,11 @@
                 $("#form_fname").addClass("is-invalid");
             }
 
-            if (permanent_zipcode == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Permanent zipcode is required</li>");
-                $("#form_fname").addClass("is-invalid");
-            }
+            // if (permanent_zipcode == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Permanent zipcode is required</li>");
+            //     $("#form_fname").addClass("is-invalid");
+            // }
 
             if (!is_valid) {
                 $("#address_error").removeClass("d-none");
@@ -483,35 +501,35 @@
             const mother_lname = $("#mother_lname").val().trim();
             const mother_ext_name = $("#mother_ext_name").val().trim();
 
-            if (spouse_fname == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Spouse firstname is required</li>");
-            }
-
-            if (spouse_lname == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Spouse lastname is required</li>");
-            }
-
-            if (father_fname == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Father firstname is required</li>");
-            }
-
-            if (father_lname == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Father lastname is required</li>");
-            }
-
-            if (mother_fname == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Mother firstname is required</li>");
-            }
-
-            if (mother_lname == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Mother firstname is required</li>");
-            }
+            // if (spouse_fname == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Spouse firstname is required</li>");
+            // }
+            //
+            // if (spouse_lname == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Spouse lastname is required</li>");
+            // }
+            //
+            // if (father_fname == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Father firstname is required</li>");
+            // }
+            //
+            // if (father_lname == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Father lastname is required</li>");
+            // }
+            //
+            // if (mother_fname == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Mother firstname is required</li>");
+            // }
+            //
+            // if (mother_lname == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Mother firstname is required</li>");
+            // }
 
             if (!is_valid) {
                 $("#family_background_error").removeClass("d-none");
@@ -653,20 +671,20 @@
                 $(".error_list").append("<li>Attendance to is required</li>");
             }
 
-            if (highest_level == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Highest level is required, put 'N/A' if not applicable</li>");
-            }
+            // if (highest_level == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Highest level is required, put 'N/A' if not applicable</li>");
+            // }
 
             if (year_graduated == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Year graduated is required</li>");
             }
 
-            if (scholarship == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Scholarship is required, put 'N/A' if not applicable</li>");
-            }
+            // if (scholarship == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Scholarship is required, put 'N/A' if not applicable</li>");
+            // }
 
             if (!is_valid) {
                 $("#education_error").removeClass("d-none");
@@ -772,7 +790,7 @@
                 $(".error_list").append("<li>Working From is required</li>");
             }
 
-            if (working_to == "") {
+            if (working_to == "" && is_current_work != "1") {
                 is_valid = false;
                 $(".error_list").append("<li>Working To is required</li>");
             }
@@ -808,7 +826,7 @@
                 position: position,
                 agency: agency,
                 working_from: working_from,
-                working_to: working_to,
+                working_to: (is_current_work == "1") ? working_from : working_to,
                 monthly_salary: monthly_salary,
                 salary_grade: salary_grade,
                 appointment_status: appointment_status,

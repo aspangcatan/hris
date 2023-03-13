@@ -507,11 +507,8 @@
                             Signature
                             (Sign inside the box)
                         </div>
-                        <div style="color: white">N/A</div>
-                        <div class="gray"
-                             style="text-align: center;border-top:solid 1px black;border-bottom: solid 1px black">Date
-                            Accomplished
-                        </div>
+                        <div style="text-align: center;font-weight: bold">{{ $pds_date }}</div>
+                        <div class="gray" style="text-align: center;border-top:solid 1px black;border-bottom: solid 1px black">Date Accomplished</div>
                     </div>
                 </td>
             </tr>

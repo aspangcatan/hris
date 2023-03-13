@@ -361,7 +361,7 @@ class PrintController extends Controller
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
-                'reference' => $references]);
+                'reference' => $references,'pds_date'=>$request->pds_date]);
 
             return $pdf->stream('invoice.pdf', array("Attachment" => false));
 
