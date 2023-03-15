@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Auth;
 
 class FamilyBackgroundController extends Controller
 {
-    //
     public function getFamilyBackground(Request $request)
     {
         try {

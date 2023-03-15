@@ -1,6 +1,6 @@
 <div class="modal fade" id="employee_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-body m-0 p-0">
                 <section class="section profile">
@@ -90,6 +90,11 @@
                                                 Survey
                                             </button>
                                         </li>
+                                        <li class="nav-item">
+                                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#service_records">
+                                                Service Records
+                                            </button>
+                                        </li>
                                     </ul>
                                     <div class="tab-content pt-2">
                                         <div class="tab-pane fade pt-3" id="personal_information">
@@ -124,6 +129,9 @@
                                         </div>
                                         <div class="tab-pane fade pt-3" id="survey">
                                             @include('forms.survey')
+                                        </div>
+                                        <div class="tab-pane fade pt-3" id="service_records">
+                                            @include('forms.service_record')
                                         </div>
                                     </div><!-- End Bordered Tabs -->
                                 </div>

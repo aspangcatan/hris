@@ -47,6 +47,7 @@
         </div>
     </div>
     @include('modals.employee')
+    @include('modals.service_record')
 @stop
 @section('js')
     @include('js.employee')

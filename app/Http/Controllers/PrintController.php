@@ -12,6 +12,7 @@ use App\Models\Learning;
 use App\Models\Membership;
 use App\Models\Recognition;
 use App\Models\Reference;
+use App\Models\ServiceRecords;
 use App\Models\Skill;
 use App\Models\Survey;
 use App\Models\User;
@@ -23,6 +24,19 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PrintController extends Controller
 {
+    public function printServiceRecord(Request $request)
+    {
+        $user = User::find($request->id);
+        $employee = Employee::where('user_id', $request->id)->first();
+        if (!$employee) {
+            return "Ooops something went wrong";
+        }
+
+        $results = ServiceRecords::where('user_id', $request->id)->get();
+        $pdf = Pdf::loadView('pdf.service_record', ['records' => $results, 'employee' => $employee, 'user' => $user]);
+        return $pdf->stream('service_record.pdf', array("Attachment" => false));
+    }
+
     public function printPds(Request $request)
     {
         try {
@@ -361,15 +375,9 @@ class PrintController extends Controller
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
-                'reference' => $references,'pds_date'=>$request->pds_date]);
+                'reference' => $references, 'pds_date' => $request->pds_date]);
 
             return $pdf->stream('invoice.pdf', array("Attachment" => false));
-
-//            return view('pdf.pds', ['user' => $user, 'employee' => $employee,
-//                'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
-//                'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
-//                'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
-//                'reference' => $references]);
         } catch (\Exception $exception) {
             return $exception->getMessage();
         }

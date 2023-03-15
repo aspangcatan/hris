@@ -9,6 +9,7 @@
 @include('js.reference')
 @include('js.other_information')
 @include('js.survey')
+@include('js.service_record')
 <script>
     const SURVEYS = [
         {question: "within the third degree?", id: "survey_1"},
@@ -41,7 +42,10 @@
     ];
 
     const employee_modal = new bootstrap.Modal(document.getElementById('employee_modal'));
+    const service_records_modal = new bootstrap.Modal(document.getElementById('service_records_modal'));
+
     let employee_id = 0;
+    let service_id = 0;
     let page = 0;
     //FLAGS
     let is_personal_loaded = false;
@@ -55,6 +59,7 @@
     let is_other_loaded = false;
     let is_reference_loaded = false;
     let is_survey_loaded = false;
+    let is_service_loaded = false;
 
     $(document).ready(function () {
 
@@ -64,6 +69,10 @@
             } else {
                 $(".dual-citizenship-container").removeClass("d-none");
             }
+        });
+
+        $("#btn_add_service_record").click(function () {
+            service_records_modal.toggle();
         });
 
         $("#btn_search").click(function () {
@@ -100,6 +109,89 @@
             }
 
             updateEmployeeStatus({user_id: employee_id, employee_type: employee_type})
+        });
+
+        $("#btn_save_service").click(function () {
+            let is_valid = true;
+            $("#service_error").addClass("d-none");
+            $(".is-invalid").removeClass("is-invalid");
+            $(".error_list").empty();
+
+            const date_from = $("#service_from").val();
+            const date_to = $("#service_to").val();
+            const current_work = 0;
+            const designation = $("#service_designation").val().trim();
+            const appointment_status = $("#service_status").val();
+            const monthly_salary = $("#service_salary").val();
+            const office_assignment = $("#service_office").val().trim();
+            const leave_absence = $("#service_leave").val();
+            const separation = $("#service_separation").val().trim();
+
+            if (date_from == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Date from is required</li>");
+                $("#service_from").addClass("is-invalid");
+            }
+
+            if (date_to == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Date to is required</li>");
+                $("#service_to").addClass("is-invalid");
+            }
+
+            if (designation == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Designation is required</li>");
+                $("#service_designation").addClass("is-invalid");
+            }
+
+            if (appointment_status == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Appointment status is required</li>");
+                $("#service_status").addClass("is-invalid");
+            }
+
+            if (monthly_salary == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Monthly salary is required</li>");
+                $("#service_salary").addClass("is-invalid");
+            }
+
+            if (office_assignment == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Office of assignment is required</li>");
+                $("#service_office").addClass("is-invalid");
+            }
+
+            if (!is_valid) {
+                $("#service_error").removeClass("d-none");
+                $("#service_records_modal").animate({scrollTop: $('#service_records_modal #service_error').offset().top}, 200);
+                return;
+            }
+
+            const params = {
+                id: service_id,
+                user_id: employee_id,
+                date_from: date_from,
+                date_to: date_to,
+                current_work: current_work,
+                designation: designation,
+                appointment_status: appointment_status,
+                monthly_salary: monthly_salary,
+                office_assignment: office_assignment,
+                leave_absence: leave_absence,
+                separation: separation
+            }
+
+            insertUpdateServiceRecords(params);
+        });
+
+
+        $("#btn_print_service_records").click(function () {
+            window.open(
+                '{{ route('printServiceRecord') }}?id=' + employee_id,
+                '_blank' // <- This is what makes it open in a new window.
+            );
         });
 
         $("#btn_print_pds").click(function () {
@@ -141,12 +233,38 @@
                 case "#survey":
                     getSurvey(employee_id);
                     break;
+                case "#service_records":
+                    getServiceRecords(employee_id);
+                    break;
             }
         });
 
         getEmployee({fname: "", lname: "", page: page});
-
     });
+
+    function editService(id) {
+        service_id = id;
+
+        const date_from = $("#service_" + id + " td:eq(0)").text();
+        const date_to = $("#service_" + id + " td:eq(1)").text();
+        const designation = $("#service_" + id + " td:eq(2)").text();
+        const status = $("#service_" + id + " td:eq(3)").text();
+        const monthly_salary = $("#service_" + id + " td:eq(4)").text();
+        const office_assignment = $("#service_" + id + " td:eq(5)").text();
+        const leave_absence = $("#service_" + id + " td:eq(6)").text();
+        const separation = $("#service_" + id + " td:eq(7)").text();
+
+        $("#service_from").val(moment(date_from,"MM/DD/YYYY").format("YYYY-MM-DD"));
+        $("#service_to").val(moment(date_to,"MM/DD/YYYY").format("YYYY-MM-DD"));
+        $("#service_designation").val(designation);
+        $("#service_status").val(status);
+        $("#service_salary").val(monthly_salary);
+        $("#service_office").val(office_assignment);
+        $("#service_leave").val(leave_absence);
+        $("#service_separation").val(separation);
+
+        service_records_modal.toggle();
+    }
 
     function editEmployee(id) {
         employee_id = id;

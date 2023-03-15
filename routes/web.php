@@ -24,15 +24,14 @@ Route::get('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
-Route::get('/view_pds', function () {
-    return view('pdf.pds');
-});
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 
 Route::group(['middleware' => 'auth'], function () {
     #PRINTING
     Route::get('/pds', [\App\Http\Controllers\PrintController::class, 'printPds'])->name('printPds');
+    Route::get('/service_records', [\App\Http\Controllers\PrintController::class, 'printServiceRecord'])->name('printServiceRecord');
+
     #NAVIGATION
     Route::get('/profile', function () {
         return view('profile');
@@ -89,4 +88,8 @@ Route::group(['middleware' => 'auth'], function () {
 #SURVEYS
     Route::get('/survey/get', [\App\Http\Controllers\SurveyController::class, 'getSurvey'])->name('getSurvey');
     Route::post('/survey/update', [\App\Http\Controllers\SurveyController::class, 'insertUpdateSurveys'])->name('insertUpdateSurvey');
+#SERVICE RECORDS
+    Route::get('/service_records/get', [\App\Http\Controllers\ServiceRecordsController::class, 'getServiceRecords'])->name('getServiceRecords');
+    Route::post('/service_records/update', [\App\Http\Controllers\ServiceRecordsController::class, 'insertUpdateServiceRecords'])->name('insertUpdateServiceRecords');
+    Route::delete('/service_records/delete', [\App\Http\Controllers\ServiceRecordsController::class, 'deleteServiceRecords'])->name('deleteServiceRecords');
 });
