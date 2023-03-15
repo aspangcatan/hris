@@ -84,7 +84,7 @@
                 <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['working_to']) }}</td>
                 <td style="width: 22%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['position']) }}</td>
                 <td style="width: 26%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['agency']) }}</td>
-                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['monthly_salary']) }}</td>
+                <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ number_format($key['monthly_salary'],2) }}</td>
                 <td style="width: 8%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['salary_grade']) }}</td>
                 <td style="width: 12%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['appointment_status']) }}</td>
                 <td style="width: 8%;" class="center-value">{{ strtoupper($key['is_government']) }}</td>
