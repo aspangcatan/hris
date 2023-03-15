@@ -222,7 +222,7 @@ class PrintController extends Controller
                     $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('m/d/Y', strtotime($work_experience[$i]->working_to));
                     $work_column_3 = $work_experience[$i]->position;
                     $work_column_4 = $work_experience[$i]->agency;
-                    $work_column_5 = $work_experience[$i]->monthly_salary;
+                    $work_column_5 = number_format($work_experience[$i]->monthly_salary,2);
                     $work_column_6 = $work_experience[$i]->salary_grade;
                     $work_column_7 = $work_experience[$i]->appointment_status;
                     $work_column_8 = ($work_experience[$i]->is_government == 1) ? "Y" : "N";
