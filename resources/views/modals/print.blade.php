@@ -23,3 +23,29 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="print_service_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-center">
+                <div class="p-3 w-100 text-center">
+                    <i class="bi bi-printer text-white" style="font-size: 80px;"></i>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="text-secondary font-weight-bold fs-4 text-center">PRINT SERVICE RECORD</div>
+                <div class="mt-3 text-secondary fs-5">
+                    <div class="form-floating mb-3">
+                        <input type="number" class="form-control" id="records_row" placeholder="">
+                        <label>Number of rows</label>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-lg btn-success" id="btn_confirm_print_records">PRINT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

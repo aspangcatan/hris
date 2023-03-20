@@ -91,52 +91,7 @@
     </style>
 </head>
 <body>
-<img src="img/letter_head_banner.png"/>
-<div class="text-center fw-bold title" style="margin-top:-40px">
-    <span class="b-b">SERVICE RECORD</span>
-</div>
-<div style="margin-left: 10px;margin-right: 10px">
-    <table class="text-center">
-        <tr>
-            <td class="text-left" style="width: 9%">
-                <div>NAME:</div>
-            </td>
-            <td style="width: 21%">
-                <div class="text-name">{{ strtoupper($user->lname) }}</div>
-                <div>(SURNAME)</div>
-            </td>
-            <td style="width: 30%">
-                <div class="text-name">{{ strtoupper($user->fname) }}</div>
-                <div>(GIVEN NAME)</div>
-            </td>
-            <td style="width: 20%">
-                <div class="text-name">{{ strtoupper($user->mname) }}</div>
-                <div>(MIDDLE NAME)</div>
-            </td>
-            <td style="width: 20%"></td>
-        </tr>
-        <tr>
-            <td class="text-left">
-                <div class="mt-1">BIRTHDATE:</div>
-            </td>
-            <td>
-                <div class="mt-1">{{ date('F j, Y', strtotime($employee->birthdate)) }}</div>
-            </td>
-            <td class="text-left">
-                <div class="mt-1">
-                    PLACE OF BIRTH:
-                    <span style="margin-left: 20px">{{ strtoupper($employee->birthplace) }}</span>
-                </div>
-            </td>
-            <td colspan="2"></td>
-        </tr>
-    </table>
-    <div style="margin-top: 40px">
-        THIS IS TO CERTIFY that the employee herein actually rendered services in this Office as shown by the Service
-        Record below, each line which is supporting<br/>
-        appointment and other papers actually issued by this Office and approved by the authorities concerned.
-    </div>
-</div>
+@include('pdf.service_records_header');
 <div style="padding-left: 10px;padding-right: 10px;padding-top: 5px">
     <table class="border-dark">
         <tr class="text-v-center text-center">
@@ -152,7 +107,7 @@
             <td class="b-b b-r">From</td>
             <td class="b-b b-r">To</td>
         </tr>
-        @foreach($records as $data)
+        @foreach($service_records as $data)
             <tr class="text-center text-v-center">
                 <td class="b-b b-r">{{ date('m/d/Y', strtotime($data['date_from'])) }}</td>
                 <td class="b-b b-r">{{ date('m/d/Y', strtotime($data['date_to'])) }}</td>
@@ -165,28 +120,13 @@
             </tr>
         @endforeach
     </table>
-
-    <div class="mt-1">
-        Issued in compliance with Executive Order No. 54 dated August 10,1954 and in accordance with Circular No. 58
-        dated August 10, 1954 of the system.
-    </div>
-    <div style="margin-top:20px">DATE ISSUED: February 20, 2023</div>
-
-    <table style="margin-top: 40px">
-        <tr>
-            <td style="width: 40%">
-                <div style="margin-bottom: 30px">Certified Correct:</div>
-                <div class="fw-bold">RACHEL C. JALUAG</div>
-                <div>Supervising Administrative Officer/HRM Officer</div>
-            </td>
-            <td style="width: 60%">
-                <div style="margin-bottom: 30px">Approved by:</div>
-                <div class="fw-bold">AGUSTIN D. AGOS, JR, MD, FPSGS, FPCS, DODT, Ph.D.OD,RODC</div>
-                <div>Medical Center Chief II</div>
-            </td>
-        </tr>
-    </table>
+    @if(count($next_page_service) > 0)
+        @for($i=0; $i<count($next_page_service); $i++)
+            <div style="page-break-before: always !important;"></div>
+            @include('pdf.service_records_body',['service_records'=>$next_page_service[$i]])
+        @endfor
+    @endif
+    @include('pdf.service_records_footer')
 </div>
-
 </body>
 </html>

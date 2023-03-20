@@ -32,8 +32,38 @@ class PrintController extends Controller
             return "Ooops something went wrong";
         }
 
-        $results = ServiceRecords::where('user_id', $request->id)->get();
-        $pdf = Pdf::loadView('pdf.service_record', ['records' => $results, 'employee' => $employee, 'user' => $user]);
+        $service_records = ServiceRecords::where('user_id', $request->id)->get();
+        $next_page_service_outer_array = [];
+        $next_page_service_inner_array = [];
+        $outer_counter = 0;
+        $counter = 0;
+
+        $service_array = [];
+
+        if(count($service_records) < $request->rows){
+            $service_array[] = $service_records;
+        }else{
+            for($i=0; $i<$request->rows; $i++){
+                $service_array[$i] = $service_records[$i];
+            }
+
+            for ($i = $request->rows; $i < count($service_records); $i++) {
+                if ($counter % $request->rows == 0 && $counter > 0) {
+                    $next_page_service_outer_array[$outer_counter++] = $next_page_service_inner_array;
+                    $counter = 0;
+                    $next_page_service_inner_array = [];
+                }
+
+                $next_page_service_inner_array[$counter++] = $service_records[$i];
+
+                #CHECK IF LAST LOOP
+                if ($i == count($service_records) - 1) {
+                    $next_page_service_outer_array[$outer_counter++] = $next_page_service_inner_array;
+                }
+            }
+        }
+
+        $pdf = Pdf::loadView('pdf.service_record', ['service_records' => $service_array, 'next_page_service' => $next_page_service_outer_array, 'employee' => $employee, 'user' => $user]);
         return $pdf->stream('service_record.pdf', array("Attachment" => false));
     }
 
@@ -222,7 +252,7 @@ class PrintController extends Controller
                     $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('m/d/Y', strtotime($work_experience[$i]->working_to));
                     $work_column_3 = $work_experience[$i]->position;
                     $work_column_4 = $work_experience[$i]->agency;
-                    $work_column_5 = number_format($work_experience[$i]->monthly_salary,2);
+                    $work_column_5 = number_format($work_experience[$i]->monthly_salary, 2);
                     $work_column_6 = $work_experience[$i]->salary_grade;
                     $work_column_7 = $work_experience[$i]->appointment_status;
                     $work_column_8 = ($work_experience[$i]->is_government == 1) ? "Y" : "N";

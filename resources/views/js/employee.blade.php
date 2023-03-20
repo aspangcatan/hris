@@ -43,6 +43,7 @@
 
     const employee_modal = new bootstrap.Modal(document.getElementById('employee_modal'));
     const service_records_modal = new bootstrap.Modal(document.getElementById('service_records_modal'));
+    const print_service_modal = new bootstrap.Modal(document.getElementById('print_service_modal'));
 
     let employee_id = 0;
     let service_id = 0;
@@ -188,8 +189,18 @@
 
 
         $("#btn_print_service_records").click(function () {
+            $("#records_row").val("15");
+            print_service_modal.toggle();
+        });
+
+        $("#btn_confirm_print_records").click(function () {
+            const rows = $("#records_row").val();
+            if (rows == "") {
+                return "If blank kindly set back to 15";
+            }
+
             window.open(
-                '{{ route('printServiceRecord') }}?id=' + employee_id,
+                '{{ route('printServiceRecord') }}?id=' + employee_id + "&rows=" + rows,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
@@ -254,8 +265,8 @@
         const leave_absence = $("#service_" + id + " td:eq(6)").text();
         const separation = $("#service_" + id + " td:eq(7)").text();
 
-        $("#service_from").val(moment(date_from,"MM/DD/YYYY").format("YYYY-MM-DD"));
-        $("#service_to").val(moment(date_to,"MM/DD/YYYY").format("YYYY-MM-DD"));
+        $("#service_from").val(moment(date_from, "MM/DD/YYYY").format("YYYY-MM-DD"));
+        $("#service_to").val(moment(date_to, "MM/DD/YYYY").format("YYYY-MM-DD"));
         $("#service_designation").val(designation);
         $("#service_status").val(status);
         $("#service_salary").val(monthly_salary);

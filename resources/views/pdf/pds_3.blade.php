@@ -135,6 +135,7 @@
 <div style="text-align: right">
     CS FORM 212 (Revised 2017), Page 3 of 4
 </div>
+
 @if(count($next_page_learning) > 0)
     @for($i=0; $i<count($next_page_learning); $i++)
         <div style="page-break-before: always !important;"></div>

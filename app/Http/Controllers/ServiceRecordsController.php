@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
 use App\Models\ServiceRecords;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class ServiceRecordsController extends Controller
 {
