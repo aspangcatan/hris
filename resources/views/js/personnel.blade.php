@@ -133,7 +133,6 @@
                 $("#btn_next").addClass("d-none");
                 $("#employee_list").empty();
                 if (data.results.length < 1) {
-
                     $("#employee_list").append("<tr><td colspan='6'>No record found</td></tr>");
                     return;
                 }

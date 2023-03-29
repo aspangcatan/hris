@@ -41,6 +41,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('employee');
     })->name('employee');
 
+    Route::get('/leave', function () {
+        return view('leave');
+    })->name('leave');
+
     #EMPLOYEE
     Route::get('/employee/get', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails'])->name('getEmployeeDetails');
     Route::get('/employee/get/list', [\App\Http\Controllers\EmployeeController::class, 'getEmployee'])->name('getEmployee');

@@ -41,7 +41,7 @@ class PrintController extends Controller
         $service_array = [];
 
         if(count($service_records) < $request->rows){
-            $service_array[] = $service_records;
+            $service_array = $service_records;
         }else{
             for($i=0; $i<$request->rows; $i++){
                 $service_array[$i] = $service_records[$i];
