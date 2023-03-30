@@ -55,7 +55,11 @@
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
                             <div class="value">
-                                {{ $survey[1]['details'] }}
+                                @if($survey[1]['details'])
+                                    {{ $survey[1]['details'] }}
+                                @else
+                                    N/A
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -87,7 +91,11 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            {{ $survey[2]['details'] }}
+                            @if($survey[2]['details'])
+                                {{ $survey[2]['details'] }}
+                            @else
+                                N/A
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -120,7 +128,11 @@
                                 <td style="width: 40%;text-align: right">Date Filed:</td>
                                 <td style="border-bottom: solid 1px black">
                                     <div class="value">
-                                        {{ $survey[3]['details'] }}
+                                        @if($survey[3]['details'])
+                                            {{ $survey[3]['details'] }}
+                                        @else
+                                            N/A
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -128,7 +140,11 @@
                                 <td style=";text-align: right">Status of Case/s:</td>
                                 <td style="border-bottom: solid 1px black">
                                     <div class="value">
-                                        {{ $survey[3]['extra'] }}
+                                        @if($survey[3]['extra'])
+                                            {{ $survey[3]['extra'] }}
+                                        @else
+                                            N/A
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -162,7 +178,13 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            <div class="value">{{ $survey[4]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[4]['details'])
+                                    {{ $survey[4]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -195,7 +217,13 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            <div class="value">{{ $survey[5]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[5]['details'])
+                                    {{ $survey[5]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -226,7 +254,13 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            <div class="value">{{ $survey[6]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[6]['details'])
+                                    {{ $survey[6]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -258,7 +292,13 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details:</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            <div class="value">{{ $survey[7]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[7]['details'])
+                                    {{ $survey[7]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -289,7 +329,13 @@
                     <div style="margin-left: 5px;margin-top:5px">
                         <div>If YES, give details (country):</div>
                         <div style="border-bottom: solid 1px black;width: 98%">
-                            <div class="value">{{ $survey[8]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[8]['details'])
+                                    {{ $survey[8]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -328,7 +374,13 @@
                     <tr>
                         <td style="width: 63%">If YES, please specify:</td>
                         <td style="border-bottom: solid 1px black">
-                            <div class="value">{{ $survey[9]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[9]['details'])
+                                    {{ $survey[9]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -359,7 +411,13 @@
                     <tr>
                         <td style="width: 63%">If YES, please specify ID No:</td>
                         <td style="border-bottom: solid 1px black">
-                            <div class="value">{{ $survey[10]['details'] }}</div>
+                            <div class="value">
+                                @if($survey[10]['details'])
+                                    {{ $survey[10]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -390,7 +448,13 @@
                     <tr>
                         <td style="width: 63%">If YES, please specify ID No:</td>
                         <td style="border-bottom: solid 1px black">
-                            <div class="value">{{ strtoupper($survey[11]['details']) }}</div>
+                            <div class="value">
+                                @if($survey[11]['details'])
+                                    {{ $survey[11]['details'] }}
+                                @else
+                                    N/A
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -417,9 +481,12 @@
             </tr>
             @foreach($reference as $key)
                 <tr style="font-size: 9px !important;">
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;" class="center-value">{{ strtoupper($key['name']) }}</td>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;" class="center-value">{{ strtoupper($key['address']) }}</td>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;" class="center-value">{{ strtoupper($key['contact_no']) }}</td>
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;"
+                        class="center-value">{{ strtoupper($key['name']) }}</td>
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;"
+                        class="center-value">{{ strtoupper($key['address']) }}</td>
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;"
+                        class="center-value">{{ strtoupper($key['contact_no']) }}</td>
                 </tr>
             @endforeach
             <tr style="border-top: solid 1px black">
@@ -508,7 +575,10 @@
                             (Sign inside the box)
                         </div>
                         <div style="text-align: center;font-weight: bold">{{ $pds_date }}</div>
-                        <div class="gray" style="text-align: center;border-top:solid 1px black;border-bottom: solid 1px black">Date Accomplished</div>
+                        <div class="gray"
+                             style="text-align: center;border-top:solid 1px black;border-bottom: solid 1px black">Date
+                            Accomplished
+                        </div>
                     </div>
                 </td>
             </tr>

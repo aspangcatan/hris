@@ -5,13 +5,19 @@
                 <i class="bi bi-grid"></i>
                 <span>Profile</span>
             </a>
-
+        </li>
         <li class="nav-item d-none">
             <a class="nav-link collapsed" href="{{ route('leave') }}">
                 <i class="bi bi-grid"></i>
                 <span>Leave Application</span>
             </a>
-
+        </li>
+        <li class="nav-item d-none">
+            <a class="nav-link collapsed" href="{{ route('review_leave') }}">
+                <i class="bi bi-grid"></i>
+                <span>Review Leave</span>
+            </a>
+        </li>
         @if(session('access_rights') == "hr")
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('employee') }}">
