@@ -26,7 +26,6 @@ class ServiceRecordsController extends Controller
                 $service_records = new ServiceRecords;
                 $service_records->user_id = $request->user_id;
             }
-
             $service_records->date_from = $request->date_from;
             $service_records->date_to = $request->date_to;
             $service_records->current_work = $request->current_work;
@@ -39,7 +38,7 @@ class ServiceRecordsController extends Controller
             $service_records->save();
             return response(['code' => 200, 'message' => 'Service records updated']);
         } catch (\Exception $exception) {
-            return response(['code' => 500, 'message' => $exception]);
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
     }
 

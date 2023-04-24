@@ -1,6 +1,6 @@
 <header id="header" class="header fixed-top d-flex align-items-center">
     <div class="d-flex align-items-center justify-content-between">
-        <a href="index.html" class="logo d-flex align-items-center">
+        <a href="{{ url('/') }}" class="logo d-flex align-items-center">
             <img src="assets/img/logo.png" alt="">
             <span class="d-none d-lg-block">HRIS</span>
         </a>
@@ -22,8 +22,7 @@
                         src="{{ (Auth::user()->picture) ? url('/avatar/'.Auth::user()->picture) : "images/ic_user.png"}}?v={{ date('Ymdhis') }}"
                         alt="Profile"
                         class="rounded-circle">
-                    <span
-                        class="d-none d-md-block dropdown-toggle ps-2">{{ \Illuminate\Support\Facades\Auth::user()->lname[0].'. '.\Illuminate\Support\Facades\Auth::user()->fname }}</span>
+                    <span class="d-none d-md-block dropdown-toggle ps-2">{{ \Illuminate\Support\Facades\Auth::user()->lname[0].'. '.\Illuminate\Support\Facades\Auth::user()->fname }}</span>
                 </a><!-- End Profile Iamge Icon -->
 
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
@@ -40,7 +39,6 @@
                             <span>Sign Out</span>
                         </a>
                     </li>
-
                 </ul><!-- End Profile Dropdown Items -->
             </li><!-- End Profile Nav -->
 

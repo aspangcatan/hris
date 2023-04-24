@@ -24,6 +24,16 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PrintController extends Controller
 {
+    public function printSaln(Request $request)
+    {
+        try {
+            $pdf = Pdf::loadView('pdf.saln', []);
+            return $pdf->stream('service_record.pdf', array("Attachment" => false));
+        } catch (\Exception $exception) {
+            return "Sheesh";
+        }
+    }
+
     public function printServiceRecord(Request $request)
     {
         $user = User::find($request->id);
@@ -40,10 +50,10 @@ class PrintController extends Controller
 
         $service_array = [];
 
-        if(count($service_records) < $request->rows){
+        if (count($service_records) < $request->rows) {
             $service_array = $service_records;
-        }else{
-            for($i=0; $i<$request->rows; $i++){
+        } else {
+            for ($i = 0; $i < $request->rows; $i++) {
                 $service_array[$i] = $service_records[$i];
             }
 

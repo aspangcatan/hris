@@ -3,7 +3,13 @@
         <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('profile') }}">
                 <i class="bi bi-grid"></i>
-                <span>Profile</span>
+                <span>PDS</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('saln') }}">
+                <i class="bi bi-grid"></i>
+                <span>SALN</span>
             </a>
         </li>
         <li class="nav-item d-none">

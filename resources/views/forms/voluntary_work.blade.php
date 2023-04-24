@@ -5,13 +5,13 @@
         </div>
     @endif
     <div class="table-responsive mt-3">
-        <table class="table text-center" style="font-size: 13px">
+        <table class="table text-center">
             <thead>
             <tr>
-                <th style="width: 40%">Name & Organization Address</th>
+                <th>Name & Organization Address</th>
                 <th>Position/Work Nature</th>
-                <th style="width: 10%">From</th>
-                <th style="width: 10%">To</th>
+                <th>From</th>
+                <th>To</th>
                 <th style="width: 10%">No. hours</th>
                 <th colspan="2" style="width: 8%"></th>
             </tr>

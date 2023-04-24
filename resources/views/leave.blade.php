@@ -8,12 +8,10 @@
                     <thead>
                     <tr>
                         <th></th>
-                        <th>Firstname</th>
-                        <th>Middlename</th>
-                        <th>Lastname</th>
-                        <th>Suffix</th>
-                        <th>Designation</th>
-                        <th>Section</th>
+                        <th>Leave Type</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                        <th>Date applied</th>
                         <th style="width: 4%"></th>
                     </tr>
                     </thead>

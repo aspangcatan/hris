@@ -26,6 +26,7 @@ Route::get('/logout', function () {
 
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
+Route::get('/print_saln', [\App\Http\Controllers\PrintController::class, 'printSaln'])->name('printSaln');
 
 Route::group(['middleware' => 'auth'], function () {
     #PRINTING
@@ -36,6 +37,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/profile', function () {
         return view('profile');
     })->name('profile');
+
+    Route::get('/saln', function () {
+        return view('saln');
+    })->name('saln');
 
     Route::get('/employee', function () {
         return view('employee');
@@ -100,4 +105,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/service_records/get', [\App\Http\Controllers\ServiceRecordsController::class, 'getServiceRecords'])->name('getServiceRecords');
     Route::post('/service_records/update', [\App\Http\Controllers\ServiceRecordsController::class, 'insertUpdateServiceRecords'])->name('insertUpdateServiceRecords');
     Route::delete('/service_records/delete', [\App\Http\Controllers\ServiceRecordsController::class, 'deleteServiceRecords'])->name('deleteServiceRecords');
+#REPORTS
+    Route::get('/reports/leave_bal', [\App\Http\Controllers\ReportController::class, 'leaveBalance'])->name('leaveBalance');
 });
