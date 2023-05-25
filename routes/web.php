@@ -107,4 +107,28 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/service_records/delete', [\App\Http\Controllers\ServiceRecordsController::class, 'deleteServiceRecords'])->name('deleteServiceRecords');
 #REPORTS
     Route::get('/reports/leave_bal', [\App\Http\Controllers\ReportController::class, 'leaveBalance'])->name('leaveBalance');
+#SALN
+    Route::post('/insert_declarant', [\App\Http\Controllers\SalnController::class, 'updateDeclarant'])->name('updateDeclarant');
+    Route::post('/insert_saln_children', [\App\Http\Controllers\SalnController::class, 'insertSalnChildren'])->name('insertSalnChildren');
+    Route::post('/insert_real_properties', [\App\Http\Controllers\SalnController::class, 'insertRealProperties'])->name('insertRealProperties');
+    Route::post('/insert_personal_properties', [\App\Http\Controllers\SalnController::class, 'insertPersonalProperties'])->name('insertPersonalProperties');
+    Route::post('/insert_liabilities', [\App\Http\Controllers\SalnController::class, 'insertLiabilities'])->name('insertLiabilities');
+    Route::post('/insert_business_interest', [\App\Http\Controllers\SalnController::class, 'insertBusinessInterest'])->name('insertBusinessInterest');
+    Route::post('/insert_government_relative', [\App\Http\Controllers\SalnController::class, 'insertGovernmentRelative'])->name('insertGovernmentRelative');
+
+    Route::get('/get_declarant', [\App\Http\Controllers\SalnController::class, 'getDeclarant'])->name('getDeclarant');
+    Route::get('/get_declarant_spouse', [\App\Http\Controllers\SalnController::class, 'getDeclarantSpouse'])->name('getDeclarantSpouse');
+    Route::get('/get_saln_children', [\App\Http\Controllers\SalnController::class, 'getChildren'])->name('getChildren');
+    Route::get('/get_real_properties', [\App\Http\Controllers\SalnController::class, 'getRealProperties'])->name('getRealProperties');
+    Route::get('/get_personal_properties', [\App\Http\Controllers\SalnController::class, 'getPersonalProperties'])->name('getPersonalProperties');
+    Route::get('/get_liabilities', [\App\Http\Controllers\SalnController::class, 'getLiabilities'])->name('getLiabilities');
+    Route::get('/get_business_interest', [\App\Http\Controllers\SalnController::class, 'getBusinessInterest'])->name('getBusinessInterest');
+    Route::get('/get_government_relative', [\App\Http\Controllers\SalnController::class, 'getGovernmentRelative'])->name('getGovernmentRelative');
+
+    Route::delete('/delete_saln_children', [\App\Http\Controllers\SalnController::class, 'deleteSalnChildren'])->name('deleteSalnChildren');
+    Route::delete('/delete_real_properties', [\App\Http\Controllers\SalnController::class, 'deleteRealProperties'])->name('deleteRealProperties');
+    Route::delete('/delete_personal_properties', [\App\Http\Controllers\SalnController::class, 'deletePersonalProperties'])->name('deletePersonalProperties');
+    Route::delete('/delete_liabilities', [\App\Http\Controllers\SalnController::class, 'deleteLiabilities'])->name('deleteLiabilities');
+    Route::delete('/delete_business_interest', [\App\Http\Controllers\SalnController::class, 'deleteBusinessInterest'])->name('deleteBusinessInterest');
+    Route::delete('/delete_government_relative', [\App\Http\Controllers\SalnController::class, 'deleteGovernmentRelative'])->name('deleteGovernmentRelative');
 });

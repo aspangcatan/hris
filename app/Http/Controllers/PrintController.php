@@ -3,15 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Models\Address;
+use App\Models\BusinessInterest;
 use App\Models\Children;
 use App\Models\CivilService;
 use App\Models\Education;
 use App\Models\Employee;
 use App\Models\FamilyBackground;
+use App\Models\GovernmentRelative;
 use App\Models\Learning;
+use App\Models\Liabilities;
 use App\Models\Membership;
+use App\Models\PersonalProperties;
+use App\Models\RealProperties;
 use App\Models\Recognition;
 use App\Models\Reference;
+use App\Models\SalnChildren;
 use App\Models\ServiceRecords;
 use App\Models\Skill;
 use App\Models\Survey;
@@ -27,10 +33,173 @@ class PrintController extends Controller
     public function printSaln(Request $request)
     {
         try {
-            $pdf = Pdf::loadView('pdf.saln', []);
-            return $pdf->stream('service_record.pdf', array("Attachment" => false));
+            $declarant = DB::table('tdh_user.users as u')
+                ->leftJoin('hris.saln_declarant as d', 'u.id', '=', 'd.user_id')
+                ->leftJoin('hris.addresses as a', 'u.id', '=', 'a.user_id')
+                ->where(function($query){
+                    $query->where('u.id', '=', Auth::id());
+                    $query->where('address_type','Permanent');
+                })
+                ->get(['u.fname', 'u.mname', 'u.lname', 'd.position', 'd.agency',
+                    'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued',
+                    'a.barangay','a.city','a.province'])
+                ->first();
+
+            $spouse = DB::table('hris.family_backgrounds as f')
+                ->leftJoin('hris.saln_spouse as d', 'f.user_id', '=', 'd.user_id')
+                ->where('f.user_id', '=', Auth::id())
+                ->get(['f.spouse_fname', 'f.spouse_mname', 'f.spouse_lname', 'd.position', 'd.agency',
+                    'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued'])
+                ->first();
+
+            $children_array = [
+                ['name' => 'N/A', 'birthdate' => 'N/A', 'age' => 'N/A'],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
+            ];
+            $real_properties_array = [
+                [
+                    'description' => 'N/A',
+                    'kind' => 'N/A',
+                    'exact_location' => 'N/A',
+                    'assessed_value' => 'N/A',
+                    'current_fair' => 'N/A',
+                    'acquisition_year' => 'N/A',
+                    'acquisition_mode' => 'N/A',
+                    'acquisition_cost' => 'N/A',
+                ],
+                [
+                    'description' => '',
+                    'kind' => '',
+                    'exact_location' => '',
+                    'assessed_value' => '',
+                    'current_fair' => '',
+                    'acquisition_year' => '',
+                    'acquisition_mode' => '',
+                    'acquisition_cost' => '',
+                ],
+                [
+                    'description' => '',
+                    'kind' => '',
+                    'exact_location' => '',
+                    'assessed_value' => '',
+                    'current_fair' => '',
+                    'acquisition_year' => '',
+                    'acquisition_mode' => '',
+                    'acquisition_cost' => '',
+                ],
+                [
+                    'description' => '',
+                    'kind' => '',
+                    'exact_location' => '',
+                    'assessed_value' => '',
+                    'current_fair' => '',
+                    'acquisition_year' => '',
+                    'acquisition_mode' => '',
+                    'acquisition_cost' => '',
+                ]
+            ];
+            $personal_properties_array = [
+                ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
+                ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
+                ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
+                ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
+
+            ];
+            $liabilities_array = [
+                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
+                ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
+                ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
+            ];
+            $business_array = [
+                ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+            ];
+            $relatives_array = [
+                ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
+            ];
+
+            $children = SalnChildren::where('user_id', Auth::id())->get();
+            for ($i = 0; $i < count($children); $i++) {
+                $children_array[$i] = [
+                    'name' => $children[$i]['name'],
+                    'birthdate' => $children[$i]['birthdate'],
+                    'age' => "Sheeesh",
+                ];
+            }
+
+            $real_properties = RealProperties::where('user_id', Auth::id())->get();
+            for ($i = 0; $i < count($real_properties); $i++) {
+                $real_properties_array[$i] = [
+                    'description' => $real_properties[$i]['description'],
+                    'kind' => $real_properties[$i]['kind'],
+                    'exact_location' => $real_properties[$i]['exact_location'],
+                    'assessed_value' => $real_properties[$i]['assessed_value'],
+                    'current_fair' => $real_properties[$i]['current_fair'],
+                    'acquisition_year' => $real_properties[$i]['acquisition_year'],
+                    'acquisition_mode' => $real_properties[$i]['acquisition_mode'],
+                    'acquisition_cost' => $real_properties[$i]['acquisition_cost'],
+                ];
+            }
+
+            $personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
+            for ($i = 0; $i < count($personal_properties); $i++) {
+                $personal_properties_array[$i] = [
+                    'gadget' => $personal_properties[$i]['gadget'],
+                    'various_years' => $personal_properties[$i]['various_years'],
+                    'acquisition_cost' => $personal_properties[$i]['acquisition_cost']
+                ];
+            }
+
+            $liabilities = Liabilities::where('user_id', Auth::id())->get();
+            for ($i = 0; $i < count($liabilities); $i++) {
+                $liabilities_array[$i] = [
+                    'nature' => $liabilities[$i]['nature'],
+                    'creditors_name' => $liabilities[$i]['creditors_name'],
+                    'outstanding_balance' => $liabilities[$i]['outstanding_balance']
+                ];
+            }
+
+            $business = BusinessInterest::where('user_id', Auth::id())->get();
+            for ($i = 0; $i < count($business); $i++) {
+                $business_array[$i] = [
+                    'enterprise' => $business[$i]['enterprise'],
+                    'address' => $business[$i]['address'],
+                    'nature' => $business[$i]['nature'],
+                    'date_acquisition' => $business[$i]['date_acquisition']
+                ];
+            }
+
+            $relatives = GovernmentRelative::where('user_id', Auth::id())->get();
+            for ($i = 0; $i < count($relatives); $i++) {
+                $relatives_array[$i] = [
+                    'name' => $relatives[$i]['name'],
+                    'relationship' => $relatives[$i]['relationship'],
+                    'position' => $relatives[$i]['position'],
+                    'agency' => $relatives[$i]['agency']
+                ];
+            }
+
+            $pdf = Pdf::loadView('pdf.saln', [
+                'declarant' => $declarant,
+                'spouse' => $spouse,
+                'children' => $children_array,
+                'real_properties' => $real_properties_array,
+                'personal_properties' => $personal_properties_array,
+                'liabilities' => $liabilities_array,
+                'business' => $business_array,
+                'relatives' => $relatives_array
+            ]);
+
+            return $pdf->stream('saln.pdf', array("Attachment" => false));
         } catch (\Exception $exception) {
-            return "Sheesh";
+            return $exception->getMessage();
         }
     }
 

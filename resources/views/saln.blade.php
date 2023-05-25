@@ -1,103 +1,72 @@
 @extends('master')
 @section('content')
+    <div class="d-flex justify-content-between">
+        <div class="pagetitle">
+            <h1>SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</h1>
+        </div>
+        <div>
+            <button class="btn btn-success" id="btn_print_saln">PRINT SALN</button>
+        </div>
+    </div>
 
-    <section class="section profile">
+    <section class="section profile mt-3">
         <div class="card">
             <div class="card-body">
-                <div class="text-end">
-                    <p class="p-0 mb-0">Revised as of January 2015</p>
-                    <p class="p-0 mb-0">Per CSC Resolution No. 1500088</p>
-                    <p class="p-0 mb-0">Promulgated on January 23, 2015</p>
-                </div>
-                <div class="text-center">
-                    <div class="mt-3 fw-bold">
-                        SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH
-                    </div>
-                    <div>As of _______________________________</div>
-                    <div>(Required by R.A 6713</div>
-                    <div class="mt-2">
-                        <strong>Note:</strong>
-                        Husband and wife who are both public officials and employees may file the required statements
-                        jointly or separately.
-                        <div class="w-50 m-auto">
-                            <div class="d-flex justify-content-between">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" value="" id="flexCheckDefault">
-                                    <label class="form-check-label" for="flexCheckDefault">
-                                        Joint Filing
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" value="" id="flexCheckDefault">
-                                    <label class="form-check-label" for="flexCheckDefault">
-                                        Separate Filing
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" value="" id="flexCheckDefault">
-                                    <label class="form-check-label" for="flexCheckDefault">
-                                        Not Applicable
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="row">
                     <div class="col-md-6">
                         <h5 class="card-title fw-bold">Declarant</h5>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Firstname</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_fname"/>
+                                <input type="text" class="form-control" id="declarant_fname" readonly/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Middlename</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_mname"/>
+                                <input type="text" class="form-control" id="declarant_mname" readonly/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Lastname</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_lname"/>
+                                <input type="text" class="form-control" id="declarant_lname" readonly/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Position</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_fname"/>
+                                <input type="text" class="form-control" id="declarant_position"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Agency/Office</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_mname"/>
+                                <input type="text" class="form-control" id="declarant_agency"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Office Address</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_lname"/>
+                                <input type="text" class="form-control" id="declarant_address"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Government Issued ID</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_fname"/>
+                                <input type="text" class="form-control" id="declarant_issued_id"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">ID No.</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_mname"/>
+                                <input type="text" class="form-control" id="declarant_id_no"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Date Issued</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_lname"/>
+                                <input type="date" class="form-control" id="declarant_date_issued"/>
                             </div>
                         </div>
                     </div>
@@ -106,69 +75,75 @@
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Firstname</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_fname"/>
+                                <input type="text" class="form-control" id="spouse_fname" readonly/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Middlename</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_mname"/>
+                                <input type="text" class="form-control" id="spouse_mname" readonly/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Lastname</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_lname"/>
+                                <input type="text" class="form-control" id="spouse_lname" readonly/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Position</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_fname"/>
+                                <input type="text" class="form-control" id="spouse_position"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Agency/Office</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_mname"/>
+                                <input type="text" class="form-control" id="spouse_agency"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Office
                                 Address</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_lname"/>
+                                <input type="text" class="form-control" id="spouse_address"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Government Issued
                                 ID</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_fname"/>
+                                <input type="text" class="form-control" id="spouse_issued_id"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">ID No.</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_mname"/>
+                                <input type="text" class="form-control" id="spouse_id_no"/>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Date Issued</label>
                             <div class="col-md-8 col-lg-9">
-                                <input type="text" class="form-control" id="spouse_lname"/>
+                                <input type="date" class="form-control" id="spouse_date_issued"/>
                             </div>
                         </div>
                     </div>
                 </div>
-                <hr/>
+                <div class="float-end">
+                    <button class="btn btn-success" id="btn_save_declarant">SAVE CHANGES</button>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
                 <div id="assets">
                     <h5 class="card-title fw-bold">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>Unmarried children below eighteen (18) years of age living in declarant's household
                             </div>
                             <div>
-                                <button class="btn btn-sm btn-success">ADD NEW</button>
+                                <button class="btn btn-sm btn-success" id="btn_add_children">ADD NEW</button>
                             </div>
                         </div>
                     </h5>
@@ -180,16 +155,10 @@
                                     <tr>
                                         <th>Name</th>
                                         <th style="width: 25%">Date of birth</th>
-                                        <th style="width: 15%">Age</th>
                                         <th colspan="2" style="width: 10%"></th>
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                    </tr>
+                                    <tbody id="children_list">
                                     </tbody>
                                 </table>
                             </div>
@@ -208,7 +177,7 @@
                             <h6 class="card-title text-dark">A. Real Properties</h6>
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-success">ADD NEW</button>
+                            <button class="btn btn-sm btn-success" id="btn_add_real_properties">ADD NEW</button>
                         </div>
                     </div>
                     <div class="card">
@@ -230,10 +199,9 @@
                                             </div>
                                         </th>
                                         <th rowspan="2">Exact location</th>
-                                        <th>Exact location</th>
                                         <th>Assessed value</th>
                                         <th>Current fair market value</th>
-                                        <th>Acquisition</th>
+                                        <th colspan="2">Acquisition</th>
                                         <th>Acquisition cost</th>
                                         <th rowspan="2" colspan="2" style="width: 10%"></th>
                                     </tr>
@@ -247,13 +215,7 @@
                                         <th style="width: 5%">Mode</th>
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                    </tr>
-                                    </tbody>
+                                    <tbody id="real_properties_list"></tbody>
                                 </table>
                             </div>
                         </div>
@@ -263,7 +225,7 @@
                             <h6 class="card-title text-dark">B. Personal Properties</h6>
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-success">ADD NEW</button>
+                            <button class="btn btn-sm btn-success" id="btn_add_personal_properties">ADD NEW</button>
                         </div>
                     </div>
                     <div class="card">
@@ -279,14 +241,7 @@
                                     </tr>
 
                                     </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
+                                    <tbody id="personal_properties_list">
                                     </tbody>
                                 </table>
                             </div>
@@ -297,7 +252,7 @@
                             <h6 class="card-title fw-bold">2. Liabilities</h6>
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-success">ADD NEW</button>
+                            <button class="btn btn-sm btn-success" id="btn_add_liabilities">ADD NEW</button>
                         </div>
                     </div>
                     <div class="card">
@@ -312,13 +267,7 @@
                                         <th style="width: 10%"></th>
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                    </tr>
+                                    <tbody id="liabilities_list">
                                     </tbody>
                                 </table>
                             </div>
@@ -326,6 +275,10 @@
                     </div>
                 </div>
                 <hr/>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
                 <div id="business_interest">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -337,7 +290,7 @@
                             </h5>
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-success">ADD NEW</button>
+                            <button class="btn btn-sm btn-success" id="btn_add_business_interest">ADD NEW</button>
                         </div>
                     </div>
                     <div class="card">
@@ -353,20 +306,17 @@
                                         <th style="width: 10%"></th>
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                    </tr>
-                                    </tbody>
+                                    <tbody id="business_interest_list"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
                 <hr/>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
                 <div id="government_relatives">
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
@@ -378,7 +328,7 @@
                             </h5>
                         </div>
                         <div>
-                            <button class="btn btn-sm btn-success">ADD NEW</button>
+                            <button class="btn btn-sm btn-success" id="btn_add_government_relative">ADD NEW</button>
                         </div>
                     </div>
                     <div class="card">
@@ -387,20 +337,14 @@
                                 <table class="table table-bordered text-center">
                                     <thead>
                                     <tr>
-                                        <th>Name of Entity/Business Enterprise</th>
-                                        <th>Business Address</th>
-                                        <th>Nature of Business Interest &/or Financial Connection</th>
-                                        <th>Date of acquisition of interest or connection</th>
+                                        <th>Name of relative</th>
+                                        <th>Relationship</th>
+                                        <th>Position</th>
+                                        <th>Agency/Office & Address</th>
                                         <th style="width: 10%"></th>
                                     </tr>
                                     </thead>
-                                    <tbody>
-                                    <tr>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                        <td>N/A</td>
-                                    </tr>
+                                    <tbody id="government_relative_list">
                                     </tbody>
                                 </table>
                             </div>
@@ -410,15 +354,8 @@
             </div>
         </div>
     </section>
-    @include('modals.children')
-    @include('modals.civil_service')
-    @include('modals.work_experience')
-    @include('modals.voluntary')
-    @include('modals.learning')
-    @include('modals.reference')
-    @include('modals.other_information')
-    @include('modals.print')
+    @include('modals.saln')
 @stop
 @section('js')
-    @include('js.profile')
+    @include('js.saln')
 @stop
