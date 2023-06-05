@@ -100,18 +100,20 @@ class PrintController extends Controller
                     'acquisition_cost' => '',
                 ]
             ];
+
             $personal_properties_array = [
                 ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
                 ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
                 ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
                 ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
-
             ];
+
             $liabilities_array = [
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
                 ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
                 ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
             ];
+
             $business_array = [
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
@@ -209,6 +211,8 @@ class PrintController extends Controller
                 'relatives' => $relatives_array,
                 'print_date' => $request->print_date
             ]);
+
+            $pdf->set_paper('A4', 'landscape');
 
             return $pdf->stream('saln.pdf', array("Attachment" => false));
         } catch (\Exception $exception) {

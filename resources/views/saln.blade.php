@@ -13,9 +13,10 @@
         <div class="card">
             <div class="card-body">
                 <div class="card bg-info mt-2">
-                    <div class="card-body p-2">
+                    <div class="card-body p-2 text-dark">
                         <strong>NOTE:</strong>
-                        <p>Declarant's name and Spouse name are found in your <strong style="font-style: italic">Personal Data Sheet (PDS)</strong></p>
+                        <p>Declarant's name and Spouse name are found in your <strong style="font-style: italic">Personal
+                                Data Sheet (PDS)</strong></p>
                     </div>
                 </div>
                 <div class="row mt-2">
@@ -153,134 +154,118 @@
                             </div>
                         </div>
                     </h5>
-                    <div class="card">
-                        <div class="card-body p-0  m-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered text-center">
-                                    <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th style="width: 25%">Date of birth</th>
-                                        <th colspan="2" style="width: 10%"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="children_list">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <hr/>
-                    <h5 class="card-title fw-bold">
-                        Assets, Liabilities and Networth
-                        <div class="text-black" style="font-size: 12px">(Including those of the spouse and unmarried
-                            children below eighteen (18) years of age living in declarant’s household)
-                        </div>
-                    </h5>
-                    <h6 class="card-title fw-bold">1. Assets</h6>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="card-title text-dark">A. Real Properties</h6>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-success" id="btn_add_real_properties">ADD NEW</button>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-body p-0  m-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered text-center">
-                                    <thead>
-                                    <tr>
-                                        <th rowspan="2">
-                                            <div>Description</div>
-                                            <div style="font-size: 12px">(e.g. lot, house and lot, condominium and
-                                                improvements)
-                                            </div>
-                                        </th>
-                                        <th rowspan="2">
-                                            <div>Kind</div>
-                                            <div style="font-size: 12px">
-                                                (e.g. residential, commercial, industrial, agricultural and mixed use)
-                                            </div>
-                                        </th>
-                                        <th rowspan="2">Exact location</th>
-                                        <th>Assessed value</th>
-                                        <th>Current fair market value</th>
-                                        <th colspan="2">Acquisition</th>
-                                        <th>Acquisition cost</th>
-                                        <th rowspan="2" colspan="2" style="width: 10%"></th>
-                                    </tr>
-                                    <tr>
-                                        <th colspan="2">
-                                            <div style="font-size: 12px">
-                                                (As found in the Tax Declaration of Real Property)
-                                            </div>
-                                        </th>
-                                        <th style="width: 5%">Year</th>
-                                        <th style="width: 5%">Mode</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="real_properties_list"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="card-title text-dark">B. Personal Properties</h6>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-success" id="btn_add_personal_properties">ADD NEW</button>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-body p-0  m-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered text-center">
-                                    <thead>
-                                    <tr>
-                                        <th>Gadgets/Appliances</th>
-                                        <th>Various Years</th>
-                                        <th>Acquisition Cost/Amount</th>
-                                        <th colspan="2" style="width: 10%"></th>
-                                    </tr>
-
-                                    </thead>
-                                    <tbody id="personal_properties_list">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h6 class="card-title fw-bold">2. Liabilities</h6>
-                        </div>
-                        <div>
-                            <button class="btn btn-sm btn-success" id="btn_add_liabilities">ADD NEW</button>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-body p-0  m-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered text-center">
-                                    <thead>
-                                    <tr>
-                                        <th>Nature</th>
-                                        <th>Name of Creditors</th>
-                                        <th>Outstanding Balance</th>
-                                        <th style="width: 10%"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="liabilities_list">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th style="width: 25%">Date of birth</th>
+                                <th colspan="2" style="width: 10%"></th>
+                            </tr>
+                            </thead>
+                            <tbody id="children_list">
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <hr/>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title fw-bold">
+                    Assets, Liabilities and Networth
+                    <div class="text-black" style="font-size: 12px">(Including those of the spouse and unmarried
+                        children below eighteen (18) years of age living in declarant’s household)
+                    </div>
+                </h5>
+                <h6 class="card-title fw-bold">1. Assets</h6>
+                <div class="mt-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title text-dark">A. Real Properties</h6>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-success" id="btn_add_real_properties">ADD NEW</button>
+                    </div>
+                </div>
+                <table class="table table-bordered text-center">
+                    <thead>
+                    <tr>
+                        <th rowspan="2">
+                            <div>Description</div>
+                            <div style="font-size: 12px">(e.g. lot, house and lot, condominium and
+                                improvements)
+                            </div>
+                        </th>
+                        <th rowspan="2">
+                            <div>Kind</div>
+                            <div style="font-size: 12px">
+                                (e.g. residential, commercial, industrial, agricultural and mixed use)
+                            </div>
+                        </th>
+                        <th rowspan="2">Exact location</th>
+                        <th>Assessed value</th>
+                        <th>Current fair market value</th>
+                        <th colspan="2">Acquisition</th>
+                        <th>Acquisition cost</th>
+                        <th rowspan="2" colspan="2" style="width: 10%"></th>
+                    </tr>
+                    <tr>
+                        <th colspan="2">
+                            <div style="font-size: 12px">
+                                (As found in the Tax Declaration of Real Property)
+                            </div>
+                        </th>
+                        <th style="width: 5%">Year</th>
+                        <th style="width: 5%">Mode</th>
+                    </tr>
+                    </thead>
+                    <tbody id="real_properties_list"></tbody>
+                </table>
+                <div class="mt-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title text-dark">B. Personal Properties</h6>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-success" id="btn_add_personal_properties">ADD NEW</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead>
+                        <tr>
+                            <th>Gadgets/Appliances</th>
+                            <th>Various Years</th>
+                            <th>Acquisition Cost/Amount</th>
+                            <th colspan="2" style="width: 10%"></th>
+                        </tr>
+
+                        </thead>
+                        <tbody id="personal_properties_list">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title fw-bold">2. Liabilities</h6>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-success" id="btn_add_liabilities">ADD NEW</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead>
+                        <tr>
+                            <th>Nature</th>
+                            <th>Name of Creditors</th>
+                            <th>Outstanding Balance</th>
+                            <th style="width: 10%"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="liabilities_list">
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div class="card">
@@ -299,26 +284,21 @@
                             <button class="btn btn-sm btn-success" id="btn_add_business_interest">ADD NEW</button>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-body p-0  m-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered text-center">
-                                    <thead>
-                                    <tr>
-                                        <th>Name of Entity/Business Enterprise</th>
-                                        <th>Business Address</th>
-                                        <th>Nature of Business Interest &/or Financial Connection</th>
-                                        <th>Date of acquisition of interest or connection</th>
-                                        <th style="width: 10%"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="business_interest_list"></tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center">
+                            <thead>
+                            <tr>
+                                <th>Name of Entity/Business Enterprise</th>
+                                <th>Business Address</th>
+                                <th>Nature of Business Interest &/or Financial Connection</th>
+                                <th>Date of acquisition of interest or connection</th>
+                                <th style="width: 10%"></th>
+                            </tr>
+                            </thead>
+                            <tbody id="business_interest_list"></tbody>
+                        </table>
                     </div>
                 </div>
-                <hr/>
             </div>
         </div>
         <div class="card">
@@ -337,24 +317,20 @@
                             <button class="btn btn-sm btn-success" id="btn_add_government_relative">ADD NEW</button>
                         </div>
                     </div>
-                    <div class="card">
-                        <div class="card-body p-0  m-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered text-center">
-                                    <thead>
-                                    <tr>
-                                        <th>Name of relative</th>
-                                        <th>Relationship</th>
-                                        <th>Position</th>
-                                        <th>Agency/Office & Address</th>
-                                        <th style="width: 10%"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="government_relative_list">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center">
+                            <thead>
+                            <tr>
+                                <th>Name of relative</th>
+                                <th>Relationship</th>
+                                <th>Position</th>
+                                <th>Agency/Office & Address</th>
+                                <th style="width: 10%"></th>
+                            </tr>
+                            </thead>
+                            <tbody id="government_relative_list">
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
