@@ -5,6 +5,7 @@
     const liabilities_modal = new bootstrap.Modal(document.getElementById('liabilities_modal'));
     const business_interest_modal = new bootstrap.Modal(document.getElementById('business_interest_modal'));
     const government_relative_modal = new bootstrap.Modal(document.getElementById('government_relative_modal'));
+    const saln_modal = new bootstrap.Modal(document.getElementById('saln_modal'));
 
     let children_id = 0;
     let real_properties_id = 0;
@@ -16,8 +17,17 @@
     $(document).ready(function () {
 
         $("#btn_print_saln").click(function () {
+            saln_modal.toggle();
+        });
+
+        $("#btn_confirm_print").click(function () {
+            const date = $("#print_date").val();
+            if (date == "") {
+                alert("Please fill in date");
+                return;
+            }
             window.open(
-                '{{ route('printSaln') }}?id=0&pds_date=',
+                '{{ route('printSaln') }}?id=0&print_date=' + date,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });

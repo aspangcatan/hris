@@ -145,7 +145,7 @@ class PrintController extends Controller
                     'current_fair' => $real_properties[$i]['current_fair'],
                     'acquisition_year' => $real_properties[$i]['acquisition_year'],
                     'acquisition_mode' => $real_properties[$i]['acquisition_mode'],
-                    'acquisition_cost' => $real_properties[$i]['acquisition_cost'],
+                    'acquisition_cost' => number_format($real_properties[$i]['acquisition_cost'], 2),
                 ];
 
                 $real_properties_subtotal += $real_properties[$i]['acquisition_cost'];
@@ -157,7 +157,7 @@ class PrintController extends Controller
                 $personal_properties_array[$i] = [
                     'gadget' => $personal_properties[$i]['gadget'],
                     'various_years' => $personal_properties[$i]['various_years'],
-                    'acquisition_cost' => $personal_properties[$i]['acquisition_cost']
+                    'acquisition_cost' => number_format($personal_properties[$i]['acquisition_cost'], 2)
                 ];
 
                 $personal_properties_subtotal += $personal_properties[$i]['acquisition_cost'];
@@ -169,7 +169,7 @@ class PrintController extends Controller
                 $liabilities_array[$i] = [
                     'nature' => $liabilities[$i]['nature'],
                     'creditors_name' => $liabilities[$i]['creditors_name'],
-                    'outstanding_balance' => $liabilities[$i]['outstanding_balance']
+                    'outstanding_balance' => number_format($liabilities[$i]['outstanding_balance'], 2)
                 ];
 
                 $liabilities_total += $liabilities[$i]['outstanding_balance'];
@@ -181,7 +181,7 @@ class PrintController extends Controller
                     'enterprise' => $business[$i]['enterprise'],
                     'address' => $business[$i]['address'],
                     'nature' => $business[$i]['nature'],
-                    'date_acquisition' => $business[$i]['date_acquisition']
+                    'date_acquisition' => date('m/d/Y', strtotime($business[$i]['date_acquisition']))
                 ];
             }
 
@@ -206,7 +206,8 @@ class PrintController extends Controller
                 'liabilities' => $liabilities_array,
                 'liabilities_total' => $liabilities_total,
                 'business' => $business_array,
-                'relatives' => $relatives_array
+                'relatives' => $relatives_array,
+                'print_date' => $request->print_date
             ]);
 
             return $pdf->stream('saln.pdf', array("Attachment" => false));

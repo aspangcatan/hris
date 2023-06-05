@@ -73,7 +73,8 @@
 
 <div style="text-align: center;margin-top: 20px">
     <div style="font-weight: bolder;font-size: 16.5px;">SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</div>
-    <div style="font-size: 15px">As of <u style="margin-left: 5px">December 31, 2022</u></div>
+    <div style="font-size: 15px">As of <u style="margin-left: 5px">December
+            31, {{ \Carbon\Carbon::now()->format('Y') }}</u></div>
     <div style="font-size: 11px">(Required by R.A 6713)</div>
     <div style="font-size: 12.5px;margin-top: 15px">
         <strong>Note:</strong>
@@ -433,7 +434,7 @@
         <td style="width: 5%">Date:</td>
         <td style="width: 20%" class="border-bottom">
             <div style="padding-left: 10px">
-                {{ \Carbon\Carbon::now()->format('F j, Y') }}
+                {{ date('F j, Y',strtotime($print_date)) }}
             </div>
         </td>
         <td></td>
