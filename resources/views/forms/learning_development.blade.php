@@ -5,7 +5,7 @@
         </div>
     @endif
     <div class="table-responsive mt-3">
-        <table class="table text-center" style="font-size:13px">
+        <table class="table text-center">
             <thead>
             <tr>
                 <th>Learning Title</th>

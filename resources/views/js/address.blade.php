@@ -17,7 +17,7 @@
                 is_address_loaded = true;
                 data.results.forEach(it => {
                     if (it.address_type == "Residential") {
-                        $("#residential_house").val(it.house);
+                        $("#residential_house").val(it.house_no);
                         $("#residential_street").val(it.street);
                         $("#residential_subdivision_village").val(it.subdivision_village);
                         $("#residential_barangay").val(it.barangay);
@@ -25,7 +25,7 @@
                         $("#residential_province").val(it.province);
                         $("#residential_zipcode").val(it.zip_code);
                     } else if (it.address_type == "Permanent") {
-                        $("#permanent_house").val(it.house);
+                        $("#permanent_house").val(it.house_no);
                         $("#permanent_street").val(it.street);
                         $("#permanent_subdivision_village").val(it.subdivision_village);
                         $("#permanent_barangay").val(it.barangay);
@@ -50,6 +50,7 @@
         })
             .then(res => res.json())
             .then(data => {
+                console.log(data);
                 if (data.code == 500) {
                     console.log(data.message)
                     toastr.error("Something went wrong", "Oops");

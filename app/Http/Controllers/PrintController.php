@@ -36,13 +36,13 @@ class PrintController extends Controller
             $declarant = DB::table('tdh_user.users as u')
                 ->leftJoin('hris.saln_declarant as d', 'u.id', '=', 'd.user_id')
                 ->leftJoin('hris.addresses as a', 'u.id', '=', 'a.user_id')
-                ->where(function($query){
+                ->where(function ($query) {
                     $query->where('u.id', '=', Auth::id());
-                    $query->where('address_type','Permanent');
+                    $query->where('address_type', 'Permanent');
                 })
                 ->get(['u.fname', 'u.mname', 'u.lname', 'd.position', 'd.agency',
                     'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued',
-                    'a.barangay','a.city','a.province'])
+                    'a.barangay', 'a.city', 'a.province'])
                 ->first();
 
             $spouse = DB::table('hris.family_backgrounds as f')
@@ -129,11 +129,12 @@ class PrintController extends Controller
             for ($i = 0; $i < count($children); $i++) {
                 $children_array[$i] = [
                     'name' => $children[$i]['name'],
-                    'birthdate' => $children[$i]['birthdate'],
+                    'birthdate' => date('m/d/Y', strtotime($children[$i]['birthdate'])),
                     'age' => "Sheeesh",
                 ];
             }
 
+            $real_properties_subtotal = 0;
             $real_properties = RealProperties::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($real_properties); $i++) {
                 $real_properties_array[$i] = [
@@ -146,8 +147,11 @@ class PrintController extends Controller
                     'acquisition_mode' => $real_properties[$i]['acquisition_mode'],
                     'acquisition_cost' => $real_properties[$i]['acquisition_cost'],
                 ];
+
+                $real_properties_subtotal += $real_properties[$i]['acquisition_cost'];
             }
 
+            $personal_properties_subtotal = 0;
             $personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($personal_properties); $i++) {
                 $personal_properties_array[$i] = [
@@ -155,8 +159,11 @@ class PrintController extends Controller
                     'various_years' => $personal_properties[$i]['various_years'],
                     'acquisition_cost' => $personal_properties[$i]['acquisition_cost']
                 ];
+
+                $personal_properties_subtotal += $personal_properties[$i]['acquisition_cost'];
             }
 
+            $liabilities_total = 0;
             $liabilities = Liabilities::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($liabilities); $i++) {
                 $liabilities_array[$i] = [
@@ -164,6 +171,8 @@ class PrintController extends Controller
                     'creditors_name' => $liabilities[$i]['creditors_name'],
                     'outstanding_balance' => $liabilities[$i]['outstanding_balance']
                 ];
+
+                $liabilities_total += $liabilities[$i]['outstanding_balance'];
             }
 
             $business = BusinessInterest::where('user_id', Auth::id())->get();
@@ -191,8 +200,11 @@ class PrintController extends Controller
                 'spouse' => $spouse,
                 'children' => $children_array,
                 'real_properties' => $real_properties_array,
+                'real_properties_subtotal' => $real_properties_subtotal,
                 'personal_properties' => $personal_properties_array,
+                'personal_properties_subtotal' => $personal_properties_subtotal,
                 'liabilities' => $liabilities_array,
+                'liabilities_total' => $liabilities_total,
                 'business' => $business_array,
                 'relatives' => $relatives_array
             ]);

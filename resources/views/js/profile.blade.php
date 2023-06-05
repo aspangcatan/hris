@@ -389,18 +389,6 @@
             const permanent_province = $("#permanent_province").val().trim();
             const permanent_zipcode = $("#permanent_zipcode").val().trim();
 
-
-            // if (residential_street == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Residential street is required</li>");
-            //     $("#form_fname").addClass("is-invalid");
-            // }
-            // if (residential_barangay == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Residential barangay is required</li>");
-            //     $("#form_fname").addClass("is-invalid");
-            // }
-
             if (residential_city == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Residential city is required</li>");
@@ -413,24 +401,6 @@
                 $("#form_fname").addClass("is-invalid");
             }
 
-            // if (residential_zipcode == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Residential zipcode is required</li>");
-            //     $("#form_fname").addClass("is-invalid");
-            // }
-
-
-            // if (permanent_street == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Permanent street is required</li>");
-            //     $("#form_fname").addClass("is-invalid");
-            // }
-            // if (permanent_barangay == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Permanent barangay is required</li>");
-            //     $("#form_fname").addClass("is-invalid");
-            // }
-
             if (permanent_city == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Permanent city is required</li>");
@@ -442,12 +412,6 @@
                 $(".error_list").append("<li>Permanent province is required</li>");
                 $("#form_fname").addClass("is-invalid");
             }
-
-            // if (permanent_zipcode == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Permanent zipcode is required</li>");
-            //     $("#form_fname").addClass("is-invalid");
-            // }
 
             if (!is_valid) {
                 $("#address_error").removeClass("d-none");
@@ -473,7 +437,8 @@
                 province: permanent_province,
                 zipcode: permanent_zipcode,
                 address_type: "Permanent"
-            }]
+            }];
+
 
             insertUpdateAddress(params);
         });

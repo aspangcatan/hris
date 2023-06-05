@@ -201,7 +201,9 @@
                 <td style="width: 8%"></td>
                 <td class="border-bottom">{{ strtoupper($key['name']) }}</td>
                 <td style="width: 2%"></td>
-                <td class="border-bottom">{{ strtoupper($key['birthdate']) }}</td>
+                <td class="border-bottom">
+                    {{ $key['birthdate'] }}
+                </td>
                 <td style="width: 2%"></td>
                 <td class="border-bottom">{{ strtoupper($key['age']) }}</td>
                 <td style="width: 8%"></td>
@@ -273,7 +275,9 @@
     <tr style="font-size: 14px">
         <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">17,000</div>
+            <div class="fw-bold border-bottom" style="padding-left:10px;">
+                {{ number_format($real_properties_subtotal,2) }}
+            </div>
         </td>
     </tr>
 </table>
@@ -296,7 +300,9 @@
     <tr class="border-top" style="font-size: 14px">
         <td colspan="2" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">17,000</div>
+            <div class="fw-bold border-bottom" style="padding-left:10px;">
+                {{ number_format($personal_properties_subtotal,2) }}
+            </div>
         </td>
     </tr>
     <tr>
@@ -305,7 +311,9 @@
     <tr style="font-size: 14px">
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS (a+b):</td>
         <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">17,000</div>
+            <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
+                {{ number_format($real_properties_subtotal + $personal_properties_subtotal,2)   }}
+            </div>
         </td>
     </tr>
 </table>
@@ -331,7 +339,9 @@
     <tr class="border-top" style="font-size: 13px">
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL LIABILITIES:</td>
         <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">0.00</div>
+            <div class="fw-bold border-bottom" style="padding-left:10px;">
+                {{ number_format($liabilities_total,2) }}
+            </div>
         </td>
     </tr>
     <tr style="font-size: 13px">
@@ -340,7 +350,7 @@
         </td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 4px black !important;">
-                17,000
+                {{ number_format(($real_properties_subtotal + $personal_properties_subtotal) - $liabilities_total,2) }}
             </div>
         </td>
     </tr>
@@ -422,7 +432,9 @@
     <tr>
         <td style="width: 5%">Date:</td>
         <td style="width: 20%" class="border-bottom">
-            <div style="padding-left: 10px">January 13, 2020</div>
+            <div style="padding-left: 10px">
+                {{ \Carbon\Carbon::now()->format('F j, Y') }}
+            </div>
         </td>
         <td></td>
     </tr>
@@ -442,24 +454,36 @@
 <table style="margin-top:20px;font-size: 12px">
     <tr>
         <td>Government Issued ID:</td>
-        <td class="border-bottom">UMID</td>
+        <td class="border-bottom">
+            {{strtoupper($declarant->government_id_issued)}}
+        </td>
         <td></td>
         <td>Government Issued ID:</td>
-        <td class="border-bottom">UMID</td>
+        <td class="border-bottom">
+            {{strtoupper($spouse->government_id_issued)}}
+        </td>
     </tr>
     <tr>
         <td>ID No.:</td>
-        <td class="border-bottom">12123123</td>
+        <td class="border-bottom">
+            {{strtoupper($declarant->government_id_no)}}
+        </td>
         <td></td>
         <td>ID No.:</td>
-        <td class="border-bottom">UMID</td>
+        <td class="border-bottom">
+            {{strtoupper($spouse->government_id_no)}}
+        </td>
     </tr>
     <tr>
         <td>Date Issued:</td>
-        <td class="border-bottom">UMID</td>
+        <td class="border-bottom">
+            {{ date('m/d/Y', strtotime($declarant->date_issued)) }}
+        </td>
         <td></td>
         <td>Date Issued:</td>
-        <td class="border-bottom">UMID</td>
+        <td class="border-bottom">
+            {{ date('m/d/Y', strtotime($spouse->date_issued)) }}
+        </td>
     </tr>
 </table>
 
