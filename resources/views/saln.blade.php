@@ -12,7 +12,13 @@
     <section class="section profile mt-3">
         <div class="card">
             <div class="card-body">
-                <div class="row">
+                <div class="card bg-info mt-2">
+                    <div class="card-body p-2">
+                        <strong>NOTE:</strong>
+                        <p>Declarant's name and Spouse name are found in your <strong style="font-style: italic">Personal Data Sheet (PDS)</strong></p>
+                    </div>
+                </div>
+                <div class="row mt-2">
                     <div class="col-md-6">
                         <h5 class="card-title fw-bold">Declarant</h5>
                         <div class="row mb-3">
