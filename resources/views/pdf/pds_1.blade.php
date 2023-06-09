@@ -14,7 +14,7 @@
         </div>
         <table>
             <tr>
-                <td style="width:70%;padding: 0px !important;height: unset !important;border-bottom: solid 1px black;border-right: solid 1px black;font-size: 10px;font-family: 'Arial Narrow'">
+                <td style="width:70%;padding: 0px !important;height: unset !important;border-bottom: solid 1px black;border-right: solid 1px black;font-size: 9px;">
                     <span>Print legibly . Tick appropriate boxes</span>
                     <input style="display: inline;margin-top: -20px;font-size: 10px" type="checkbox"/>
                     <span>) and use separateI sheet if necessary. Indicate N/A if not applicable.</span>
