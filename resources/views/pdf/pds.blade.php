@@ -11,6 +11,20 @@
             size: 612pt 1008pt !important;
         }
 
+        @font-face {
+            font-family: 'Arial Narrow';
+            src: url({{ storage_path("fonts/arial_narrow.ttf") }}) format("truetype");
+            font-weight: 800;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Arial Black';
+            src: url({{ storage_path("fonts/arial_black.ttf") }}) format("truetype");
+            font-weight: 800;
+            font-style: normal;
+        }
+
         label.checkbox-label input[type=checkbox] {
             position: relative;
             vertical-align: middle;
@@ -18,14 +32,19 @@
         }
 
         html, body {
-            font-size: 9.5px;
+            font-size: 10.66px !important;
+            font-family: 'Arial Narrow', sans-serif;
             margin: 0px !important;
             padding: 2px !important;
-            font-family: "Times New Roman" !important;
         }
 
         input {
             vertical-align: middle !important;
+        }
+
+        .field-value {
+            font-size: 13.33px !important;
+            font-weight: bold !important;
         }
 
         table {
@@ -37,7 +56,7 @@
 
         table td {
             margin: 0px !important;
-            height: 23px !important;
+            height: 21px !important;
             padding: 1px !important;
             vertical-align: middle !important;
             overflow-wrap: break-word !important;
@@ -76,6 +95,7 @@
         .title {
             font-weight: bold;
             color: white;
+            font-size: 14.66px;
             padding: 2px !important;
             height: unset !important;
             border-top: solid 1px black;
@@ -102,13 +122,21 @@
         }
 
         .value {
+            font-family: 'Arial Narrow', sans-serif;
+            font-size: 13.33px;
             margin-left: 5px;
             font-weight: bold;
         }
 
         .center-value {
+            font-family: 'Arial Narrow', sans-serif;
+            font-size: 13.33px;
             text-align: center;
             font-weight: bold;
+        }
+
+        .education {
+            font-size: 10.66px !important;
         }
 
     </style>

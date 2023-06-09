@@ -11,10 +11,18 @@
             size: 612pt 1008pt !important;
         }
 
+        @font-face {
+            font-family: 'Bookman';
+            src: url({{ storage_path("fonts/bookman.ttf") }}) format("truetype");
+            font-weight: 800;
+            font-style: normal;
+        }
+
         html, body {
             padding: 20px;
             margin: 0px;
-            font-size: 18px
+            font-size: 10.66px;
+            font-family: 'Bookman';
         }
 
         table {
@@ -28,7 +36,16 @@
             margin: 0px !important;
             height: 15px !important;
             padding: 1px !important;
-            vertical-align: middle !important;
+            vertical-align: middle;
+        }
+
+        .title {
+            font-size: 13.33px;
+        }
+
+        #declarant td {
+            vertical-align: bottom;
+        !important;
         }
 
         .assets td {
@@ -65,23 +82,23 @@
     </style>
 </head>
 <body>
-<div style="font-size: 10px;margin-left: 80%">
+<div style="font-size: 9.33px;margin-left: 82%">
     <div>Revised as of January 2015</div>
     <div>Per CSC Resolution No. 1500088</div>
     <div>Promulgated on January 23, 2015</div>
 </div>
 
 <div style="text-align: center;margin-top: 20px">
-    <div style="font-weight: bolder;font-size: 16.5px;">SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</div>
-    <div style="font-size: 15px">As of <u style="margin-left: 5px">December
+    <div style="font-weight: bolder;font-size: 16px;">SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</div>
+    <div style="font-size: 13px">As of <u style="margin-left: 5px">December
             31, {{ \Carbon\Carbon::now()->format('Y') }}</u></div>
-    <div style="font-size: 11px">(Required by R.A 6713)</div>
+    <div style="font-size: 10.66px">(Required by R.A 6713)</div>
     <div style="font-size: 12.5px;margin-top: 15px">
         <strong>Note:</strong>
         <i>Husband and wife who are both public officials and employees may file the required statements jointly or
             separately.</i>
     </div>
-    <div style="font-size:14px;margin-left: 20%;margin-right:20%;text-align: center">
+    <div style="font-size:13.33px;margin-left: 20%;margin-right:20%;text-align: center">
         <div style="display: inline-block;width: 32%">
             <input type="checkbox" style="display: inline"/>
             <div style="display: inline;font-style: italic;">Joint Filing</div>
@@ -95,7 +112,7 @@
             <div style="display: inline;font-style: italic;">Not Applicable</div>
         </div>
     </div>
-    <table style="margin-top: 20px;font-size: 11.5px;text-align: center">
+    <table id="declarant" style="margin-top: 20px;text-align: center;">
         <tr>
             <td class="fw-bold" style="width: 11%">DECLARANT:</td>
             <td style="width: 39%">
@@ -183,7 +200,7 @@
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
 
-    <div style="margin-top: 20px;font-size: 14px;text-decoration: underline" class="fw-bold">
+    <div style="margin-top: 10px;text-decoration: underline" class="title fw-bold">
         UNMARRIED CHILDREN BELOW EIGHTEEN (18) YEARS OF AGE LIVING IN DECLARANT'S HOUESHOLD
     </div>
     <table style="font-size: 14px;text-align: center;margin-top: 20px">
@@ -198,7 +215,7 @@
         </tr>
 
         @foreach($children as $key)
-            <tr>
+            <tr style="font-size: 13.33px">
                 <td style="width: 8%"></td>
                 <td class="border-bottom">{{ strtoupper($key['name']) }}</td>
                 <td style="width: 2%"></td>
@@ -213,10 +230,10 @@
     </table>
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
-    <div style="margin-top: 20px;font-size: 14px;text-decoration: underline" class="fw-bold">
+    <div style="margin-top: 10px;text-decoration: underline" class="fw-bold title">
         ASSETS, LIABILITIES AND NETWORTH
     </div>
-    <div style="text-align: center;font-size: 14px">
+    <div style="text-align: center;" class="title">
         (Including those of the spouse and unmarried children below eighteen (18)<br/>years of age living in declarant's
         household)
     </div>
@@ -231,8 +248,8 @@
     <tr class="fw-bold gray border-top border-left border-right">
         <td rowspan="2" class="border-right">
             <div class="fw-bold" style="font-size: 10px">DESCRIPTION</div>
-            <div style="font-size: 8px;font-style: unset;margin-top: 5px">(e.g. lot, house and<br/>lot,condominium<br/>and
-                improvements)
+            <div style="font-size: 8px;font-style: unset;margin-top: 5px">
+                (e.g. lot, house and<br/>lot,condominium<br/>and improvements)
             </div>
         </td>
         <td rowspan="2" class="border-right">
@@ -254,15 +271,15 @@
     </tr>
     <tr class="fw-bold gray border-bottom border-left border-right">
         <td colspan="2" class="border-top border-right">
-            <div style="font-size: 8px;font-style: normal !important;">(As found in the Tax Declaration of<br/>Real
-                Property)
+            <div style="font-size: 8px;font-style: normal !important;">
+                (As found in the Tax Declaration of<br/>Real Property)
             </div>
         </td>
         <td class="fw-bold border-top border-right" style="font-size: 10px">YEAR</td>
         <td class="fw-bold border-top border-right" style="font-size: 10px">MODE</td>
     </tr>
     @foreach($real_properties as $key)
-        <tr class="border-bottom border-left border-right assets">
+        <tr class="border-bottom border-left border-right assets" style="font-size: 16px">
             <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description']) }}</td>
             <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind']) }}</td>
             <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location']) }}</td>
@@ -273,7 +290,7 @@
             <td class="fw-bold" style="width: 14%">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
-    <tr style="font-size: 14px">
+    <tr style="font-size: 13.33px">
         <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -292,13 +309,13 @@
         <td class="border-top border-right">AQUISITION<br/>COST/AMOUNT</td>
     </tr>
     @foreach($personal_properties as $key)
-        <tr class="border-top border-right border-left">
+        <tr class="border-top border-right border-left" style="font-size: 16px">
             <td class="fw-bold border-right" style="width: 50%">{{ strtoupper($key['gadget']) }}</td>
             <td class="fw-bold border-right" style="width: 36%">{{ strtoupper($key['various_years']) }}</td>
             <td class="fw-bold" style="width: 14%">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
-    <tr class="border-top" style="font-size: 14px">
+    <tr class="border-top" style="font-size: 13.33px">
         <td colspan="2" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -318,8 +335,8 @@
         </td>
     </tr>
 </table>
-<div style="font-size: 16px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
-<div style="text-align: center;font-size: 18px;color: gray;font-style: italic;margin-top: 40px">Page 1 of 2</div>
+<div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
+<div style="text-align: center;font-size: 16px;color: gray;font-style: italic;margin-top: 40px;font-family: 'Times New Roman'">Page 1 of 2</div>
 <div style="page-break-before: always !important;"></div>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
     2. LIABILITIES*
@@ -331,13 +348,13 @@
         <td class="border-top border-right">OUTSTANDING BALANCE</td>
     </tr>
     @foreach($liabilities as $key)
-        <tr class="border-top border-right border-left">
+        <tr class="border-top border-right border-left" style="font-size: 13.33px">
             <td class="fw-bold border-right" style="width: 35%">{{ strtoupper($key['nature']) }}</td>
             <td class="fw-bold border-right" style="width: 30%">{{ strtoupper($key['creditors_name']) }}</td>
             <td class="fw-bold" style="width: 14%">{{ strtoupper($key['outstanding_balance']) }}</td>
         </tr>
     @endforeach
-    <tr class="border-top" style="font-size: 13px">
+    <tr class="border-top" style="font-size: 13.33px">
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL LIABILITIES:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -345,7 +362,7 @@
             </div>
         </td>
     </tr>
-    <tr style="font-size: 13px">
+    <tr style="font-size: 13.33px">
         <td colspan="2" style="text-align: right;" class="fw-bold">
             NET WORTH : Total Assets less Total Liabilities =
         </td>
@@ -356,27 +373,27 @@
         </td>
     </tr>
 </table>
-<div style="font-size: 16px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
-<div style="margin-top: 20px;font-size: 14px;text-decoration: underline;text-align: center" class="fw-bold">
+<div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
+<div style="margin-top: 20px;font-size: 13.33px;text-decoration: underline;text-align: center" class="fw-bold">
     BUSINESS INTERESTS AND FINANCIAL CONNECTIONS
 </div>
-<div style="text-align: center;font-size: 14px">
+<div style="text-align: center;font-size: 10.66px;font-style: italic">
     (of Declarant /Declarant’s spouse/ Unmarried Children Below Eighteen (18) years of Age Living in Declarant’s
     Household)
     <div>
         <input type="checkbox" style="display: inline"/>
-        <div style="display: inline;">I/We do not have any business interest or financial connection.</div>
+        <div style="display: inline;font-size: 13.33px">I/We do not have any business interest or financial connection.</div>
     </div>
 </div>
 <table style="text-align: center;margin-top: 10px;font-size: 12px">
-    <tr class="fw-bold gray border-bottom border-top border-left" style="font-size: 10px">
+    <tr class="fw-bold gray border-bottom border-top border-left" style="font-size: 10.66px">
         <td class="border-right">NAME OF ENTITY/BUSINESS<br/>ENTERPRISE</td>
         <td class="border-right border-top">BUSINESS ADDRESS</td>
         <td class="border-right border-top">NATURE OF BUSINESS<br/>INTEREST &/OR FINANCIAL<br/>CONNECTION</td>
         <td class="border-top border-right">DATE OF ACQUISITION OF <br/>INTEREST OR CONNECTION</td>
     </tr>
     @foreach($business as $key)
-        <tr class="border-bottom border-right border-left">
+        <tr class="border-bottom border-right border-left" style="font-size: 13.33px">
             <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['enterprise']) }}</td>
             <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['address']) }}</td>
             <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['nature']) }}</td>
@@ -387,15 +404,15 @@
 <div style="margin-top: 20px;font-size: 14px;text-decoration: underline;text-align: center" class="fw-bold">
     RELATIVES IN THE GOVERNMENT SERVICE
 </div>
-<div style="text-align: center;font-size: 14px">
+<div style="text-align: center;font-size: 10.66px;font-style: italic">
     (Within the Fourth Degree of Consanguinity or Affinity. Include also Bilas, Balae and Inso)
     <div>
         <input type="checkbox" style="display: inline;font-size: 12px"/>
-        <div style="display: inline;">I/We do not know of any relative/s in the government service)</div>
+        <div style="display: inline;font-size: 10.66px;font-style: italic">I/We do not know of any relative/s in the government service)</div>
     </div>
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 14px">
-    <tr class="fw-bold gray border-bottom border-top border-left" style="font-size: 10px">
+<table style="text-align: center;margin-top: 10px;font-size: 10.66px">
+    <tr class="fw-bold gray border-bottom border-top border-left">
         <td class="border-right">NAME OF RELATIVE</td>
         <td class="border-right border-top">RELATIONSHIP</td>
         <td class="border-right border-top">POSITION</td>
@@ -411,7 +428,7 @@
     @endforeach
 </table>
 
-<div style="margin-top: 30px;font-size: 14px">
+<div style="margin-top: 30px;font-size: 13.33px">
     <div><span style="margin-left: 50px">I</span> hereby certify that these are true and correct statements of my
         assets, liabilities, net worth,business interests and financial connections, including those of my spouse and
         unmarried
@@ -429,7 +446,7 @@
     </div>
 </div>
 
-<table style="font-size: 14px;margin-top: 20px">
+<table style="font-size: 13.33px;margin-top: 20px">
     <tr>
         <td style="width: 5%">Date:</td>
         <td style="width: 20%" class="border-bottom">
@@ -440,7 +457,7 @@
         <td></td>
     </tr>
 </table>
-<table style="margin-top:30px;font-size: 14px">
+<table style="margin-top:30px;font-size: 10.66px">
     <tr>
         <td colspan="2" class="border-bottom"></td>
         <td></td>
@@ -452,7 +469,7 @@
         <td colspan="2" style="text-align: center">Signature of Co-Declarant/Spouse</td>
     </tr>
 </table>
-<table style="margin-top:20px;font-size: 12px">
+<table style="margin-top:20px;font-size: 10.66px">
     <tr>
         <td>Government Issued ID:</td>
         <td class="border-bottom">

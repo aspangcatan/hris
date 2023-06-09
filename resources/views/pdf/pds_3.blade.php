@@ -30,11 +30,11 @@
         </tr>
         @foreach($voluntary_work as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 45%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['organization_address']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['working_from'] }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['working_to'] }}</td>
+                <td style="width: 43%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['organization_address']) }}</td>
+                <td style="width: 9%;border-right: solid 1px black" class="center-value">{{ $key['working_from'] }}</td>
+                <td style="width: 9%;border-right: solid 1px black" class="center-value">{{ $key['working_to'] }}</td>
                 <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['number_hours'] }}</td>
-                <td style="width: 34%;" class="center-value">{{ strtoupper($key['position']) }}</td>
+                <td style="width: 32%;" class="center-value">{{ strtoupper($key['position']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
@@ -51,7 +51,7 @@
         </tr>
         <tr style="text-align: center" class="gray">
             <td rowspan="2" style="border-right: solid 1px black">
-                <div style="font-size: 8.5px">
+                <div style="font-size: 10px">
                     30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS<br/>
                     (Write in full)
                 </div>
@@ -76,12 +76,12 @@
         </tr>
         @foreach($learning as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 45%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_title']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
+                <td style="width: 43%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_title']) }}</td>
+                <td style="width: 9%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
+                <td style="width: 9%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
                 <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['number_hours']) }}</td>
                 <td style="width: 10%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
-                <td style="width: 24%;" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
+                <td style="width: 22%;" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
@@ -132,9 +132,7 @@
         </tr>
     </table>
 </div>
-<div style="text-align: right">
-    CS FORM 212 (Revised 2017), Page 3 of 4
-</div>
+<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2017), Page 3 of 4</div>
 
 @if(count($next_page_learning) > 0)
     @for($i=0; $i<count($next_page_learning); $i++)

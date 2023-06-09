@@ -12,10 +12,10 @@
                 <span>SALN</span>
             </a>
         </li>
-        <li class="nav-item d-none">
+        <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('leave') }}">
                 <i class="bi bi-grid"></i>
-                <span>Leave Application</span>
+                <span>File Leave</span>
             </a>
         </li>
         <li class="nav-item d-none">
@@ -29,6 +29,12 @@
                 <a class="nav-link collapsed" href="{{ route('employee') }}">
                     <i class="bi bi-grid"></i>
                     <span>Employee</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('leave_management') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Leave Management</span>
                 </a>
             </li>
         @endif

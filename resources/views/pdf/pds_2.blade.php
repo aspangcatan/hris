@@ -109,6 +109,4 @@
         </tr>
     </table>
 </div>
-<div style="text-align: right">
-    CS FORM 212 (Revised 2017), Page 2 of 4
-</div>
+<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2017), Page 2 of 4</div>

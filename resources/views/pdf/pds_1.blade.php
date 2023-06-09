@@ -1,26 +1,26 @@
 <div id="page_1" style="border:1px solid black">
     <div>
-        <div style="font-weight: bold">CS Form No. 212</div>
-        <div>Revised 2017</div>
-        <div style="text-align: center;font-weight: bold;font-size: 24px">PERSONAL DATA SHEET</div>
-        <div style="margin-top:20px;font-weight: bold;font-size: 12px">WARNING: Any misrepresentation made in the
+        <div style="font-weight: bold;font-size:14.66px;font-family: 'Calibri';padding-left:2.5px">CS Form No. 212</div>
+        <div style="font-size: 12px;padding-left:2.5px">Revised 2017</div>
+        <div style="text-align: center;font-weight: bold;font-size: 29.33px;font-family:'Arial Black',sans-serif !important;">PERSONAL DATA SHEET</div>
+        <div style="margin-top:10px;font-weight: bold;font-size: 10.66px;font-family: 'Arial'">WARNING: Any misrepresentation made in the
             Personal
             Data Sheet and the Work Experience Sheet shall cause the filling of administrative/criminal case/s<br/>
             against the person concerned.
         </div>
-        <div style="font-size:12px;font-weight: bold">READ THE ATTACHED GUIDE TO FILLING OUT THE PERSONAL DATA SHEET
+        <div style="font-size:10.66px;font-weight: bold;font-family: 'Arial'">READ THE ATTACHED GUIDE TO FILLING OUT THE PERSONAL DATA SHEET
             (PDS)
             BEFORE ACCOMPLISHING THE PDS FORM.
         </div>
         <table>
             <tr>
-                <td style="width:70%;padding: 0px !important;height: unset !important;border-bottom: solid 1px black;border-right: solid 1px black">
+                <td style="width:70%;padding: 0px !important;height: unset !important;border-bottom: solid 1px black;border-right: solid 1px black;font-size: 10px;font-family: 'Arial Narrow'">
                     <span>Print legibly . Tick appropriate boxes</span>
                     <input style="display: inline;margin-top: -20px;font-size: 10px" type="checkbox"/>
-                    <span>) and use separate sheet if necessary. Indicate N/A if not applicable.</span>
+                    <span>) and use separateI sheet if necessary. Indicate N/A if not applicable.</span>
                     <span style="font-weight: bold;">DO NOT ABBREVIATE.</span>
                 </td>
-                <td style="width:7% !important;border-right:solid 1px black;border-top:solid 1px black;border-bottom:solid 1px black;background: gray;padding: 0px !important;height: unset !important;">
+                <td style="font-size:9px;width:8% !important;border-right:solid 1px black;border-top:solid 1px black;border-bottom:solid 1px black;background: gray;padding: 0px !important;height: unset !important;">
                     1. CS ID No.
                 </td>
                 <td style="border-top:solid 1px black;border-bottom:solid 1px black;padding: 0px !important;height: unset !important;text-align: right;">
@@ -39,8 +39,7 @@
         </tr>
         <tr>
             <td style="border-top:solid 1px black" class="gray">2. SURNAME</td>
-            <td style="border-bottom: solid 1px black;border-left: solid 1px black;"
-                colspan="2">
+            <td style="border-bottom: solid 1px black;border-left: solid 1px black;" colspan="2">
                 <div class="value">{{ strtoupper($user->lname) }}</div>
             </td>
         </tr>
@@ -51,7 +50,7 @@
             <td style="border-bottom: solid 1px black;border-left: solid 1px black;">
                 <div class="value">{{ strtoupper($user->fname) }}</div>
             </td>
-            <td style="width: 25%;border-bottom: solid 1px black;border-left: solid 1px black;" class="gray">
+            <td style="width: 25%;border-bottom: solid 1px black;border-left: solid 1px black;font-size: 9.33px" class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
                 <div class="value">
                     @if($user->suffix)
@@ -623,7 +622,7 @@
                     @endif
                 </div>
             </td>
-            <td style="border-right: solid 1px black" class="gray">21. E-MAIL ADDRESS (if any)</td>
+            <td style="font-size: 10px;border-right: solid 1px black" class="gray">21. E-MAIL ADDRESS (if any)</td>
             <td colspan="2">
                 <div class="value">
                     @if($employee->email_address)
@@ -681,7 +680,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 17%;border-right: solid 1px black;" class="gray">
+            <td style="width: 17%;border-right: solid 1px black;font-size: 9.33px" class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
                 <div class="value">
                     @if($family)
@@ -841,7 +840,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 17%;border-right: solid 1px black;" class="gray">
+            <td style="width: 17%;border-right: solid 1px black;font-size: 9.33px" class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
                 <div class="value">
                     @if($family)
@@ -984,7 +983,7 @@
                 (Write in full)
             </td>
             <td colspan="2" style="border-right: solid 1px black">PERIOD OF ATTENDANCE</td>
-            <td rowspan="2" style="font-size: 9px;border-right: solid 1px black">
+            <td rowspan="2" style="font-size: 8px !important;border-right: solid 1px black">
                 HIGHEST LEVEL/<br/>UNITS EARNED<br/>(if not
                 graduated)
             </td>
@@ -1000,18 +999,18 @@
             <tr style="border-top: solid 1px  black">
                 <td style="width: 20%;border-right: solid 1px black" class="gray">{{ $education['level'] }}</td>
                 <td style="width: 25%;border-right: solid 1px black"
-                    class="center-value">{{ strtoupper($education['school_name']) }}</td>
-                <td style="width: 20%;border-right: solid 1px black"
-                    class="center-value">{{ strtoupper($education['education_degree']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black"
-                    class="center-value">{{ $education['attendance_from'] }}</td>
-                <td style="width: 7%;border-right: solid 1px black"
-                    class="center-value">{{ $education['attendance_to'] }}</td>
-                <td style="width: 8%;border-right: solid 1px black"
-                    class="center-value">{{ strtoupper($education['highest_level']) }}</td>
+                    class="center-value education">{{ strtoupper($education['school_name']) }}</td>
+                <td style="width: 21%;border-right: solid 1px black"
+                    class="center-value education">{{ strtoupper($education['education_degree']) }}</td>
                 <td style="width: 6%;border-right: solid 1px black"
-                    class="center-value">{{ $education['year_graduated'] }}</td>
-                <td style="width: 7%;" class="center-value">{{ $education['scholarship'] }}</td>
+                    class="center-value education">{{ $education['attendance_from'] }}</td>
+                <td style="width: 6%;border-right: solid 1px black"
+                    class="center-value education">{{ $education['attendance_to'] }}</td>
+                <td style="width: 9%;border-right: solid 1px black"
+                    class="center-value education">{{ strtoupper($education['highest_level']) }}</td>
+                <td style="width: 6%;border-right: solid 1px black"
+                    class="center-value education">{{ $education['year_graduated'] }}</td>
+                <td style="width: 7%;" class="center-value education">{{ $education['scholarship'] }}</td>
             </tr>
         @endforeach
         <tr>
@@ -1032,4 +1031,4 @@
         </tr>
     </table>
 </div>
-<div style="text-align: right">CS FORM 212 (Revised 2017), Page 1 of 4</div>
+<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2017), Page 1 of 4</div>

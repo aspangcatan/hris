@@ -1,9 +1,8 @@
-<div id="page_4" style="border:1px solid black;font-size: 12px">
+<div id="page_4" style="border:1px solid black;font-size: 11.5px">
     <table style="border-top:solid 1px black" class="survey">
         <tr>
             <td style="width: 67%;border-right: solid 1px black">34. Are you related by consanguinity or affinity to the
-                appointing or recommending authority, or to the<br/>
-                chief of bureau or office or to the person who has immediate supervision over you in the Office, <br/>
+                appointing or recommending authority, or to the chief of bureau or office or to the person who has immediate supervision over you in the Office, <br/>
                 Bureau or Department where you will be appointed,
             </td>
             <td style="width: 33%"></td>
@@ -30,8 +29,8 @@
             </td>
         </tr>
         <tr>
-            <td style="border-right: solid 1px black;">b. withing the fourth degree (for Local Government Unit - Career
-                Employee)?
+            <td style="border-right: solid 1px black;">b. within the fourth degree (for Local Government Unit - Career
+                Employees)?
             </td>
             <td>
                 <div style="margin-left: 5px">
@@ -636,6 +635,4 @@
         </div>
     </div>
 </div>
-<div style="text-align: right">
-    CS FORM 212 (Revised 2017), Page 4 of 4
-</div>
+<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2017), Page 4 of 4</div>

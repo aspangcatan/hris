@@ -27,6 +27,7 @@ Route::get('/logout', function () {
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 Route::get('/print_saln', [\App\Http\Controllers\PrintController::class, 'printSaln'])->name('printSaln');
+Route::get('/print_work_experience', [\App\Http\Controllers\PrintController::class, 'printWorkExperience'])->name('printWorkExperience');
 
 Route::group(['middleware' => 'auth'], function () {
     #PRINTING
@@ -49,6 +50,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/leave', function () {
         return view('leave');
     })->name('leave');
+
+    Route::get('/leave_management', function () {
+        return view('leave_management');
+    })->name('leave_management');
 
     Route::get('/review_leave', function () {
         return view('review_leave');

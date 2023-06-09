@@ -30,6 +30,17 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PrintController extends Controller
 {
+    public function printWorkExperience(Request $request)
+    {
+        try {
+
+            $pdf = Pdf::loadView('pdf.work_experience', []);
+            return $pdf->stream('work_experience.pdf', array("Attachment" => false));
+        } catch (\Exception $exception) {
+            return $exception->getMessage();
+        }
+    }
+
     public function printSaln(Request $request)
     {
         try {
@@ -602,6 +613,8 @@ class PrintController extends Controller
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
                 'reference' => $references, 'pds_date' => $request->pds_date]);
+
+            $pdf->setPaper('A4', 'landscape');
 
             return $pdf->stream('invoice.pdf', array("Attachment" => false));
         } catch (\Exception $exception) {
