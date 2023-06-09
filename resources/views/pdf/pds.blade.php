@@ -33,7 +33,7 @@
 
         html, body {
             font-size: 10.66px !important;
-            font-family: 'Arial Narrow', sans-serif;
+            font-family: sans-serif;
             margin: 0px !important;
             padding: 2px !important;
         }
