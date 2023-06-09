@@ -122,14 +122,14 @@
         }
 
         .value {
-            font-family: 'Arial Narrow', sans-serif;
+            font-family: sans-serif;
             font-size: 13.33px;
             margin-left: 5px;
             font-weight: bold;
         }
 
         .center-value {
-            font-family: 'Arial Narrow', sans-serif;
+            font-family: sans-serif;
             font-size: 13.33px;
             text-align: center;
             font-weight: bold;
