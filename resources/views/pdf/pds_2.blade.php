@@ -8,12 +8,12 @@
         </tr>
         <tr style="text-align: center" class="gray">
             <td rowspan="2" style="border-right: solid 1px black">
-                <div>27. CAREER SERVICE/RA 1080 (BOARD/BAR) UNDER<br/>
+                <div style="font-size: 9.33px">27. CAREER SERVICE/RA 1080 (BOARD/BAR) UNDER<br/>
                     SPECIAL LAWS/CES/CSEE<br/>
                     BARANGAY ELIGIBILITY/DRIVER'S LICENSE
                 </div>
             </td>
-            <td rowspan="2" style="border-right: solid 1px black">
+            <td rowspan="2" style="border-right: solid 1px black;font-size: 9.33px">
                 RATING<br/>
                 (If Applicable)
             </td>
@@ -53,7 +53,7 @@
     <table style="border-top: solid 1px black">
         <tr style="background: gray">
             <td colspan="8"
-                class="title">V. WORK EXPERIENCE<br/><span style="font-size: 13.33px">(Include private employment. Start from your recent work)
+                class="title">V. WORK EXPERIENCE<br/><span style="font-size: 11.33px">(Include private employment. Start from your recent work)
                     Description of duties should be indicated in the attached Work Experience sheet.</span>
             </td>
         </tr>

@@ -117,7 +117,7 @@
             <td style="border-bottom:solid 1px black;height: unset !important;" class="gray"></td>
             <td style="border-right: solid 1px black;height: unset !important;" class="gray"></td>
             <td style="height: unset !important;">
-                <div style="margin-left:90px">
+                <div style="margin-left:70px">
                     <div style="display:inline">
                         @if($employee)
                             @if($employee->citizenship_type == "by birth")
@@ -129,6 +129,7 @@
                             <input type="checkbox" style="margin-top: -10px;margin-right: 3px"/>
                         @endif
 
+                        <span>by birth</span>
                         <span>by birth</span>
                     </div>
                     <div style="display:inline;margin-left: 10px">
@@ -285,7 +286,7 @@
             </td>
             <td style="border-right: solid 1px black;width: 17%;vertical-align: top !important;" rowspan="2"
                 class="gray">
-                <div style="margin-top: 5px">17. RESIDENTIAL ADDRESS</div>
+                <div style="margin-top: 5px;font-size: 9.33px">17. RESIDENTIAL ADDRESS</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">
@@ -428,7 +429,7 @@
                 </div>
             </td>
             <td style="border-right: solid 1px black;width: 17%;vertical-align: top !important;" class="gray">
-                <div style="margin-top: 5px">18. PERMANENT ADDRESS</div>
+                <div style="margin-top: 5px;font-size: 9.33px">18. PERMANENT ADDRESS</div>
             </td>
             <td style="padding-left: 0px !important;padding-right: 0px !important;width: 19%;border-bottom: solid 1px black;text-align: center">
                 <div class="center-value">

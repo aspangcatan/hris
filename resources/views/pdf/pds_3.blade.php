@@ -51,7 +51,7 @@
         </tr>
         <tr style="text-align: center" class="gray">
             <td rowspan="2" style="border-right: solid 1px black">
-                <div style="font-size: 10px">
+                <div style="font-size: 8.33px">
                     30. TITLE OF LEARNING AND DEVELOPMENT INTERVENTIONS/TRAINING PROGRAMS<br/>
                     (Write in full)
                 </div>
