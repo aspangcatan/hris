@@ -1,6 +1,6 @@
 <div id="page_3" style="border:1px solid black">
     <table style="border-top: solid 1px black">
-        <tr style="background: gray">
+        <tr style="background: gray;">
             <td colspan="6"
                 class="title">VI. VOLUNTARY WORK OR INVOLVEMENT IN CIVIC / NON-GOVENMENT / PEOPLE / VOLUNTARY
                 ORGANIZATION/S

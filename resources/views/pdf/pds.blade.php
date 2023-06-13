@@ -95,7 +95,8 @@
         .title {
             font-weight: bold;
             color: white;
-            font-size: 14.66px;
+            font-size: 12.33px;
+            /*font-size: 14.66px;*/
             padding: 2px !important;
             height: unset !important;
             border-top: solid 1px black;
