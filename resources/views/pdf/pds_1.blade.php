@@ -117,7 +117,7 @@
             <td style="border-bottom:solid 1px black;height: unset !important;" class="gray"></td>
             <td style="border-right: solid 1px black;height: unset !important;" class="gray"></td>
             <td style="height: unset !important;">
-                <div style="margin-left:70px">
+                <div style="margin-left:50px">
                     <div style="display:inline">
                         @if($employee)
                             @if($employee->citizenship_type == "by birth")
@@ -128,8 +128,6 @@
                         @else
                             <input type="checkbox" style="margin-top: -10px;margin-right: 3px"/>
                         @endif
-
-                        <span>by birth</span>
                         <span>by birth</span>
                     </div>
                     <div style="display:inline;margin-left: 10px">
