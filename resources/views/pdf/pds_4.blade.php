@@ -489,7 +489,7 @@
                 </tr>
             @endforeach
             <tr style="border-top: solid 1px black">
-                <td colspan="3" style="border-right: solid 1px black;font-size: 13.5px">
+                <td colspan="3" style="border-right: solid 1px black;font-size: 13px;font-family: 'Arial Narrow'">
                     42. I declare under oath that I have personally accomplished this Personal Data Sheet which is a
                     true,
                     correct and complete statement pursuant to the provisions of pertinent laws, rules and regulations
