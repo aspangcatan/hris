@@ -17,6 +17,9 @@ use App\Models\PersonalProperties;
 use App\Models\RealProperties;
 use App\Models\Recognition;
 use App\Models\Reference;
+use App\Models\RelatedAccomplishment;
+use App\Models\RelatedDuties;
+use App\Models\RelatedWork;
 use App\Models\SalnChildren;
 use App\Models\ServiceRecords;
 use App\Models\Skill;
@@ -34,7 +37,15 @@ class PrintController extends Controller
     {
         try {
 
-            $pdf = Pdf::loadView('pdf.work_experience', []);
+            $related_work = RelatedWork::where('work_id', $request->work_id)->get();
+            for ($i = 0; $i < count($related_work); $i++) {
+                $accomplishment = RelatedAccomplishment::where('related_id',$related_work[$i]->id)->get();
+                $duties = RelatedDuties::where('related_id',$related_work[$i]->id)->get();
+
+                $related_work[$i]->accomplishments = $accomplishment;
+                $related_work[$i]->duties = $duties;
+            }
+            $pdf = Pdf::loadView('pdf.work_experience', ['related_work' => $related_work]);
             return $pdf->stream('work_experience.pdf', array("Attachment" => false));
         } catch (\Exception $exception) {
             return $exception->getMessage();

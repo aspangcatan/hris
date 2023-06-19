@@ -85,34 +85,33 @@
                 from most recent first
             </td>
         </tr>
-        @for($j=0; $j<2; $j++)
+        @foreach($related_work as $key)
             <tr class="bl bt bb br">
                 <td colspan="2">
                     <ul>
-                        <li>Duration: <span style="margin-left: 5px">February 11,2011 - Present</span></li>
-                        <li>Position: <span style="margin-left: 5px">Computer Maintenance Technoglist II</span></li>
-                        <li>Name of Office/Unit: <span style="margin-left: 5px">IHOMP</span></li>
-                        <li>Immediate Supervisor: <span style="margin-left: 5px">Allen Rama</span></li>
-                        <li>Name of Agency/Organization and Location: <span style="margin-left: 5px">Vicente Sotto Memorial Medical Center</span>
+                        <li>Duration: <span style="margin-left: 5px">{{ $key['duration'] }}</span></li>
+                        <li>Position: <span style="margin-left: 5px">{{ $key['position'] }}</span></li>
+                        <li>Name of Office/Unit: <span style="margin-left: 5px">{{ $key['office_unit'] }}</span></li>
+                        <li>Immediate Supervisor: <span style="margin-left: 5px">{{ $key['supervisor'] }}</span></li>
+                        <li>Name of Agency/Organization and Location: <span
+                                style="margin-left: 5px">{{ $key['agency'] }}</span>
                         </li>
                     </ul>
                     <ul style="margin-left: 15px">
                         <li>List of Accomplishments and Contributions (if any)</li>
-                        @for($i=0; $i<5; $i++)
-                            <li style="margin-left: 20px">Sample accomplishment</li>
-                        @endfor
+                        @foreach($key['accomplishments'] as $accomplishment)
+                            <li style="margin-left: 20px">{{ $accomplishment['description'] }}</li>
+                        @endforeach
                     </ul>
                     <ul style="margin-left: 15px">
                         <li>Summary of Actual Duties</li>
-                        <li style="margin-left: 20px">
-                            Responsible for the management of the recruitment and selection process and the coordination
-                            of training activities of the Department; provides assistance in the management of the
-                            Division’s programs and activities and performs other related functions.
-                        </li>
+                        @foreach($key['duties'] as $duty)
+                            <li style="margin-left: 20px">{{ $duty['description'] }}</li>
+                        @endforeach
                     </ul>
                 </td>
             </tr>
-        @endfor
+        @endforeach
     </table>
     <table style="margin-top: 25px">
         <tr>
@@ -123,7 +122,7 @@
         <tr>
             <td></td>
             <td class="center">
-                (Signature over Printed Name<br /> of Employee Applicant)
+                (Signature over Printed Name<br/> of Employee Applicant)
             </td>
             <td></td>
         </tr>
