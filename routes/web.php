@@ -36,6 +36,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/print_work_experience', [\App\Http\Controllers\PrintController::class, 'printWorkExperience'])->name('printWorkExperience');
 
     #NAVIGATION
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+
     Route::get('/profile', function () {
         return view('profile');
     })->name('profile');

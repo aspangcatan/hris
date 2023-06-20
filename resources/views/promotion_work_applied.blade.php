@@ -22,17 +22,6 @@
                 </table>
             </div>
         </div>
-        <div class="card-footer text-dark" id="pagination_container">
-            <div class="d-flex align-items-center justify-content-center">
-                <button class="btn btn-sm d-none" style="background: transparent !important;" id="btn_prev">
-                    <i class="bi bi-caret-left"></i>
-                </button>
-                <div id="page_items_count"></div>
-                <button class="btn btn-sm" style="background: transparent !important;" id="btn_next">
-                    <i class="bi bi-caret-right"></i>
-                </button>
-            </div>
-        </div>
     </div>
 
     @include('modals.promotion_work_applied')
