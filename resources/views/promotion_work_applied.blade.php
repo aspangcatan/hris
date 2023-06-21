@@ -23,7 +23,6 @@
             </div>
         </div>
     </div>
-
     @include('modals.promotion_work_applied')
 @stop
 @section('js')

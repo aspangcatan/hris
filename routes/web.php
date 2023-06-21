@@ -129,7 +129,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/insert_liabilities', [\App\Http\Controllers\SalnController::class, 'insertLiabilities'])->name('insertLiabilities');
     Route::post('/insert_business_interest', [\App\Http\Controllers\SalnController::class, 'insertBusinessInterest'])->name('insertBusinessInterest');
     Route::post('/insert_government_relative', [\App\Http\Controllers\SalnController::class, 'insertGovernmentRelative'])->name('insertGovernmentRelative');
-
     Route::get('/get_declarant', [\App\Http\Controllers\SalnController::class, 'getDeclarant'])->name('getDeclarant');
     Route::get('/get_declarant_spouse', [\App\Http\Controllers\SalnController::class, 'getDeclarantSpouse'])->name('getDeclarantSpouse');
     Route::get('/get_saln_children', [\App\Http\Controllers\SalnController::class, 'getChildren'])->name('getChildren');
@@ -138,7 +137,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_liabilities', [\App\Http\Controllers\SalnController::class, 'getLiabilities'])->name('getLiabilities');
     Route::get('/get_business_interest', [\App\Http\Controllers\SalnController::class, 'getBusinessInterest'])->name('getBusinessInterest');
     Route::get('/get_government_relative', [\App\Http\Controllers\SalnController::class, 'getGovernmentRelative'])->name('getGovernmentRelative');
-
     Route::delete('/delete_saln_children', [\App\Http\Controllers\SalnController::class, 'deleteSalnChildren'])->name('deleteSalnChildren');
     Route::delete('/delete_real_properties', [\App\Http\Controllers\SalnController::class, 'deleteRealProperties'])->name('deleteRealProperties');
     Route::delete('/delete_personal_properties', [\App\Http\Controllers\SalnController::class, 'deletePersonalProperties'])->name('deletePersonalProperties');
@@ -150,6 +148,11 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/insert_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'insertRelatedWork'])->name('insertRelatedWork');
     Route::get('/get_promotion_work', [\App\Http\Controllers\PromotionWorkController::class, 'show'])->name('getPromotionWork');
     Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
-
     Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied');
+#LEAVE CREDITS MANAGEMENT
+    Route::post('/insert_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'insertUpdateCredits'])->name('insertUpdateCredits');
+    Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits');
+    Route::get('/get_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'getEmployeeCredits'])->name('getEmployeeCredits');
+    Route::get('/get_all_balances', [\App\Http\Controllers\LeaveCreditsController::class, 'getAllBalances'])->name('getAllBalances');
+
 });

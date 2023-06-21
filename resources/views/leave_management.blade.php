@@ -1,8 +1,35 @@
 @extends('master')
 @section('content')
+    <div class="d-flex justify-content-end mb-2">
+        <div>
+            <input class="form-control" placeholder="Search firstname" id="search_fname"/>
+        </div>
+        <div class="ms-2 me-1">
+            <input type="text" class="form-control" placeholder="Search lastname" id="search_lname"/>
+        </div>
+        <div class="ms-1">
+            <button class="btn btn-success" id="btn_search_employee">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+    </div>
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">Leave Credits Management</h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Leave Credits Management</h5>
+                <div class="dropdown">
+                    <button type="button" class="btn btn-sm" data-bs-toggle="dropdown"
+                            style="background: transparent !important;">
+                        <span class="bi bi-three-dots-vertical"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" id="btn_bulk_update">Bulk update</a></li>
+                        <li><a class="dropdown-item" href="#" id="btn_generate_report">Generate Report</a></li>
+                    </ul>
+                </div>
+
+            </div>
+
             <div class="table-responsive">
                 <table class="table text-center">
                     <thead>
@@ -13,7 +40,7 @@
                         <th style="width: 8%">CTO BAL</th>
                         <th style="width: 8%">FL BAL</th>
                         <th style="width: 8%">SPL BAL</th>
-                        <th style="width: 4%"></th>
+                        <th style="width: 5%"></th>
                     </tr>
                     </thead>
                     <tbody id="employee_list"></tbody>
@@ -33,7 +60,7 @@
         </div>
     </div>
 
-    @include('modals.leave')
+    @include('modals.leave_management')
 @stop
 @section('js')
     @include('js.leave_management')

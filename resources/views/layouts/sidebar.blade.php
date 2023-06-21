@@ -37,7 +37,7 @@
                     <span>Employee</span>
                 </a>
             </li>
-            <li class="nav-item d-none">
+            <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('leave_management') }}">
                     <i class="bi bi-grid"></i>
                     <span>Leave Management</span>

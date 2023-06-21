@@ -5,8 +5,6 @@
     let position_applied_id = 0;
     let related_work_id = 0;
     $(document).ready(function () {
-        getPromotionWork();
-
         let $selectize_accomplishment = $("#work_accomplishment").selectize({
             maxItems: 99,
             valueField: "description",
@@ -279,8 +277,9 @@
                 }).catch(err => {
                 console.log(err);
             });
-
         });
+
+        getPromotionWork();
     });
 
     function viewWork(id) {

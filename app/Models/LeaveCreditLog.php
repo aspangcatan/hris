@@ -10,7 +10,7 @@ class LeaveCreditLog extends Model
     use HasFactory;
 
     protected $connection = 'mysql';
-    protected $table = 'leave_credits_logs';
+    protected $table = 'leave_credit_logs';
 
     public $timestamps = false;
 }
