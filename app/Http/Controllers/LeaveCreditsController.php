@@ -114,6 +114,8 @@ class LeaveCreditsController extends Controller
                 })
                 ->skip($request->page * 10)
                 ->take(11)
+                ->orderBy('fname','ASC')
+                ->orderBy('lname','ASC')
                 ->get(['t.id', 'fname', 'mname', 'lname', 'suffix', 'vl_bal', 'sl_bal', 'cto_bal', 'fl_bal', 'spl_bal']);
             return response(['code' => 200, 'results' => $employee]);
         } catch (\Exception $exception) {
