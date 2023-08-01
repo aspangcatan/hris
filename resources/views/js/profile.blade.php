@@ -458,6 +458,8 @@
 
         $("#btn_save_education").click(function () {
             let is_valid = true;
+            $("#education_error").addClass("d-none");
+            $(".is-invalid").removeClass("is-invalid");
             $(".error_list").empty();
             const level = $("#education_level").val();
             const school_name = $("#school_name").val();
