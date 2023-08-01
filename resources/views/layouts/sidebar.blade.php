@@ -19,9 +19,9 @@
             </a>
         </li>
         <li class="nav-item d-none">
-            <a class="nav-link collapsed" href="{{ route('leave') }}">
+            <a class="nav-link collapsed" href="{{ route('leave_application') }}">
                 <i class="bi bi-grid"></i>
-                <span>File Leave</span>
+                <span>Leave Application</span>
             </a>
         </li>
         <li class="nav-item d-none">
@@ -37,7 +37,7 @@
                     <span>Employee</span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="{{ route('leave_management') }}">
                     <i class="bi bi-grid"></i>
                     <span>Leave Management</span>

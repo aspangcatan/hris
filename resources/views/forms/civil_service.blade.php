@@ -1,4 +1,4 @@
-<div id="children">
+<div id="civil_service">
     @if(Route::currentRouteName() == "profile")
         <div class="d-flex justify-content-end align-items-center">
             <button class="btn btn-sm btn-primary" id="btn_add_civil_service">New</button>

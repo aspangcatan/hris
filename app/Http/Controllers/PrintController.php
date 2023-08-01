@@ -33,14 +33,24 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PrintController extends Controller
 {
+    public function printLeaveForm(Request $request)
+    {
+        try {
+            $pdf = Pdf::loadView('pdf.leave_form', []);
+            return $pdf->stream('work_experience.pdf', array("Attachment" => false));
+        } catch (\Exception $exception) {
+            return $exception->getMessage();
+        }
+    }
+
     public function printWorkExperience(Request $request)
     {
         try {
 
             $related_work = RelatedWork::where('work_id', $request->work_id)->get();
             for ($i = 0; $i < count($related_work); $i++) {
-                $accomplishment = RelatedAccomplishment::where('related_id',$related_work[$i]->id)->get();
-                $duties = RelatedDuties::where('related_id',$related_work[$i]->id)->get();
+                $accomplishment = RelatedAccomplishment::where('related_id', $related_work[$i]->id)->get();
+                $duties = RelatedDuties::where('related_id', $related_work[$i]->id)->get();
 
                 $related_work[$i]->accomplishments = $accomplishment;
                 $related_work[$i]->duties = $duties;
@@ -366,7 +376,7 @@ class PrintController extends Controller
             }
 
             for ($i = 0; $i < count($LEVELS); $i++) {
-                $educations[$i] = [
+                $educations[$i][0] = [
                     'level' => $LEVELS[$i],
                     'school_name' => 'N/A',
                     'education_degree' => 'N/A',
@@ -378,8 +388,13 @@ class PrintController extends Controller
                 ];
             }
 
+            $elementary_count = 0;
+            $secondary_count = 0;
+            $vocational_count = 0;
+            $college_count = 0;
+            $graduate_count = 0;
+            $index = 0;
             foreach ($education as $key) {
-                $index = 0;
                 switch ($key->level) {
                     case "Elementary":
                         $index = 0;
@@ -398,16 +413,30 @@ class PrintController extends Controller
                         break;
                 }
 
-                $educations[$index] = [
-                    'level' => $LEVELS[$index],
-                    'school_name' => $key->school_name,
-                    'education_degree' => $key->education_degree,
-                    'attendance_from' => $key->attendance_from,
-                    'attendance_to' => $key->attendance_to,
-                    'highest_level' => $key->highest_level,
-                    'year_graduated' => ($key->year_graduated == 0) ? "N/A" : $key->year_graduated,
-                    'scholarship' => $key->scholarship
-                ];
+                if ($educations[$index][0]['school_name'] == "N/A") {
+                    $educations[$index][0] = [
+                        'level' => $LEVELS[$index],
+                        'school_name' => $key->school_name,
+                        'education_degree' => $key->education_degree,
+                        'attendance_from' => $key->attendance_from,
+                        'attendance_to' => $key->attendance_to,
+                        'highest_level' => $key->highest_level,
+                        'year_graduated' => ($key->year_graduated == 0) ? "N/A" : $key->year_graduated,
+                        'scholarship' => $key->scholarship
+                    ];
+                } else {
+                    $educations[$index][] = [
+                        'level' => $LEVELS[$index],
+                        'school_name' => $key->school_name,
+                        'education_degree' => $key->education_degree,
+                        'attendance_from' => $key->attendance_from,
+                        'attendance_to' => $key->attendance_to,
+                        'highest_level' => $key->highest_level,
+                        'year_graduated' => ($key->year_graduated == 0) ? "N/A" : $key->year_graduated,
+                        'scholarship' => $key->scholarship
+                    ];
+                }
+
             }
 
             for ($i = 0; $i < 10; $i++) {

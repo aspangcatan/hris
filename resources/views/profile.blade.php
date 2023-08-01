@@ -143,11 +143,12 @@
                     <div class="tab-pane fade pt-3" id="survey">
                         @include('forms.survey')
                     </div>
-                </div><!-- End Bordered Tabs -->
+                </div>
             </div>
         </div>
     </section>
     @include('modals.children')
+    @include('modals.education')
     @include('modals.civil_service')
     @include('modals.work_experience')
     @include('modals.voluntary')

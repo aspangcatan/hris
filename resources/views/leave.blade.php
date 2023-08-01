@@ -1,21 +1,23 @@
 @extends('master')
 @section('content')
-    <div class="card">
+    <div class="d-flex justify-content-end">
+        <button class="btn btn-sm btn-success" id="btn_file_leave">FILE LEAVE <i class="bi bi-plus-lg"></i></button>
+    </div>
+    <div class="card mt-2">
         <div class="card-body">
-            <h5 class="card-title">Leaves Applied</h5>
+            <h5 class="card-title">Leave History</h5>
             <div class="table-responsive">
                 <table class="table text-center">
                     <thead>
                     <tr>
-                        <th></th>
                         <th>Leave Type</th>
                         <th>Details</th>
+                        <th>Dates applied</th>
                         <th>Status</th>
-                        <th>Date applied</th>
                         <th style="width: 4%"></th>
                     </tr>
                     </thead>
-                    <tbody id="employee_list"></tbody>
+                    <tbody id="leave_history_list"></tbody>
                 </table>
             </div>
         </div>
@@ -31,7 +33,6 @@
             </div>
         </div>
     </div>
-
     @include('modals.leave')
 @stop
 @section('js')

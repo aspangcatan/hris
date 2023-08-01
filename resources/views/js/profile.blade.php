@@ -45,6 +45,7 @@
     ];
 
     const children_modal = new bootstrap.Modal(document.getElementById('children_modal'));
+    const education_modal = new bootstrap.Modal(document.getElementById('education_modal'));
     const civil_service_modal = new bootstrap.Modal(document.getElementById('civil_service_modal'));
     const work_experience_modal = new bootstrap.Modal(document.getElementById('work_experience_modal'));
     const voluntary_modal = new bootstrap.Modal(document.getElementById('voluntary_modal'));
@@ -54,6 +55,7 @@
     const print_modal = new bootstrap.Modal(document.getElementById('print_modal'));
 
     let children_id = 0;
+    let education_id = 0;
     let civil_service_id = 0;
     let work_id = 0;
     let voluntary_id = 0;
@@ -119,6 +121,19 @@
             $("#children_name").val("");
             $("#children_birthdate").val("");
             children_modal.toggle();
+        });
+
+        $("#btn_add_education").click(function () {
+            education_id = 0;
+            $("#education_level").val("");
+            $("#school_name").val("");
+            $("#education_degree").val("");
+            $("#attendance_from").val("");
+            $("#attendance_to").val("");
+            $("#highest_level").val("");
+            $("#year_graduated").val("");
+            $("#scholarship").val("");
+            education_modal.toggle();
         });
 
         $("#btn_add_civil_service").click(function () {
@@ -245,88 +260,6 @@
                 $(".error_list").append("<li>Lastname is required</li>");
                 $("#form_lname").addClass("is-invalid");
             }
-
-            // if (birthdate == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Date of birth is required</li>");
-            //     $("#form_birthdate").addClass("is-invalid");
-            // }
-            //
-            // if (birthplace == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Place of birth is required</li>");
-            //     $("#form_birthplace").addClass("is-invalid");
-            // }
-            //
-            // if (sex == "" || sex === null) {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Sex is required</li>");
-            //     $("#form_sex").addClass("is-invalid");
-            // }
-            //
-            // if (!civil_status) {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Civil status is required</li>");
-            //     $("#form_civil_status").addClass("is-invalid");
-            // }
-            //
-            // if (height == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Height is required</li>");
-            //     $("#form_height").addClass("is-invalid");
-            // }
-            //
-            // if (weight == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Weight is required</li>");
-            //     $("#form_weight").addClass("is-invalid");
-            // }
-            //
-            // if (blood_type === null || blood_type == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Blood type is required</li>");
-            //     $("#form_blood_type").addClass("is-invalid");
-            // }
-            //
-            // if (employee_no == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Agency Employee No. is required</li>");
-            //     $("#form_employee_no").addClass("is-invalid");
-            // }
-            //
-            // if (telephone_no == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Telephone No. is required</li>");
-            //     $("#form_telephone_no").addClass("is-invalid");
-            // }
-            //
-            // if (mobile_no == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Mobile No. is required</li>");
-            //     $("#form_mobile_no").addClass("is-invalid");
-            // }
-            //
-            // if (email_address == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Email address is required</li>");
-            //     $("#form_email_address").addClass("is-invalid");
-            // }
-
-            // if (citizenship == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Citizenship is required</li>");
-            // }
-            //
-            // if (citizenship != "" && citizenship_type == "") {
-            //     $(".error_list").append("<li>Please specify citizenship type</li>");
-            //     is_valid = false;
-            // }
-            //
-            // if (citizenship_type && citizenship_country == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Citizenship country is required</li>");
-            //     $("#form_citizenship_country").addClass("is-invalid");
-            // }
 
             if (!is_valid) {
                 $("#personal_information_error").removeClass("d-none");
@@ -466,36 +399,6 @@
             const mother_lname = $("#mother_lname").val().trim();
             const mother_ext_name = $("#mother_ext_name").val().trim();
 
-            // if (spouse_fname == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Spouse firstname is required</li>");
-            // }
-            //
-            // if (spouse_lname == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Spouse lastname is required</li>");
-            // }
-            //
-            // if (father_fname == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Father firstname is required</li>");
-            // }
-            //
-            // if (father_lname == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Father lastname is required</li>");
-            // }
-            //
-            // if (mother_fname == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Mother firstname is required</li>");
-            // }
-            //
-            // if (mother_lname == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Mother firstname is required</li>");
-            // }
-
             if (!is_valid) {
                 $("#family_background_error").removeClass("d-none");
                 $("body").animate({scrollTop: $('#family_background_error').offset().top}, 200);
@@ -551,6 +454,63 @@
 
             children_modal.toggle();
             insertUpdateChildren({id: children_id, name: name, birthdate: birthdate});
+        });
+
+        $("#btn_save_education").click(function () {
+            let is_valid = true;
+            $(".error_list").empty();
+            const level = $("#education_level").val();
+            const school_name = $("#school_name").val();
+            const education_degree = $("#education_degree").val();
+            const attendance_from = $("#attendance_from").val();
+            const attendance_to = $("#attendance_to").val();
+            const highest_level = $("#highest_level").val();
+            const year_graduated = $("#year_graduated").val();
+            const scholarship = $("#scholarship").val();
+
+            if (level == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Level is required</li>");
+            }
+
+            if (school_name == "") {
+                is_valid = false;
+                $(".error_list").append("<li>School name is required</li>");
+            }
+
+            if (education_degree == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Education degree is required</li>");
+            }
+
+            if (attendance_from == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Attendance from is required</li>");
+            }
+
+            if (attendance_to == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Attendance to is required</li>");
+            }
+
+            if (!is_valid) {
+                $("#education_error").removeClass("d-none");
+                return;
+            }
+
+            const params = {
+                id: education_id,
+                level: level,
+                school_name: school_name,
+                education_degree: education_degree,
+                attendance_from: attendance_from,
+                attendance_to: attendance_to,
+                highest_level: highest_level,
+                year_graduated: (year_graduated) ? year_graduated : null,
+                scholarship: scholarship
+            }
+
+            insertUpdateEducation(params);
         });
 
         $(".btn-save-education").click(function () {

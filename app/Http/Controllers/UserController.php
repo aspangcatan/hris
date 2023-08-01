@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Designation;
 use App\Models\Employee;
+use App\Models\User;
 use App\Models\UserPrivelege;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -39,5 +41,21 @@ class UserController extends Controller
             return redirect()->intended('/profile');
         }
         return back()->with(['message' => 'The provided credentials do not match our records.']);
+    }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            $user = User::find(Auth::id());
+            if (!Hash::check($request->old_password, $user->password)) {
+                return ['code' => 500, 'message' => 'Incorrect old password'];
+            }
+
+            $user->password = bcrypt($request->new_password);
+            $user->save();
+            return ['code' => 200, 'message' => 'Password successfully changed'];
+        } catch (\Exception $exception) {
+            return ['code' => 500, 'message' => $exception->getMessage()];
+        }
     }
 }

@@ -11,7 +11,7 @@ class EducationController extends Controller
     public function getEducation(Request $request)
     {
         try {
-            $user_id = ($request->id == 0)?Auth::id():$request->id;
+            $user_id = ($request->id == 0) ? Auth::id() : $request->id;
             $educations = Education::where('user_id', $user_id)->get();
             return response(['code' => 200, 'results' => $educations]);
         } catch (\Exception $exception) {
@@ -23,12 +23,13 @@ class EducationController extends Controller
     {
         try {
 
-            $education = Education::where([['user_id', Auth::id()], ['level', $request->level]])->first();
+            $education = Education::find($request->id);
             if (!$education) {
                 $education = new Education;
                 $education->user_id = Auth::id();
                 $education->level = $request->level;
             }
+
             $education->school_name = $request->school_name;
             $education->education_degree = $request->education_degree;
             $education->attendance_from = $request->attendance_from;
@@ -40,6 +41,24 @@ class EducationController extends Controller
             return response(['code' => 200, 'message' => 'Education updated']);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function deleteEducation(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $model = Education::where(function ($query) use ($id) {
+                $query->where('id', $id);
+                $query->where('user_id', Auth::id());
+            })->first();
+
+            if (!$model) return response()->json(['code' => 500, 'message' => 'Education data not found']);
+
+            $model->forceDelete();
+            return response()->json(['code' => 200, 'message' => 'Record deleted']);
+        } catch (\Exception $exception) {
+            return response()->json(['code' => 500, 'message' => $exception->getMessage()]);
         }
     }
 }

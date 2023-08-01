@@ -24,6 +24,8 @@ Route::get('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
+Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');
+
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
@@ -56,6 +58,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('leave');
     })->name('leave');
 
+    Route::get('/leave_application', function () {
+        return view('leave_application');
+    })->name('leave_application');
+
     Route::get('/promotion_applied', function () {
         return view('promotion_work_applied');
     })->name('promotion_applied');
@@ -84,6 +90,7 @@ Route::group(['middleware' => 'auth'], function () {
 #EDUCATION
     Route::get('/education/get', [\App\Http\Controllers\EducationController::class, 'getEducation'])->name('getEducation');
     Route::post('/education/update', [\App\Http\Controllers\EducationController::class, 'insertUpdateEducation'])->name('insertUpdateEducation');
+    Route::delete('/education/delete', [\App\Http\Controllers\EducationController::class, 'deleteEducation'])->name('deleteEducation');
 #CIVIL SERVICE
     Route::get('/civil_service/get', [\App\Http\Controllers\CivilServiceController::class, 'getCivilService'])->name('getCivilService');
     Route::post('/civil_service/update', [\App\Http\Controllers\CivilServiceController::class, 'insertUpdateCivilService'])->name('insertUpdateCivilService');
@@ -154,5 +161,13 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits');
     Route::get('/get_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'getEmployeeCredits'])->name('getEmployeeCredits');
     Route::get('/get_all_balances', [\App\Http\Controllers\LeaveCreditsController::class, 'getAllBalances'])->name('getAllBalances');
-
+#LEAVE APPLICATION
+    Route::get('/get_leaves', [\App\Http\Controllers\LeaveController::class, 'getLeaves'])->name('getLeaves');
+    Route::get('/get_leave_status', [\App\Http\Controllers\LeaveController::class, 'getLeaveStatus'])->name('getLeaveStatus');
+    Route::post('/insert_leave', [\App\Http\Controllers\LeaveController::class, 'insertLeaves'])->name('insertLeaves');
+#SETTINGS
+    Route::post('/password/update', [\App\Http\Controllers\UserController::class, 'changePassword'])->name('changePassword');
+#NEW LEAVE APPLICATION
+    Route::get('/get_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'index'])->name('getLeaveApplications');
+    Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'store'])->name('insertLeaveApplications');
 });

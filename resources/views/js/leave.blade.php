@@ -1,17 +1,43 @@
 <script>
+    let page = 0;
+    const file_leave_modal = new bootstrap.Modal(document.getElementById('file_leave_modal'));
+    const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
     const LEAVE_TYPES = ["Vacation Leave", "Mandatory/Forced Leave", "Sick Leave", "Maternity Leave", "Paternity Leave", "Special Privilege",
         "Solo Parent Leave", "Study Leave", "10-Day VAWC Leave", "Rehabilitation Privilege", "Special Leave Benefits for Women",
         "Special Emergency (Calamity) Leave", "Adoption Leave", "Others"];
 
-    const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
     $(document).ready(function () {
         $('.datepicker').datepicker({
             multidate: true
         });
 
+        $("#btn_file_leave").click(function () {
+            file_leave_modal.toggle();
+        });
+
+        $("#btn_search").click(function () {
+            employee_id = 0;
+            getLeaves();
+        });
+
+        $("#btn_next").click(function () {
+            page++;
+            getLeaves();
+            $("#btn_prev").removeClass("d-none");
+        });
+
+        $("#btn_prev").click(function () {
+            if (page == 0) return;
+            if (page == 1) {
+                $("#btn_prev").addClass("d-none");
+            }
+            page--;
+            getLeaves();
+        });
+
         $("body").on("change", "input[name='leave_type']", function () {
-            $("#leave_modal input:not(input[name='leave_type']):not('#dates_applied'):not(input[name='commutation'])").prop("disabled", true);
-            $("#leave_modal input[type='radio']:not(input[name='leave_type'])").prop("checked", false);
+            $("input:not(input[name='leave_type']):not('#dates_applied'):not(input[name='commutation'])").prop("disabled", true);
+            $("input[type='radio']:not(input[name='leave_type'])").prop("checked", false);
             $("input[type='text']").val("");
             switch ($(this).next().text().trim()) {
                 case "Vacation Leave":
@@ -23,7 +49,7 @@
                     $("#abroad").prop("disabled", false)
                     break;
                 case "Sick Leave":
-                    $("input[name='vacation_leave']").prop("disabled", false);
+                    $("input[name='sick_leave']").prop("disabled", false);
                     $("#in_hospital").val("")
                     $("#in_hospital").prop("disabled", false)
                     $("#out_hospital").val("")
@@ -68,8 +94,94 @@
             }
         });
 
-        leave_modal.toggle();
+        $("#btn_save_leave").click(function () {
+            let leave_type = $("input[name='leave_type']:checked").next().text().trim();
+            let leave_details = "";
+            let leave_extra = "";
+            switch (leave_type) {
+                case "Vacation Leave":
+                case "Special Leave":
+                    leave_details = $("input[name='vacation_leave']:checked").next().text().trim();
+                    leave_extra = $("input[name='vacation_leave']:checked").next().find("input").val();
+                    break;
+                case "Sick Leave":
+                    leave_details = $("input[name='sick_leave']:checked").next().text().trim();
+                    leave_extra = $("input[name='sick_leave']:checked").next().find("input").val();
+                    break;
+                case "Special Leave Benefits for Women":
+                    leave_details = "In case of Special Leave Benefits for Women";
+                    leave_extra = $("#special_leave").val().trim();
+                    break;
+                case "Study Leave":
+                    $("input[name='study_leave']").prop("disabled", false);
+                    break;
+                case "Paternity Leave":
+                case "Solo Parent Leave":
+                case "10-Day VAWC Leave":
+                case "Adoption Leave":
+                case "Mandatory/Forced Leave":
+                case "Maternity Leave":
+                case "Special Privilege":
+                case "Rehabilitation Privilege":
+                case "Special Emergency (Calamity) Leave":
+                    leave_details = $("input[name='other_purpose']:checked").next().text().trim();
+                    break;
+                default:
+                    //When Others are checked on type of Leave
+                    leave_type = $("#leave_others").val().trim();
+                    leave_details = $("input[name='other_purpose']:checked").next().text().trim();
+                    break;
+            }
+
+            const dates_applied = $("#dates_applied").val();
+            const commutation = $("input[name='commutation']:checked").next().text();
+            const params = {
+                leave_type: leave_type,
+                leave_details: leave_details,
+                leave_extra: leave_extra,
+                dates_applied: dates_applied,
+                commutation: commutation,
+                remarks: ""
+            }
+
+            console.log(params);
+
+            $(this).html(`<button class="btn btn-primary" type="button" disabled>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                Loading...
+            </button>`);
+            $(this).prop("disabled", true);
+
+            fetch('{{ route('insertLeaves') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log(err);
+                    console.log("hasdasdasd")
+                    if (data.code == 500) {
+                        toastr.error(data.message, 'Ooops');
+                        return;
+                    }
+
+                    toastr.success(data.message, 'Information');
+                    clearForm();
+                    getLeaves();
+                }).catch(err => {
+                console.log(err);
+            }).finally(() => {
+                $("#btn_save_leave").html("SUBMIT");
+                $("#btn_save_leave").prop("disabled", false);
+            });
+        });
+
         init_leave();
+        getLeaves();
     });
 
     function init_leave() {
@@ -80,10 +192,112 @@
                                  <div class="d-flex align-items-center">
                                     <label class="form-check-label">` + it + `</label>`;
             if (it == "Others") {
-                div += `<input class="ms-2 underline w-100" type="text" />`;
+                div += `<input class="ms-2 underline w-100" type="text" id="leave_others" />`;
             }
             div += `</div></div></div>`;
             $("#leave_list").append(div);
         })
+    }
+
+    function getLeaves() {
+        $("#btn_next").prop("disabled", true);
+        $("#btn_prev").prop("disabled", true);
+        $("#leave_history_list").empty();
+        $("#leave_history_list").append("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
+        fetch('{{ route('getLeaves') }}?page=' + page, {
+                method: "GET"
+            }
+        )
+            .then(res => res.json())
+            .then(data => {
+                $("#btn_next").prop("disabled", false);
+                $("#btn_prev").prop("disabled", false);
+                $("#pagination_container").addClass("d-none")
+                $("#leave_history_list").empty();
+                $("#btn_next").addClass("d-none");
+                $("#employee_list").empty();
+                if (data.results.length < 1) {
+                    $("#leave_history_list").append("<tr><td colspan='6'>No record found</td></tr>");
+                    return;
+                }
+
+                $("#pagination_container").removeClass("d-none")
+                let max_visible = data.results.length;
+                if (max_visible == 11) {
+                    max_visible = 10;
+                    $("#btn_next").removeClass("d-none");
+                }
+
+                $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
+                for (let i = 0; i < max_visible; i++) {
+                    const it = data.results[i];
+                    const tr = `
+                    <tr id='employee_` + it.user_id + `'>
+                        <td>` + it.leave_type + `</td>
+                        <td>` + it.leave_details + `</td>
+                        <td>` + it.dates_applied + `</td>
+                        <td><span class="badge bg-secondary">PENDING</span></td>
+                        <td>
+                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewStatus(` + it.id + `)">
+                                <i class="bi bi-eye-fill text-success"></i>
+                            </button>
+                        </td>
+                    <tr>`;
+                    $("#leave_history_list").append(tr);
+                }
+            }).catch(err => {
+            console.log(err);
+        })
+    }
+
+    function viewStatus(id) {
+        $("#status_leave_type").text("");
+        $("#status_leave_details").text("");
+        $("#status_leave_extra").text("");
+        $("#status_date_applied").text("");
+        $("#status_commutation").text("");
+        fetch('{{ route('getLeaveStatus') }}?id=' + id, {
+            method: "GET"
+        })
+            .then(res => res.json())
+            .then(data => {
+                $("#status_leave_type").text(data.results.leave_type);
+                $("#status_leave_details").text(data.results.leave_details);
+                $("#status_leave_extra").text(data.results.leave_extra);
+                $("#status_date_applied").text(data.results.dates_applied);
+                $("#status_commutation").text(data.results.commutation);
+            });
+
+        $("#leave_status_list").append(`<tr><td colspan="4"><div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div></td></tr>`);
+        setTimeout(function () {
+            const data = [{
+                origin: "Asnaui Pangcatan",
+                remarks: "",
+                destination: "",
+                date_forwarded: ""
+            }];
+
+            $("#leave_status_list").empty();
+            data.forEach(it => {
+                let tr = "<tr>";
+                tr += "<td>" + it.origin + "</td>";
+                tr += "<td>" + it.remarks + "</td>";
+                tr += "<td>" + it.destination + "</td>";
+                tr += "<td>" + it.date_forwarded + "</td>";
+                tr += "</tr>";
+
+                $("#leave_status_list").append(tr);
+            });
+        }, 3000);
+        leave_modal.toggle();
+    }
+
+    function clearForm() {
+        $("#leave_form input").val("");
+        $("#leave_form input[type='radio']").prop("checked", false);
     }
 </script>

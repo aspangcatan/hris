@@ -2,13 +2,18 @@
     <div>
         <div style="font-weight: bold;font-size:14.66px;font-family: 'Calibri';padding-left:2.5px">CS Form No. 212</div>
         <div style="font-size: 12px;padding-left:2.5px">Revised 2017</div>
-        <div style="text-align: center;font-weight: bold;font-size: 29.33px;font-family:'Arial Black',sans-serif !important;">PERSONAL DATA SHEET</div>
-        <div style="margin-top:10px;font-weight: bold;font-size: 10.66px;font-family: 'Arial'">WARNING: Any misrepresentation made in the
+        <div
+            style="text-align: center;font-weight: bold;font-size: 29.33px;font-family:'Arial Black',sans-serif !important;">
+            PERSONAL DATA SHEET
+        </div>
+        <div style="margin-top:10px;font-weight: bold;font-size: 10.66px;font-family: 'Arial'">WARNING: Any
+            misrepresentation made in the
             Personal
             Data Sheet and the Work Experience Sheet shall cause the filling of administrative/criminal case/s<br/>
             against the person concerned.
         </div>
-        <div style="font-size:10.66px;font-weight: bold;font-family: 'Arial'">READ THE ATTACHED GUIDE TO FILLING OUT THE PERSONAL DATA SHEET
+        <div style="font-size:10.66px;font-weight: bold;font-family: 'Arial'">READ THE ATTACHED GUIDE TO FILLING OUT THE
+            PERSONAL DATA SHEET
             (PDS)
             BEFORE ACCOMPLISHING THE PDS FORM.
         </div>
@@ -50,7 +55,8 @@
             <td style="border-bottom: solid 1px black;border-left: solid 1px black;">
                 <div class="value">{{ strtoupper($user->fname) }}</div>
             </td>
-            <td style="width: 25%;border-bottom: solid 1px black;border-left: solid 1px black;font-size: 9.33px" class="gray">
+            <td style="width: 25%;border-bottom: solid 1px black;border-left: solid 1px black;font-size: 9.33px"
+                class="gray">
                 <div style="font-size:8px">NAME EXTENSION (JR.,SR)</div>
                 <div class="value">
                     @if($user->suffix)
@@ -996,38 +1002,48 @@
         </tr>
         @foreach($educations as $education)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 20%;border-right: solid 1px black" class="gray">{{ $education['level'] }}</td>
-                <td style="width: 25%;border-right: solid 1px black"
-                    class="center-value education">{{ strtoupper($education['school_name']) }}</td>
-                <td style="width: 21%;border-right: solid 1px black"
-                    class="center-value education">{{ strtoupper($education['education_degree']) }}</td>
-                <td style="width: 6%;border-right: solid 1px black"
-                    class="center-value education">{{ $education['attendance_from'] }}</td>
-                <td style="width: 6%;border-right: solid 1px black"
-                    class="center-value education">{{ $education['attendance_to'] }}</td>
-                <td style="width: 9%;border-right: solid 1px black"
-                    class="center-value education">{{ strtoupper($education['highest_level']) }}</td>
-                <td style="width: 6%;border-right: solid 1px black"
-                    class="center-value education">{{ $education['year_graduated'] }}</td>
-                <td style="width: 7%;" class="center-value education">{{ $education['scholarship'] }}</td>
-            </tr>
-        @endforeach
-        <tr>
-            <td colspan="8"
-                style="border-top: solid 1px black;text-align: center;color:red;font-weight: bold;height: unset !important;"
-                class="gray">
-                (Continue on separate sheet if necessary)
-            </td>
-        </tr>
-        <tr style="border-top: solid 1px black;">
-            <td style="text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">SIGNATURE
-            </td>
-            <td colspan="2" style="border-right: solid 1px black"></td>
-            <td colspan="2" style="text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
-                DATE
-            </td>
-            <td colspan="3" style="text-align: center;font-weight: bold">{{ $pds_date }}</td>
-        </tr>
+                <td rowspan="{{ count($education) }}" style="width: 20%;border-right: solid 1px black"
+                    class="gray">{{ $education[0]['level'] }}</td>
+            @for($i=0; $i<count($education); $i++)
+                @if($i > 0)
+                    <tr style="border-top: solid 1px black">
+                        @endif
+                        <td style="width: 25%;border-right: solid 1px black"
+                            class="center-value education">{{ strtoupper($education[$i]['school_name']) }}</td>
+                        <td style="width: 21%;border-right: solid 1px black"
+                            class="center-value education">{{ strtoupper($education[$i]['education_degree']) }}</td>
+                        <td style="width: 6%;border-right: solid 1px black"
+                            class="center-value education">{{ $education[$i]['attendance_from'] }}</td>
+                        <td style="width: 6%;border-right: solid 1px black"
+                            class="center-value education">{{ $education[$i]['attendance_to'] }}</td>
+                        <td style="width: 9%;border-right: solid 1px black"
+                            class="center-value education">{{ strtoupper($education[$i]['highest_level']) }}</td>
+                        <td style="width: 6%;border-right: solid 1px black"
+                            class="center-value education">{{ $education[$i]['year_graduated'] }}</td>
+                        <td style="width: 7%;" class="center-value education">{{ $education[$i]['scholarship'] }}</td>
+
+                        @if(count($education) > 1) </tr> @endif
+                    @endfor
+                    @if(count($education) < 2) </tr> @endif
+                @endforeach
+                <tr>
+                    <td colspan="8"
+                        style="border-top: solid 1px black;text-align: center;color:red;font-weight: bold;height: unset !important;"
+                        class="gray">
+                        (Continue on separate sheet if necessary)
+                    </td>
+                </tr>
+                <tr style="border-top: solid 1px black;">
+                    <td style="text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
+                        SIGNATURE
+                    </td>
+                    <td colspan="2" style="border-right: solid 1px black"></td>
+                    <td colspan="2" style="text-align: center;font-weight: bold;border-right: solid 1px black"
+                        class="gray">
+                        DATE
+                    </td>
+                    <td colspan="3" style="text-align: center;font-weight: bold">{{ $pds_date }}</td>
+                </tr>
     </table>
 </div>
 <div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2017), Page 1 of 4</div>

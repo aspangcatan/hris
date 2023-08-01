@@ -1,6 +1,5 @@
 <script>
     function getEducation(id) {
-        if (is_education_loaded) return;
         fetch('{{route('getEducation')}}?id=' + id, {
             method: "GET"
         })
@@ -10,55 +9,28 @@
                     alert(data.message);
                     return;
                 }
-                is_education_loaded = true;
+                if (data.results.length < 1) {
+                    $("#educational_list").append("<tr><td colspan='8' </td></tr>");
+                    return;
+                }
+                $("#educational_list").empty();
                 data.results.forEach(it => {
-                    switch (it.level) {
-                        case "Elementary":
-                            $("#elementary_school_name").val(it.school_name);
-                            $("#elementary_education_degree").val(it.education_degree);
-                            $("#elementary_attendance_from").val(it.attendance_from);
-                            $("#elementary_attendance_to").val(it.attendance_to);
-                            $("#elementary_highest_level").val(it.highest_level);
-                            $("#elementary_year_graduated").val(it.year_graduated);
-                            $("#elementary_scholarship").val(it.scholarship);
-                            break;
-                        case "Secondary":
-                            $("#secondary_school_name").val(it.school_name);
-                            $("#secondary_education_degree").val(it.education_degree);
-                            $("#secondary_attendance_from").val(it.attendance_from);
-                            $("#secondary_attendance_to").val(it.attendance_to);
-                            $("#secondary_highest_level").val(it.highest_level);
-                            $("#secondary_year_graduated").val(it.year_graduated);
-                            $("#secondary_scholarship").val(it.scholarship);
-                            break;
-                        case "Vocational/Trade Course":
-                            $("#vocational_school_name").val(it.school_name);
-                            $("#vocational_education_degree").val(it.education_degree);
-                            $("#vocational_attendance_from").val(it.attendance_from);
-                            $("#vocational_attendance_to").val(it.attendance_to);
-                            $("#vocational_highest_level").val(it.highest_level);
-                            $("#vocational_year_graduated").val(it.year_graduated);
-                            $("#vocational_scholarship").val(it.scholarship);
-                            break;
-                        case "College":
-                            $("#college_school_name").val(it.school_name);
-                            $("#college_education_degree").val(it.education_degree);
-                            $("#college_attendance_from").val(it.attendance_from);
-                            $("#college_attendance_to").val(it.attendance_to);
-                            $("#college_highest_level").val(it.highest_level);
-                            $("#college_year_graduated").val(it.year_graduated);
-                            $("#college_scholarship").val(it.scholarship);
-                            break;
-                        case "Graduate Studies":
-                            $("#graduate_school_name").val(it.school_name);
-                            $("#graduate_education_degree").val(it.education_degree);
-                            $("#graduate_attendance_from").val(it.attendance_from);
-                            $("#graduate_attendance_to").val(it.attendance_to);
-                            $("#graduate_highest_level").val(it.highest_level);
-                            $("#graduate_year_graduated").val(it.year_graduated);
-                            $("#graduate_scholarship").val(it.scholarship);
-                            break;
-                    }
+                    const year_graduated = (it.year_graduated) ? it.year_graduated : "";
+                    let tr = "<tr id='education_row_" + it.id + "'>";
+                    tr += "<td>" + it.level + "</td>"
+                    tr += "<td>" + it.school_name + "</td>"
+                    tr += "<td>" + it.education_degree + "</td>"
+                    tr += "<td>" + it.attendance_from + "</td>"
+                    tr += "<td>" + it.attendance_to + "</td>"
+                    tr += "<td>" + it.highest_level + "</td>"
+                    tr += "<td>" + year_graduated + "</td>"
+                    tr += "<td>" + it.scholarship + "</td>"
+                    @if(Route::currentRouteName() != "employee")
+                        tr += `<td><button class="btn btn-sm btn-success" onClick="viewEducation(` + it.id + `)"><i class="bi bi-eye-fill"></i></button></td>`;
+                        tr += `<td><button class="btn btn-sm btn-danger"  onClick="deleteEducation(` + it.id + `)"><i class="bi bi-trash-fill"></i></button></td>`;
+                    @endif
+                        tr += "</tr>";
+                    $("#educational_list").append(tr);
                 });
             }).catch(err => {
             console.log(err);
@@ -77,14 +49,70 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    console.log(data.message)
                     toastr.error("Something went wrong", "Oops");
                     return;
                 }
 
                 toastr.success(data.message, "Success");
+                $("#education_level").val("");
+                $("#school_name").val("");
+                $("#education_degree").val("");
+                $("#attendance_from").val("");
+                $("#attendance_to").val("");
+                $("#highest_level").val("");
+                $("#year_graduated").val("");
+                $("#scholarship").val("");
+                getEducation(0);
             }).catch(err => {
             console.log(err);
         });
+    }
+
+    function viewEducation(id) {
+        education_id = id;
+        const level = $("#education_row_" + id + " td:eq(0)").text().trim();
+        const school_name = $("#education_row_" + id + " td:eq(1)").text().trim();
+        const education_degree = $("#education_row_" + id + " td:eq(2)").text().trim();
+        const attendance_from = $("#education_row_" + id + " td:eq(3)").text().trim();
+        const attendance_to = $("#education_row_" + id + " td:eq(4)").text().trim();
+        const highest_level = $("#education_row_" + id + " td:eq(5)").text().trim();
+        const year_graduated = $("#education_row_" + id + " td:eq(6)").text().trim();
+        const scholarship = $("#education_row_" + id + " td:eq(7)").text().trim();
+
+        $("#education_level").val(level);
+        $("#school_name").val(school_name);
+        $("#education_degree").val(education_degree);
+        $("#attendance_from").val(attendance_from);
+        $("#attendance_to").val(attendance_to);
+        $("#highest_level").val(highest_level);
+        $("#year_graduated").val(year_graduated);
+        $("#scholarship").val(scholarship);
+
+        education_modal.toggle();
+    }
+
+    function deleteEducation(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch('{{ route('deleteEducation') }}', {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({id: id})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
+                    }
+
+                    toastr.success(data.message, "Information");
+                    getEducation(0);
+                }).catch(err => {
+                console.log(err);
+            });
+        }
     }
 </script>

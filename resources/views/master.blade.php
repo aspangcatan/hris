@@ -27,6 +27,7 @@
     <link href="assets/css/style.css?v={{ date('ymdhis') }}" rel="stylesheet">
     <link href="css/toastr.min.css?v={{ date('ymdhis') }}" rel="stylesheet">
     <link href="css/selectize.default.min.css?v={{ date('ymdhis') }}" rel="stylesheet">
+    <link href="css/progress.css?v={{ date('ymdhis') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha512-mSYUmp1HYZDFaVKK//63EcZq4iFWFjxSL+Z3T/aCt4IO9Cejm03q3NKKYN6pFQzY0SBOr8h+eCIAZHPXcpZaNw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- =======================================================
     * Template Name: NiceAdmin - v2.5.0
@@ -47,6 +48,7 @@
 @include('layouts.navbar')
 <!-- ======= Sidebar ======= -->
 @include('layouts.sidebar')
+@include('modals.settings')
 
 <main id="main" class="main">
     <div class="pagetitle">
@@ -91,9 +93,92 @@
 <script src="js/selectize.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js" integrity="sha512-T/tUfKSV1bihCnd+MxKD0Hm1uBBroVYBOYSk1knyvQ9VyZJpc/ALb4P0r6ubwVPSGB2GvjeoMAJJImBG12TiaQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
+    const settings_modal = new bootstrap.Modal(document.getElementById('settings_modal'));
     toastr.options = {
         "positionClass": "toast-bottom-right",
     }
+    $(document).ready(function () {
+        $("#change_password").click(function (e) {
+            e.preventDefault();
+            settings_modal.toggle();
+        });
+
+        $("#btn_change_password").click(function () {
+            let is_valid = true;
+            $("#settings_modal .is-invalid").removeClass("is-invalid");
+            $("#settings_modal .error_container").addClass("d-none");
+            $("#settings_modal .error_list").empty();
+
+            const old_password = $("#old_password").val().trim();
+            const new_password = $("#new_password").val().trim();
+            const confirm_password = $("#confirm_password").val().trim();
+
+            if (old_password == "") {
+                is_valid = false;
+                $("#settings_modal .error_list").append("<li>Old password is required</li>");
+                $("#old_password").addClass("is-invalid");
+            }
+
+            if (new_password == "") {
+                is_valid = false;
+                $("#settings_modal .error_list").append("<li>New password is required</li>");
+                $("#old_password").addClass("is-invalid");
+            }
+
+            if (confirm_password == "") {
+                is_valid = false;
+                $("#settings_modal .error_list").append("<li>Confirm password is required</li>");
+                $("#old_password").addClass("is-invalid");
+            }
+
+            if(new_password.length < 4){
+                is_valid = false;
+                $("#settings_modal .error_list").append("<li>New password must at least 4 characters</li>");
+                $("#new_password").addClass("is-invalid");
+            }
+
+            if(new_password != confirm_password){
+                is_valid = false;
+                $("#settings_modal .error_list").append("<li>Password mismatch</li>");
+                $("#new_password").addClass("is-invalid");
+            }
+
+            if (!is_valid) {
+                $("#settings_modal .error_container").removeClass("d-none");
+                return;
+            }
+
+            const params = {
+                old_password: old_password,
+                new_password: new_password,
+                confirm_password: confirm_password
+            }
+
+            fetch('{{route('changePassword')}}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Something went wrong")
+                        return;
+                    }
+
+                    settings_modal.toggle();
+                    toastr.success(data.message, "Information");
+                    $("#old_password").val("");
+                    $("#new_password").val("");
+                    $("#confirm_password").val("");
+                }).catch(err => {
+                alert(err);
+            });
+        });
+    });
 </script>
 @yield('js')
 </body>
