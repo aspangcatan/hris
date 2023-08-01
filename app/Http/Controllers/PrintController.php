@@ -302,7 +302,7 @@ class PrintController extends Controller
                 return "Permission denied";
             }
 
-            $user_id = ($request->id == 0) ? Auth::id() : $request->id;
+            $user_id = Auth::id();
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];
             $SURVEYS = [''];

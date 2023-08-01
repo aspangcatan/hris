@@ -15,7 +15,7 @@
                                     <h2 id="employee_name"></h2>
                                     <h3 id="employee_designation"></h3>
                                     <div class="social-links mt-2">
-                                        <button class="btn btn-sm btn-success" id="btn_print_pds">Print PDS</button>
+                                        <button class="btn btn-sm btn-success d-none" id="btn_print_pds">Print PDS</button>
                                     </div>
                                 </div>
                             </div>
