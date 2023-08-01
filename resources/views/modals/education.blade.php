@@ -8,7 +8,7 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="text-white bg-danger rounded p-2 mb-2" id="education_error">
+                <div class="text-white bg-danger rounded p-2 mb-2 d-none" id="education_error">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <div>There are some errors, please correct them below:</div>
