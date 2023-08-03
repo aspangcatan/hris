@@ -46,7 +46,6 @@ class PrintController extends Controller
     public function printWorkExperience(Request $request)
     {
         try {
-
             $related_work = RelatedWork::where('work_id', $request->work_id)->get();
             for ($i = 0; $i < count($related_work); $i++) {
                 $accomplishment = RelatedAccomplishment::where('related_id', $related_work[$i]->id)->get();
@@ -388,11 +387,6 @@ class PrintController extends Controller
                 ];
             }
 
-            $elementary_count = 0;
-            $secondary_count = 0;
-            $vocational_count = 0;
-            $college_count = 0;
-            $graduate_count = 0;
             $index = 0;
             foreach ($education as $key) {
                 switch ($key->level) {

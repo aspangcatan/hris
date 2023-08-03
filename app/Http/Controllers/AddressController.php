@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Auth;
 
 class AddressController extends Controller
 {
-    //
-
     public function getAddress(Request $request)
     {
         try {

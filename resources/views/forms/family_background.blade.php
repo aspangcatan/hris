@@ -86,7 +86,7 @@
 </div>
 <hr/>
 <div class="mt-3" id="mother">
-    <h5 class="card-title fw-bold">Mother Information</h5>
+    <h5 class="card-title fw-bold">Mother's Maiden Name</h5>
     <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Firstname</label>
         <div class="col-md-8 col-lg-9">
