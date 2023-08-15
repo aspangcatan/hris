@@ -72,6 +72,7 @@ class PrintController extends Controller
         $dates = explode(",", $date_applied);
         for ($i = 0; $i < count($dates); $i++) {
             $split = explode("/", $dates[$i]);
+            $year = $split[2];
             if ($title == "") {
                 $title = self::getMonthName($split[0]) . $split[1];
                 $month = $split[0];
@@ -84,7 +85,7 @@ class PrintController extends Controller
                 $title = $title . ", " . $split[2] . " " . self::getMonthName($split[0]) . $split[1];
             }
             $month = $split[0];
-            $year = $split[2];
+
         }
 
         $title = $title . " " . $year;
