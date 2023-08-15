@@ -18,18 +18,20 @@
                 <span>Position Applied</span>
             </a>
         </li>
-        <li class="nav-item d-none">
+        <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('leave_application') }}">
                 <i class="bi bi-grid"></i>
                 <span>Leave Application</span>
             </a>
         </li>
-        <li class="nav-item d-none">
-            <a class="nav-link collapsed" href="{{ route('review_leave') }}">
+        @if(session('access_rights') == "SH" || session('access_rights') == "DH" || session('access_rights') == "HRH")
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('leave_approval') }}">
                 <i class="bi bi-grid"></i>
-                <span>Review Leave</span>
+                <span>Leave Approval</span>
             </a>
         </li>
+        @endif
         @if(session('access_rights') == "hr")
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('employee') }}">

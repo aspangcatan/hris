@@ -62,6 +62,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('leave_application');
     })->name('leave_application');
 
+    Route::get('/leave_approval', function () {
+        return view('leave_approval');
+    })->name('leave_approval');
+
     Route::get('/promotion_applied', function () {
         return view('promotion_work_applied');
     })->name('promotion_applied');
@@ -170,4 +174,7 @@ Route::group(['middleware' => 'auth'], function () {
 #NEW LEAVE APPLICATION
     Route::get('/get_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'index'])->name('getLeaveApplications');
     Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'store'])->name('insertLeaveApplications');
+#LEAVE APPROVAL
+    Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
+    Route::put('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
 });

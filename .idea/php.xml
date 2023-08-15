@@ -114,6 +114,9 @@
       <path value="$PROJECT_DIR$/vendor/barryvdh/laravel-dompdf" />
       <path value="$PROJECT_DIR$/vendor/phenx/php-font-lib" />
       <path value="$PROJECT_DIR$/vendor/phenx/php-svg-lib" />
+      <path value="$PROJECT_DIR$/vendor/setasign/fpdi" />
+      <path value="$PROJECT_DIR$/vendor/codedge/laravel-fpdf" />
+      <path value="$PROJECT_DIR$/vendor/setasign/fpdf" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="7.3">

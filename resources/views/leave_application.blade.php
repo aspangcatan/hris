@@ -1,5 +1,15 @@
 @extends('master')
 @section('content')
+    <div class="row d-none">
+        <div class="col-md-2">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div>SL Balance</div>
+                    <div class="fw-bold">8.50</div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="d-flex justify-content-end">
         <button class="btn btn-sm btn-success" id="btn_file_leave">FILE LEAVE <i class="bi bi-plus-lg"></i></button>
     </div>

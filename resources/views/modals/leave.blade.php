@@ -2,65 +2,51 @@
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-body">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title">Leave Status</div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label>Type:</label>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="fw-bold" id="status_leave_type">Vacation Leave</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label>Details:</label>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="fw-bold" id="status_leave_details"></div>
-                            </div>
-                            <div class="col-md-4">
-                                <label>Specific Details:</label>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="fw-bold" id="status_leave_extra"></div>
-                            </div>
-                            <div class="col-md-4">
-                                <label>Date applied:</label>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="fw-bold" id="status_date_applied"></div>
-                            </div>
-                            <div class="col-md-4">
-                                <label>Commutation:</label>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="fw-bold" id="status_commutation"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="card-title">Activity Logs</div>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                <tr>
-                                    <th>Origin</th>
-                                    <th>Remarks</th>
-                                    <th>Destination</th>
-                                    <th>Date forwarded</th>
-                                </tr>
-                                </thead>
-                                <tbody id="leave_status_list">
-
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            <div class="modal-header">
+                <h5 class="modal-title">Leave Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <div class="modal-body">
+                <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"
+                        id="leave_frame"></iframe>
+            </div>
+            <hr/>
+            <div class="table-responsive pe-2 ps-2">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th style="width: 40%">Department</th>
+                        <th style="width: 30%">Status</th>
+                        <th style="width: 30%">Date Approved</th>
+                    </tr>
+                    </thead>
+                    <tbody id="leave_status_logs">
+                    <tr>
+                        <td>Section Head</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Division Head</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Human Resource</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            @if(Route::currentRouteName() == "leave_approval")
+                <div class="modal-footer">
+                    <div class="d-flex justify-content-end">
+                        <button class="btn btn-lg btn-danger me-1" id="btn_reject_leave">REJECT</button>
+                        <button class="btn btn-lg btn-success ms-1" id="btn_approve_leave">APPROVE</button>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>

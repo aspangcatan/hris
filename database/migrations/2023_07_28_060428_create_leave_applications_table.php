@@ -25,7 +25,7 @@ class CreateLeaveApplicationsTable extends Migration
             $table->integer('section_id');
             $table->dateTime('date_section_approved')->nullable();
             $table->integer('division_id');
-            $table->dateTime('date_mcc_approved')->nullable();
+            $table->dateTime('date_division_approved')->nullable();
             $table->integer('hr_id');
             $table->dateTime('date_hr_approved')->nullable();
             $table->timestamps();

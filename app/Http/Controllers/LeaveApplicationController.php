@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeaveApplication;
+
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class LeaveApplicationController extends Controller
 {
@@ -32,7 +35,7 @@ class LeaveApplicationController extends Controller
             $model->division_id = Auth::user()->division;
             $model->hr_id = 15;
             $model->save();
-            return response()->json(['message' => 'Application filed successfully']);
+            return response()->json(['code' => 200, 'message' => 'Application filed successfully']);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }
@@ -69,7 +72,7 @@ class LeaveApplicationController extends Controller
             })->first();
 
             if (!model) {
-                return response()->json(['code' => 401, 'message' => 'Leave Application not found']);
+                return response()->json(['code' => 500, 'message' => 'Leave Application not found']);
             }
 
             #CHECK IF APPLICATION ARE NOT ALREADY RECEIVED
@@ -78,7 +81,7 @@ class LeaveApplicationController extends Controller
             }
 
             $model->forceDelete();
-            return response()->json(['message' => 'Leave successfully cancelled']);
+            return response()->json(['code' => 200, 'message' => 'Leave successfully cancelled']);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }
@@ -87,29 +90,55 @@ class LeaveApplicationController extends Controller
     public function getLeaveForApproval(Request $request)
     {
         try {
-            $model = LeaveApplication::where(function ($query) {
-                #CHECK USER ROLE IF SECTION HEAD,DIVISION HEAD OR HR
-                #ROLE- 1(SECTION),2(DIVISION), 3(HR)
-                $role = "1";
-                switch ($role) {
-                    case "1":
-                        $query->where('section_id', Auth::user()->section);
-                        $query->whereNull('date_section_approved');
-                        break;
-                    case "2":
-                        $query->where('division_id', Auth::user()->division);
-                        $query->whereNull('date_division_approved');
-                        break;
-                    case "3":
-                        $query->where('hr_id', Auth::user()->section);
-                        $query->whereNull('date_hr_approved');
-                        break;
-                }
-            })
+            $model = DB::table('hris.leave_applications as l')
+                ->join('tdh_user.users as u', 'l.user_id', '=', 'u.id')
+                ->where(function ($query) {
+                    $role = session('access_rights');
+                    switch ($role) {
+                        case "SH":
+                            $query->where('section_id', Auth::user()->section);
+                            $query->whereNull('date_section_approved');
+                            break;
+                        case "DH":
+                            $query->where('division_id', Auth::user()->division);
+                            $query->whereNotNull('date_section_approved');
+                            $query->whereNull('date_division_approved');
+                            break;
+                        case "HRH":
+                            $query->whereNotNull('date_section_approved');
+                            $query->whereNotNull('date_division_approved');
+                            $query->whereNull('date_hr_approved');
+                            break;
+                    }
+                })
                 ->skip($request->page * 10)
                 ->take(11)
-                ->get();
+                ->get(['l.id', 'u.fname', 'u.mname', 'u.lname', 'l.leave_type', 'l.date_applied', 'l.status','l.date_section_approved','l.date_division_approved','l.date_hr_approved']);
             return response()->json($model);
+        } catch (\Exception $exception) {
+            return response()->json(['message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function approveLeave(Request $request)
+    {
+        try {
+            $role = session('access_rights');
+            $model = LeaveApplication::find($request->id);
+            switch ($role) {
+                case "SH":
+                    $model->date_section_approved = Carbon::now();
+                    break;
+                case "DH":
+                    $model->date_division_approved = Carbon::now();
+                    break;
+                case "HRH":
+                    $model->date_hr_approved = Carbon::now();
+                    $model->status = "APPROVED";
+                    break;
+            }
+            $model->save();
+            return response()->json(['message' => "Leave successfully approved"]);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }

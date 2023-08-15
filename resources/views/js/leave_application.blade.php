@@ -36,7 +36,7 @@
         });
 
         $("body").on("change", "input[name='leave_type']", function () {
-            $("input:not(input[name='leave_type']):not('#dates_applied'):not(input[name='commutation'])").prop("disabled", true);
+            $("input:not(input[name='leave_type']):not('#dates_applied'):not(input[name='commutation']):not(input[name='other_purpose'])").prop("disabled", true);
             $("input[type='radio']:not(input[name='leave_type'])").prop("checked", false);
             $("input[type='text']").val("");
             switch ($(this).next().text().trim()) {
@@ -65,7 +65,6 @@
                 default:
                     //When Others are checked on type of Leave
                     $(this).next().children().eq(1).prop("disabled", false);
-                    $("input[name='other_purpose']").prop("disabled", false);
                     break;
             }
         });
@@ -94,6 +93,12 @@
             }
         });
 
+        $("input[name='other_purpose']").change(function () {
+            $("input[name='vacation_leave']").prop("checked", false);
+            $("input[name='sick_leave']").prop("checked", false);
+            $("input[name='study_leave']").prop("checked", false);
+        });
+
         $("#btn_save_leave").click(function () {
             let leave_type = $("input[name='leave_type']:checked").next().text().trim();
             let leave_details = "";
@@ -113,7 +118,7 @@
                     leave_extra = $("#special_leave").val().trim();
                     break;
                 case "Study Leave":
-                    $("input[name='study_leave']").prop("disabled", false);
+                    leave_details = $("input[name='study_leave']:checked").next().text().trim();
                     break;
                 case "Paternity Leave":
                 case "Solo Parent Leave":
@@ -220,13 +225,18 @@
                 $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
                 for (let i = 0; i < max_visible; i++) {
                     const it = data[i];
+                    const extra = (it.extra) ? it.extra : "";
+                    const status = (it.status == "APPROVED") ? "<span class='badge bg-success'>APPROVED</span>" : "<span class='badge bg-secondary'>FOR APPROVAL</span>";
                     const tr = `
-                    <tr id='employee_` + it.user_id + `'>
+                    <tr id='leave_id_` + it.id + `'>
                         <td>` + it.leave_type + `</td>
                         <td>` + it.detail + `</td>
-                        <td>` + it.extra + `</td>
+                        <td>` + extra + `</td>
                         <td>` + it.date_applied + `</td>
-                        <td><span class="badge bg-secondary">` + it.status + `</span></td>
+                        <td>` + status + `</td>
+                        <td class="d-none">` + it.date_section_approved + `</td>
+                        <td class="d-none">` + it.date_division_approved + `</td>
+                        <td class="d-none">` + it.date_hr_approved + `</td>
                         <td>
                             <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewStatus(` + it.id + `)">
                                 <i class="bi bi-eye-fill text-success"></i>
@@ -241,48 +251,30 @@
     }
 
     function viewStatus(id) {
-        $("#status_leave_type").text("");
-        $("#status_leave_details").text("");
-        $("#status_leave_extra").text("");
-        $("#status_date_applied").text("");
-        $("#status_commutation").text("");
-        fetch('{{ route('getLeaveStatus') }}?id=' + id, {
-            method: "GET"
-        })
-            .then(res => res.json())
-            .then(data => {
-                $("#status_leave_type").text(data.results.leave_type);
-                $("#status_leave_details").text(data.results.leave_details);
-                $("#status_leave_extra").text(data.results.leave_extra);
-                $("#status_date_applied").text(data.results.dates_applied);
-                $("#status_commutation").text(data.results.commutation);
-            });
+        $("#leave_frame").attr("src", "http://localhost/hris/print_leave?id=" + id);
+        const section = {
+            status: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
+            date_approved: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(5)").text()).format("MM/DD/YYYY hh:mm:ss A")
+        };
 
-        $("#leave_status_list").append(`<tr><td colspan="4"><div class="d-flex justify-content-center">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-        </div></td></tr>`);
-        setTimeout(function () {
-            const data = [{
-                origin: "Asnaui Pangcatan",
-                remarks: "",
-                destination: "",
-                date_forwarded: ""
-            }];
+        const division = {
+            status: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
+            date_approved: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(6)").text()).format("MM/DD/YYYY hh:mm:ss A")
+        };
 
-            $("#leave_status_list").empty();
-            data.forEach(it => {
-                let tr = "<tr>";
-                tr += "<td>" + it.origin + "</td>";
-                tr += "<td>" + it.remarks + "</td>";
-                tr += "<td>" + it.destination + "</td>";
-                tr += "<td>" + it.date_forwarded + "</td>";
-                tr += "</tr>";
+        const hr = {
+            status: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
+            date_approved: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(7)").text()).format("MM/DD/YYYY hh:mm:ss A")
+        };
 
-                $("#leave_status_list").append(tr);
-            });
-        }, 3000);
+        $("#leave_status_logs tr:eq(0) td:eq(1)").html(section.status);
+        $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
+
+        $("#leave_status_logs tr:eq(1) td:eq(1)").html(division.status);
+        $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
+
+        $("#leave_status_logs tr:eq(2) td:eq(1)").html(hr.status);
+        $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
         leave_modal.toggle();
     }
 
