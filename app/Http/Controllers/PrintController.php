@@ -248,7 +248,7 @@ class PrintController extends Controller
         $pdf->Write(0, chr(51));
 
         $pdf->SetFont('ZapfDingbats', "", 8);
-        if ($leave_application->commutation == "Requested")
+        if ($leave_application->commutation == "Not Requested")
             $pdf->SetXY(88.5, 122);
         else
             $pdf->SetXY(88.5, 126);
