@@ -251,7 +251,7 @@
     }
 
     function viewStatus(id) {
-        $("#leave_frame").attr("src", "http://localhost/hris/print_leave?id=" + id);
+        $("#leave_frame").attr("src", "https://dohcsmc.site/hris/print_leave?id=" + id);
         const section = {
             status: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
             date_approved: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(5)").text()).format("MM/DD/YYYY hh:mm:ss A")

@@ -258,10 +258,8 @@ class PrintController extends Controller
         $pdf->SetFont('helvetica', 'b', 6);
         $pdf->SetXY(20, 122);
         $pdf->Write(0.1, $total_days . " day(s) (" . ($total_days * 8) . " hrs)");
-
         $pdf->SetXY(20, 130);
         $pdf->Write(0.1, self::getInclusiveDates($leave_application->date_applied));
-
         $pdf->Output('I', "Leave Form.pdf");
     }
 
