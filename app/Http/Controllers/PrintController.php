@@ -85,9 +85,7 @@ class PrintController extends Controller
                 $title = $title . ", " . $split[2] . " " . self::getMonthName($split[0]) . $split[1];
             }
             $month = $split[0];
-
         }
-
         $title = $title . " " . $year;
         return $title;
     }
