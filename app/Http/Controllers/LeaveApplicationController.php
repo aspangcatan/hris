@@ -46,6 +46,7 @@ class LeaveApplicationController extends Controller
         try {
             $type = $request->search_type;
             $model = LeaveApplication::where(function ($query) use ($type) {
+                $query->where('user_id', '=', Auth::id());
                 if ($type != "") {
                     $query->where('leave_type', 'LIKE', '%' . $type . '%');
                 }
@@ -113,7 +114,7 @@ class LeaveApplicationController extends Controller
                 })
                 ->skip($request->page * 10)
                 ->take(11)
-                ->get(['l.id', 'u.fname', 'u.mname', 'u.lname', 'l.leave_type', 'l.date_applied', 'l.status','l.date_section_approved','l.date_division_approved','l.date_hr_approved']);
+                ->get(['l.id', 'u.fname', 'u.mname', 'u.lname', 'l.leave_type', 'l.date_applied', 'l.status', 'l.date_section_approved', 'l.date_division_approved', 'l.date_hr_approved']);
             return response()->json($model);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
