@@ -12,20 +12,20 @@
                 <span>SALN</span>
             </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item d-none">
             <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
                 <i class="bi bi-grid"></i>
                 <span>Position Applied</span>
             </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item d-none">
             <a class="nav-link collapsed" href="{{ route('leave_application') }}">
                 <i class="bi bi-grid"></i>
                 <span>Leave Application</span>
             </a>
         </li>
         @if(session('access_rights') == "SH" || session('access_rights') == "DH" || session('access_rights') == "HRH")
-        <li class="nav-item">
+        <li class="nav-item d-none">
             <a class="nav-link collapsed" href="{{ route('leave_approval') }}">
                 <i class="bi bi-grid"></i>
                 <span>Leave Approval</span>
@@ -33,7 +33,7 @@
         </li>
         @endif
         @if(session('access_rights') == "hr")
-            <li class="nav-item">
+            <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="{{ route('employee') }}">
                     <i class="bi bi-grid"></i>
                     <span>Employee</span>
@@ -47,19 +47,19 @@
             </li>
         @endif
         @if(session('access_rights') == "admin")
-            <li class="nav-item">
+            <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="#">
                     <i class="bi bi-grid"></i>
                     <span>DTR <span class="ms-2 badge bg-danger">Soon</span></span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="#">
                     <i class="bi bi-grid"></i>
                     <span>Leave <span class="ms-2 badge bg-danger">Soon</span></span>
                 </a>
             </li>
-            <li class="nav-item">
+            <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="#">
                     <i class="bi bi-grid"></i>
                     <span>Payroll <span class="ms-2 badge bg-danger">Soon</span></span>
