@@ -120,7 +120,11 @@
                     <tr>
                         <td style="font-size: 13px">{{ strtoupper($declarant->lname) }}</td>
                         <td>{{ strtoupper($declarant->fname) }}</td>
-                        <td>{{ strtoupper($declarant->mname[0]) }}.</td>
+                        <td>
+                            @if($declarant->mname)
+                                {{ strtoupper($declarant->mname[0]) }}.
+                            @endif
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -163,9 +167,21 @@
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td style="font-size: 13px">{{ strtoupper($spouse->spouse_lname) }}</td>
-                        <td>{{ strtoupper($spouse->spouse_fname) }}</td>
-                        <td>{{ strtoupper($spouse->spouse_mname[0]) }}.</td>
+                        <td style="font-size: 13px">
+                            @if($spouse)
+                                {{ strtoupper($spouse->spouse_lname) }}
+                            @endif
+                        </td>
+                        <td>
+                            @if($spouse)
+                                {{ strtoupper($spouse->spouse_fname) }}
+                            @endif
+                        </td>
+                        <td>
+                            @if($spouse->spouse_mname)
+                                {{ strtoupper($spouse->spouse_mname[0]) }}.
+                            @endif
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -336,7 +352,10 @@
     </tr>
 </table>
 <div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
-<div style="text-align: center;font-size: 16px;color: gray;font-style: italic;margin-top: 40px;font-family: 'Times New Roman'">Page 1 of 2</div>
+<div
+    style="text-align: center;font-size: 16px;color: gray;font-style: italic;margin-top: 40px;font-family: 'Times New Roman'">
+    Page 1 of 2
+</div>
 <div style="page-break-before: always !important;"></div>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
     2. LIABILITIES*
@@ -382,7 +401,9 @@
     Household)
     <div>
         <input type="checkbox" style="display: inline"/>
-        <div style="display: inline;font-size: 13.33px">I/We do not have any business interest or financial connection.</div>
+        <div style="display: inline;font-size: 13.33px">I/We do not have any business interest or financial
+            connection.
+        </div>
     </div>
 </div>
 <table style="text-align: center;margin-top: 10px;font-size: 12px">
@@ -408,7 +429,9 @@
     (Within the Fourth Degree of Consanguinity or Affinity. Include also Bilas, Balae and Inso)
     <div>
         <input type="checkbox" style="display: inline;font-size: 12px"/>
-        <div style="display: inline;font-size: 10.66px;font-style: italic">I/We do not know of any relative/s in the government service)</div>
+        <div style="display: inline;font-size: 10.66px;font-style: italic">I/We do not know of any relative/s in the
+            government service)
+        </div>
     </div>
 </div>
 <table style="text-align: center;margin-top: 10px;font-size: 10.66px">
