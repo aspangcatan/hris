@@ -17,7 +17,6 @@
                 </div>
                 <div class="text-secondary font-weight-bold fs-4 text-center">Educational Background</div>
                 <div class="mt-3">
-                    <h5 class="card-title fw-bold">Secondary</h5>
                     <div class="row mb-3">
                         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Level</label>
                         <div class="col-md-8 col-lg-9">

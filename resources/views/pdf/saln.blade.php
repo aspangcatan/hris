@@ -182,7 +182,7 @@
                                 {{ strtoupper($spouse->spouse_mname[0]) }}.
                             @endif
                         </td>
-                    </tr>
+                    </  tr>
                 </table>
             </td>
             <td></td>
