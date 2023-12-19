@@ -27,6 +27,7 @@ use App\Models\Survey;
 use App\Models\User;
 use App\Models\Voluntary;
 use Barryvdh\DomPDF\Facade\Pdf;
+use DateTime;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -378,10 +379,13 @@ class PrintController extends Controller
 
             $children = SalnChildren::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($children); $i++) {
+                $birthdate = new DateTime($children[$i]['birthdate']);
+                $today = new DateTime();
+                $age = $today->diff($birthdate)->y;
                 $children_array[$i] = [
                     'name' => $children[$i]['name'],
                     'birthdate' => date('m/d/Y', strtotime($children[$i]['birthdate'])),
-                    'age' => "Sheeesh",
+                    'age' => $age,
                 ];
             }
 
