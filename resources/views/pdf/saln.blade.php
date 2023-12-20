@@ -182,7 +182,8 @@
                                 {{ strtoupper($spouse->spouse_mname[0]) }}.
                             @endif
                         </td>
-                    </  tr>
+                    </
+                    tr>
                 </table>
             </td>
             <td></td>
@@ -523,7 +524,9 @@
         <td></td>
         <td>Date Issued:</td>
         <td class="border-bottom">
-            {{ date('m/d/Y', strtotime($spouse->date_issued)) }}
+            @if($spouse->date_issued)
+                {{ date('m/d/Y', strtotime($spouse->date_issued)) }}
+            @endif
         </td>
     </tr>
 </table>
