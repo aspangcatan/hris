@@ -404,31 +404,34 @@ class PrintController extends Controller
                     'acquisition_cost' => number_format($acquisition_cost, 2),
                 ];
 
-                $real_properties_subtotal +=  (double) $acquisition_cost;
+                $real_properties_subtotal += (double)$acquisition_cost;
             }
 
             $personal_properties_subtotal = 0;
             $personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($personal_properties); $i++) {
+                $personal_properties_cost = str_replace(',', '', $personal_properties[$i]['acquisition_cost']);
                 $personal_properties_array[$i] = [
                     'gadget' => $personal_properties[$i]['gadget'],
                     'various_years' => $personal_properties[$i]['various_years'],
-                    'acquisition_cost' => number_format($personal_properties[$i]['acquisition_cost'], 2)
+                    'acquisition_cost' => number_format($personal_properties_cost, 2)
                 ];
 
-                $personal_properties_subtotal += $personal_properties[$i]['acquisition_cost'];
+                $personal_properties_subtotal += (double)$personal_properties_cost;
             }
 
             $liabilities_total = 0;
             $liabilities = Liabilities::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($liabilities); $i++) {
+                $liabilities_balance = str_replace(',', '', $liabilities[$i]['outstanding_balance']);
+
                 $liabilities_array[$i] = [
                     'nature' => $liabilities[$i]['nature'],
                     'creditors_name' => $liabilities[$i]['creditors_name'],
-                    'outstanding_balance' => number_format($liabilities[$i]['outstanding_balance'], 2)
+                    'outstanding_balance' => number_format($liabilities_balance, 2)
                 ];
 
-                $liabilities_total += $liabilities[$i]['outstanding_balance'];
+                $liabilities_total += (double) $liabilities_balance;
             }
 
             $business = BusinessInterest::where('user_id', Auth::id())->get();
