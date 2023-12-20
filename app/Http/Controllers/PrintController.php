@@ -392,6 +392,7 @@ class PrintController extends Controller
             $real_properties_subtotal = 0;
             $real_properties = RealProperties::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($real_properties); $i++) {
+                $acquisition_cost = str_replace(',', '', $real_properties[$i]['acquisition_cost']);
                 $real_properties_array[$i] = [
                     'description' => $real_properties[$i]['description'],
                     'kind' => $real_properties[$i]['kind'],
@@ -400,10 +401,10 @@ class PrintController extends Controller
                     'current_fair' => $real_properties[$i]['current_fair'],
                     'acquisition_year' => $real_properties[$i]['acquisition_year'],
                     'acquisition_mode' => $real_properties[$i]['acquisition_mode'],
-                    'acquisition_cost' => number_format($real_properties[$i]['acquisition_cost'], 2),
+                    'acquisition_cost' => number_format($acquisition_cost, 2),
                 ];
 
-                $real_properties_subtotal += $real_properties[$i]['acquisition_cost'];
+                $real_properties_subtotal +=  (double) $acquisition_cost;
             }
 
             $personal_properties_subtotal = 0;

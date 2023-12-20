@@ -296,15 +296,15 @@
         <td class="fw-bold border-top border-right" style="font-size: 10px">MODE</td>
     </tr>
     @foreach($real_properties as $key)
-        <tr class="border-bottom border-left border-right assets" style="font-size: 16px">
+        <tr class="border-bottom border-left border-right assets" style="font-size: 11px">
             <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description']) }}</td>
             <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind']) }}</td>
             <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['assessed_value']) }}</td>
-            <td class="fw-bold border-right" style="width: 14%">{{ strtoupper($key['current_fair']) }}</td>
+            <td class="fw-bold border-right" style="width: 8%;font-size: 15px">{{ strtoupper($key['assessed_value']) }}</td>
+            <td class="fw-bold border-right" style="width: 14%;font-size: 15px">{{ strtoupper($key['current_fair']) }}</td>
             <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_year']) }}</td>
             <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_mode']) }}</td>
-            <td class="fw-bold" style="width: 14%">{{ strtoupper($key['acquisition_cost']) }}</td>
+            <td class="fw-bold" style="width: 14%;font-size:16px">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
     <tr style="font-size: 13.33px">
