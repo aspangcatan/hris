@@ -32,9 +32,9 @@
         }
 
         html, body {
-            font-size: 10.66px !important;
+            font-size: 9.66px !important;
             font-family: sans-serif;
-            margin: 0px !important;
+            margin: 2px !important;
             padding: 2px !important;
         }
 

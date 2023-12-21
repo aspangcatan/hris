@@ -9,6 +9,19 @@
             </div>
             <div class="modal-body">
                 <div class="text-secondary font-weight-bold fs-4 text-center">PRINT DTS</div>
+                <div class="card p-3">
+                    <div class="card-body">
+                        <p>Note:</p>
+                        <p>Use the following steps when printing PDS</p>
+                        <ol>
+                            <li>Set Date then hit <strong class="text-success">PRINT BUTTON</strong></li>
+                            <li>On the print preview, Go to <strong>More Settings</strong></li>
+                            <li>Set <strong>Paper size</strong> to <strong>8.5 x 13 in</strong></li>
+                            <li>Set <strong>Scale</strong> to <strong>Fit to printable area</strong></li>
+                            <li>Then hit <strong>Print</strong></li>
+                        </ol>
+                    </div>
+                </div>
                 <div class="mt-3 text-secondary fs-5">
                     <div class="form-floating mb-3">
                         <input type="date" class="form-control" id="pds_date" placeholder="">
