@@ -431,7 +431,7 @@ class PrintController extends Controller
                     'outstanding_balance' => number_format($liabilities_balance, 2)
                 ];
 
-                $liabilities_total += (double) $liabilities_balance;
+                $liabilities_total += (double)$liabilities_balance;
             }
 
             $business = BusinessInterest::where('user_id', Auth::id())->get();
@@ -682,11 +682,14 @@ class PrintController extends Controller
                     $eligibility_column_2 = $eligiblity[$i]->rating;
                     $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date));
                     $eligibility_column_4 = $eligiblity[$i]->examination_place;
-                    $eligibility_column_5 = $eligiblity[$i]->license_no;
-                    $eligibility_column_6 = date('m/d/Y', strtotime($eligiblity[$i]->license_expiry));
+                    $eligibility_column_5 = "N/A";
+                    if ($eligiblity[$i]->license_no)
+                        $eligibility_column_5 = $eligiblity[$i]->license_no;
 
+                    $eligibility_column_6 = "N/A";
+                    if ($eligiblity[$i]->license_expiry)
+                        $eligibility_column_6 = date('m/d/Y', strtotime($eligiblity[$i]->license_expiry));
                 }
-
                 $eligibilities[$i] = ['career_service' => $eligibility_column_1, 'rating' => $eligibility_column_2,
                     'examination_date' => $eligibility_column_3, 'examination_place' => $eligibility_column_4,
                     'license_no' => $eligibility_column_5, 'license_expiry' => $eligibility_column_6];
@@ -781,7 +784,9 @@ class PrintController extends Controller
                     $learning_column_1 = $learning[$i]->learning_title;
                     $learning_column_2 = date('m/d/Y', strtotime($learning[$i]->attendance_from));
                     $learning_column_3 = date('m/d/Y', strtotime($learning[$i]->attendance_to));
-                    $learning_column_4 = $learning[$i]->number_hours;
+                    $learning_column_4 = "N/A";
+                    if ($learning_column_4)
+                        $learning_column_4 = number_format($learning[$i]->number_hours, 1, '.', '');
                     $learning_column_5 = $learning[$i]->learning_type;
                     $learning_column_6 = $learning[$i]->conducted_by;
                 }

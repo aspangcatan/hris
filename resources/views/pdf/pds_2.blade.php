@@ -40,7 +40,9 @@
                     class="center-value">{{ strtoupper($key['examination_place']) }}</td>
                 <td style="width: 10%;border-right: solid 1px black"
                     class="center-value">{{ strtoupper($key['license_no'] )}}</td>
-                <td style="width: 10%;" class="center-value">{{ strtoupper($key['license_expiry']) }}</td>
+                <td style="width: 10%;" class="center-value">
+                    {{ strtoupper($key['license_expiry']) }}
+                </td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
