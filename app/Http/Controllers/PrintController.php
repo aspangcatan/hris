@@ -876,7 +876,7 @@ class PrintController extends Controller
 
             $pdf->setPaper('A4', 'landscape');
 
-            return $pdf->stream('invoice.pdf', array("Attachment" => false));
+            return $pdf->stream('PDS.pdf', array("Attachment" => false));
         } catch (\Exception $exception) {
             return $exception->getMessage();
         }
