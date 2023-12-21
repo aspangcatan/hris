@@ -1105,7 +1105,7 @@
         $("#work_salary_grade").val(work_salary_grade);
         $("#work_appointment_status").val(work_appointment_status);
         $("#work_government").val((work_government == "Y") ? "1" : "0");
-        $("#work_current_work").val(work_current_work);
+        $("#work_current_work").val(work_current_work).change();
         work_experience_modal.toggle()
     }
 

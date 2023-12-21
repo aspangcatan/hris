@@ -64,8 +64,8 @@
                     return;
                 }
 
-                const working_to = (params.params_current_work == "1") ? "Present" : moment(params.working_to).format("MM/DD/YYYY");
-                const is_government = (params.params_government == "1") ? "Y" : "N";
+                const working_to = (params.is_current_work == "1") ? "Present" : moment(params.working_to).format("MM/DD/YYYY");
+                const is_government = (params.is_government == "1") ? "Y" : "N";
                 if (params.id == 0) {
                     const tr = `
                 <tr id='work_id_` + data.id + `'>

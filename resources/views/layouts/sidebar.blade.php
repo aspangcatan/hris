@@ -12,7 +12,7 @@
                 <span>SALN</span>
             </a>
         </li>
-        <li class="nav-item d-none">
+        <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
                 <i class="bi bi-grid"></i>
                 <span>Position Applied</span>
