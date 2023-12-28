@@ -30,7 +30,22 @@
         </tr>
         @foreach($voluntary_work as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 43%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['organization_address']) }}</td>
+                @if(strtoupper($key['organization_address']) == "N/A")
+                    <td style="width: 43%;border-right: solid 1px black"
+                        class="center-value">
+                        <div style="padding-left: 3px">
+                            {{ strtoupper($key['organization_address']) }}
+                        </div>
+                    </td>
+                @else
+                    <td style="width: 43%;border-right: solid 1px black;text-align: unset !important"
+                        class="center-value">
+                        <div style="padding-left: 3px">
+                            {{ strtoupper($key['organization_address']) }}
+                        </div>
+                    </td>
+                @endif
+
                 <td style="width: 9%;border-right: solid 1px black" class="center-value">{{ $key['working_from'] }}</td>
                 <td style="width: 9%;border-right: solid 1px black" class="center-value">{{ $key['working_to'] }}</td>
                 <td style="width: 7%;border-right: solid 1px black" class="center-value">{{ $key['number_hours'] }}</td>
@@ -76,12 +91,22 @@
         </tr>
         @foreach($learning as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 43%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['learning_title']) }}</td>
-                <td style="width: 9%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
-                <td style="width: 9%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
-                <td style="width: 7%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['number_hours']) }}</td>
-                <td style="width: 10%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
-                <td style="width: 22%;font-size: 10.33px" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
+                <td style="width: 43%;border-right: solid 1px black;font-size: 10.33px;text-align: unset !important"
+                    class="center-value">
+                    <div style="padding-left: 3px">
+                        {{ strtoupper($key['learning_title']) }}
+                    </div>
+                </td>
+                <td style="width: 9%;border-right: solid 1px black;font-size: 10.33px"
+                    class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
+                <td style="width: 9%;border-right: solid 1px black;font-size: 10.33px"
+                    class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
+                <td style="width: 7%;border-right: solid 1px black;font-size: 10.33px"
+                    class="center-value">{{ strtoupper($key['number_hours']) }}</td>
+                <td style="width: 10%;border-right: solid 1px black;font-size: 10.33px"
+                    class="center-value">{{ strtoupper($key['learning_type']) }}</td>
+                <td style="width: 22%;font-size: 10.33px"
+                    class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
@@ -111,9 +136,11 @@
         </tr>
         @foreach($skill as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 24%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['skill']) }}</td>
+                <td style="width: 24%;border-right: solid 1px black"
+                    class="center-value">{{ strtoupper($key['skill']) }}</td>
                 <td colspan="2"
-                    style="width: 52%;border-right: solid 1px black" class="center-value">{{ strtoupper($key['recognition']) }}</td>
+                    style="width: 52%;border-right: solid 1px black"
+                    class="center-value">{{ strtoupper($key['recognition']) }}</td>
                 <td style="width: 24%" class="center-value">{{ strtoupper($key['association']) }}</td>
             </tr>
         @endforeach
@@ -127,7 +154,8 @@
                 SIGNATURE
             </td>
             <td style="width:32%;border-right: solid 1px black"></td>
-            <td style="width:20%;border-right: solid 1px black;text-align: center;font-weight: bold" class="gray">DATE</td>
+            <td style="width:20%;border-right: solid 1px black;text-align: center;font-weight: bold" class="gray">DATE
+            </td>
             <td style="width: 24%;text-align: center;font-weight: bold">{{ $pds_date }}</td>
         </tr>
     </table>

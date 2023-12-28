@@ -1008,8 +1008,12 @@
                 @if($i > 0)
                     <tr style="border-top: solid 1px black">
                         @endif
-                        <td style="width: 25%;border-right: solid 1px black"
-                            class="center-value education">{{ strtoupper($education[$i]['school_name']) }}</td>
+                        <td style="width: 25%;border-right: solid 1px black;text-align: unset !important"
+                            class="center-value education">
+                            <div style="padding-left: 3px">
+                                {{ strtoupper($education[$i]['school_name']) }}
+                            </div>
+                        </td>
                         <td style="width: 21%;border-right: solid 1px black"
                             class="center-value education">{{ strtoupper($education[$i]['education_degree']) }}</td>
                         <td style="width: 6%;border-right: solid 1px black"

@@ -30,8 +30,12 @@
         </tr>
         @foreach($eligibility as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 30%;border-right: solid 1px black"
-                    class="center-value">{{ strtoupper($key['career_service']) }}</td>
+                <td style="width: 30%;border-right: solid 1px black;text-align: unset !important"
+                    class="center-value">
+                    <div style="padding-left: 3px">
+                        {{ strtoupper($key['career_service']) }}
+                    </div>
+                </td>
                 <td style="width: 8%;border-right: solid 1px black"
                     class="center-value">{{ strtoupper($key['rating']) }}</td>
                 <td style="width: 12%;border-right: solid 1px black"

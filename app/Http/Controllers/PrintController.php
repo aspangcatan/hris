@@ -695,7 +695,7 @@ class PrintController extends Controller
                     'license_no' => $eligibility_column_5, 'license_expiry' => $eligibility_column_6];
             }
 
-            for ($i = 0; $i < 25; $i++) {
+            for ($i = 0; $i < 32; $i++) {
                 $work_column_1 = "N/A";
                 $work_column_2 = "N/A";
                 $work_column_3 = "N/A";
@@ -763,7 +763,7 @@ class PrintController extends Controller
                     'position' => $voluntary_column_5];
             }
 
-            for ($i = 0; $i < 20; $i++) {
+            for ($i = 0; $i < 25; $i++) {
                 $learning_column_1 = "N/A";
                 $learning_column_2 = "N/A";
                 $learning_column_3 = "N/A";
