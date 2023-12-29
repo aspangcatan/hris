@@ -480,11 +480,11 @@
             </tr>
             @foreach($reference as $key)
                 <tr style="font-size: 9px !important;">
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;"
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;font-size: 10.33px"
                         class="center-value">{{ strtoupper($key['name']) }}</td>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;"
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;font-size: 10.33px"
                         class="center-value">{{ strtoupper($key['address']) }}</td>
-                    <td style="border-top: solid 1px black;border-right: solid 1px black;"
+                    <td style="border-top: solid 1px black;border-right: solid 1px black;font-size: 10.33px"
                         class="center-value">{{ strtoupper($key['contact_no']) }}</td>
                 </tr>
             @endforeach
