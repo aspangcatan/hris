@@ -136,12 +136,12 @@
         </tr>
         @foreach($skill as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 24%;border-right: solid 1px black"
+                <td style="width: 24%;border-right: solid 1px black;font-size: 10.33px"
                     class="center-value">{{ strtoupper($key['skill']) }}</td>
                 <td colspan="2"
-                    style="width: 52%;border-right: solid 1px black"
+                    style="width: 52%;border-right: solid 1px black;font-size: 10.33px"
                     class="center-value">{{ strtoupper($key['recognition']) }}</td>
-                <td style="width: 24%" class="center-value">{{ strtoupper($key['association']) }}</td>
+                <td style="width: 24%;font-size: 10.33px" class="center-value">{{ strtoupper($key['association']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">

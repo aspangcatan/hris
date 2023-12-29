@@ -12,7 +12,9 @@ class LearningController extends Controller
     {
         try {
             $user_id = ($request->id == 0)?Auth::id():$request->id;
-            $learning = Learning::where('user_id', $user_id)->get();
+            $learning = Learning::where('user_id', $user_id)
+                ->orderBy('attendance_from', 'DESC')
+                ->get();
             return response(['code' => 200, 'results' => $learning]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

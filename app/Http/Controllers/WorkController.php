@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Work;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class WorkController extends Controller
 {
@@ -13,7 +14,11 @@ class WorkController extends Controller
     {
         try {
             $user_id = ($request->id == 0) ? Auth::id() : $request->id;
-            $work = Work::where('user_id', $user_id)->get();
+            $work = DB::table('work_experiences')
+                ->where('work_experiences.user_id', '=', $user_id)
+                ->select('work_experiences.*')
+                ->orderBy('work_experiences.working_from', 'DESC')
+                ->get();
             return response(['code' => 200, 'results' => $work]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

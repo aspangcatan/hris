@@ -13,6 +13,7 @@
                     <th style="width: 5%">From</th>
                     <th style="width: 5%">To</th>
                     <th style="width: 12%">Salary</th>
+                    <th>Grade</th>
                     <th style="width: 10%">Status Appointment</th>
                     <th style="width: 10%">Gov't Service (Y/N)</th>
                     <th colspan="2" style="width: 8%"></th>

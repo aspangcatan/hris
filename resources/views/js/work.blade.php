@@ -20,7 +20,7 @@
                     tr += `<td>` + moment(it.working_from).format("MM/DD/YYYY") + `</td>`;
                     tr += `<td>` + working_to + `</td>`;
                     tr += `<td>` + it.monthly_salary + `</td>`;
-                    tr += `<td class="d-none">` + it.salary_grade + `</td>`;
+                    tr += `<td>` + it.salary_grade + `</td>`;
                     tr += `<td>` + it.appointment_status + `</td>`;
                     tr += `<td>` + is_government + `</td>`;
                     tr += `<td class="d-none">` + it.is_current_work + `</td>`;
