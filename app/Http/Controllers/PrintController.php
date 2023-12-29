@@ -734,7 +734,7 @@ class PrintController extends Controller
                     'appointment_status' => $work_column_7, 'is_government' => $work_column_8];
             }
 
-            for ($i = 0; $i < 10; $i++) {
+            for ($i = 0; $i < 9; $i++) {
                 $voluntary_column_1 = "N/A";
                 $voluntary_column_2 = "N/A";
                 $voluntary_column_3 = "N/A";
