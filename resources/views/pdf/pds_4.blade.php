@@ -524,7 +524,7 @@
                             <tr style="border-top: solid 1px black">
                                 <td style="width: 55%">Government Issued ID:</td>
                                 <td style="width: 45%">
-                                    <div class="value">
+                                    <div class="value" style="font-size: 10px">
                                         @if($employee)
                                             {{ strtoupper($employee->issued_id) }}
                                         @else
@@ -536,7 +536,7 @@
                             <tr style="border-top: solid 1px black">
                                 <td>ID/License/Passport No.</td>
                                 <td>
-                                    <div class="value">
+                                    <div class="value"  style="font-size: 10px">
                                         @if($employee)
                                             {{ $employee->issued_id_no }}
                                         @else
@@ -548,7 +548,7 @@
                             <tr style="border-top: solid 1px black">
                                 <td>Date/Place of Issuance:</td>
                                 <td>
-                                    <div class="value">
+                                    <div class="value"  style="font-size: 10px">
                                         @if($employee)
                                             {{ strtoupper($employee->issued_date) }}
                                         @else

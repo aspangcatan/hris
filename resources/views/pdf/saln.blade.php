@@ -119,7 +119,14 @@
                 <table style="text-align: center" class="box">
                     <tr>
                         <td style="font-size: 13px">{{ strtoupper($declarant->lname) }}</td>
-                        <td>{{ strtoupper($declarant->fname) }}</td>
+                        <td>
+                            {{ strtoupper($declarant->fname) }}
+                            @if($declarant->suffix)
+                            <span style="text-transform: uppercase">
+                                {{ $declarant->suffix }}
+                            </span>
+                            @endif
+                        </td>
                         <td>
                             @if($declarant->mname)
                                 {{ strtoupper($declarant->mname[0]) }}.

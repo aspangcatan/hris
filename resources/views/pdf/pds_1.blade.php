@@ -627,7 +627,7 @@
                     @endif
                 </div>
             </td>
-            <td style="font-size: 10px;border-right: solid 1px black" class="gray">21. E-MAIL ADDRESS (if any)</td>
+            <td style="font-size: 10px;border-right: solid 1px black;font-size:9px" class="gray">21. E-MAIL ADDRESS (if any)</td>
             <td colspan="2">
                 <div class="value">
                     @if($employee->email_address)

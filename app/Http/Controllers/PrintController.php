@@ -290,7 +290,7 @@ class PrintController extends Controller
                     $query->where('u.id', '=', Auth::id());
                     $query->where('address_type', 'Permanent');
                 })
-                ->get(['u.fname', 'u.mname', 'u.lname', 'd.position', 'd.agency',
+                ->get(['u.fname', 'u.mname', 'u.lname','u.suffix', 'd.position', 'd.agency',
                     'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued',
                     'a.barangay', 'a.city', 'a.province'])
                 ->first();
