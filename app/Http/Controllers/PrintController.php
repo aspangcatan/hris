@@ -763,7 +763,7 @@ class PrintController extends Controller
                     'position' => $voluntary_column_5];
             }
 
-            for ($i = 0; $i < 25; $i++) {
+            for ($i = 0; $i < 24; $i++) {
                 $learning_column_1 = "N/A";
                 $learning_column_2 = "N/A";
                 $learning_column_3 = "N/A";
@@ -801,8 +801,8 @@ class PrintController extends Controller
             $outer_counter = 0;
             $counter = 0;
 
-            if (count($learning) > 20) {
-                for ($i = 20; $i < count($learning); $i++) {
+            if (count($learning) > 24) {
+                for ($i = 25; $i < count($learning); $i++) {
                     if ($counter % 40 == 0 && $counter > 0) {
                         $next_page_learning_outer_array[$outer_counter++] = $next_page_learning_inner_array;
                         $counter = 0;

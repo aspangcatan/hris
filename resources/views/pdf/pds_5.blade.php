@@ -32,12 +32,28 @@
         </tr>
         @foreach($learning as $key)
             <tr style="border-top: solid 1px  black">
-                <td style="width: 43%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['learning_title']) }}</td>
+                @if(strlen($key['conducted_by']) >= 30)
+                    <td style="width: 43%;border-right: solid 1px black;font-size: 9.33px;text-align: unset !important"
+                        class="center-value">
+                @else
+                    <td style="width: 43%;border-right: solid 1px black;font-size: 10.33px;text-align: unset !important"
+                        class="center-value">
+                        @endif
+                        <div style="padding-left: 3px">
+                            {{ strtoupper($key['learning_title']) }}
+                        </div>
+                    </td>
                 <td style="width: 9%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['attendance_from']) }}</td>
                 <td style="width: 9%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['attendance_to']) }}</td>
                 <td style="width: 7%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['number_hours']) }}</td>
                 <td style="width: 10%;border-right: solid 1px black;font-size: 10.33px" class="center-value">{{ strtoupper($key['learning_type']) }}</td>
-                <td style="width: 22%;font-size: 10.33px" class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
+                @if(strlen($key['conducted_by']) >= 50)
+                    <td style="width: 22%;font-size: 8.33px"
+                        class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
+                @else
+                    <td style="width: 22%;font-size: 10.33px"
+                        class="center-value">{{ strtoupper($key['conducted_by']) }}</td>
+                @endif
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
