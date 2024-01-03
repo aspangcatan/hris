@@ -29,8 +29,8 @@
                     </div>
                     <div class="form-floating mb-3">
                         <select class="form-control" id="experience_rows">
-                            @for($i=2; $i<50; $i++)
-                                @if($i == 5)
+                            @for($i=15; $i<50; $i++)
+                                @if($i == 23)
                                     <option selected>{{ $i }}</option>
                                 @else
                                     <option>{{ $i }}</option>
