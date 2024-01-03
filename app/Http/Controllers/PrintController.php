@@ -695,7 +695,7 @@ class PrintController extends Controller
                     'license_no' => $eligibility_column_5, 'license_expiry' => $eligibility_column_6];
             }
 
-            for ($i = 0; $i < 32; $i++) {
+            for ($i = 0; $i < 30; $i++) {
                 $work_column_1 = "N/A";
                 $work_column_2 = "N/A";
                 $work_column_3 = "N/A";
