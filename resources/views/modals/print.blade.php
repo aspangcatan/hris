@@ -41,7 +41,7 @@
                     </div>
                     <div class="form-floating mb-3">
                         <select class="form-control" id="learning_rows">
-                            @for($i=24; $i<50; $i++)
+                            @for($i=15; $i<50; $i++)
                                 @if($i == 24)
                                     <option selected>{{ $i }}</option>
                                 @else
