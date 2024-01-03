@@ -129,3 +129,9 @@
     </table>
 </div>
 <div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2017), Page 2 of 4</div>
+@if(count($next_page_work) > 0)
+    @for($i=0; $i<count($next_page_work); $i++)
+        <div style="page-break-before: always !important;"></div>
+        @include('pdf.pds_6',['work_experience'=>$next_page_work[$i]])
+    @endfor
+@endif

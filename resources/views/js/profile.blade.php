@@ -105,13 +105,16 @@
 
         $("#btn_confirm_print").click(function () {
             let date = $("#pds_date").val();
+            const experience_rows = $("#experience_rows").val();
+            const learning_rows = $("#learning_rows").val();
+
             if (date == "") {
                 alert("Indicate date");
                 return;
             }
             date = moment(date).format("MM/DD/YYYY");
             window.open(
-                '{{ route('printPds') }}?id=0&pds_date=' + date,
+                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });

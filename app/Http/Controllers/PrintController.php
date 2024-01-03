@@ -290,7 +290,7 @@ class PrintController extends Controller
                     $query->where('u.id', '=', Auth::id());
                     $query->where('address_type', 'Permanent');
                 })
-                ->get(['u.fname', 'u.mname', 'u.lname','u.suffix', 'd.position', 'd.agency',
+                ->get(['u.fname', 'u.mname', 'u.lname', 'u.suffix', 'd.position', 'd.agency',
                     'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued',
                     'a.barangay', 'a.city', 'a.province'])
                 ->first();
@@ -695,7 +695,7 @@ class PrintController extends Controller
                     'license_no' => $eligibility_column_5, 'license_expiry' => $eligibility_column_6];
             }
 
-            for ($i = 0; $i < 30; $i++) {
+            for ($i = 0; $i < $request->experience_rows; $i++) {
                 $work_column_1 = "N/A";
                 $work_column_2 = "N/A";
                 $work_column_3 = "N/A";
@@ -734,6 +734,42 @@ class PrintController extends Controller
                     'appointment_status' => $work_column_7, 'is_government' => $work_column_8];
             }
 
+
+            $next_page_work_outer_array = [];
+            $next_page_work_inner_array = [];
+            $work_outer_counter = 0;
+            $work_counter = 0;
+
+            if (count($work_experience) > $request->experience_rows) {
+                for ($i = $request->experience_rows; $i < count($work_experience); $i++) {
+                    if ($work_counter % 40 == 0 && $work_counter > 0) {
+                        $next_page_work_outer_array[$work_outer_counter++] = $next_page_work_inner_array;
+                        $work_counter = 0;
+                        $next_page_work_inner_array = [];
+                    }
+
+                    $work_column_1 = date('m/d/Y', strtotime($work_experience[$i]->working_from));
+                    $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('m/d/Y', strtotime($work_experience[$i]->working_to));
+                    $work_column_3 = $work_experience[$i]->position;
+                    $work_column_4 = $work_experience[$i]->agency;
+                    $work_column_5 = number_format($work_experience[$i]->monthly_salary, 2);
+                    $work_column_6 = $work_experience[$i]->salary_grade;
+                    $work_column_7 = $work_experience[$i]->appointment_status;
+                    $work_column_8 = ($work_experience[$i]->is_government == 1) ? "Y" : "N";
+
+                    $next_page_work_inner_array[$work_counter++] = ['working_from' => $work_column_1, 'working_to' => $work_column_2,
+                        'position' => $work_column_3, 'agency' => $work_column_4,
+                        'monthly_salary' => $work_column_5, 'salary_grade' => $work_column_6,
+                        'appointment_status' => $work_column_7, 'is_government' => $work_column_8];
+
+                    #CHECK IF LAST LOOP
+                    if ($i == count($work_experience) - 1) {
+                        $next_page_work_outer_array[$work_outer_counter++] = $next_page_work_inner_array;
+                    }
+                }
+            }
+
+
             for ($i = 0; $i < 8; $i++) {
                 $voluntary_column_1 = "N/A";
                 $voluntary_column_2 = "N/A";
@@ -763,7 +799,8 @@ class PrintController extends Controller
                     'position' => $voluntary_column_5];
             }
 
-            for ($i = 0; $i < 24; $i++) {
+
+            for ($i = 0; $i < $request->learning_rows; $i++) {
                 $learning_column_1 = "N/A";
                 $learning_column_2 = "N/A";
                 $learning_column_3 = "N/A";
@@ -801,8 +838,8 @@ class PrintController extends Controller
             $outer_counter = 0;
             $counter = 0;
 
-            if (count($learning) > 24) {
-                for ($i = 25; $i < count($learning); $i++) {
+            if (count($learning) > $request->learning_rows) {
+                for ($i = $request->learning_rows; $i < count($learning); $i++) {
                     if ($counter % 40 == 0 && $counter > 0) {
                         $next_page_learning_outer_array[$outer_counter++] = $next_page_learning_inner_array;
                         $counter = 0;
@@ -875,7 +912,7 @@ class PrintController extends Controller
 
             $pdf = Pdf::loadView('pdf.pds', ['user' => $user, 'employee' => $employee,
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
-                'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences,
+                'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences, 'next_page_work' => $next_page_work_outer_array,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
                 'reference' => $references, 'pds_date' => $request->pds_date]);
 

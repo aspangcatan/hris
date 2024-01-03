@@ -27,6 +27,30 @@
                         <input type="date" class="form-control" id="pds_date" placeholder="">
                         <label>Date</label>
                     </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-control" id="experience_rows">
+                            @for($i=2; $i<50; $i++)
+                                @if($i == 5)
+                                    <option selected>{{ $i }}</option>
+                                @else
+                                    <option>{{ $i }}</option>
+                                @endif
+                            @endfor
+                        </select>
+                        <label>Number of rows (Work Experience)</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-control" id="learning_rows">
+                            @for($i=24; $i<50; $i++)
+                                @if($i == 24)
+                                    <option selected>{{ $i }}</option>
+                                @else
+                                    <option>{{ $i }}</option>
+                                @endif
+                            @endfor
+                        </select>
+                        <label>Number of rows (Learning and Development)</label>
+                    </div>
                 </div>
                 <div class="text-center mt-4">
                     <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
