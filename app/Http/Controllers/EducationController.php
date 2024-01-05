@@ -27,9 +27,9 @@ class EducationController extends Controller
             if (!$education) {
                 $education = new Education;
                 $education->user_id = Auth::id();
-                $education->level = $request->level;
             }
 
+            $education->level = $request->level;
             $education->school_name = $request->school_name;
             $education->education_degree = $request->education_degree;
             $education->attendance_from = $request->attendance_from;
