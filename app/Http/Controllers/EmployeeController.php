@@ -117,6 +117,7 @@ class EmployeeController extends Controller
                 return response(['code' => 500, 'message' => 'Employee ID dont exists']);
             }
             $employee->employee_type = $request->employee_type;
+            $employee->date_hired = $request->date_hired;
             $employee->save();
             return response(['code' => 200, 'message' => "Employee status updated"]);
         } catch (\Exception $exception) {

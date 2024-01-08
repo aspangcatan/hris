@@ -33,7 +33,7 @@
         </li>
         @endif
         @if(session('access_rights') == "hr")
-            <li class="nav-item d-none">
+            <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('employee') }}">
                     <i class="bi bi-grid"></i>
                     <span>Employee</span>
