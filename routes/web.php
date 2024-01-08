@@ -47,7 +47,7 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('profile');
 
     Route::get('/saln', function () {
-        return view('saln');
+        return view('maintenance');
     })->name('saln');
 
     Route::get('/employee', function () {
