@@ -1,8 +1,12 @@
 @extends('master')
 @section('content')
     <div class="d-flex justify-content-between">
-        <div class="pagetitle">
-            <h1>SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</h1>
+        <div class="card bg-info">
+            <div class="card-body p-2 text-dark">
+                <strong>NOTE:</strong>
+                <p>Declarant's name and Spouse name are found in your <strong style="font-style: italic">Personal
+                        Data Sheet (PDS)</strong></p>
+            </div>
         </div>
         <div>
             <button class="btn btn-success" id="btn_print_saln">PRINT SALN</button>
@@ -12,11 +16,41 @@
     <section class="section profile mt-3">
         <div class="card">
             <div class="card-body">
-                <div class="card bg-info mt-2">
-                    <div class="card-body p-2 text-dark">
-                        <strong>NOTE:</strong>
-                        <p>Declarant's name and Spouse name are found in your <strong style="font-style: italic">Personal
-                                Data Sheet (PDS)</strong></p>
+                <div class="pagetitle text-center mt-4">
+                    <h1>SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</h1>
+                    <span>As of December </span>
+                    <span>
+                        <select class="underline" id="as_of_year">
+                            @for($year=2023; $year<= \Carbon\Carbon::now()->format('Y'); $year++)
+                                <option>{{ $year }}</option>
+                            @endfor
+                        </select>
+                    </span>
+                    <div class="mt-3">
+                        <strong>Note:</strong>
+                        <span>
+                            <i>Husband and wife who are both public officials and employees may file the required statements jointly or separately.</i>
+                        </span>
+                        <div class="d-flex justify-content-center">
+                            <div class="form-check me-4">
+                                <input class="form-check-input" type="radio" value="Joint Filing" name="filing_type">
+                                <label class="form-check-label">
+                                    Joint Filing
+                                </label>
+                            </div>
+                            <div class="form-check me-2 ms-2">
+                                <input class="form-check-input" type="radio" value="Separate Filing" name="filing_type">
+                                <label class="form-check-label">
+                                    Separate Filing
+                                </label>
+                            </div>
+                            <div class="form-check ms-4">
+                                <input class="form-check-input" type="radio" value="Not Applicable" name="filing_type">
+                                <label class="form-check-label">
+                                    Not Applicable
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="row mt-2">
@@ -150,12 +184,14 @@
                             <div>Unmarried children below eighteen (18) years of age living in declarant's household
                             </div>
                             <div>
-                                <button class="btn btn-sm btn-success" id="btn_add_children">ADD NEW</button>
+                                <button class="btn btn-sm btn-success" id="btn_add_children">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
                             </div>
                         </div>
                     </h5>
                     <div class="table-responsive">
-                        <table class="table table-bordered text-center">
+                        <table class="table text-center">
                             <thead>
                             <tr>
                                 <th>Name</th>
@@ -187,7 +223,7 @@
                         <button class="btn btn-sm btn-success" id="btn_add_real_properties">ADD NEW</button>
                     </div>
                 </div>
-                <table class="table table-bordered text-center">
+                <table class="table text-center">
                     <thead>
                     <tr>
                         <th rowspan="2">
@@ -205,18 +241,10 @@
                         <th rowspan="2">Exact location</th>
                         <th>Assessed value</th>
                         <th>Current fair market value</th>
-                        <th colspan="2">Acquisition</th>
+                        <th>Acquisition Year</th>
+                        <th>Acquisition Mode</th>
                         <th>Acquisition cost</th>
                         <th rowspan="2" colspan="2" style="width: 10%"></th>
-                    </tr>
-                    <tr>
-                        <th colspan="2">
-                            <div style="font-size: 12px">
-                                (As found in the Tax Declaration of Real Property)
-                            </div>
-                        </th>
-                        <th style="width: 5%">Year</th>
-                        <th style="width: 5%">Mode</th>
                     </tr>
                     </thead>
                     <tbody id="real_properties_list"></tbody>
@@ -230,7 +258,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered text-center">
+                    <table class="table text-center">
                         <thead>
                         <tr>
                             <th>Gadgets/Appliances</th>
@@ -253,7 +281,7 @@
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-bordered text-center">
+                    <table class="table text-center">
                         <thead>
                         <tr>
                             <th>Nature</th>
@@ -272,20 +300,29 @@
             <div class="card-body">
                 <div id="business_interest">
                     <div class="d-flex align-items-center justify-content-between">
+                        <div></div>
                         <div>
-                            <h5 class="card-title fw-bold">
+                            <h5 class="card-title fw-bold text-center">
                                 Business Interests and Financial Connections
                                 <div class="text-black" style="font-size: 12px">(of Declarant /Declarant’s spouse/
                                     Unmarried Children Below Eighteen (18) years of Age Living in Declarant’s Household)
                                 </div>
                             </h5>
+                            <div class="text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="business_interest_checkbox" style="float:unset">
+                                    <label class="form-check-label" for="flexCheckDefault">
+                                        I/We do not have any business interest or financial connection
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <button class="btn btn-sm btn-success" id="btn_add_business_interest">ADD NEW</button>
                         </div>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-bordered text-center">
+                        <table class="table text-center">
                             <thead>
                             <tr>
                                 <th>Name of Entity/Business Enterprise</th>
@@ -305,20 +342,29 @@
             <div class="card-body">
                 <div id="government_relatives">
                     <div class="d-flex align-items-center justify-content-between">
+                        <div></div>
                         <div>
-                            <h5 class="card-title fw-bold">
+                            <h5 class="card-title fw-bold text-center">
                                 Relatives in the government service
                                 <div class="text-black" style="font-size: 12px">(Within the Fourth Degree of
                                     Consanguinity or Affinity. Include also Bilas, Balae and Inso)
                                 </div>
                             </h5>
+                            <div class="text-center">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="" id="government_relatives_checkbox" style="float:unset">
+                                    <label class="form-check-label" for="flexCheckDefault">
+                                        I/We do not know of any relative/s in the government service)
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <button class="btn btn-sm btn-success" id="btn_add_government_relative">ADD NEW</button>
                         </div>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-bordered text-center">
+                        <table class="table text-center">
                             <thead>
                             <tr>
                                 <th>Name of relative</th>

@@ -91,7 +91,7 @@
 <div style="text-align: center;margin-top: 20px">
     <div style="font-weight: bolder;font-size: 16px;">SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</div>
     <div style="font-size: 13px">As of <u style="margin-left: 5px">December
-            31, {{ \Carbon\Carbon::now()->format('Y') }}</u></div>
+            31, {{ $as_of_year }}</u></div>
     <div style="font-size: 10.66px">(Required by R.A 6713)</div>
     <div style="font-size: 12.5px;margin-top: 15px">
         <strong>Note:</strong>
@@ -100,15 +100,27 @@
     </div>
     <div style="font-size:13.33px;margin-left: 20%;margin-right:20%;text-align: center">
         <div style="display: inline-block;width: 32%">
-            <input type="checkbox" style="display: inline"/>
+            @if($filing_type == 'Joint Filing')
+                <input type="checkbox" style="display: inline" checked/>
+            @else
+                <input type="checkbox" style="display: inline"/>
+            @endif
             <div style="display: inline;font-style: italic;">Joint Filing</div>
         </div>
         <div style="display: inline-block;width: 32%">
-            <input type="checkbox" style="display: inline"/>
+            @if($filing_type == 'Separate Filing')
+                <input type="checkbox" style="display: inline" checked/>
+            @else
+                <input type="checkbox" style="display: inline"/>
+            @endif
             <div style="display: inline;font-style: italic;">Separate Filing</div>
         </div>
         <div style="display: inline-block;width: 32%">
-            <input type="checkbox" style="display: inline"/>
+            @if($filing_type == 'Not Applicable')
+                <input type="checkbox" style="display: inline" checked/>
+            @else
+                <input type="checkbox" style="display: inline"/>
+            @endif
             <div style="display: inline;font-style: italic;">Not Applicable</div>
         </div>
     </div>
@@ -122,7 +134,7 @@
                         <td>
                             {{ strtoupper($declarant->fname) }}
                             @if($declarant->suffix)
-                            <span style="text-transform: uppercase">
+                                <span style="text-transform: uppercase">
                                 {{ $declarant->suffix }}
                             </span>
                             @endif
@@ -408,7 +420,11 @@
     (of Declarant /Declarant’s spouse/ Unmarried Children Below Eighteen (18) years of Age Living in Declarant’s
     Household)
     <div>
-        <input type="checkbox" style="display: inline"/>
+        @if($business_interest == '1')
+            <input type="checkbox" style="display: inline" checked/>
+        @else
+            <input type="checkbox" style="display: inline"/>
+        @endif
         <div style="display: inline;font-size: 13.33px">I/We do not have any business interest or financial
             connection.
         </div>
@@ -436,7 +452,11 @@
 <div style="text-align: center;font-size: 10.66px;font-style: italic">
     (Within the Fourth Degree of Consanguinity or Affinity. Include also Bilas, Balae and Inso)
     <div>
-        <input type="checkbox" style="display: inline;font-size: 12px"/>
+        @if($government_relatives == '1')
+            <input type="checkbox" style="display: inline" checked/>
+        @else
+            <input type="checkbox" style="display: inline"/>
+        @endif
         <div style="display: inline;font-size: 10.66px;font-style: italic">I/We do not know of any relative/s in the
             government service)
         </div>
@@ -526,13 +546,19 @@
     <tr>
         <td>Date Issued:</td>
         <td class="border-bottom">
-            {{ date('m/d/Y', strtotime($declarant->date_issued)) }}
+            @if($declarant->date_issued)
+                {{ date('m/d/Y', strtotime($declarant->date_issued)) }}
+            @else
+                N/A
+            @endif
         </td>
         <td></td>
         <td>Date Issued:</td>
         <td class="border-bottom">
             @if($spouse->date_issued)
                 {{ date('m/d/Y', strtotime($spouse->date_issued)) }}
+            @else
+                N/A
             @endif
         </td>
     </tr>

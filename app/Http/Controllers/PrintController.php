@@ -348,11 +348,33 @@ class PrintController extends Controller
                     'acquisition_year' => '',
                     'acquisition_mode' => '',
                     'acquisition_cost' => '',
+                ],
+                [
+                    'description' => '',
+                    'kind' => '',
+                    'exact_location' => '',
+                    'assessed_value' => '',
+                    'current_fair' => '',
+                    'acquisition_year' => '',
+                    'acquisition_mode' => '',
+                    'acquisition_cost' => '',
+                ],
+                [
+                    'description' => '',
+                    'kind' => '',
+                    'exact_location' => '',
+                    'assessed_value' => '',
+                    'current_fair' => '',
+                    'acquisition_year' => '',
+                    'acquisition_mode' => '',
+                    'acquisition_cost' => '',
                 ]
             ];
 
             $personal_properties_array = [
                 ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
+                ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
+                ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
                 ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
                 ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
                 ['gadget' => '', 'various_years' => '', 'acquisition_cost' => ''],
@@ -362,6 +384,10 @@ class PrintController extends Controller
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
                 ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
                 ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
+                ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
+                ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
+                ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
+                ['nature' => '', 'creditors_name' => '', 'outstanding_balance' => ''],
             ];
 
             $business_array = [
@@ -369,9 +395,17 @@ class PrintController extends Controller
                 ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
                 ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
                 ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
+                ['enterprise' => '', 'address' => '', 'nature' => '', 'date_acquisition' => ''],
             ];
             $relatives_array = [
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
+                ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
                 ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
                 ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
                 ['name' => '', 'relationship' => '', 'position' => '', 'agency' => ''],
@@ -466,7 +500,11 @@ class PrintController extends Controller
                 'liabilities_total' => $liabilities_total,
                 'business' => $business_array,
                 'relatives' => $relatives_array,
-                'print_date' => $request->print_date
+                'print_date' => $request->print_date,
+                'as_of_year' => $request->as_of_year,
+                'filing_type' => $request->filing_type,
+                'business_interest' => $request->business_interest,
+                'government_relatives' => $request->government_relatives
             ]);
 
             $pdf->set_paper('A4', 'landscape');

@@ -21,15 +21,28 @@
         });
 
         $("#btn_confirm_print").click(function () {
+            const filing_type = $("input[name='filing_type']:checked").val();
+            const as_of_year = $("#as_of_year").val();
+            if (filing_type === undefined) {
+                alert("Please specify Filing type");
+                return;
+            }
+            const business_interest_checkbox = ($("#business_interest_checkbox").is(":checked")) ? 1 : 0;
+            const government_relatives_checkbox = ($("#government_relatives_checkbox").is(":checked")) ? 1 : 0;
+
             const date = $("#print_date").val();
             if (date == "") {
                 alert("Please fill in date");
                 return;
             }
             window.open(
-                '{{ route('printSaln') }}?id=0&print_date=' + date,
+                '{{ route('printSaln') }}?id=0&print_date=' + date + '&filing_type=' + filing_type +
+                '&business_interest=' + business_interest_checkbox +
+                '&government_relatives=' + government_relatives_checkbox +
+                '&as_of_year=' + as_of_year,
                 '_blank' // <- This is what makes it open in a new window.
-            );
+            )
+            ;
         });
 
         $("#btn_add_children").click(function () {
@@ -130,10 +143,6 @@
                 $("#declarant_id_no").addClass("is-invalid");
             }
 
-            if (declarant_date_issued == "") {
-                is_valid = false;
-                $("#declarant_date_issued").addClass("is-invalid");
-            }
 
             if (!is_valid) {
                 alert("Please fill in required fields");
@@ -146,13 +155,13 @@
                 declarant_office: declarant_office,
                 declarant_government_id_issued: declarant_government_issued_id,
                 declarant_government_id_no: declarant_government_id_no,
-                declarant_date_issued: declarant_date_issued,
+                declarant_date_issued: (declarant_date_issued == "") ? null : declarant_date_issued,
                 spouse_position: spouse_position,
                 spouse_agency: spouse_agency,
                 spouse_office: spouse_office,
                 spouse_government_id_issued: spouse_government_issued_id,
                 spouse_government_id_no: spouse_government_id_no,
-                spouse_date_issued: spouse_date_issued
+                spouse_date_issued: (spouse_date_issued == "") ? null : spouse_date_issued,
             }
 
             fetch('{{ route('updateDeclarant') }}', {
