@@ -20,9 +20,9 @@
                 </div>
                 <div style="display:inline-block;margin-left: 20px">
                     @if($survey[0]['answer'] == "NO")
-                        <input type="checkbox" style="margin-top: -10px;margin-right: 3px"/>
-                    @else
                         <input type="checkbox" style="margin-top: -10px;margin-right: 3px" checked/>
+                    @else
+                        <input type="checkbox" style="margin-top: -10px;margin-right: 3px"/>
                     @endif
                     <span>NO</span>
                 </div>
