@@ -121,7 +121,7 @@
                     </div>
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="personal_various_years" placeholder="">
-                        <label>Various Years</label>
+                        <label>Years Acquired</label>
                     </div>
                     <div class="form-floating mb-3">
                         <input type="number" class="form-control" id="personal_acquisition_cost" placeholder="">
