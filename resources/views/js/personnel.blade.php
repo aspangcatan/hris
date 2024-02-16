@@ -37,6 +37,7 @@
                     @if(Route::currentRouteName() == "employee")
                     $("#employee_type").val(it.employee_type);
                     $("#date_hired").val(it.date_hired);
+                    $("#date_resigned").val(it.date_resigned);
                     @endif
                     $("#telephone_no").val(it.telephone_no);
                     $("#mobile_no").val(it.mobile_no);
