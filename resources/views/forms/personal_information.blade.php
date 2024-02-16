@@ -156,6 +156,12 @@
             </div>
         </div>
         <div class="row mb-3">
+            <label class="col-md-4 col-lg-3 col-form-label">Date resigned</label>
+            <div class="col-md-8 col-lg-9">
+                <input type="date" class="form-control" id="date_resigned"/>
+            </div>
+        </div>
+        <div class="row mb-3">
             <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Employee Status</label>
             <div class="col-md-8 col-lg-9">
                 <select class="form-control" id="employee_type">

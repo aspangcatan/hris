@@ -269,7 +269,6 @@ class PrintController extends Controller
             for ($i = 0; $i < count($related_work); $i++) {
                 $accomplishment = RelatedAccomplishment::where('related_id', $related_work[$i]->id)->get();
                 $duties = RelatedDuties::where('related_id', $related_work[$i]->id)->get();
-
                 $related_work[$i]->accomplishments = $accomplishment;
                 $related_work[$i]->duties = $duties;
             }

@@ -118,6 +118,7 @@ class EmployeeController extends Controller
             }
             $employee->employee_type = $request->employee_type;
             $employee->date_hired = $request->date_hired;
+            $employee->date_resigned = $request->date_resigned;
             $employee->save();
             return response(['code' => 200, 'message' => "Employee status updated"]);
         } catch (\Exception $exception) {

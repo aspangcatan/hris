@@ -105,6 +105,7 @@
         $("#btn_save_personal").click(function () {
             const employee_type = $("#employee_type").val();
             const date_hired = $("#date_hired").val();
+            const date_resigned = $("#date_resigned").val();
             if (employee_type == "") {
                 alert("Please specify Employee status");
                 return;
@@ -113,7 +114,8 @@
             updateEmployeeStatus({
                 user_id: employee_id,
                 employee_type: employee_type,
-                date_hired: date_hired
+                date_hired: date_hired,
+                date_resigned: date_resigned
             })
         });
 
