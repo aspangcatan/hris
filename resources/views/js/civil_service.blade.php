@@ -14,11 +14,13 @@
                 is_civil_loaded = true;
                 data.results.forEach(it => {
                     const license_no = (it.license_no) ? it.license_no : "";
+                    const examination_date = (it.examination_date) ? moment(it.examination_date).format("MM/DD/YYYY") : "";
                     const license_expiry = (it.license_expiry) ? moment(it.license_expiry).format("MM/DD/YYYY") : "";
+
                     let tr = `<tr id='civil_service_` + it.id + `'>`;
                     tr += `<td>` + it.career_service + `</td>`;
                     tr += `<td>` + it.rating + `</td>`
-                    tr += `<td>` + moment(it.examination_date).format("MM/DD/YYYY") + `</td>`;
+                    tr += `<td>` + examination_date + `</td>`;
                     tr += `<td>` + it.examination_place + `</td>`;
                     tr += `<td>` + license_no + `</td>`;
                     tr += `<td>` + license_no + `</td>`;
