@@ -10,16 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
-    #TODO
-    #1. PERSONNEL ACCOUNT
-    #a. GET EMPLOYEE DETAILS
-    #b. INSERT/UPDATE EMPLOYEE DETAILS
-
     public function getEmployeeDetails(Request $request)
     {
-        #CREATE USER_ID VARIABLE
-        #THIS FUNCTION CAN BE REUSED IN HR
-
         $user_id = ($request->id == 0) ? Auth::id() : $request->id;
         try {
             $employee = DB::table('hris.employees as e')
@@ -41,6 +33,7 @@ class EmployeeController extends Controller
             if (!Auth::id()) {
                 return response(['code' => 500, 'message' => 'User ID dont exists']);
             }
+
             $user->fname = $request->fname;
             $user->mname = $request->mname;
             $user->lname = $request->lname;
@@ -76,7 +69,6 @@ class EmployeeController extends Controller
             $employee->issued_id_no = $request->issued_id_no;
             $employee->issued_date = $request->issued_date;
             $employee->save();
-
             return response(['code' => 200, 'message' => 'Personal Information updated']);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

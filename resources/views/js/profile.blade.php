@@ -654,20 +654,20 @@
                 $(".error_list").append("<li>Career service is required</li>");
             }
 
-            if (rating == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Rating is required</li>");
-            }
+            // if (rating == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Rating is required</li>");
+            // }
+            //
+            // if (examination_date == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Date of examination is required</li>");
+            // }
 
-            if (examination_date == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Date of examination is required</li>");
-            }
-
-            if (examination_place == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Place of examination is required</li>");
-            }
+            // if (examination_place == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Place of examination is required</li>");
+            // }
 
             if (!is_valid) {
                 $("#civil_service_error").removeClass("d-none");
