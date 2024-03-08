@@ -74,7 +74,7 @@
                 <td>` + moment(params.working_from).format("MM/DD/YYYY") + `</td>
                 <td>` + working_to + `</td>
                 <td>` + params.monthly_salary + `</td>
-                <td class="d-none">` + params.salary_grade + `</td>
+                <td>` + params.salary_grade + `</td>
                 <td>` + params.appointment_status + `</td>
                 <td>` + is_government + `</td>
                 <td class="d-none">` + params.is_current_work + `</td>
