@@ -84,7 +84,7 @@
                 </button>
                 </td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteWork(` + params.id + `)">
+                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteWork(` + data.id + `)">
                 <i class="bi bi-trash text-danger"></i>
                 </button>
                 </td>
