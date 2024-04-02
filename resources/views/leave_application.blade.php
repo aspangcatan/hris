@@ -1,6 +1,6 @@
 @extends('master')
 @section('content')
-    <div class="row d-none">
+    <div class="row">
         <div class="col-md-2">
             <div class="card">
                 <div class="card-body text-center">

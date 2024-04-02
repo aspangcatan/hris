@@ -101,7 +101,7 @@
 
         $("#btn_save_leave").click(function () {
             let leave_type = $("input[name='leave_type']:checked").next().text().trim();
-            let leave_details = "";
+            let leave_details = "N/A";
             let leave_extra = "";
             switch (leave_type) {
                 case "Vacation Leave":
