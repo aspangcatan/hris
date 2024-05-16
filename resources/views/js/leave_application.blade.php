@@ -2,17 +2,18 @@
     let page = 0;
     const file_leave_modal = new bootstrap.Modal(document.getElementById('file_leave_modal'));
     const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
-    const LEAVE_TYPES = ["Vacation Leave", "Mandatory/Forced Leave", "Sick Leave", "Maternity Leave", "Paternity Leave", "Special Privilege",
-        "Solo Parent Leave", "Study Leave", "10-Day VAWC Leave", "Rehabilitation Privilege", "Special Leave Benefits for Women",
-        "Special Emergency (Calamity) Leave", "Adoption Leave", "Others"];
-
+    const LEAVE_TYPES = [];
     $(document).ready(function () {
         $('.datepicker').datepicker({
             multidate: true
         });
 
-        $("#btn_file_leave").click(function () {
+        $("#btn_file_leave").click(async function () {
             file_leave_modal.toggle();
+        });
+
+        $("#btn_reload").click(function () {
+            init_leave();
         });
 
         $("#btn_search").click(function () {
@@ -36,7 +37,7 @@
         });
 
         $("body").on("change", "input[name='leave_type']", function () {
-            $("input:not(input[name='leave_type']):not('#dates_applied'):not(input[name='commutation']):not(input[name='other_purpose'])").prop("disabled", true);
+            $("input:not(input[name='leave_type']):not('#dates_applied'):not(input[type='date']):not(input[type='number']):not(input[name='commutation']):not(input[name='other_purpose'])").prop("disabled", true);
             $("input[type='radio']:not(input[name='leave_type'])").prop("checked", false);
             $("input[type='text']").val("");
             switch ($(this).next().text().trim()) {
@@ -100,6 +101,8 @@
         });
 
         $("#btn_save_leave").click(function () {
+            let is_valid = true;
+            const leave_id = $("input[name='leave_type']:checked").val();
             let leave_type = $("input[name='leave_type']:checked").next().text().trim();
             let leave_details = "N/A";
             let leave_extra = "";
@@ -138,13 +141,45 @@
                     break;
             }
 
-            const dates_applied = $("#dates_applied").val();
+            const date_applied_array = [];
+            for (let i = 0; i < $("#dates_table_body tr").length; i++) {
+                const tr = $("#dates_table_body tr:eq(" + i + ")");
+                const date = tr.find("td:eq(0) input").val();
+                const hours = tr.find("td:eq(1) input").val();
+
+                date_applied_array.push({
+                    date: date,
+                    hours: hours
+                });
+            }
+
             const commutation = $("input[name='commutation']:checked").next().text();
+
+            if (leave_type == "") {
+                is_valid = false;
+                toastr.error("Please select leave type", "Required");
+            }
+
+            if (leave_details == "") {
+                is_valid = false;
+                toastr.error("Please provide leave details", "Required");
+            }
+
+
+            //TODO: MAKE ANOTHER TABLE FOR DATE APPLIED AND ADD COLUMN (WHOLE/HALF DAY)
+
+            if (commutation == "") {
+                is_valid = false;
+                toastr.error("Please specify commutation", "Required")
+            }
+
+            if (!is_valid) return;
+
             const params = {
-                leave_type: leave_type,
+                leave_id: leave_id,
                 detail: leave_details,
                 extra: leave_extra,
-                date_applied: dates_applied,
+                date_applied: date_applied_array,
                 commutation: commutation
             }
 
@@ -152,8 +187,8 @@
                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 Loading...
             </button>`);
-            $(this).prop("disabled", true);
 
+            $(this).prop("disabled", true);
             fetch('{{ route('insertLeaveApplications') }}', {
                 method: "POST",
                 headers: {
@@ -179,19 +214,82 @@
         getLeaves();
     });
 
-    function init_leave() {
+    function addRow() {
+        const tableBody = document.getElementById('dates_table_body');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="date" class="form-control" name="leave_dates[]"></td>
+            <td><input type="number" class="form-control" name="leave_hours[]" min="1" max="24"></td>
+            <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+        `;
+        tableBody.appendChild(newRow);
+    }
+
+    function removeRow(button) {
+        if ($("#dates_table_body tr").length <= 1) {
+            toastr.error("Must specify date for leave", "Information");
+            return;
+        }
+
+        const row = button.parentElement.parentElement;
+        row.remove();
+    }
+
+    async function init_leave() {
+        await loadCreditBalance();
+        $("#leave_list").empty();
         LEAVE_TYPES.forEach(it => {
             let div = ` <div class="col-md-6">
                             <div class="form-check">
-                                 <input class="form-check-input" type="radio" name="leave_type">
+                                 <input class="form-check-input" type="radio" name="leave_type" value=` + it.id + `>
                                  <div class="d-flex align-items-center">
-                                    <label class="form-check-label">` + it + `</label>`;
-            if (it == "Others") {
-                div += `<input class="ms-2 underline w-100" type="text" id="leave_others" />`;
-            }
+                                    <label class="form-check-label">` + it.description + `</label>`;
+            // if (it == "Others") {
+            //     div += `<input class="ms-2 underline w-100" type="text" id="leave_others" />`;
+            // }
             div += `</div></div></div>`;
             $("#leave_list").append(div);
         })
+    }
+
+    async function loadCreditBalance() {
+        const response = await fetch('{{ route('getCreditBalances') }}', {
+            method: "GET"
+        });
+
+        try {
+            const data = await response.json();
+            if (response.ok) {
+                $("#credit_balances").empty();
+                $("#legend_list").empty();
+                data.forEach(it => {
+                    const balanceColorClass = it.balance > 0 ? 'text-success' : (it.balance < 0 ? 'text-danger' : '');
+                    const credit_balances = `
+                        <div class="col-md-6">
+                            <span class="fw-bold">${it.code}:</span>
+                            <span class="ms-1 ${balanceColorClass}">${it.balance}</span>
+                        </div>`;
+                    $("#credit_balances").append(credit_balances);
+
+                    const legends = `
+                        <div class="col-md-6">
+                            <span class="fw-bold">` + it.code + `:</span>
+                            <span class="ms-1">` + it.description + `</span>
+                        </div>`;
+                    $("#legend_list").append(legends);
+
+                    LEAVE_TYPES.push({
+                        id: it.id,
+                        description: it.description
+                    });
+                });
+            } else {
+                toastr.error(data.error || 'Something went wrong, please try again');
+            }
+        } catch (error) {
+            console.error('Error parsing JSON response', error);
+            toastr.error('Something went wrong, please try again');
+        }
     }
 
     function getLeaves() {
@@ -225,18 +323,16 @@
                 $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
                 for (let i = 0; i < max_visible; i++) {
                     const it = data[i];
+                    const dates_applied_array = Object.values(it.dates_applied).map(date => moment(date.date_applied).format("MM/DD/YYYY"));
                     const extra = (it.extra) ? it.extra : "";
                     const status = (it.status == "APPROVED") ? "<span class='badge bg-success'>APPROVED</span>" : "<span class='badge bg-secondary'>FOR APPROVAL</span>";
                     const tr = `
                     <tr id='leave_id_` + it.id + `'>
-                        <td>` + it.leave_type + `</td>
+                        <td>` + it.description + `</td>
                         <td>` + it.detail + `</td>
                         <td>` + extra + `</td>
-                        <td>` + it.date_applied + `</td>
+                        <td>` + dates_applied_array.join(', ') + `</td>
                         <td>` + status + `</td>
-                        <td class="d-none">` + it.date_section_approved + `</td>
-                        <td class="d-none">` + it.date_division_approved + `</td>
-                        <td class="d-none">` + it.date_hr_approved + `</td>
                         <td>
                             <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewStatus(` + it.id + `)">
                                 <i class="bi bi-eye-fill text-success"></i>
@@ -251,35 +347,35 @@
     }
 
     function viewStatus(id) {
-        $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}"+id);
-        const section = {
-            status: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-            date_approved: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(5)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        };
-
-        const division = {
-            status: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-            date_approved: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(6)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        };
-
-        const hr = {
-            status: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-            date_approved: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(7)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        };
-
-        $("#leave_status_logs tr:eq(0) td:eq(1)").html(section.status);
-        $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
-
-        $("#leave_status_logs tr:eq(1) td:eq(1)").html(division.status);
-        $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
-
-        $("#leave_status_logs tr:eq(2) td:eq(1)").html(hr.status);
-        $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
+        $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}" + id);
+        // const section = {
+        //     status: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
+        //     date_approved: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(5)").text()).format("MM/DD/YYYY hh:mm:ss A")
+        // };
+        //
+        // const division = {
+        //     status: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
+        //     date_approved: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(6)").text()).format("MM/DD/YYYY hh:mm:ss A")
+        // };
+        //
+        // const hr = {
+        //     status: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
+        //     date_approved: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(7)").text()).format("MM/DD/YYYY hh:mm:ss A")
+        // };
+        //
+        // $("#leave_status_logs tr:eq(0) td:eq(1)").html(section.status);
+        // $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
+        //
+        // $("#leave_status_logs tr:eq(1) td:eq(1)").html(division.status);
+        // $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
+        //
+        // $("#leave_status_logs tr:eq(2) td:eq(1)").html(hr.status);
+        // $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
         leave_modal.toggle();
     }
 
     function clearForm() {
-        $("#leave_form input").val("");
+        $("#leave_form input").not("[type='radio']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
     }
 </script>

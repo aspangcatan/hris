@@ -1,5 +1,6 @@
 <aside id="sidebar" class="sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
+        <li class="nav-heading">General</li>
         <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('profile') }}">
                 <i class="bi bi-grid"></i>
@@ -12,57 +13,45 @@
                 <span>SALN</span>
             </a>
         </li>
-        <li class="nav-item d-none">
-            <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
-                <i class="bi bi-grid"></i>
-                <span>Position Applied</span>
-            </a>
-        </li>
-        <li class="nav-item d-none">
-            <a class="nav-link collapsed" href="{{ route('leave_application') }}">
-                <i class="bi bi-grid"></i>
-                <span>Leave Application</span>
-            </a>
-        </li>
-        @if(session('access_rights') == "SH" || session('access_rights') == "DH" || session('access_rights') == "HRH")
-        <li class="nav-item d-none">
-            <a class="nav-link collapsed" href="{{ route('leave_approval') }}">
-                <i class="bi bi-grid"></i>
-                <span>Leave Approval</span>
-            </a>
-        </li>
-        @endif
-        @if(session('access_rights') == "hr")
+        @if(session('access_rights') == 'hr')
+            <li class="nav-item d-none">
+                <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Position Applied</span>
+                </a>
+            </li>
+            <li class="nav-heading">Leave Management</li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('leave_application') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Leave Application</span>
+                </a>
+            </li>
+            <li class="nav-heading">DTR Management</li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('dtr') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Temporary DTR</span>
+                </a>
+            </li>
+            <li class="nav-heading">HR Management</li>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('employee') }}">
                     <i class="bi bi-grid"></i>
                     <span>Employee</span>
                 </a>
             </li>
-            <li class="nav-item d-none">
+            <li class="nav-heading">Settings</li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('timetable') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Timetable Settings</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('leave_management') }}">
                     <i class="bi bi-grid"></i>
-                    <span>Leave Management</span>
-                </a>
-            </li>
-        @endif
-        @if(session('access_rights') == "admin")
-            <li class="nav-item d-none">
-                <a class="nav-link collapsed" href="#">
-                    <i class="bi bi-grid"></i>
-                    <span>DTR <span class="ms-2 badge bg-danger">Soon</span></span>
-                </a>
-            </li>
-            <li class="nav-item d-none">
-                <a class="nav-link collapsed" href="#">
-                    <i class="bi bi-grid"></i>
-                    <span>Leave <span class="ms-2 badge bg-danger">Soon</span></span>
-                </a>
-            </li>
-            <li class="nav-item d-none">
-                <a class="nav-link collapsed" href="#">
-                    <i class="bi bi-grid"></i>
-                    <span>Payroll <span class="ms-2 badge bg-danger">Soon</span></span>
+                    <span>Leave Settings</span>
                 </a>
             </li>
         @endif

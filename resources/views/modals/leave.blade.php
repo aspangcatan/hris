@@ -4,7 +4,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Leave Application</h5>
-                <button type="button" class="btn" data-bs-dismiss="modal" aria-label="Close" style="background: transparent">X</button>
+                <button type="button" class="btn" data-bs-dismiss="modal" aria-label="Close"
+                        style="background: transparent">X
+                </button>
             </div>
             <div class="modal-body">
                 <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"
@@ -53,7 +55,7 @@
 
 <div class="modal fade" id="file_leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-body">
 
@@ -66,105 +68,141 @@
                     <ul class="error_list"></ul>
                 </div>
                 <div class="mt-3" id="leave_form">
-                    <div class="fw-bold">A. Type of Leave to be availed of</div>
-                    <div class="row mt-1" id="leave_list"></div>
-                    <div class="fw-bold mt-3">B. Details of leave</div>
-                    <div class="mt-1">In case of Vacation/Special Privilege Leave:</div>
-                    <div class="row">
-                        <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body p-2">
+                            <div class="fw-bold">A. Type of Leave to be availed of</div>
+                            <div class="row mt-1" id="leave_list"></div>
+                            <hr />
+                            <div class="fw-bold mt-3">B. Details of leave</div>
+                            <div class="mt-1">In case of Vacation/Special Privilege Leave:</div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="vacation_leave">
+                                        <div class="d-flex align-items-center">
+                                            <label class="form-check-label">
+                                                Within the Philippines
+                                            </label>
+                                            <input class="form-control underline w-50 ms-2" type="text"
+                                                   id="within_philippines"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="vacation_leave">
+                                        <div class="d-flex align-items-center">
+                                            <label class="form-check-label">Abroad (Specify)</label>
+                                            <input class="form-control underline w-50 ms-2" type="text" id="abroad"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-2">In case of Sick Leave:</div>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="vacation_leave">
+                                <input class="form-check-input" type="radio" name="sick_leave">
                                 <div class="d-flex align-items-center">
                                     <label class="form-check-label">
-                                        Within the Philippines
+                                        In Hospital (Specify Illness)
                                     </label>
-                                    <input class="form-control underline w-50 ms-2" type="text"
-                                           id="within_philippines"/>
+                                    <input class="form-control underline w-50 ms-2" type="text" id="in_hospital"/>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-12">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="vacation_leave">
+                                <input class="form-check-input" type="radio" name="sick_leave">
                                 <div class="d-flex align-items-center">
-                                    <label class="form-check-label">Abroad (Specify)</label>
-                                    <input class="form-control underline w-50 ms-2" type="text" id="abroad"/>
+                                    <label class="form-check-label">
+                                        Out Patient (Specify Illness)
+                                    </label>
+                                    <input class="form-control underline w-50 ms-2" type="text" id="out_hospital"/>
+                                </div>
+                            </div>
+
+                            <div class="mt-2">In case of Special Leave Benefits for Women:</div>
+                            <div class="d-flex align-items-center">
+                                <label class="form-check-label">
+                                    (Specify Illness)
+                                </label>
+                                <input class="form-control underline w-75 ms-2" type="text" id="special_leave"/>
+                            </div>
+
+                            <div class="mt-2">In case of Study Leave:</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="study_leave">
+                                <label class="form-check-label">Completion of Master's Degree</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="study_leave">
+                                <label class="form-check-label">BAR/Board Examination Review</label>
+                            </div>
+
+                            @if(1===2)
+                                <div class="mt-2">Other purpose:</div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="other_purpose">
+                                    <label class="form-check-label">Monetization of Leave Credits</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="other_purpose">
+                                    <label class="form-check-label">Terminal Leave</label>
+                                </div>
+                            @endif
+                            <hr />
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="fw-bold">C. Date applied for leave</div>
+                                        <div>
+                                            <button type="button" class="btn btn-primary" onclick="addRow()">Add Date</button>
+                                        </div>
+                                    </div>
+
+                                    <table class="table table-bordered mt-1" id="dates_table">
+                                        <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Duration (hrs)</th>
+                                            <th style="width: 5%">Action</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody id="dates_table_body">
+                                        <tr>
+                                            <td><input type="date" class="form-control" name="leave_dates[]"></td>
+                                            <td><input type="number" class="form-control" name="leave_hours[]" min="1"
+                                                       max="24"></td>
+                                            <td>
+                                                <button type="button" class="btn btn-danger" onclick="removeRow(this)">
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                </div>
+                                <div class="col-md-12">
+                                    <hr />
+                                    <div class="fw-bold">D. Commutation</div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="commutation">
+                                                <label class="form-check-label">Not Requested</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="commutation">
+                                                <label class="form-check-label">Requested</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mt-2">In case of Sick Leave:</div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="sick_leave">
-                        <div class="d-flex align-items-center">
-                            <label class="form-check-label">
-                                In Hospital (Specify Illness)
-                            </label>
-                            <input class="form-control underline w-50 ms-2" type="text" id="in_hospital"/>
-                        </div>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="sick_leave">
-                        <div class="d-flex align-items-center">
-                            <label class="form-check-label">
-                                Out Patient (Specify Illness)
-                            </label>
-                            <input class="form-control underline w-50 ms-2" type="text" id="out_hospital"/>
-                        </div>
-                    </div>
-
-                    <div class="mt-2">In case of Special Leave Benefits for Women:</div>
-                    <div class="d-flex align-items-center">
-                        <label class="form-check-label">
-                            (Specify Illness)
-                        </label>
-                        <input class="form-control underline w-75 ms-2" type="text" id="special_leave"/>
-                    </div>
-
-                    <div class="mt-2">In case of Study Leave:</div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="study_leave">
-                        <label class="form-check-label">Completion of Master's Degree</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="study_leave">
-                        <label class="form-check-label">BAR/Board Examination Review</label>
-                    </div>
-
-                    <div class="mt-2">Other purpose:</div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="other_purpose">
-                        <label class="form-check-label">Monetization of Leave Credits</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="other_purpose">
-                        <label class="form-check-label">Terminal Leave</label>
-                    </div>
-
-                    <div class="row mt-2">
-                        <div class="col-md-6">
-                            <div class="fw-bold">C. Date applied for leave</div>
-                            <input class="datepicker form-control" id="dates_applied"/>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="fw-bold">D. Commutation</div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="commutation">
-                                        <label class="form-check-label">Not Requested</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="commutation">
-                                        <label class="form-check-label">Requested</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
                 <div class="text-end mt-5">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">CLOSE</button>

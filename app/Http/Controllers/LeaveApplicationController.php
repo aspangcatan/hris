@@ -14,27 +14,25 @@ class LeaveApplicationController extends Controller
     public function store(Request $request)
     {
         try {
-            $id = $request->id;
-            $model = LeaveApplication::where(function ($query) use ($id) {
-                $query->where('id', $id);
-                $query->where('user_id', Auth::id());
-            })->first();
-
-            if (!$model) {
-                $model = new LeaveApplication();
-                $model->user_id = Auth::id();
-            }
-
-            $model->leave_type = $request->leave_type;
+            $model = new LeaveApplication();
+            $model->user_id = Auth::id();
+            $model->leave_id = $request->leave_id;
             $model->detail = $request->detail;
             $model->extra = $request->extra;
-            $model->date_applied = $request->date_applied;
+            $model->status = 'FOR APPROVAL';
             $model->commutation = $request->commutation;
-            $model->status = "FOR APPROVAL";
-            $model->section_id = Auth::user()->section;
-            $model->division_id = Auth::user()->division;
-            $model->hr_id = 15;
             $model->save();
+
+            $leave_id = $model->id;
+            $date_applied = $request->date_applied;
+            for ($i = 0; $i < count($date_applied); $i++) {
+                DB::table('leave_date_applied')->insert([
+                    'leave_application_id' => $leave_id,
+                    'date_applied' => $date_applied[$i]["date"],
+                    'hours' => $date_applied[$i]["hours"]
+                ]);
+            }
+
             return response()->json(['code' => 200, 'message' => 'Application filed successfully']);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
@@ -45,18 +43,26 @@ class LeaveApplicationController extends Controller
     {
         try {
             $type = $request->search_type;
-            $model = LeaveApplication::where(function ($query) use ($type) {
-                $query->where('user_id', '=', Auth::id());
-                if ($type != "") {
-                    $query->where('leave_type', 'LIKE', '%' . $type . '%');
-                }
-            })
+            $models = DB::table('leave_applications as l')
+                ->join('leave_types as t', 'l.leave_id', '=', 't.id')
+                ->where(function ($query) use ($type) {
+                    $query->where('user_id', '=', Auth::id());
+                    if ($type != "") {
+                        $query->where('leave_type', 'LIKE', '%' . $type . '%');
+                    }
+                })
                 ->skip($request->page * 10)
                 ->take(11)
                 ->orderBy('id', 'DESC')
-                ->get();
+                ->get(['l.id', 't.description', 'l.detail', 'l.extra', 'l.status']);
 
-            return response()->json($model);
+
+            foreach ($models as $model) {
+                $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $model->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
+                $model->dates_applied = $dates_applied;
+            }
+
+            return response()->json($models);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }

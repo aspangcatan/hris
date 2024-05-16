@@ -29,6 +29,7 @@ use App\Models\Voluntary;
 use Barryvdh\DomPDF\Facade\Pdf;
 use DateTime;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use setasign\Fpdi\Fpdi;
@@ -70,22 +71,21 @@ class PrintController extends Controller
         $month = "";
         $title = "";
         $year = "";
-        $dates = explode(",", $date_applied);
-        for ($i = 0; $i < count($dates); $i++) {
-            $split = explode("/", $dates[$i]);
-            $year = $split[2];
+        for ($i = 0; $i < count($date_applied); $i++) {
+            $split = explode("-", $date_applied[$i]->date_applied);
+            $year = $split[0];
             if ($title == "") {
-                $title = self::getMonthName($split[0]) . $split[1];
+                $title = self::getMonthName($split[1]) . $split[2];
                 $month = $split[0];
                 continue;
             }
 
             if ($month == $split[0]) {
-                $title = $title . ", " . $split[1];
+                $title = $title . ", " . $split[2];
             } else {
-                $title = $title . ", " . $split[2] . " " . self::getMonthName($split[0]) . $split[1];
+                $title = $title . ", " . $split[1] . " " . self::getMonthName($split[1]) . $split[2];
             }
-            $month = $split[0];
+            $month = $split[1];
         }
         $title = $title . " " . $year;
         return $title;
@@ -95,30 +95,43 @@ class PrintController extends Controller
     {
         switch ($type) {
             case "Vacation Leave":
+            case 2:
                 return ['x' => 19.2, 'y' => 57.5];
             case "Mandatory/Forced Leave":
+            case 8:
                 return ['x' => 19.2, 'y' => 61];
             case "Sick Leave":
+            case 1:
                 return ['x' => 19.2, 'y' => 65];
             case "Maternity Leave":
+            case 9:
                 return ['x' => 19.2, 'y' => 68.5];
             case "Paternity Leave":
+            case 3:
                 return ['x' => 19.2, 'y' => 72.3];
             case "Special Privilege":
+            case 10:
                 return ['x' => 19.2, 'y' => 76];
             case "Solo Parent Leave":
+            case 4:
                 return ['x' => 19.2, 'y' => 80];
             case "Study Leave":
+            case 11:
                 return ['x' => 19.2, 'y' => 83.5];
             case "10-Day VAWC Leave":
+            case 5:
                 return ['x' => 19.2, 'y' => 87.3];
             case "Rehabilitation Privilege":
+            case 12:
                 return ['x' => 19.2, 'y' => 91];
             case "Special Leave Benefits for Women":
+            case 6:
                 return ['x' => 19.2, 'y' => 94.5];
             case "Special Emergency (Calamity) Leave":
+            case 13:
                 return ['x' => 19.2, 'y' => 98.5];
             case "Adoption Leave":
+            case 7:
                 return ['x' => 19.2, 'y' => 102.2];
             default:
                 return ['x' => 0, 'y' => 0];
@@ -177,8 +190,11 @@ class PrintController extends Controller
             ->join('tdh_user.division as di', 'u.division', '=', 'di.id')
             ->join('tdh_user.section as s', 'u.section', '=', 's.id')
             ->where('l.id', '=', $request->id)
-            ->get(['di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_type', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.date_applied'])
+            ->get(['di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id','l.created_at'])
             ->first();
+
+        $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied','ASC')->get(['date_applied']);
+
 
         $pdf = new Fpdi();
         $pdf->AddPage();
@@ -219,14 +235,14 @@ class PrintController extends Controller
         $pdf->Write(0.1, $mname);
 
         $pdf->SetXY(38, 43);
-        $pdf->Write(0.1, "NOV. 11, 2023");
+        $pdf->Write(0.1, Carbon::createFromFormat('Y-m-d', explode(' ',$leave_application->created_at)[0])->format('M. j, Y'));
         $pdf->SetXY(77, 43);
         $pdf->Write(0.1, self::minifyDesignation($leave_application->designation));
         $pdf->SetXY(123, 43);
         $pdf->Write(0.1, "P36,600.00");
-
-        #DETAILS OF LEAVE
-        $leave_type = self::getTypeXY($leave_application->leave_type);
+//
+//        #DETAILS OF LEAVE
+        $leave_type = self::getTypeXY($leave_application->leave_id);
         $leave_details = self::getDetailsXY($leave_application->detail);
         if ($leave_details['x'] != 0) {
             $pdf->SetFont('ZapfDingbats', "", 8);
@@ -253,12 +269,12 @@ class PrintController extends Controller
             $pdf->SetXY(88.5, 126);
         $pdf->Write(0, chr(51));
 
-        $total_days = count(explode(",", $leave_application->date_applied));
+        $total_days = count($dates_applied);
         $pdf->SetFont('helvetica', 'b', 6);
         $pdf->SetXY(20, 122);
         $pdf->Write(0.1, $total_days . " day(s) (" . ($total_days * 8) . " hrs)");
         $pdf->SetXY(20, 130);
-        $pdf->Write(0.1, self::getInclusiveDates($leave_application->date_applied));
+        $pdf->Write(0.1, self::getInclusiveDates($dates_applied));
         $pdf->Output('I', "Leave Form.pdf");
     }
 

@@ -10,6 +10,7 @@
 @include('js.other_information')
 @include('js.survey')
 @include('js.service_record')
+@include('js.leave_credits')
 <script>
     const SURVEYS = [
         {question: "within the third degree?", id: "survey_1"},
@@ -69,6 +70,68 @@
                 $(".dual-citizenship-container").addClass("d-none");
             } else {
                 $(".dual-citizenship-container").removeClass("d-none");
+            }
+        });
+
+        $("body").on("keyup", ".input-base", async function (event) {
+            if (event.key === "Enter") {
+                const value = $(this).val();
+                const leave_id = $(this).parent().parent().attr("id");
+                const response = await fetch('{{ route('insertUpdateBaseCredit') }}', {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    body: JSON.stringify({
+                        employee_id: employee_id,
+                        leave_id: leave_id,
+                        base_credit: value
+                    })
+                });
+
+                try {
+                    const data = await response.json();
+                    if (response.ok) {
+                        toastr.success(data.message);
+                    } else {
+                        toastr.error(data.error || 'Something went wrong, please try again');
+                    }
+                } catch (error) {
+                    console.error('Error parsing JSON response', error);
+                    toastr.error('Something went wrong, please try again');
+                }
+            }
+        });
+
+        $("body").on("keyup", ".input-used", async function (event) {
+            if (event.key === "Enter") {
+                const value = $(this).val();
+                const leave_id = $(this).parent().parent().attr("id");
+                const response = await fetch('{{ route('insertUpdateUsedCredit') }}', {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    body: JSON.stringify({
+                        employee_id: employee_id,
+                        leave_id: leave_id,
+                        used_credit: value
+                    })
+                });
+
+                try {
+                    const data = await response.json();
+                    if (response.ok) {
+                        toastr.success(data.message);
+                    } else {
+                        toastr.error(data.error || 'Something went wrong, please try again');
+                    }
+                } catch (error) {
+                    console.error('Error parsing JSON response', error);
+                    toastr.error('Something went wrong, please try again');
+                }
             }
         });
 
@@ -253,6 +316,9 @@
                     break;
                 case "#service_records":
                     getServiceRecords(employee_id);
+                    break;
+                case "#leave_credits":
+                    getCredits(employee_id);
                     break;
             }
         });

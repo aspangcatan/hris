@@ -54,6 +54,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('employee');
     })->name('employee');
 
+    Route::get('/dtr', function () {
+        return view('temp_dtr');
+    })->name('dtr');
+
     Route::get('/leave', function () {
         return view('leave');
     })->name('leave');
@@ -61,6 +65,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/leave_application', function () {
         return view('leave_application');
     })->name('leave_application');
+
+    Route::get('/timetable', function () {
+        return view('timetable');
+    })->name('timetable');
 
     Route::get('/leave_approval', function () {
         return view('leave_approval');
@@ -77,6 +85,19 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/review_leave', function () {
         return view('review_leave');
     })->name('review_leave');
+
+
+    Route::get('/get_credit_balance',[\App\Http\Controllers\LeaveController::class,'getCreditBalances'])->name('getCreditBalances');
+    Route::put('/update_base_credit',[\App\Http\Controllers\LeaveController::class,'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit');
+    Route::put('/update_used_credit',[\App\Http\Controllers\LeaveController::class,'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
+
+    Route::get('/get/leave_types',[\App\Http\Controllers\LeaveController::class,'getLeaveTypes'])->name('getLeaveTypes');
+    Route::put('/update_leave_type',[\App\Http\Controllers\LeaveController::class,'insertUpdateLeaveType'])->name('insertUpdateLeaveType');
+    Route::delete('/delete/leave_type',[\App\Http\Controllers\LeaveController::class,'deleteLeaveType'])->name('deleteLeaveType');
+
+    Route::get('/dtr_logs',[\App\Http\Controllers\DTRController::class,'index'])->name('getDTRLogs');
+    Route::post('/store/dtr',[\App\Http\Controllers\DTRController::class,'store'])->name('storeDtr');
+    Route::delete('/delete/dtr',[\App\Http\Controllers\DTRController::class,'delete'])->name('deleteDtr');
 
     #EMPLOYEE
     Route::get('/employee/get', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails'])->name('getEmployeeDetails');

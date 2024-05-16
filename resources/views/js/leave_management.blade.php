@@ -1,104 +1,10 @@
 <script>
-    const leave_credits_modal = new bootstrap.Modal(document.getElementById('leave_credits_modal'));
     let page = 0;
+    let leave_id = 0;
     $(document).ready(function () {
-        $("body").on('keyup', ".vl_bal_input", function (e) {
-            if (e.key === 'Enter' || e.keyCode === 13) {
-                toastr.success("VL Balance updated", "Information");
-            }
-        });
-
-        $("#btn_bulk_update").click(function () {
-            $("#vl_bal").val("0.00");
-            $("#sl_bal").val("0.00");
-            $("#cto_bal").val("0.00");
-            $("#fl_bal").val("0.00");
-            $("#spl_bal").val("0.00");
-            leave_credits_modal.toggle();
-        });
-
-        $("#btn_generate_report").click(function () {
-            exportToCsv();
-        });
-
-        $("#btn_save_bulk").click(function () {
-            let is_valid = true;
-            $(".is-invalid").removeClass("is-invalid");
-            const vl_bal = $("#vl_bal").val();
-            const sl_bal = $("#sl_bal").val();
-            const cto_bal = $("#cto_bal").val();
-            const fl_bal = $("#fl_bal").val();
-            const spl_bal = $("#spl_bal").val();
-
-            if (vl_bal == "") {
-                $("#vl_bal").addClass("is-invalid");
-                is_valid = false;
-                toastr.error("Please fill in vl bal", "Ooops");
-            }
-
-            if (sl_bal == "") {
-                $("#sl_bal").addClass("is-invalid");
-                is_valid = false;
-                toastr.error("Please fill in sl_bal bal", "Ooops");
-            }
-
-            if (cto_bal == "") {
-                $("#cto_bal").addClass("is-invalid");
-                is_valid = false;
-                toastr.error("Please fill in cto_bal bal", "Ooops");
-            }
-
-            if (fl_bal == "") {
-                $("#fl_bal").addClass("is-invalid");
-                is_valid = false;
-                toastr.error("Please fill in fl_bal bal", "Ooops");
-            }
-
-            if (spl_bal == "") {
-                $("#vl_bal").addClass("is-invalid");
-                is_valid = false;
-                toastr.error("Please fill in spl_bal bal", "Ooops");
-            }
-
-            if (!is_valid) return;
-
-            const params = {
-                vl_bal: vl_bal,
-                sl_bal: sl_bal,
-                cto_bal: cto_bal,
-                fl_bal: fl_bal,
-                spl_bal: spl_bal
-            }
-
-            $(this).prop("disabled", true);
-            $(this).html(`<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>Loading...`)
-            fetch('{{ route('bulkUpdateCredits') }}', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                body: JSON.stringify(params)
-            })
-                .then(res => res.json())
-                .then(data => {
-                    $("#btn_save_bulk").prop("disabled", false);
-                    $("#btn_save_bulk").html("UPDATE");
-                    if (data.code == 500) {
-                        toastr.error(data.message, "Ooops");
-                        return;
-                    }
-
-                    toastr.success(data.message, "Information");
-                    getEmployeeCredits();
-                }).catch(err => {
-                console.log(err);
-            })
-        });
-
         $("#btn_next").click(function () {
             page++;
-            getEmployeeCredits();
+            getLeaveTypes();
             $("#btn_prev").removeClass("d-none");
         });
 
@@ -108,73 +14,136 @@
                 $("#btn_prev").addClass("d-none");
             }
             page--;
-            getEmployeeCredits();
+            getLeaveTypes();
         });
 
         $("#btn_search_employee").click(function () {
             page = 0;
-            getEmployeeCredits();
+            getLeaveTypes();
         });
 
-        getEmployeeCredits();
+        $("#btn_add_leave").click(function () {
+            $("#description").val("");
+            $("#code").val("");
+            $("#monthly_increment").val("");
+            $("#credit_deduction").val("");
+            $("#leave_type_modal").modal("show");
+        });
+
+        getLeaveTypes();
     });
 
-    function getEmployeeCredits() {
-        const search_fname = $("#search_fname").val().trim();
-        const search_lname = $("#search_fname").val().trim();
+    async function store() {
+        const description = $("#description").val();
+        const code = $("#code").val();
+        const monthly_increment = $("#monthly_increment").val();
+        const credit_deduction = $("#credit_deduction").val();
 
-        $("#btn_next").prop("disabled", true);
-        $("#btn_prev").prop("disabled", true);
-        $("#employee_list").empty();
-        $("#employee_list").append("<tr><td colspan='7'>Loading data, please wait...</td></tr>");
+        const params = {
+            description: description,
+            code: code,
+            monthly_increment: monthly_increment,
+            credit_deduction: credit_deduction
+        }
 
-        fetch('{{ route('getEmployeeCredits') }}?search_fname=' + search_fname +
-            "&seach_lname=" + search_lname +
-            "&page=" + page, {
-            method: "GET"
-        })
-            .then(res => res.json())
-            .then(data => {
-                $("#btn_next").prop("disabled", false);
-                $("#btn_prev").prop("disabled", false);
-                $("#pagination_container").addClass("d-none")
-                $("#employee_list").empty();
-                $("#btn_next").addClass("d-none");
-                $("#employee_list").empty();
-                if (data.results.length < 1) {
-                    $("#employee_list").append("<tr><td colspan='6'>No record found</td></tr>");
-                    return;
-                }
-
-                $("#pagination_container").removeClass("d-none")
-                let max_visible = data.results.length;
-                if (max_visible == 11) {
-                    max_visible = 10;
-                    $("#btn_next").removeClass("d-none");
-                }
-
-                $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
-                for (let i = 0; i < max_visible; i++) {
-                    const it = data.results[i];
-                    const vl_bal = (it.vl_bal) ? it.vl_bal : "0.00";
-                    const sl_bal = (it.sl_bal) ? it.sl_bal : "0.00";
-                    const cto_bal = (it.cto_bal) ? it.cto_bal : "0.00";
-                    const fl_bal = (it.fl_bal) ? it.fl_bal : "0.00";
-                    const spl_bal = (it.spl_bal) ? it.spl_bal : "0.00";
-
-                    let tr = `<tr id="balance_id_` + it.id + `">`;
-                    tr += `<td>` + it.fname + " " + it.mname + " " + it.lname + `</td>`;
-                    tr += `<td><input class="form-control text-center vl_bal_input" type='number' value="` + vl_bal + `"/></td>`;
-                    tr += `<td><input class="form-control text-center sl_bal_input" type='number' value="` + sl_bal + `"/></td>`;
-                    tr += `<td><input class="form-control text-center cto_bal_input" type='number' value="` + cto_bal + `"/></td>`;
-                    tr += `<td><input class="form-control text-center fl_bal_input" type='number' value="` + fl_bal + `"/></td>`;
-                    tr += `<td><input class="form-control text-center spl_bal_input" type='number' value="` + spl_bal + `"/></td>`;
-                    tr += `<td><button class="btn btn-sm btn-success" onClick="saveBalances(` + it.id + `)">SAVE</button></td>`;
-                    $("#employee_list").append(tr);
-                }
-            }).catch(err => {
-            console.log(err);
+        const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            body: JSON.stringify(params)
         });
+
+        try {
+            const data = await response.json();
+            if (response.ok) {
+                $("#leave_type_modal").modal("hide");
+                toastr.success(data.message, "Information");
+                getLeaveTypes();
+            } else {
+                toastr.error(data.error || 'Something went wrong, please try again');
+            }
+        } catch (error) {
+            toastr.error(error, "Ooops");
+        }
+    }
+
+    function editLeave(id) {
+        const description = $("#leave_" + id + " td:eq(0)").text();
+        const code = $("#leave_" + id + " td:eq(1)").text();
+        const monthly_increment = $("#leave_" + id + " td:eq(2)").text();
+        const credit_deduction = $("#leave_" + id + " td:eq(3)").text();
+
+        $("#description").val(description);
+        $("#code").val(code);
+        $("#monthly_increment").val(monthly_increment);
+        $("#credit_deduction").val(credit_deduction);
+        $("#leave_type_modal").modal("show");
+    }
+
+    async function deleteLeave(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            const response = await fetch("{{ route('deleteLeaveType') }}", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({id: id})
+            });
+
+            try {
+                const data = await response.json();
+                if (response.ok) {
+                    toastr.success(data.message, "Information");
+                    getLeaveTypes();
+                } else {
+                    toastr.error(data.error || 'Something went wrong, please try again');
+                }
+            } catch (error) {
+                toastr.error(error, "Ooops");
+            }
+        }
+    }
+
+    async function getLeaveTypes() {
+        const response = await fetch('{{ route('getLeaveTypes') }}', {
+            method: "GET"
+        });
+
+        try {
+            const data = await response.json();
+            if (response.ok) {
+                $("#leave_list").empty();
+                data.forEach(it => {
+                    const tr = `
+                    <tr id="leave_` + it.id + `">
+                        <td>` + it.description + `</td>
+                        <td>` + it.code + `</td>
+                        <td>` + it.monthly_increment + `</td>
+                        <td>` + it.credit_deduction + `</td>
+                        <td>
+                            <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
+                                <i class="bi bi-pencil-fill text-success"></i>
+                            </button>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-transparent" onClick='deleteLeave(` + it.id + `)'>
+                                <i class="bi bi-trash-fill text-danger"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+
+                    $("#leave_list").append(tr);
+                });
+            } else {
+                toastr.error(data.error || "Something went wrong, please try again");
+            }
+
+        } catch (error) {
+            toastr.error(error, "Ooops");
+        }
     }
 
     function saveBalances(id) {
