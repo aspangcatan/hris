@@ -36,7 +36,7 @@
             getEmployee({fname: fname, lname: lname, page: page});
         });
 
-        getEmployee({fname: "", lname: "", page: 1});
+        getEmployee({fname: "", lname: "", page: 0});
     });
 
     function editEmployee(id) {
@@ -106,7 +106,7 @@
     }
 
     async function deleteDtr(id) {
-        if(confirm("Are you sure you want to delete this?")){
+        if (confirm("Are you sure you want to delete this?")) {
             const response = await fetch('{{ route('deleteDtr') }}', {
                 method: "DELETE",
                 headers: {
