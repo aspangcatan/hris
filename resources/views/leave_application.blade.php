@@ -29,7 +29,7 @@
         <div class="card-body">
             <div class="d-flex align-items-center justify-content-between">
                 <h5 class="fw-bold card-title">Leave Application</h5>
-                @if(false)
+                @if(true)
                     <div>
                         <button class="btn btn-sm btn-success" id="btn_file_leave">
                             <i class="bi bi-plus-lg"></i>
@@ -37,7 +37,7 @@
                     </div>
                 @endif
             </div>
-            @if(false)
+            @if(true)
                 <div class="table-responsive">
                     <table class="table text-center">
                         <thead>

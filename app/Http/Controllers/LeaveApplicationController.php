@@ -150,4 +150,13 @@ class LeaveApplicationController extends Controller
             return response()->json(['message' => $exception->getMessage()], 500);
         }
     }
+
+    public function forwardApplication($id, $origin, $destination)
+    {
+        try {
+            DB::table();
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
 }

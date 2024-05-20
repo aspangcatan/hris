@@ -41,6 +41,16 @@
                     <span>Employee</span>
                 </a>
             </li>
+            <li class="nav-heading">Payroll Management</li>
+            <li class="nav-item">
+                <a class="nav-link collapsed">
+                    <i class="bi bi-grid"></i>
+                    <span>
+                        Payroll
+                        <span class="badge bg-danger text-white">Soon</span>
+                    </span>
+                </a>
+            </li>
             <li class="nav-heading">Settings</li>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('timetable') }}">
@@ -52,6 +62,15 @@
                 <a class="nav-link collapsed" href="{{ route('leave_management') }}">
                     <i class="bi bi-grid"></i>
                     <span>Leave Settings</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed">
+                    <i class="bi bi-grid"></i>
+                    <span>
+                        Payroll Settings
+                        <span class="badge bg-danger text-white">Soon</span>
+                    </span>
                 </a>
             </li>
         @endif
