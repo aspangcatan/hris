@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BusinessInterest;
 use App\Models\Declarant;
+use App\Models\FamilyBackground;
 use App\Models\GovernmentRelative;
 use App\Models\Liabilities;
 use App\Models\PersonalProperties;
@@ -35,6 +36,7 @@ class SalnController extends Controller
         try {
             $declarant = Declarant::where('user_id',Auth::id())->first();
             $spouse = Spouse::where('user_id',Auth::id())->first();
+            $familyBackground = FamilyBackground::where('user_id',Auth::id())->first();
             if (!$declarant) {
                 $declarant = new Declarant;
                 $declarant->user_id = Auth::id();
@@ -52,6 +54,11 @@ class SalnController extends Controller
             $declarant->government_id_no = $request->declarant_government_id_no;
             $declarant->date_issued = $request->declarant_date_issued;
             $declarant->save();
+
+            $familyBackground->spouse_fname = $request->spouse_fname;
+            $familyBackground->spouse_mname = $request->spouse_mname;
+            $familyBackground->spouse_lname = $request->spouse_lname;
+            $familyBackground->save();
 
             $spouse->position = $request->spouse_position;
             $spouse->agency = $request->spouse_agency;

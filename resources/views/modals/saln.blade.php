@@ -67,7 +67,7 @@
                         <label>Exact Location</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="real_assessed_value" placeholder="">
+                        <input type="number" class="form-control" id="real_assessed_value" placeholder="">
                         <label>Assessed value</label>
                     </div>
                     <div class="form-floating mb-3">
@@ -83,7 +83,7 @@
                         <label>Acquisition mode</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="real_acquisition_cost" placeholder="">
+                        <input type="number" class="form-control" id="real_acquisition_cost" placeholder="">
                         <label>Acquisition cost</label>
                     </div>
                 </div>

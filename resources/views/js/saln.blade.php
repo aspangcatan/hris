@@ -111,6 +111,10 @@
             const declarant_government_id_no = $("#declarant_id_no").val().trim().toUpperCase();
             const declarant_date_issued = $("#declarant_date_issued").val().trim().toUpperCase();
 
+
+            const spouse_fname = $("#spouse_fname").val().trim().toUpperCase();
+            const spouse_mname = $("#spouse_mname").val().trim().toUpperCase();
+            const spouse_lname = $("#spouse_lname").val().trim().toUpperCase();
             const spouse_position = $("#spouse_position").val().trim().toUpperCase();
             const spouse_agency = $("#spouse_agency").val().trim().toUpperCase();
             const spouse_office = $("#spouse_address").val().trim().toUpperCase();
@@ -156,6 +160,9 @@
                 declarant_government_id_issued: declarant_government_issued_id,
                 declarant_government_id_no: declarant_government_id_no,
                 declarant_date_issued: (declarant_date_issued == "") ? null : declarant_date_issued,
+                spouse_fname: spouse_fname,
+                spouse_mname: spouse_mname,
+                spouse_lname: spouse_lname,
                 spouse_position: spouse_position,
                 spouse_agency: spouse_agency,
                 spouse_office: spouse_office,
