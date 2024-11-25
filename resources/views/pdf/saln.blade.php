@@ -189,25 +189,36 @@
                         <td style="font-size: 13px">
                             @if($spouse)
                                 {{ strtoupper($spouse->spouse_lname) }}
+                            @else
+                                N/A
                             @endif
                         </td>
                         <td>
                             @if($spouse)
                                 {{ strtoupper($spouse->spouse_fname) }}
+                            @else
+                                N/A
                             @endif
                         </td>
                         <td>
-                            @if($spouse->spouse_mname)
+                            @if($spouse)
                                 {{ strtoupper($spouse->spouse_mname[0]) }}.
+                            @else
+                                N/A
                             @endif
                         </td>
-                    </
-                    tr>
+                    </tr>
                 </table>
             </td>
             <td></td>
             <td class="fw-bold">POSITION:</td>
-            <td class="border-bottom">{{ strtoupper($spouse->position) }}</td>
+            <td class="border-bottom">
+                @if($spouse)
+                    {{ strtoupper($spouse->position) }}
+                @else
+                    N/A
+                @endif
+            </td>
         </tr>
         <tr>
             <td></td>
@@ -222,14 +233,26 @@
             </td>
             <td></td>
             <td class="fw-bold">AGENCY/OFFICE:</td>
-            <td class="border-bottom">{{ strtoupper($spouse->agency) }}</td>
+            <td class="border-bottom">
+                @if($spouse)
+                    {{ strtoupper($spouse->agency) }}
+                @else
+                    N/A
+                @endif
+            </td>
         </tr>
         <tr>
             <td></td>
             <td></td>
             <td></td>
             <td class="fw-bold">OFFICE ADDRESS:</td>
-            <td class="border-bottom">{{ strtoupper($spouse->office) }}</td>
+            <td class="border-bottom">
+                @if($spouse)
+                    {{ strtoupper($spouse->office) }}
+                @else
+                    N/A
+                @endif
+            </td>
         </tr>
     </table>
 
@@ -524,12 +547,20 @@
     <tr>
         <td>Government Issued ID:</td>
         <td class="border-bottom">
-            {{strtoupper($declarant->government_id_issued)}}
+            @if($declarant)
+                {{strtoupper($declarant->government_id_issued)}}
+            @else
+                N/A
+            @endif
         </td>
         <td></td>
         <td>Government Issued ID:</td>
         <td class="border-bottom">
-            {{strtoupper($spouse->government_id_issued)}}
+            @if($spouse)
+                {{strtoupper($spouse->government_id_issued)}}
+            @else
+                N/A
+            @endif
         </td>
     </tr>
     <tr>
@@ -540,13 +571,17 @@
         <td></td>
         <td>ID No.:</td>
         <td class="border-bottom">
-            {{strtoupper($spouse->government_id_no)}}
+            @if($spouse)
+                {{strtoupper($spouse->government_id_no)}}
+            @else
+                N/A
+            @endif
         </td>
     </tr>
     <tr>
         <td>Date Issued:</td>
         <td class="border-bottom">
-            @if($declarant->date_issued)
+            @if($declarant)
                 {{ date('m/d/Y', strtotime($declarant->date_issued)) }}
             @else
                 N/A
@@ -555,7 +590,7 @@
         <td></td>
         <td>Date Issued:</td>
         <td class="border-bottom">
-            @if($spouse->date_issued)
+            @if($spouse)
                 {{ date('m/d/Y', strtotime($spouse->date_issued)) }}
             @else
                 N/A
