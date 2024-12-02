@@ -606,7 +606,15 @@
 <table style="margin-top: 30px;font-size: 14px">
     <tr>
         <td rowspan="2" style="width: 50%"></td>
-        <td style="width: 30%" class="border-bottom"></td>
+        <td style="width: 70%;" class="border-bottom">
+            <div style="text-align: center;font-weight: bold">
+                AGUSTIN D. AGOS, JR.
+            </div>
+            <div>
+                MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™
+            </div>
+
+        </td>
         <td rowspan="2" style="width: 20%"></td>
     </tr>
     <tr>
@@ -615,7 +623,7 @@
         </td>
     </tr>
 </table>
-<div style="text-align: center;font-size: 18px;color: gray;font-style: italic;margin-top: 40px">Page 2 of 2</div>
+<div style="text-align: center;font-size: 18px;color: gray;font-style: italic;margin-top: 20px">Page 2 of 2</div>
 <script>
     const getFontSize = (textLength) => {
         const baseSize = 9
