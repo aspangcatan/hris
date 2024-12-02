@@ -605,17 +605,11 @@
 </div>
 <table style="margin-top: 30px;font-size: 14px">
     <tr>
-        <td rowspan="2" style="width: 50%"></td>
-        <td style="width: 70%;" class="border-bottom">
-            <div style="text-align: center;font-weight: bold">
-                AGUSTIN D. AGOS, JR.
-            </div>
-            <div>
-                MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™
-            </div>
-
+        <td rowspan="2" style="width: 30%"></td>
+        <td style="width: 60%;font-size:11.7px;font-weight: bold" class="border-bottom">
+            AGUSTIN D. AGOS, JR.,MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™
         </td>
-        <td rowspan="2" style="width: 20%"></td>
+        <td rowspan="2" style="width: 10%"></td>
     </tr>
     <tr>
         <td style="text-align: center;font-style: italic">

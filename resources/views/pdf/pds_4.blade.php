@@ -621,13 +621,13 @@
         <span
             style="margin-left: 5px">,affiant exhibiting his/her validly issued government ID as indicated above</span>
 
-        <div style="text-align: left !important;margin-top:10px;margin-left: 35%;margin-right: 27%" class="rectangle">
+        <div style="text-align: left !important;margin-top:10px;margin-left: 26%;margin-right: 20%" class="rectangle">
             <div style="padding:2px;background: white;color: white">
                 <div>N/A</div>
             </div>
+            <div style="text-align:center;font-weight: bold;font-size:10.4px">AGUSTIN D. AGOS, JR.,MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™</div>
             <div style="color: white">N/A</div>
-            <div style="text-align:center;font-weight: bold">AGUSTIN D. AGOS, JR.</div>
-            <div style="text-align:center;font-weight: bold;font-size: 12px">MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™</div>
+            <div style="color:white"></div>
             <div class="gray"
                  style="text-align: center;border-top:solid 1px black;border-bottom: solid 1px black">
                 Person Administering Oath
