@@ -396,7 +396,7 @@
 </table>
 <div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
 <div
-    style="text-align: center;font-size: 16px;color: gray;font-style: italic;margin-top: 40px;font-family: 'Times New Roman'">
+    style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
     Page 1 of 2
 </div>
 <div style="page-break-before: always !important;"></div>
@@ -617,7 +617,10 @@
         </td>
     </tr>
 </table>
-<div style="text-align: center;font-size: 18px;color: gray;font-style: italic;margin-top: 20px">Page 2 of 2</div>
+<div
+    style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
+    Page 2 of 2
+</div>
 <script>
     const getFontSize = (textLength) => {
         const baseSize = 9
