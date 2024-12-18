@@ -549,7 +549,7 @@
                                 <td>Date/Place of Issuance:</td>
                                 <td>
                                     <div class="value"  style="font-size: 10px">
-                                        @if($employee)
+                                        @if(isset($employee->issued_date))
                                             {{ strtoupper($employee->issued_date) }}
                                         @else
                                             N/A

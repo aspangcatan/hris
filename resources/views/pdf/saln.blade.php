@@ -580,18 +580,18 @@
     </tr>
     <tr>
         <td>Date Issued:</td>
-        <td class="border-bottom">
+        <td class="border-bottom" style="text-transform: uppercase">
             @if($declarant)
-                {{ date('m/d/Y', strtotime($declarant->date_issued)) }}
+                {{ date('F Y', strtotime($declarant->date_issued)) }}
             @else
                 N/A
             @endif
         </td>
         <td></td>
         <td>Date Issued:</td>
-        <td class="border-bottom">
-            @if($spouse)
-                {{ date('m/d/Y', strtotime($spouse->date_issued)) }}
+        <td class="border-bottom" style="text-transform: uppercase">
+            @if(isset($spouse->date_issued))
+                {{ date('F Y', strtotime($spouse->date_issued)) }}
             @else
                 N/A
             @endif
@@ -603,20 +603,22 @@
     <strong style="margin-left: 30px">SUBSCRIBED AND SWORN</strong> to before me _____ day of _________, affiant
     exhibiting to me the above-stated<br/>government issued identification card.
 </div>
-<table style="margin-top: 30px;font-size: 14px">
-    <tr>
-        <td rowspan="2" style="width: 30%"></td>
-        <td style="width: 60%;font-size:11.7px;font-weight: bold" class="border-bottom">
-            AGUSTIN D. AGOS, JR.,MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™
-        </td>
-        <td rowspan="2" style="width: 10%"></td>
-    </tr>
-    <tr>
-        <td style="text-align: center;font-style: italic">
+
+<div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; font-size: 14px;margin-top:30px">
+    <div>
+        <div style="font-size: 11.7px; font-weight: bold; padding-bottom: 5px;">
+            <span style="text-decoration: underline;">
+                AGUSTIN D. AGOS, JR., MD, FPSGS, FPCS, MA Psy, DODT, PhD-OD, RODC, APRM™
+            </span>
+        </div>
+        <div style="font-style: italic; margin-top: 5px;">
             (Person Administering Oath)
-        </td>
-    </tr>
-</table>
+        </div>
+    </div>
+</div>
+
+
+
 <div
     style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
     Page 2 of 2
