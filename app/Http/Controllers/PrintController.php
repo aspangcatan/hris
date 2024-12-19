@@ -190,10 +190,10 @@ class PrintController extends Controller
             ->join('tdh_user.division as di', 'u.division', '=', 'di.id')
             ->join('tdh_user.section as s', 'u.section', '=', 's.id')
             ->where('l.id', '=', $request->id)
-            ->get(['di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id','l.created_at'])
+            ->get(['di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id', 'l.created_at'])
             ->first();
 
-        $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied','ASC')->get(['date_applied']);
+        $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
 
 
         $pdf = new Fpdi();
@@ -235,7 +235,7 @@ class PrintController extends Controller
         $pdf->Write(0.1, $mname);
 
         $pdf->SetXY(38, 43);
-        $pdf->Write(0.1, Carbon::createFromFormat('Y-m-d', explode(' ',$leave_application->created_at)[0])->format('M. j, Y'));
+        $pdf->Write(0.1, Carbon::createFromFormat('Y-m-d', explode(' ', $leave_application->created_at)[0])->format('M. j, Y'));
         $pdf->SetXY(77, 43);
         $pdf->Write(0.1, self::minifyDesignation($leave_application->designation));
         $pdf->SetXY(123, 43);
@@ -307,7 +307,7 @@ class PrintController extends Controller
                 })
                 ->get(['u.fname', 'u.mname', 'u.lname', 'u.suffix', 'd.position', 'd.agency',
                     'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued',
-                    'a.barangay', 'a.city', 'a.province'])
+                    'a.house_no', 'a.street', 'a.subdivision_village', 'a.barangay', 'a.city', 'a.province'])
                 ->first();
 
             $spouse = DB::table('hris.family_backgrounds as f')
@@ -504,8 +504,22 @@ class PrintController extends Controller
                 ];
             }
 
+            $addressParts = collect([
+                $declarant->house_no ?? '', // Ensure default values are strings
+                $declarant->street ?? '',
+                $declarant->subdivision_village ?? '',
+                $declarant->barangay ?? '',
+                $declarant->city ?? '',
+                $declarant->province ?? '',
+            ])->filter(function ($part) {
+                return !empty($part) && strtoupper($part) !== 'N/A'; // Filter out empty or 'N/A'
+            })->values();
+
+            $formattedAddress = $addressParts->join(' ');
+
             $pdf = Pdf::loadView('pdf.saln', [
                 'declarant' => $declarant,
+                'address' => $formattedAddress,
                 'spouse' => $spouse,
                 'children' => $children_array,
                 'real_properties' => $real_properties_array,

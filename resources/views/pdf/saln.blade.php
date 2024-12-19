@@ -166,17 +166,41 @@
             <td class="fw-bold">AGENCY/OFFICE:</td>
             <td class="border-bottom">{{ strtoupper($declarant->agency) }}</td>
         </tr>
+        @php
+            function splitAddressByWords($address, $maxLength) {
+                $words = explode(' ', $address); // Split address into words
+                $line1 = '';
+                $line2 = '';
+
+                foreach ($words as $word) {
+                    if (strlen($line1) + strlen($word) + 1 <= $maxLength) { // +1 for space
+                        $line1 .= ($line1 === '' ? '' : ' ') . $word;
+                    } else {
+                        $line2 .= ($line2 === '' ? '' : ' ') . $word;
+                    }
+                }
+
+                return [$line1, $line2];
+            }
+
+            [$addressLine1, $addressLine2] = splitAddressByWords($address, 45); // Adjust 40 to your desired max length
+        @endphp
+
         <tr>
             <td class="fw-bold">ADDRESS:</td>
-            <td class="border-bottom">{{ strtoupper($declarant->barangay).', '. strtoupper($declarant->city).', '.strtoupper($declarant->province)}}</td>
+            <td class="border-bottom">
+                {{ strtoupper($addressLine1) }}
+            </td>
             <td></td>
             <td class="fw-bold">OFFICE ADDRESS:</td>
             <td class="border-bottom">{{ strtoupper($declarant->office) }}</td>
         </tr>
-        {{--    CHECK IF DATA IS TOO LONG, ADD NEXT LINE    --}}
+
         <tr>
             <td></td>
-            <td class="border-bottom"></td>
+            <td class="border-bottom">
+                {{ strtoupper($addressLine2) }}
+            </td>
             <td></td>
             <td></td>
             <td class="border-bottom"></td>
@@ -201,7 +225,7 @@
                             @endif
                         </td>
                         <td>
-                            @if($spouse)
+                            @if(!empty($spouse->spouse_mname) && strtoupper($spouse->spouse_mname) !== 'N/A' && strtoupper($spouse->spouse_mname) !== 'NA')
                                 {{ strtoupper($spouse->spouse_mname[0]) }}.
                             @else
                                 N/A
@@ -604,7 +628,8 @@
     exhibiting to me the above-stated<br/>government issued identification card.
 </div>
 
-<div style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; font-size: 14px;margin-top:30px">
+<div
+    style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; font-size: 14px;margin-top:30px">
     <div>
         <div style="font-size: 11.7px; font-weight: bold; padding-bottom: 5px;">
             <span style="text-decoration: underline;">
@@ -616,7 +641,6 @@
         </div>
     </div>
 </div>
-
 
 
 <div
