@@ -606,7 +606,7 @@
         <td>Date Issued:</td>
         <td class="border-bottom" style="text-transform: uppercase">
             @if($declarant)
-                {{ date('F Y', strtotime($declarant->date_issued)) }}
+                {{ date('F j, Y', strtotime($declarant->date_issued)) }}
             @else
                 N/A
             @endif
@@ -615,7 +615,7 @@
         <td>Date Issued:</td>
         <td class="border-bottom" style="text-transform: uppercase">
             @if(isset($spouse->date_issued))
-                {{ date('F Y', strtotime($spouse->date_issued)) }}
+                {{ date('F j, Y', strtotime($spouse->date_issued)) }}
             @else
                 N/A
             @endif
