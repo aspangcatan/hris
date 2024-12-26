@@ -559,7 +559,11 @@
     <tr>
         <td colspan="2" class="border-bottom"></td>
         <td></td>
-        <td colspan="2" class="border-bottom"></td>
+        <td colspan="2" class="border-bottom">
+            @if($spouse)
+                <div style="text-align: center">N/A</div>
+            @endif
+        </td>
     </tr>
     <tr style="font-style: italic">
         <td colspan="2" style="text-align: center">(Signature of Declarant)</td>
