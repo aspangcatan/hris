@@ -560,7 +560,7 @@
         <td colspan="2" class="border-bottom"></td>
         <td></td>
         <td colspan="2" class="border-bottom">
-            @if(!$spouse)
+            @if(!isset($spouse->date_issued))
                 <div style="text-align: center">N/A</div>
             @endif
         </td>
