@@ -515,7 +515,7 @@ class PrintController extends Controller
                 return !empty($part) && strtoupper($part) !== 'N/A'; // Filter out empty or 'N/A'
             })->values();
 
-            $formattedAddress = $addressParts->join(' ');
+            $formattedAddress = $addressParts->join(', ');
 
             $pdf = Pdf::loadView('pdf.saln', [
                 'declarant' => $declarant,
