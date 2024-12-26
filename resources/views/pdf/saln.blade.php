@@ -560,7 +560,7 @@
         <td colspan="2" class="border-bottom"></td>
         <td></td>
         <td colspan="2" class="border-bottom">
-            @if(isset($spouse->date_issued) && ($spouse->date_issued == "N/A" || $spouse->date_issued == "NA" || empty($spouse->date_issued)))
+            @if(isset($spouse->spouse_fname) && ($spouse->spouse_fname == "N/A" || $spouse->spouse_fname == "NA" || empty($spouse->spouse_fname)))
                 <div style="text-align: center">N/A</div>
             @endif
         </td>
