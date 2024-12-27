@@ -130,7 +130,9 @@
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td style="font-size: 13px">{{ strtoupper($declarant->lname) }}</td>
+                        <td style="font-size: 13px">
+                            {{ strtoupper($declarant->lname) }}
+                        </td>
                         <td>
                             {{ strtoupper($declarant->fname) }}
                             @if($declarant->suffix)

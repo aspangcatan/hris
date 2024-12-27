@@ -498,6 +498,8 @@
                 $(".error_list").append("<li>Attendance to is required</li>");
             }
 
+
+
             if (!is_valid) {
                 $("#education_error").removeClass("d-none");
                 return;
@@ -601,20 +603,12 @@
                 $(".error_list").append("<li>Attendance to is required</li>");
             }
 
-            // if (highest_level == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Highest level is required, put 'N/A' if not applicable</li>");
-            // }
+
 
             if (year_graduated == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Year graduated is required</li>");
             }
-
-            // if (scholarship == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Scholarship is required, put 'N/A' if not applicable</li>");
-            // }
 
             if (!is_valid) {
                 $("#education_error").removeClass("d-none");

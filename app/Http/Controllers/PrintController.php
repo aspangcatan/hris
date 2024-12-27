@@ -300,14 +300,32 @@ class PrintController extends Controller
         try {
             $declarant = DB::table('tdh_user.users as u')
                 ->leftJoin('hris.saln_declarant as d', 'u.id', '=', 'd.user_id')
-                ->leftJoin('hris.addresses as a', 'u.id', '=', 'a.user_id')
-                ->where(function ($query) {
-                    $query->where('u.id', '=', Auth::id());
-                    $query->where('address_type', 'Permanent');
+                ->leftJoin('hris.addresses as a', function ($join) {
+                    $join->on('u.id', '=', 'a.user_id')
+                        ->where(function ($query) {
+                            $query->whereNull('a.address_type')
+                                ->orWhere('a.address_type', 'Permanent');
+                        });
                 })
-                ->get(['u.fname', 'u.mname', 'u.lname', 'u.suffix', 'd.position', 'd.agency',
-                    'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued',
-                    'a.house_no', 'a.street', 'a.subdivision_village', 'a.barangay', 'a.city', 'a.province'])
+                ->where('u.id', Auth::id())
+                ->get([
+                    'u.fname',
+                    'u.mname',
+                    'u.lname',
+                    'u.suffix',
+                    'd.position',
+                    'd.agency',
+                    'd.office',
+                    'd.government_id_issued',
+                    'd.government_id_no',
+                    'd.date_issued',
+                    'a.house_no',
+                    'a.street',
+                    'a.subdivision_village',
+                    'a.barangay',
+                    'a.city',
+                    'a.province'
+                ])
                 ->first();
 
             $spouse = DB::table('hris.family_backgrounds as f')
