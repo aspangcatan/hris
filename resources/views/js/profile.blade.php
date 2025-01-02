@@ -100,11 +100,13 @@
         });
 
         $("#btn_print_pds").click(function () {
+            $("#pds_date").val(moment().format("YYYY-MM-DD"));
             print_modal.toggle();
         });
 
         $("#btn_confirm_print").click(function () {
             let date = $("#pds_date").val();
+            let sworn_date = $("#sworn_date").val();
             const experience_rows = $("#experience_rows").val();
             const learning_rows = $("#learning_rows").val();
 
@@ -112,9 +114,16 @@
                 alert("Indicate date");
                 return;
             }
+
+            if (sworn_date == "") {
+                alert("Indicate sworn date");
+                return;
+            }
+
             date = moment(date).format("MM/DD/YYYY");
+            sworn_date = moment(date).format("MM/DD/YYYY");
             window.open(
-                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows,
+                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows+"&sworn_date="+sworn_date,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });

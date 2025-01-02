@@ -616,10 +616,11 @@
     </div>
     <div
         style="margin-top: 10px;padding-top:20px;padding-bottom:10px;border-top: solid 1px black;text-align: center;font-size: 12px">
-        <span style="margin-right: 10px">SUBSCRIBED AND SWORN to before me this</span>
-        <span style="border-bottom: solid 1px black;color: white">hdlksahdlksahdksahdksajhd</span>
-        <span
-            style="margin-left: 5px">,affiant exhibiting his/her validly issued government ID as indicated above</span>
+
+        <span style="margin-right: 10px;">SUBSCRIBED AND SWORN to before me this</span>
+        <span style="border-bottom: solid 1px black; display: inline-block; text-align: center; padding-right: 30px; padding-left: 30px; width: fit-content;">{{ $sworn_date }}</span>
+        <span style="margin-left: 5px;">, affiant exhibiting his/her validly issued government ID as indicated above</span>
+
 
         <div style="text-align: left !important;margin-top:10px;margin-left: 26%;margin-right: 20%" class="rectangle">
             <div style="padding:2px;background: white;color: white">

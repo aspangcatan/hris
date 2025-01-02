@@ -629,10 +629,21 @@
     </tr>
 </table>
 
-<div style="margin-top: 30px;font-size: 14px">
-    <strong style="margin-left: 30px">SUBSCRIBED AND SWORN</strong> to before me _____ day of _________, affiant
-    exhibiting to me the above-stated<br/>government issued identification card.
+<div style="margin-top: 30px; font-size: 14px;">
+    <strong style="margin-left: 30px;">SUBSCRIBED AND SWORN</strong>
+    to before me
+    <span style="border-bottom: 1px solid black; display: inline-block; width: 100px; text-align: center;">
+        {{ $before_me }}
+    </span>
+    day of
+    <span style="border-bottom: 1px solid black; display: inline-block; width: 150px; text-align: center;" id="day-of">
+        {{ $day_of }}
+    </span>,
+    affiant exhibiting to me the above-stated<br />
+    government-issued identification card.
 </div>
+
+
 
 <div
     style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; font-size: 14px;margin-top:30px">

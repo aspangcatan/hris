@@ -552,7 +552,9 @@ class PrintController extends Controller
                 'as_of_year' => $request->as_of_year,
                 'filing_type' => $request->filing_type,
                 'business_interest' => $request->business_interest,
-                'government_relatives' => $request->government_relatives
+                'government_relatives' => $request->government_relatives,
+                'before_me' => $request->before_me,
+                'day_of' => $request->day_of
             ]);
 
             $pdf->set_paper('A4', 'landscape');
@@ -1000,7 +1002,7 @@ class PrintController extends Controller
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences, 'next_page_work' => $next_page_work_outer_array,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
-                'reference' => $references, 'pds_date' => $request->pds_date]);
+                'reference' => $references, 'pds_date' => $request->pds_date,'sworn_date' => $request->sworn_date]);
 
             $pdf->setPaper('A4', 'landscape');
 

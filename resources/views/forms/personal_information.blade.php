@@ -28,7 +28,17 @@
     <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Extension Name (e.g. Jr,Sr)</label>
         <div class="col-md-8 col-lg-9">
-            <input type="text" class="form-control" id="suffix">
+            <select class="form-control" id="suffix">
+                <option value=""></option>
+                <option value="Jr.">Jr</option>
+                <option value="Sr.">Sr.</option>
+                <option value="I">I</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+                <option value="VII">VII</option>
+            </select>
         </div>
     </div>
     <div class="row mb-3">

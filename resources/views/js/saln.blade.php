@@ -17,32 +17,47 @@
     $(document).ready(function () {
 
         $("#btn_print_saln").click(function () {
+            $("#print_date").val(moment().format("YYYY-MM-DD"));
             saln_modal.toggle();
         });
 
         $("#btn_confirm_print").click(function () {
             const filing_type = $("input[name='filing_type']:checked").val();
             const as_of_year = $("#as_of_year").val();
+
             if (filing_type === undefined) {
                 alert("Please specify Filing type");
                 return;
             }
+
             const business_interest_checkbox = ($("#business_interest_checkbox").is(":checked")) ? 1 : 0;
             const government_relatives_checkbox = ($("#government_relatives_checkbox").is(":checked")) ? 1 : 0;
 
             const date = $("#print_date").val();
+            const sworn_date = $("#saln_sworn_date").val();
+
             if (date == "") {
                 alert("Please fill in date");
                 return;
             }
+
+            if (sworn_date == "") {
+                alert("Please fill in sworn date");
+                return;
+            }
+
+            const before_me = moment(sworn_date).format("Do");
+            const day_of = moment(sworn_date).format("MMMM");
+
             window.open(
                 '{{ route('printSaln') }}?id=0&print_date=' + date + '&filing_type=' + filing_type +
                 '&business_interest=' + business_interest_checkbox +
                 '&government_relatives=' + government_relatives_checkbox +
-                '&as_of_year=' + as_of_year,
+                '&as_of_year=' + as_of_year+
+                '&before_me=' + before_me+
+                '&day_of=' + day_of,
                 '_blank' // <- This is what makes it open in a new window.
-            )
-            ;
+            );
         });
 
         $("#btn_add_children").click(function () {

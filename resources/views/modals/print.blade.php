@@ -51,6 +51,10 @@
                         </select>
                         <label>Number of rows (Learning and Development)</label>
                     </div>
+                    <div class="form-floating mb-3">
+                        <input type="date" class="form-control" id="sworn_date" placeholder="">
+                        <label>Subscribe and Sworn Date</label>
+                    </div>
                 </div>
                 <div class="text-center mt-4">
                     <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
