@@ -136,9 +136,15 @@
                         <td>
                             {{ strtoupper($declarant->fname) }}
                             @if($declarant->suffix)
-                                <span style="text-transform: uppercase">
-                                {{ $declarant->suffix }}
-                            </span>
+                                @php
+                                    $suffixes = ['Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V'];
+                                @endphp
+
+                                @if(in_array($declarant->suffix, $suffixes))
+                                    <span style="text-transform: uppercase">
+                                      {{ $declarant->suffix }}
+                                     </span>
+                                @endif
                             @endif
                         </td>
                         <td>
