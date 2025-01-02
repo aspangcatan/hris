@@ -47,14 +47,14 @@
             }
 
             const before_me = moment(sworn_date).format("Do");
-            const day_of = moment(sworn_date).format("MMMM");
+            const day_of = moment(sworn_date).format("MMMM") + " " + moment(sworn_date).format("YYYY");
 
             window.open(
                 '{{ route('printSaln') }}?id=0&print_date=' + date + '&filing_type=' + filing_type +
                 '&business_interest=' + business_interest_checkbox +
                 '&government_relatives=' + government_relatives_checkbox +
-                '&as_of_year=' + as_of_year+
-                '&before_me=' + before_me+
+                '&as_of_year=' + as_of_year +
+                '&before_me=' + before_me +
                 '&day_of=' + day_of,
                 '_blank' // <- This is what makes it open in a new window.
             );
