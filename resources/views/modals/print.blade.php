@@ -22,6 +22,15 @@
                         </ol>
                     </div>
                 </div>
+                <div class="card p-3">
+                    <div class="card-body">
+                        <p>Common concerns inig print:</p>
+                        <ul>
+                            <li>If molapas ang work experience, i.adjust lang ang Number of rows (Work Experience) (e.g. From 23 to 21 or adjust accordingly)</li>
+                            <li>If molapas ang other information, i.adjust lang ang Number of rows (Learning and Development) (e.g. From 24 to 22 or adjust accordingly)</li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="mt-3 text-secondary fs-5">
                     <div class="form-floating mb-3">
                         <input type="date" class="form-control" id="pds_date" placeholder="">
