@@ -52,8 +52,7 @@
             .then(data => {
                 console.log(data);
                 if (data.code == 500) {
-                    console.log(data.message)
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 

@@ -49,7 +49,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
@@ -64,7 +64,7 @@
                 $("#scholarship").val("");
                 getEducation(0);
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -111,7 +111,7 @@
                     toastr.success(data.message, "Information");
                     getEducation(0);
                 }).catch(err => {
-                console.log(err);
+                toastr.error(err, "Oops");
             });
         }
     }

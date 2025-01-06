@@ -104,7 +104,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
@@ -134,7 +134,7 @@
                 $("#other_information_description").val("");
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -150,7 +150,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
@@ -180,7 +180,7 @@
                 $("#other_information_description").val("");
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -196,7 +196,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
@@ -226,7 +226,7 @@
                 $("#other_information_description").val("");
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -244,14 +244,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
                 $("#skill_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -269,14 +269,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
                 $("#recognition_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -294,14 +294,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
                 $("#membership_" + id).remove();
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 </script>

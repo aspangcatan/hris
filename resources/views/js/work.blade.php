@@ -60,7 +60,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
@@ -115,7 +115,7 @@
 
                 toastr.success(data.message, "Success");
             }).catch(err => {
-            console.log(err);
+            toastr.error(err, "Oops");
         });
     }
 
@@ -133,13 +133,12 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code == 500) {
-                    console.log(data.message);
-                    toastr.error("Something went wrong", "Oops");
+                    toastr.error(data.message, "Oops");
                     return;
                 }
 
                 $("#work_id_" + id).remove();
-                toastr.success(data.message, "Success");
+                toastr.success(err, "Success");
             }).catch(err => {
             console.log(err);
         });
