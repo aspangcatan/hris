@@ -47,6 +47,11 @@ class SalnController extends Controller
                 $spouse->user_id = Auth::id();
             }
 
+            if(!$familyBackground){
+                $familyBackground = new FamilyBackground;
+                $familyBackground->user_id = Auth::id();
+            }
+
             $declarant->position = $request->declarant_position;
             $declarant->agency = $request->declarant_agency;
             $declarant->office = $request->declarant_office;
