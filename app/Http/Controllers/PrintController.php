@@ -647,10 +647,10 @@ class PrintController extends Controller
             #DATA FROM TABLES
             $user = User::find($user_id, ['fname', 'mname', 'lname', 'suffix']);
             if ($user) {
-                $user->fname = strtoupper($user->fname);
-                $user->mname = strtoupper($user->mname);
-                $user->lname = strtoupper($user->lname);
-                $user->suffix = strtoupper($user->suffix);
+                $user->fname = mb_strtoupper($user->fname, 'UTF-8');
+                $user->mname = mb_strtoupper($user->mname, 'UTF-8');
+                $user->lname = mb_strtoupper($user->lname, 'UTF-8');
+                $user->suffix = mb_strtoupper($user->suffix, 'UTF-8');
             }
             $employee = Employee::where('user_id', $user_id)->get()->first();
             $residential = Address::where([['user_id', $user_id], ['address_type', 'Residential']])->get()->first();
