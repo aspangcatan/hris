@@ -289,6 +289,13 @@
                     <input type="date" class="form-control" id="saln_sworn_date" placeholder="">
                     <label>Subscribe and Sworn Date</label>
                 </div>
+                <div class="form-floating mb-3">
+                    <select class="form-control" id="spouse_signature">
+                        <option value="0">No</option>
+                        <option value="1" selected>Yes</option>
+                    </select>
+                    <label>Can the spouse able to sign?</label>
+                </div>
                 <div class="text-center mt-4">
                     <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
                     <button class="btn btn-lg btn-success" id="btn_confirm_print">PRINT</button>

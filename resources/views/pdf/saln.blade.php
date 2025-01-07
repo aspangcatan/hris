@@ -568,7 +568,7 @@
         <td colspan="2" class="border-bottom"></td>
         <td></td>
         <td colspan="2" class="border-bottom">
-            @if(isset($spouse->spouse_fname) && ($spouse->spouse_fname == "N/A" || $spouse->spouse_fname == "NA" || empty($spouse->spouse_fname)))
+            @if($spouse_signature == 0)
                 <div style="text-align: center">N/A</div>
             @endif
         </td>

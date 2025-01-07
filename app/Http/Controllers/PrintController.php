@@ -554,7 +554,8 @@ class PrintController extends Controller
                 'business_interest' => $request->business_interest,
                 'government_relatives' => $request->government_relatives,
                 'before_me' => $request->before_me,
-                'day_of' => $request->day_of
+                'day_of' => $request->day_of,
+                'spouse_signature'=>$request->spouse_signature
             ]);
 
             $pdf->set_paper('A4', 'landscape');

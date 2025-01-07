@@ -24,6 +24,7 @@
         $("#btn_confirm_print").click(function () {
             const filing_type = $("input[name='filing_type']:checked").val();
             const as_of_year = $("#as_of_year").val();
+            const spouse_signature = $("#spouse_signature").val();
 
             if (filing_type === undefined) {
                 alert("Please specify Filing type");
@@ -55,6 +56,7 @@
                 '&government_relatives=' + government_relatives_checkbox +
                 '&as_of_year=' + as_of_year +
                 '&before_me=' + before_me +
+                '&spouse_signature=' + spouse_signature +
                 '&day_of=' + day_of,
                 '_blank' // <- This is what makes it open in a new window.
             );
