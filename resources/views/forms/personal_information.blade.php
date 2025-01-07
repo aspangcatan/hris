@@ -79,13 +79,13 @@
     <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Height (m)</label>
         <div class="col-md-8 col-lg-9">
-            <input type="text" class="form-control" id="height">
+            <input type="number" class="form-control" id="height">
         </div>
     </div>
     <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Weight (kg)</label>
         <div class="col-md-8 col-lg-9">
-            <input type="text" class="form-control" id="weight">
+            <input type="number" class="form-control" id="weight">
         </div>
     </div>
     <div class="row mb-3">
