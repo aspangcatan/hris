@@ -34,4 +34,8 @@
         </td>
     </tr>
 </table>
+<div
+    style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
+    Page 2 of 3
+</div>
 
