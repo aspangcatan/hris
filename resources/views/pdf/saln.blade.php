@@ -424,7 +424,11 @@
 <div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
 <div
     style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
-    Page 1 of 2
+    @if(count($personal_properties_extended) < 1)
+        Page 1 of 2
+    @else
+        Page 1 of 3
+    @endif
 </div>
 
 @if(count($personal_properties_extended) > 0)
