@@ -413,6 +413,8 @@ class PrintController extends Controller
                 ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
             ];
 
+            $personal_properties_extended = [];
+
             $liabilities_array = [
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
@@ -431,12 +433,8 @@ class PrintController extends Controller
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
-                ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
-                ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
             ];
             $relatives_array = [
-                ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
-                ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
@@ -475,17 +473,29 @@ class PrintController extends Controller
                 $real_properties_subtotal += (double)$acquisition_cost;
             }
 
+            $extended_count = 0;
             $personal_properties_subtotal = 0;
+            $personal_properties_extended_subtotal = 0;
             $personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
             for ($i = 0; $i < count($personal_properties); $i++) {
                 $personal_properties_cost = str_replace(',', '', $personal_properties[$i]['acquisition_cost']);
-                $personal_properties_array[$i] = [
-                    'gadget' => $personal_properties[$i]['gadget'],
-                    'various_years' => $personal_properties[$i]['various_years'],
-                    'acquisition_cost' => number_format($personal_properties_cost, 2)
-                ];
+                if ($i > 6) {
+                    $personal_properties_extended[$extended_count++] = [
+                        'gadget' => $personal_properties[$i]['gadget'],
+                        'various_years' => $personal_properties[$i]['various_years'],
+                        'acquisition_cost' => number_format($personal_properties_cost, 2)
+                    ];
 
-                $personal_properties_subtotal += (double)$personal_properties_cost;
+                    $personal_properties_extended_subtotal += (double)$personal_properties_cost;
+
+                } else {
+                    $personal_properties_array[$i] = [
+                        'gadget' => $personal_properties[$i]['gadget'],
+                        'various_years' => $personal_properties[$i]['various_years'],
+                        'acquisition_cost' => number_format($personal_properties_cost, 2)
+                    ];
+                    $personal_properties_subtotal += (double)$personal_properties_cost;
+                }
             }
 
             $liabilities_total = 0;
@@ -543,7 +553,9 @@ class PrintController extends Controller
                 'real_properties' => $real_properties_array,
                 'real_properties_subtotal' => $real_properties_subtotal,
                 'personal_properties' => $personal_properties_array,
+                'personal_properties_extended' => $personal_properties_extended,
                 'personal_properties_subtotal' => $personal_properties_subtotal,
+                'personal_properties_extended_subtotal' => $personal_properties_extended_subtotal,
                 'liabilities' => $liabilities_array,
                 'liabilities_total' => $liabilities_total,
                 'business' => $business_array,
@@ -555,7 +567,7 @@ class PrintController extends Controller
                 'government_relatives' => $request->government_relatives,
                 'before_me' => $request->before_me,
                 'day_of' => $request->day_of,
-                'spouse_signature'=>$request->spouse_signature
+                'spouse_signature' => $request->spouse_signature
             ]);
 
             $pdf->set_paper('A4', 'landscape');
@@ -1009,7 +1021,7 @@ class PrintController extends Controller
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences, 'next_page_work' => $next_page_work_outer_array,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
-                'reference' => $references, 'pds_date' => $request->pds_date,'sworn_date' => $request->sworn_date]);
+                'reference' => $references, 'pds_date' => $request->pds_date, 'sworn_date' => $request->sworn_date]);
 
             $pdf->setPaper('A4', 'landscape');
 

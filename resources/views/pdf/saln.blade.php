@@ -381,14 +381,6 @@
             <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
-    <tr style="font-size: 13.33px">
-        <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">
-                {{ number_format($real_properties_subtotal,2) }}
-            </div>
-        </td>
-    </tr>
 </table>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
     b. Personal Properties*
@@ -400,13 +392,14 @@
         <td class="border-top border-right">AQUISITION<br/>COST/AMOUNT</td>
     </tr>
     @foreach($personal_properties as $key)
-        <tr class="border-top border-right border-left" style="font-size: 11px">
-            <td class="fw-bold border-right" style="width: 50%">{{ strtoupper($key['gadget']) }}</td>
-            <td class="fw-bold border-right" style="width: 36%">{{ strtoupper($key['various_years']) }}</td>
-            <td class="fw-bold" style="width: 14%">{{ strtoupper($key['acquisition_cost']) }}</td>
+        <tr class="border-top border-bottom border-right border-left" style="font-size: 11px;">
+            <td class="fw-bold border-right" style="width: 50%;">{{ strtoupper($key['gadget']) }}</td>
+            <td class="fw-bold border-right" style="width: 36%;">{{ strtoupper($key['various_years']) }}</td>
+            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
-    <tr class="border-top" style="font-size: 13.33px">
+
+    <tr class="border-top" style="font-size: 13.33px;">
         <td colspan="2" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -417,20 +410,33 @@
     <tr>
         <td colspan="3" style="color: white">N/A</td>
     </tr>
-    <tr style="font-size: 14px">
-        <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS (a+b):</td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
-                {{ number_format($real_properties_subtotal + $personal_properties_subtotal,2)   }}
-            </div>
-        </td>
-    </tr>
+    @if(count($personal_properties_extended) < 1)
+        <tr style="font-size: 14px">
+            <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS (a+b):</td>
+            <td style="text-align: left">
+                <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
+                    {{ number_format($real_properties_subtotal + $personal_properties_subtotal,2)   }}
+                </div>
+            </td>
+        </tr>
+    @endif
 </table>
 <div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
 <div
     style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
     Page 1 of 2
 </div>
+
+@if(count($personal_properties_extended) > 0)
+    <div style="page-break-before: always !important;"></div>
+    @include('pdf.saln_extree_sheet',
+        [
+            'personal_properties'=>$personal_properties_extended,
+            'sub_total' =>  number_format($personal_properties_extended_subtotal,2),
+            'total_assets'=> number_format($real_properties_subtotal + $personal_properties_subtotal + $personal_properties_extended_subtotal,2)
+        ])
+@endif
+
 <div style="page-break-before: always !important;"></div>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
     2. LIABILITIES*
@@ -645,10 +651,9 @@
     <span style="border-bottom: 1px solid black; display: inline-block; width: 150px; text-align: center;" id="day-of">
         {{ $day_of }}
     </span>,
-    affiant exhibiting to me the above-stated<br />
+    affiant exhibiting to me the above-stated<br/>
     government-issued identification card.
 </div>
-
 
 
 <div
