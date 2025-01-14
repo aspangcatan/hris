@@ -219,14 +219,14 @@
                 <table style="text-align: center" class="box">
                     <tr>
                         <td style="font-size: 13px">
-                            @if($spouse)
+                            @if(!empty($spouse->spouse_lname) && strtoupper($spouse->spouse_lname) !== 'N/A' && strtoupper($spouse->spouse_lname) !== 'NA')
                                 {{ strtoupper($spouse->spouse_lname) }}
                             @else
                                 N/A
                             @endif
                         </td>
                         <td>
-                            @if($spouse)
+                            @if(!empty($spouse->spouse_fname) && strtoupper($spouse->spouse_fname) !== 'N/A' && strtoupper($spouse->spouse_fname) !== 'NA')
                                 {{ strtoupper($spouse->spouse_fname) }}
                             @else
                                 N/A
@@ -245,7 +245,7 @@
             <td></td>
             <td class="fw-bold">POSITION:</td>
             <td class="border-bottom">
-                @if($spouse)
+                @if(!empty($spouse->position) && strtoupper($spouse->position) !== 'N/A' && strtoupper($spouse->position) !== 'NA')
                     {{ strtoupper($spouse->position) }}
                 @else
                     N/A
@@ -266,7 +266,7 @@
             <td></td>
             <td class="fw-bold">AGENCY/OFFICE:</td>
             <td class="border-bottom">
-                @if($spouse)
+                @if(!empty($spouse->agency) && strtoupper($spouse->agency) !== 'N/A' && strtoupper($spouse->agency) !== 'NA')
                     {{ strtoupper($spouse->agency) }}
                 @else
                     N/A
@@ -279,7 +279,7 @@
             <td></td>
             <td class="fw-bold">OFFICE ADDRESS:</td>
             <td class="border-bottom">
-                @if($spouse)
+                @if(!empty($spouse->office) && strtoupper($spouse->office) !== 'N/A' && strtoupper($spouse->office) !== 'NA')
                     {{ strtoupper($spouse->office) }}
                 @else
                     N/A
