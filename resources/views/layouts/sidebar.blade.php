@@ -31,7 +31,7 @@
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('dtr') }}">
                     <i class="bi bi-grid"></i>
-                    <span>Temporary DTR</span>
+                    <span>DTR Viewer</span>
                 </a>
             </li>
             <li class="nav-heading">HR Management</li>

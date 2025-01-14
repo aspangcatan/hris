@@ -24,11 +24,13 @@ Route::get('/logout', function () {
     return redirect()->route('login');
 })->name('logout');
 
+
 Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');
 
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
+Route::post('/dtr/store', [\App\Http\Controllers\DTRController::class, 'storeDtr'])->name('storeDtr');
 
 Route::group(['middleware' => 'auth'], function () {
     #PRINTING
@@ -55,7 +57,7 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('employee');
 
     Route::get('/dtr', function () {
-        return view('temp_dtr');
+        return view('dtr');
     })->name('dtr');
 
     Route::get('/leave', function () {
@@ -87,17 +89,18 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('review_leave');
 
 
-    Route::get('/get_credit_balance',[\App\Http\Controllers\LeaveController::class,'getCreditBalances'])->name('getCreditBalances');
-    Route::put('/update_base_credit',[\App\Http\Controllers\LeaveController::class,'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit');
-    Route::put('/update_used_credit',[\App\Http\Controllers\LeaveController::class,'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
+    Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
+    Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit');
+    Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
 
-    Route::get('/get/leave_types',[\App\Http\Controllers\LeaveController::class,'getLeaveTypes'])->name('getLeaveTypes');
-    Route::put('/update_leave_type',[\App\Http\Controllers\LeaveController::class,'insertUpdateLeaveType'])->name('insertUpdateLeaveType');
-    Route::delete('/delete/leave_type',[\App\Http\Controllers\LeaveController::class,'deleteLeaveType'])->name('deleteLeaveType');
+    Route::get('/get/leave_types', [\App\Http\Controllers\LeaveController::class, 'getLeaveTypes'])->name('getLeaveTypes');
+    Route::put('/update_leave_type', [\App\Http\Controllers\LeaveController::class, 'insertUpdateLeaveType'])->name('insertUpdateLeaveType');
+    Route::delete('/delete/leave_type', [\App\Http\Controllers\LeaveController::class, 'deleteLeaveType'])->name('deleteLeaveType');
 
-    Route::get('/dtr_logs',[\App\Http\Controllers\DTRController::class,'index'])->name('getDTRLogs');
-    Route::post('/store/dtr',[\App\Http\Controllers\DTRController::class,'store'])->name('storeDtr');
-    Route::delete('/delete/dtr',[\App\Http\Controllers\DTRController::class,'delete'])->name('deleteDtr');
+    Route::get('/dtr_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLogs'])->name('getDTRLogs');
+
+
+//    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE
     Route::get('/employee/get', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails'])->name('getEmployeeDetails');
@@ -198,4 +201,6 @@ Route::group(['middleware' => 'auth'], function () {
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
     Route::put('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
+#DTR LOGS
+
 });
