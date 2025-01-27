@@ -126,14 +126,17 @@
                         $("#raw_list").append("<tr><td class='text-center' colspan='3'>No record found</td></tr>");
                         return;
                     }
+
                     data.raw_data.forEach(it => {
                         const date = moment(it.created_at).format("MM/DD/YYYY");
                         const time = moment(it.created_at).format("hh:mm:ss A");
 
+                        const imageUrl = "/hris/storage/" + it.photo_path; // Assuming 'photo_path' is the column where the image file path is stored
+
                         let tr = `<tr>`;
                         tr += `<td>` + date + `</td>`;
                         tr += `<td>` + it.status + `</td>`;
-                        tr += `<td>` + time + `</td>`;
+                        tr += `<td><a href="${imageUrl}" target="_blank">${time}</a></td>`;
                         tr += "</tr>";
                         $("#raw_list").append(tr);
                     });

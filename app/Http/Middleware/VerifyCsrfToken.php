@@ -13,5 +13,7 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         //
+        '/dtr/store',
+        '/mobile/login',
     ];
 }

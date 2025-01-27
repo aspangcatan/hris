@@ -16,8 +16,9 @@ class CreateDtrLogsTable extends Migration
         Schema::create('dtr_logs', function (Blueprint $table) {
             $table->id();
             $table->integer('userid');
-            $table->string('status');
+            $table->string('status',10);
             $table->integer('type');
+            $table->string('photo_path',255);
             $table->timestamps();
         });
     }
