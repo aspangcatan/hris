@@ -13,6 +13,13 @@
                 <span>SALN</span>
             </a>
         </li>
+        <li class="nav-heading">DTR Management</li>
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('dtr') }}">
+                <i class="bi bi-grid"></i>
+                <span>DTR Viewer</span>
+            </a>
+        </li>
         @if(session('access_rights') == 'hr')
             <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
@@ -27,13 +34,7 @@
                     <span>Leave Application</span>
                 </a>
             </li>
-            <li class="nav-heading">DTR Management</li>
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="{{ route('dtr') }}">
-                    <i class="bi bi-grid"></i>
-                    <span>DTR Viewer</span>
-                </a>
-            </li>
+
             <li class="nav-heading">HR Management</li>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('employee') }}">
