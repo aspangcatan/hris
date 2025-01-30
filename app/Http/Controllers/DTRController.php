@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -227,6 +228,7 @@ class DTRController extends Controller
             $credentials = ['username' => $request->username, 'password' => $request->password];
             if (Auth::attempt($credentials)) {
                 //CHECK IF user android device is registered
+
                 if (!Auth::user()->android_id) {
                     return response()->json(['error' => 'Android device not yet registered'], 500);
                 }
@@ -235,9 +237,21 @@ class DTRController extends Controller
                     return response()->json(['error' => 'Android device not matched'], 500);
                 }
 
-                //TODO: return only id,fname,mname,lname
-                $user = Auth::user()->only(['id', 'fname', 'mname', 'lname']);
-                return response()->json($user);
+                $userData = DB::table('tdh_user.users as u')
+                    ->leftJoin('tdh_user.section as s', 'u.section', '=', 's.id')
+                    ->leftJoin('tdh_user.division as d', 'u.division', '=', 'd.id')
+                    ->where('u.id', Auth::id())
+                    ->select([
+                        'u.id',
+                        'u.fname',
+                        'u.mname',
+                        'u.lname',
+                        's.description as department',
+                        'd.description as division'
+                    ])
+                    ->first();
+
+                return response()->json($userData);
             } else {
                 return response()->json(['error' => "Invalid credentials"], 500);
             }
@@ -246,4 +260,69 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
+
+    //PRINT DTR
+    public function printDTR(Request $request)
+    {
+        try {
+            $month = $request->month;
+            $year = $request->year;
+
+            // Get the actual number of days in the specified month
+            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+
+            // Create a collection of all days in the given month
+            $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year) {
+                return [
+                    'day' => $day,
+                    'date_timein' => null,
+                    'date_timeout' => null,
+                ];
+            });
+
+            // Get all existing DTR logs for the specified month and year
+            $logs = DB::table('dtr_logs')
+                ->whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('userid', '=', Auth::id())
+                ->orderBy('created_at', 'ASC')
+                ->get();
+
+            // Map each day and attach DTR log data if available
+            $result = $days->map(function ($dayData) use ($logs, $month, $year) {
+                $currentDay = Carbon::createFromDate($year, $month, $dayData['day'])->toDateString();
+                $dayLogs = $logs->filter(function ($log) use ($currentDay) {
+                    return Carbon::parse($log->created_at)->toDateString() === $currentDay;
+                });
+
+                $timeInLog = $dayLogs->firstWhere('status', 'IN');
+                $timeOutLog = $dayLogs
+                    ->where('status', 'OUT')
+                    ->sortByDesc('created_at')
+                    ->first();
+
+                if ($timeInLog) {
+                    $dayData['date_timein'] = $timeInLog->created_at;
+                }
+
+                if ($timeOutLog) {
+                    $dayData['date_timeout'] = $timeOutLog->created_at;
+                }
+
+                return $dayData;
+            });
+
+            $pdf = Pdf::loadView('pdf.dtr', [
+                'date' => Carbon::now(),
+                'dtrs' => $result
+            ]);
+
+            $pdf->setPaper('A4', 'portrait'); // Ensure paper size is set correctly
+            return $pdf->stream('DTR.pdf', ["Attachment" => false]);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
 }

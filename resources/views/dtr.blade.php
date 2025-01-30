@@ -42,6 +42,7 @@
             </div>
 
             <!-- DTR Table -->
+            <button class="btn btn-success" onclick="printDTR()">PRINT DTR</button>
             <div class="row">
                 <div class="col-md-6">
                     <div class="table-responsive">
@@ -91,6 +92,16 @@
                 getDtrLogs();
             });
         });
+
+        function printDTR(){
+            const month = $("#month").val();
+            const year = $("#year").val();
+
+            window.open(
+                '{{ route('printDTR') }}?month=' + month + "&year=" + year,
+                '_blank' // <- This is what makes it open in a new window.
+            );
+        }
 
         async function getDtrLogs() {
             const month = $("#month").val();
