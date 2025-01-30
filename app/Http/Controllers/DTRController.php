@@ -238,16 +238,19 @@ class DTRController extends Controller
                 }
 
                 $userData = DB::table('tdh_user.users as u')
-                    ->leftJoin('tdh_user.section as s', 'u.section', '=', 's.id')
-                    ->leftJoin('tdh_user.division as d', 'u.division', '=', 'd.id')
+                    ->join('tdh_user.section as s', 'u.section', '=', 's.id')
+                    ->join('tdh_user.division as d', 'u.division', '=', 'd.id')
+                    ->join('tdh_user.designation as de', 'u.designation', '=', 'de.id')
                     ->where('u.id', Auth::id())
                     ->select([
                         'u.id',
                         'u.fname',
                         'u.mname',
                         'u.lname',
+                        'u.picture',
                         's.description as department',
-                        'd.description as division'
+                        'd.description as division',
+                        'de.description as designation'
                     ])
                     ->first();
 
