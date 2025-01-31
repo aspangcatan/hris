@@ -281,6 +281,7 @@ class DTRController extends Controller
                     'day' => $day,
                     'date_timein' => null,
                     'date_timeout' => null,
+                    'day_name' => Carbon::createFromDate($year, $month, $day)->format('l') // Get the day name (e.g., "Sunday")
                 ];
             });
 
@@ -306,26 +307,54 @@ class DTRController extends Controller
                     ->first();
 
                 if ($timeInLog) {
-                    $dayData['date_timein'] = $timeInLog->created_at;
+                    $dayData['date_timein'] = Carbon::parse($timeInLog->created_at)->format('H:i'); // 24-hour format
+                } else {
+                    $dayData['date_timein'] = $dayData['day_name']; // Use the day name if no time-in
                 }
 
                 if ($timeOutLog) {
-                    $dayData['date_timeout'] = $timeOutLog->created_at;
+                    $dayData['date_timeout'] = Carbon::parse($timeOutLog->created_at)->format('H:i'); // 24-hour format
+                } else {
+                    $dayData['date_timeout'] = $dayData['day_name']; // Use the day name if no time-out
                 }
 
                 return $dayData;
             });
 
+
+            $formattedDate = Carbon::createFromFormat('Y-m-d', "$year-$month-01")->format('F Y');
+
+            $in_charged = collect(self::getInCharged(Auth::user()->division))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
+
             $pdf = Pdf::loadView('pdf.dtr', [
-                'date' => Carbon::now(),
+                'name' => strtoupper(Auth::user()->fname . ' ' .
+                    (Auth::user()->mname ? strtoupper(substr(Auth::user()->mname, 0, 1)) . '.' : '') .
+                    ' ' . Auth::user()->lname),
+
+                'in_charged' => strtoupper(
+                    ($in_charged['fname'] ?? '') . ' ' .
+                    (!empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '') . ' ' .
+                    ($in_charged['lname'] ?? '') .
+                    (!empty($in_charged['suffix']) ? ' ' . strtoupper($in_charged['suffix']) : '') .
+                    (!empty($in_charged['title']) ? ', ' . strtoupper($in_charged['title']) : '')
+                ),
+                'date' => $formattedDate,
                 'dtrs' => $result
             ]);
 
-            $pdf->setPaper('A4', 'portrait'); // Ensure paper size is set correctly
+            $pdf->setPaper('A4', 'portrait')->setOption('margin', 0);
             return $pdf->stream('DTR.pdf', ["Attachment" => false]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
 
+
+    public function getInCharged($division)
+    {
+        return DB::table('tdh_user.division as d')
+            ->join('tdh_user.users as u', 'd.head', '=', 'u.id')
+            ->where('d.id', '=', $division)
+            ->first();
+    }
 }

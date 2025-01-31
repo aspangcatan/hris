@@ -42,7 +42,7 @@
             </div>
 
             <!-- DTR Table -->
-            <button class="btn btn-success d-none" onclick="printDTR()">PRINT DTR</button>
+            <button class="btn btn-success" onclick="printDTR()">PRINT DTR</button>
             <div class="row">
                 <div class="col-md-6">
                     <div class="table-responsive">

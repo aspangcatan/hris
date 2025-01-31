@@ -2,171 +2,286 @@
 <head>
     <title>DTR</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        html, body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        table {
+            margin: 0 auto;
+            width: 100%;
+            border-collapse: collapse; /* Prevent extra spacing between cells */
+            table-layout: fixed; /* Ensures equal column width */
+        }
+
+        .dtr-container {
+            padding: 5px;
+        }
+
+        .form-title {
+            text-align: right;
+            margin: 0;
+            font-size: 12.5px;
+        }
+
+        .form-header {
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .employee-name {
+            font-weight: bold;
+            font-size: 12px;
+            border-bottom: 1px solid black;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        table.logs td {
+            font-size: 10px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid black;
+            min-height: 10px;
+            padding-top: 3px;
+            padding-bottom: 3px;
+        }
+
+
+        table.logs td:first-child {
+            border-left: none;
+        }
+
+        table.logs td:last-child {
+            border-right: none;
+        }
+
+        table.logs tr.header {
+            font-weight: bold;
+        }
+
+    </style>
 </head>
 <body>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        font-size: 10px; /* Reduced font size for better fit */
-        margin: 0;
-        padding: 0;
-    }
-
-    .page {
-        page-break-after: always;
-        width: 100%;
-    }
-
-    .twin-container {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px; /* Adjusted gap between sections */
-        width: 100%;
-    }
-
-    .dtr-section {
-        width: 49%; /* Ensure sections fit side by side */
-        border: 1px solid #000;
-        padding: 5px; /* Reduced padding for compact layout */
-        box-sizing: border-box;
-    }
-
-    .dtr-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 5px;
-    }
-
-    .dtr-table th, .dtr-table td {
-        border: 1px solid black;
-        padding: 3px; /* Reduced cell padding */
-        text-align: center;
-        font-size: 9px; /* Slightly smaller text for table content */
-    }
-
-    .title {
-        text-align: center;
-        font-size: 12px; /* Adjusted font size for titles */
-        font-weight: bold;
-        margin: 5px 0;
-    }
-
-    .header-info {
-        margin-top: 5px;
-        font-size: 10px; /* Adjusted font size */
-        text-align: center;
-    }
-
-    .name {
-        text-align: center;
-        font-weight: bold;
-        text-transform: uppercase;
-        margin-top: 5px;
-    }
-
-    .certify-section {
-        margin-top: 10px;
-        text-align: center;
-        font-size: 9px; /* Reduced font size for certification text */
-    }
-
-    .certify-section p {
-        margin-bottom: 5px;
-    }
-</style>
-
-<div class="page">
-    <div class="twin-container">
-        <!-- First Section -->
-        <div class="dtr-section">
-            <div class="title">DAILY TIME RECORD</div>
-            <div class="name">Sample Name</div>
-            <div class="header-info">
-                For the month of: <strong>{{ date('F Y', strtotime($date)) }}</strong>
+<table>
+    <tr>
+        <!-- First Column -->
+        <td style="width: 46%; vertical-align: top; padding: 0;  border: 1px solid black;">
+            <div class="dtr-container">
+                <div class="form-title">Civil Service Form 48</div>
+                <table style="width: 100%">
+                    <tr>
+                        <td style="width: 10%">
+                            <img src="{{ url('img/logo.png') }}" width="75"/>
+                        </td>
+                        <td style="width: 13%"></td>
+                        <td style="vertical-align: top;width: 50%">
+                            <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
+                            <div class="employee-name">{{ $name }}</div>
+                            <div style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
+                        </td>
+                        <td></td>
+                    </tr>
+                </table>
+                <div style="margin-top: 10px">For the month of: <strong>{{ $date }}</strong></div>
+                <div style="margin-top: 5px;">
+                    <span>Official hours of arrival and</span>
+                    <span style="margin-left: 25px">Reg. days _____ AM _____ PM</span>
+                </div>
+                <div>
+                    <span>departure</span>
+                    <span style="margin-left: 108px">Saturdays _______________</span>
+                </div>
             </div>
-
-            <table class="dtr-table">
-                <thead>
-                <tr>
-                    <th>Day</th>
-                    <th>A.M. Arrival</th>
-                    <th>A.M. Departure</th>
-                    <th>P.M. Arrival</th>
-                    <th>P.M. Departure</th>
-                    <th>Undertime Hours</th>
-                    <th>Undertime Minutes</th>
+            <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
+                <tr class="header">
+                    <td style="width: 8%;border-left: none" rowspan="2">DAY</td>
+                    <td colspan="2">A.M</td>
+                    <td colspan="2">P.M</td>
+                    <td colspan="2">UNDERTIME</td>
                 </tr>
-                </thead>
-                <tbody>
+                <tr class="header">
+                    <td>Arrival</td>
+                    <td>Departure</td>
+                    <td>Arrival</td>
+                    <td>Departure</td>
+                    <td style="width: 13%">Hours</td>
+                    <td style="width: 13%">Minutes</td>
+                </tr>
                 @foreach($dtrs as $dtr)
                     <tr>
-                        <td>{{ $dtr['day'] }}</td>
-                        <td>{{ $dtr['date_timein'] ?? '-' }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ $dtr['date_timeout'] ?? '-' }}</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td style="font-weight: bold">{{ $dtr['day'] }}</td>
+                        <td style="font-size: 10px">{{ $dtr['date_timein'] }}</td>
+                        <td style="font-size: 10px">
+                            @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
+                                {{ $dtr['date_timein'] }}
+                            @endif
+                        </td>
+                        <td style="font-size: 10px">
+                            @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
+                                {{ $dtr['date_timein'] }}
+                            @endif
+                        </td>
+                        <td style="font-size: 10px">{{ $dtr['date_timeout'] }}</td>
+                        <td></td>
+                        <td></td>
                     </tr>
+
                 @endforeach
-                </tbody>
-            </table>
-
-            <div class="certify-section">
-                <p>
-                    I CERTIFY on my honor that the above is a true and correct report of the hours of work
-                    performed, recorded daily at the time of arrival and departure from the office.
-                </p>
-                <div class="name">SHEEESH</div>
-                <p>Verified as to the prescribed office hours</p>
-            </div>
-        </div>
-
-        <!-- Second Section -->
-        <div class="dtr-section">
-            <div class="title">DAILY TIME RECORD</div>
-            <div class="name">Sample Name</div>
-            <div class="header-info">
-                For the month of: <strong>{{ date('F Y', strtotime($date)) }}</strong>
-            </div>
-
-            <table class="dtr-table">
-                <thead>
                 <tr>
-                    <th>Day</th>
-                    <th>A.M. Arrival</th>
-                    <th>A.M. Departure</th>
-                    <th>P.M. Arrival</th>
-                    <th>P.M. Departure</th>
-                    <th>Undertime Hours</th>
-                    <th>Undertime Minutes</th>
+                    <td style="border: none" colspan="4"></td>
+                    <td style="border: none">TOTAL</td>
+                    <td></td>
+                    <td></td>
                 </tr>
-                </thead>
-                <tbody>
+            </table>
+            <div style="border-top: 1px solid black;padding: 6.5px">
+                <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
+                <div>of the hours of work performed, record which was made daily at the</div>
+                <div>time of arrival in and departure from office.</div>
+                <table style="margin-top: 20px">
+                    <tr>
+                        <td style="width: 18%"></td>
+                        <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center">
+                            {{ $name }}
+                        </td>
+                        <td style="width: 18%"></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td style="text-align: center">Verified as to the prescribed office hours</td>
+                        <td></td>
+                    </tr>
+
+                    <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
+                        <td></td>
+                        <td style="border-bottom: 1px solid black;text-align: center">
+                            {{ $in_charged }}
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td style="text-align: center">In Charged</td>
+                        <td></td>
+                    </tr>
+                </table>
+
+            </div>
+        </td>
+        <td style="width: 8%"></td>
+        <!-- Second Column -->
+        <td style="width: 46%; vertical-align: top; padding: 0;  border: 1px solid black;">
+            <div class="dtr-container">
+                <div class="form-title">Civil Service Form 48</div>
+                <table style="width: 100%">
+                    <tr>
+                        <td style="width: 10%">
+                            <img src="{{ url('img/logo.png') }}" width="75"/>
+                        </td>
+                        <td style="width: 13%"></td>
+                        <td style="vertical-align: top;width: 50%">
+                            <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
+                            <div class="employee-name">{{ $name }}</div>
+                            <div style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
+                        </td>
+                        <td></td>
+                    </tr>
+                </table>
+                <div style="margin-top: 10px">For the month of: <strong>{{ $date }}</strong></div>
+                <div style="margin-top: 5px;">
+                    <span>Official hours of arrival and</span>
+                    <span style="margin-left: 25px">Reg. days _____ AM _____ PM</span>
+                </div>
+                <div>
+                    <span>departure</span>
+                    <span style="margin-left: 108px">Saturdays _______________</span>
+                </div>
+            </div>
+            <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
+                <tr class="header">
+                    <td style="width: 8%;border-left: none" rowspan="2">DAY</td>
+                    <td colspan="2">A.M</td>
+                    <td colspan="2">P.M</td>
+                    <td colspan="2">UNDERTIME</td>
+                </tr>
+                <tr class="header">
+                    <td>Arrival</td>
+                    <td>Departure</td>
+                    <td>Arrival</td>
+                    <td>Departure</td>
+                    <td style="width: 13%">Hours</td>
+                    <td style="width: 13%">Minutes</td>
+                </tr>
                 @foreach($dtrs as $dtr)
                     <tr>
-                        <td>{{ $dtr['day'] }}</td>
-                        <td>{{ $dtr['date_timein'] ?? '-' }}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>{{ $dtr['date_timeout'] ?? '-' }}</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td style="font-weight: bold">{{ $dtr['day'] }}</td>
+                        <td style="font-size: 10px">{{ $dtr['date_timein'] }}</td>
+                        <td style="font-size: 10px">
+                            @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
+                                {{ $dtr['date_timein'] }}
+                            @endif
+                        </td>
+                        <td style="font-size: 10px">
+                            @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
+                                {{ $dtr['date_timein'] }}
+                            @endif
+                        </td>
+                        <td style="font-size: 10px">{{ $dtr['date_timeout'] }}</td>
+                        <td></td>
+                        <td></td>
                     </tr>
-                @endforeach
-                </tbody>
-            </table>
 
-            <div class="certify-section">
-                <p>
-                    I CERTIFY on my honor that the above is a true and correct report of the hours of work
-                    performed, recorded daily at the time of arrival and departure from the office.
-                </p>
-                <div class="name">SHEEESH</div>
-                <p>Verified as to the prescribed office hours</p>
+                @endforeach
+                <tr>
+                    <td style="border: none" colspan="4"></td>
+                    <td style="border: none">TOTAL</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+            <div style="border-top: 1px solid black;padding: 6.5px">
+                <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
+                <div>of the hours of work performed, record which was made daily at the</div>
+                <div>time of arrival in and departure from office.</div>
+                <table style="margin-top: 20px">
+                    <tr>
+                        <td style="width: 18%"></td>
+                        <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center">
+                            {{ $name }}
+                        </td>
+                        <td style="width: 18%"></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td style="text-align: center">Verified as to the prescribed office hours</td>
+                        <td></td>
+                    </tr>
+
+                    <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
+                        <td></td>
+                        <td style="border-bottom: 1px solid black;text-align: center">
+                            {{ $in_charged }}
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td style="text-align: center">In Charged</td>
+                        <td></td>
+                    </tr>
+                </table>
+
             </div>
-        </div>
-    </div>
-</div>
+        </td>
+    </tr>
+</table>
 </body>
 </html>
+

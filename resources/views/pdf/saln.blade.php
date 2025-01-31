@@ -381,6 +381,14 @@
             <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
+    <tr class="border-top" style="font-size: 13.33px;">
+        <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
+        <td style="text-align: left">
+            <div class="fw-bold border-bottom" style="padding-left:10px;">
+                {{ number_format($real_properties_subtotal,2) }}
+            </div>
+        </td>
+    </tr>
 </table>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
     b. Personal Properties*
