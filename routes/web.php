@@ -206,6 +206,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/password/update', [\App\Http\Controllers\UserController::class, 'changePassword'])->name('changePassword');
 #NEW LEAVE APPLICATION
     Route::get('/get_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'index'])->name('getLeaveApplications');
+    Route::get('/get_leave_applications_logs', [\App\Http\Controllers\LeaveApplicationController::class, 'getApplicationLogs'])->name('getApplicationLogs');
     Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'store'])->name('insertLeaveApplications');
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');

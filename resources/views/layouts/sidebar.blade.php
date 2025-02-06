@@ -34,6 +34,12 @@
                     <span>Leave Application</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('leave_approval') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Leave Approval</span>
+                </a>
+            </li>
 
             <li class="nav-heading">HR Management</li>
             <li class="nav-item">

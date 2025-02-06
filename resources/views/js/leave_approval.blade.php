@@ -80,14 +80,12 @@
                 $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
                 for (let i = 0; i < max_visible; i++) {
                     const it = data[i];
+                    console.log(it);
                     const tr = `
                     <tr id='leave_id_` + it.id + `'>
                         <td>` + it.lname + ", " + it.fname + " " + it.mname + `</td>
-                        <td>` + it.leave_type + `</td>
+                        <td>` + it.description + `</td>
                         <td>` + it.date_applied + `</td>
-                        <td class="d-none">` + it.date_section_approved + `</td>
-                        <td class="d-none">` + it.date_division_approved + `</td>
-                        <td class="d-none">` + it.date_hr_approved + `</td>
                         <td><span class="badge bg-secondary">` + it.status + `</span></td>
                         <td>
                             <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewStatus(` + it.id + `)">
@@ -103,37 +101,50 @@
     }
 
     function viewStatus(id) {
-        leave_id = id;
-        $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}"+id);
+        $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}" + id);
+        // Fetch leave logs
+        fetch('{{ route('getApplicationLogs') }}?id=' + id, {
+                method: "GET"
+            }
+        )
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("Error:", data.error);
+                    return;
+                }
 
-        const section = {
-            status: ($("#leave_id_" + id + " td:eq(3)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-            date_approved: ($("#leave_id_" + id + " td:eq(3)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(3)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        };
+                let section = data.logs.section || {remarks: "-", date_approved: "-"};
+                let division = data.logs.division || {remarks: "-", date_approved: "-"};
+                let hr = data.logs.hr || {remarks: "-", date_approved: "-"};
 
-        const division = {
-            status: ($("#leave_id_" + id + " td:eq(4)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-            date_approved: ($("#leave_id_" + id + " td:eq(4)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(4)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        };
+                $("#leave_status_logs tr:eq(0) td:eq(1)").html(getBadge(section.remarks));
+                $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
 
-        const hr = {
-            status: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-            date_approved: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(5)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        };
+                $("#leave_status_logs tr:eq(1) td:eq(1)").html(getBadge(division.remarks));
+                $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
 
-        $("#leave_status_logs tr:eq(0) td:eq(1)").html(section.status);
-        $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
+                $("#leave_status_logs tr:eq(2) td:eq(1)").html(getBadge(hr.remarks));
+                $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
 
-        $("#leave_status_logs tr:eq(1) td:eq(1)").html(division.status);
-        $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
-
-        $("#leave_status_logs tr:eq(2) td:eq(1)").html(hr.status);
-        $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
-        leave_modal.toggle();
+                leave_modal.toggle();
+            })
+            .catch(error => console.error("Fetch error:", error));
     }
 
     function clearForm() {
         $("#leave_form input").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
+    }
+
+
+    function getBadge(remarks) {
+        if (remarks === "Approved") {
+            return `<span class="badge bg-success px-2 py-1 rounded-pill">Approved</span>`;
+        } else if (remarks !== "-") {
+            return `<span class="badge bg-secondary px-2 py-1 rounded-pill">${remarks}</span>`;
+        } else {
+            return `<span class="badge bg-light text-dark px-2 py-1 rounded-pill">-</span>`;
+        }
     }
 </script>

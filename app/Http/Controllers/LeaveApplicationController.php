@@ -33,6 +33,16 @@ class LeaveApplicationController extends Controller
                 ]);
             }
 
+            //TODO: INSERT LEAVE LOGS SEND TO SECTION HEAD
+            DB::table("hris.leave_application_logs")->insert([
+                "leave_application_id" => $leave_id,
+                "origin" => Auth::id(),
+                "destination" => Auth::user()->section,
+                "type" => 1,//1 for Section Head
+                "remarks" => "For approval",
+                "created_at" => Carbon::now()
+            ]);
+
             return response()->json(['code' => 200, 'message' => 'Application filed successfully']);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
@@ -97,30 +107,48 @@ class LeaveApplicationController extends Controller
     public function getLeaveForApproval(Request $request)
     {
         try {
-            $model = DB::table('hris.leave_applications as l')
-                ->join('tdh_user.users as u', 'l.user_id', '=', 'u.id')
-                ->where(function ($query) {
-                    $role = session('access_rights');
-                    switch ($role) {
-                        case "SH":
-                            $query->where('section_id', Auth::user()->section);
-                            $query->whereNull('date_section_approved');
-                            break;
-                        case "DH":
-                            $query->where('division_id', Auth::user()->division);
-                            $query->whereNotNull('date_section_approved');
-                            $query->whereNull('date_division_approved');
-                            break;
-                        case "HRH":
-                            $query->whereNotNull('date_section_approved');
-                            $query->whereNotNull('date_division_approved');
-                            $query->whereNull('date_hr_approved');
-                            break;
-                    }
+            $accessRight = session('access_rights'); // Retrieve access rights from session
+            $leaveType = 2; // Default to Division Head (DH)
+
+            if ($accessRight === 'SH') {
+                $leaveType = 1; // Section Head (SH) should see Section level leaves
+            } elseif ($accessRight === 'HRH') {
+                $leaveType = 3; // HR Head (HRH) should see HR level leaves
+            }
+
+            $model = DB::table('hris.leave_application_logs as l')
+                ->join('hris.leave_applications as a', 'a.id', '=', 'l.leave_application_id')
+                ->join('tdh_user.users as u', 'l.origin', '=', 'u.id') // Origin is the user who applied
+                ->leftJoin('hris.leave_date_applied as d', 'a.id', '=', 'd.leave_application_id') // Join leave_date_applied
+                ->leftJoin('hris.leave_types as t', 'a.leave_id', '=', 't.id') // Assuming leave_types for description
+                ->where('l.destination', Auth::user()->section) // Only get leave requests for my section
+
+                // Ensure only the latest record per leave application is considered
+                ->whereRaw('l.id = (SELECT id FROM hris.leave_application_logs WHERE leave_application_id = l.leave_application_id ORDER BY id DESC LIMIT 1)')
+
+                // Exclude already approved leaves
+                ->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                        ->from('hris.leave_application_logs as sub_l')
+                        ->whereRaw('sub_l.leave_application_id = l.leave_application_id')
+                        ->where('sub_l.remarks', 'Approved');
                 })
+                ->where('l.type', $leaveType) // Ensure it's still in the current approval stage
+
+                ->groupBy('l.id', 'a.id', 'u.id', 'l.leave_application_id', 'l.origin', 'l.destination', 'l.type', 'a.status', 't.description', 'u.fname', 'u.mname', 'u.lname') // Added necessary fields
+                ->select(
+                    'l.id',
+                    'u.fname',
+                    'u.mname',
+                    'u.lname',
+                    't.description', // Renamed for clarity
+                    'a.status',
+                    DB::raw("GROUP_CONCAT(DISTINCT d.date_applied ORDER BY d.date_applied ASC SEPARATOR ', ') as date_applied") // Combining dates
+                )
                 ->skip($request->page * 10)
                 ->take(11)
-                ->get(['l.id', 'u.fname', 'u.mname', 'u.lname', 'l.leave_type', 'l.date_applied', 'l.status', 'l.date_section_approved', 'l.date_division_approved', 'l.date_hr_approved']);
+                ->get();
+
             return response()->json($model);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
@@ -151,10 +179,32 @@ class LeaveApplicationController extends Controller
         }
     }
 
-    public function forwardApplication($id, $origin, $destination)
+    //TODO: GET LEAVE APPLICATION LOGS WiTH THIS OUTPUT IN MIND
+    //SECTION    STATUS   REMARKS   DATE APPROVED
+    //DIVISION   STATUS   REMARKS   DATE APPROVED
+    //HR         STATUS   REMARKS   DATE APPROVED
+    public function getApplicationLogs(Request $request)
     {
         try {
-            DB::table();
+            // Fetch logs separately and categorize by type
+            $logs = DB::table('hris.leave_application_logs')
+                ->where('leave_application_id', '=', $request->id)
+                ->select('type', 'remarks', 'remarks', 'updated_at as date_approved')
+                ->orderBy('id', 'desc') // Ensure latest logs come first
+                ->get();
+
+            // Categorize logs
+            $section = $logs->where('type', 1)->first();
+            $division = $logs->where('type', 2)->first();
+            $hr = $logs->where('type', 3)->first();
+
+            return response()->json([
+                'logs' => [
+                    'section' => $section,
+                    'division' => $division,
+                    'hr' => $hr
+                ]
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
