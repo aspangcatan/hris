@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -344,6 +345,96 @@ class DTRController extends Controller
 
             $pdf->setPaper('A4', 'portrait')->setOption('margin', 0);
             return $pdf->stream('DTR.pdf', ["Attachment" => false]);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function printDivisionDTR(Request $request)
+    {
+        try {
+            $month = $request->month;
+            $year = $request->year;
+
+            // Fetch all employees in division 10
+            $employees = DB::table('tdh_user.users')
+                ->where('division', Auth::user()->division)
+                ->get();
+
+            $dtrData = [];
+
+            $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
+            $in_charged = collect(self::getInCharged(Auth::user()->division))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
+
+            $fname = $in_charged['fname'] ?? '';
+            $mname = !empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '';
+            $lname = $in_charged['lname'] ?? '';
+            $suffix = !empty($in_charged['suffix']) ? ' ' . strtoupper($in_charged['suffix']) : '';
+            $title = !empty($in_charged['title']) ? ', ' . strtoupper($in_charged['title']) : '';
+
+            $in_charged = strtoupper($fname . ' ' . $mname . ' ' . $lname . ' ' . $suffix . ' ' . $title);
+
+            foreach ($employees as $employee) {
+                // Get the actual number of days in the specified month
+                $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+
+                // Create a collection of all days in the given month
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year) {
+                    return [
+                        'day' => $day,
+                        'date_timein' => null,
+                        'date_timeout' => null,
+                        'day_name' => Carbon::createFromDate($year, $month, $day)->format('l')
+                    ];
+                });
+
+                // Get all existing DTR logs for the employee in the specified month and year
+                $logs = DB::table('dtr_logs')
+                    ->whereMonth('created_at', $month)
+                    ->whereYear('created_at', $year)
+                    ->where('userid', '=', $employee->id)
+                    ->orderBy('created_at', 'ASC')
+                    ->get();
+
+                // Map each day and attach DTR log data if available
+                $result = $days->map(function ($dayData) use ($logs, $month, $year) {
+                    $currentDay = Carbon::createFromDate($year, $month, $dayData['day'])->toDateString();
+                    $dayLogs = $logs->filter(function ($log) use ($currentDay) {
+                        return Carbon::parse($log->created_at)->toDateString() === $currentDay;
+                    });
+
+                    $timeInLog = $dayLogs->firstWhere('status', 'IN');
+                    $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+
+                    $dayData['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : $dayData['day_name'];
+                    $dayData['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : $dayData['day_name'];
+
+                    return $dayData;
+                });
+
+                $dtrData[] = [
+                    'name' => strtoupper($employee->fname . ' ' .
+                        ($employee->mname ? strtoupper(substr($employee->mname, 0, 1)) . '.' : '') .
+                        ' ' . $employee->lname),
+                    'in_charged' => $in_charged,
+                    'date' => $formattedDate,
+                    'dtrs' => $result
+                ];
+            }
+
+            $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
+                ->setPaper('A4', 'portrait')
+                ->setOption('margin-top', 5)
+                ->setOption('margin-bottom', 5)
+                ->setOption('margin-left', 5)
+                ->setOption('margin-right', 5)
+                ->setOption('enable-smart-shrinking', true) // Helps reduce memory usage
+                ->setOption('no-images', false) // Disable if no images are needed
+                ->setOption('disable-javascript', true) // Reduces processing
+                ->setOption('load-error-handling', 'ignore') // Ignore loading errors
+                ->setOption('dpi', 96); // Reduce DPI if high resolution is not needed
+
+            return $pdf->inline('DTR.pdf');
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
