@@ -32,13 +32,13 @@ Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'auth
 Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
 
 
-
 //MOBILE API
-
 Route::post('/mobile/login', [\App\Http\Controllers\DTRController::class, 'login'])->name('mobileLogin');
 Route::post('/dtr/store', [\App\Http\Controllers\DTRController::class, 'storeDtr'])->name('storeDtr');
 Route::get('/dtr_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLogs'])->name('getDTRLogs');
 Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLast3']);
+
+Route::get('/update_credit_balance', [\App\Http\Controllers\AutomationController::class, 'updateCreditBalance']);
 
 
 Route::group(['middleware' => 'auth'], function () {
@@ -93,6 +93,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('leave_management');
     })->name('leave_management');
 
+    Route::get('/schedule', function () {
+        return view('schedule');
+    })->name('schedule');
+
     Route::get('/review_leave', function () {
         return view('review_leave');
     })->name('review_leave');
@@ -105,8 +109,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get/leave_types', [\App\Http\Controllers\LeaveController::class, 'getLeaveTypes'])->name('getLeaveTypes');
     Route::put('/update_leave_type', [\App\Http\Controllers\LeaveController::class, 'insertUpdateLeaveType'])->name('insertUpdateLeaveType');
     Route::delete('/delete/leave_type', [\App\Http\Controllers\LeaveController::class, 'deleteLeaveType'])->name('deleteLeaveType');
-
-
 
 
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
@@ -213,5 +215,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
 #DTR LOGS
     Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDivisionDTR'])->name('printDTR');
-
+#SCHEDULE MASTERLIST
+    Route::get('/get_schedule_master_lists', [\App\Http\Controllers\ScheduleController::class, 'getScheduleMasterList'])->name('getScheduleMasterList');
+#SCHEDULE
+    Route::get('/get_employee_schedules',[\App\Http\Controllers\ScheduleController::class,'getSchedules'])->name('getSchedules');
+    Route::post('/insert_schedule',[\App\Http\Controllers\ScheduleController::class,'setEmployeeSchedule'])->name('setEmployeeSchedule');
 });

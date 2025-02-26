@@ -18,8 +18,7 @@
                     <tr>
                         <th>Description</th>
                         <th>Code</th>
-                        <th>Monthly Increment</th>
-                        <th>Credit deduction</th>
+                        <th>Daily points earned</th>
                         <th colspan="2" style="width: 4%"></th>
                     </tr>
                     </thead>

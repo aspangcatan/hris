@@ -13,7 +13,7 @@
                 data.forEach(it => {
                     let tr = "<tr id='" + it.id + "'>";
                     tr += "<td>" + it.description + "</td>"
-                    tr += "<td><input type='number' class='form-control text-center input-base' value='" + it.base_credit + "' /></td>"
+                    tr += "<td><input type='number' class='form-control text-center input-base' value='" + it.based_credit + "' /></td>"
                     tr += "<td><input type='number' class='form-control text-center input-used' value='" + it.used_credit + "' /></td>"
                     tr += "<td><input type='number' class='form-control text-center' value='" + it.balance + "'  disabled/></td>"
                     tr += "</tr>";

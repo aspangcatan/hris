@@ -29,6 +29,8 @@
     <link href="css/selectize.default.min.css?v={{ date('ymdhis') }}" rel="stylesheet">
     <link href="css/progress.css?v={{ date('ymdhis') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha512-mSYUmp1HYZDFaVKK//63EcZq4iFWFjxSL+Z3T/aCt4IO9Cejm03q3NKKYN6pFQzY0SBOr8h+eCIAZHPXcpZaNw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
     <!-- =======================================================
     * Template Name: NiceAdmin - v2.5.0
     * Template URL: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/

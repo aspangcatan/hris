@@ -60,8 +60,7 @@ class LeaveController extends Controller
                     'leave_id' => $request->leave_id,
                 ],
                 [
-                    'base_credit' => $request->base_credit,
-                    'user_leave' => $request->employee_id . '-' . $request->leave_id
+                    'based_credit' => $request->based_credit
                 ]
             );
 
@@ -81,7 +80,6 @@ class LeaveController extends Controller
                 ],
                 [
                     'used_credit' => $request->used_credit,
-                    'user_leave' => $request->employee_id . '-' . $request->leave_id
                 ]
             );
 
@@ -94,51 +92,41 @@ class LeaveController extends Controller
     public function getCreditBalances(Request $request)
     {
         try {
-            #SHOW CREDIT BALANCE
-            #GET ALL LEAVE TYPES AND RETURN THEIR CREDIT BALANCES BY EMPLOYEE
+            // Get the user ID from request or use the authenticated user
+            $userid = $request->has('id') ? $request->id : Auth::id();
 
-            $userid = ($request->has('id')) ? $request->id : Auth::id();
-            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code', 'monthly_increment']);
+            // Fetch all leave types
+            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code', 'daily_points_earned']);
+
+            // Initialize leave credits array
             $leave_credits = [];
-            $user_info = DB::table('hris.employees')->where('user_id', '=', $userid)->get(['date_hired'])->first();
-            if (!$user_info->date_hired) {
-                return response()->json(['error' => 'Date hired is not set, please ask system administrator'], 500);
-            }
-
-            $date_hired = Carbon::parse($user_info->date_hired);
-            $lastDayOfMonth = Carbon::now()->endOfMonth();
 
             foreach ($leave_types as $type) {
                 $leave_id = $type->id;
-                $base_credit = 0.00;
+                $based_credit = 0.00;
                 $used_credit = 0.00;
+
+                // Get the leave credit balance for the user
                 $credit = DB::table('leave_credits')
-                    ->where(function ($query) use ($leave_id, $userid) {
-                        $query->where('user_id', '=', $userid);
-                        $query->where('leave_id', '=', $leave_id);
-                    })
+                    ->where('user_id', '=', $userid)
+                    ->where('leave_id', '=', $leave_id)
                     ->first();
 
                 if ($credit) {
-                    $base_credit = $credit->base_credit;
+                    $based_credit = $credit->based_credit;
                     $used_credit = $credit->used_credit;
                 }
 
-                $MONTH_DIFF = Carbon::now()->diffInMonths($date_hired);
+                // Compute balance directly from database values
+                $computed_balance = $based_credit - $used_credit;
 
-                #ONLY ADD INCREMENT WHEN CURRENT DATE IS LAST DAY OF THE MONTH
-                if (Carbon::now()->day !== $lastDayOfMonth->day) {
-                    $MONTH_DIFF--;
-                }
-
-                $computed_balance = (($MONTH_DIFF * $type->monthly_increment) + ($base_credit - $used_credit));
                 $leave_credits[] = [
                     'id' => $type->id,
                     'description' => $type->description,
-                    'base_credit' => $base_credit !== null ? number_format($base_credit, 2) : '0.00',
-                    'used_credit' => $used_credit !== null ? number_format($used_credit, 2) : '0.00',
+                    'based_credit' => number_format($based_credit, 2),
+                    'used_credit' => number_format($used_credit, 2),
                     'code' => $type->code,
-                    'balance' => $computed_balance !== null ? number_format($computed_balance, 2) : '0.00'
+                    'balance' => number_format($computed_balance, 2)
                 ];
             }
 
@@ -148,6 +136,7 @@ class LeaveController extends Controller
         }
     }
 
+
     public function insertUpdateLeaveType(Request $request)
     {
         try {
@@ -155,8 +144,7 @@ class LeaveController extends Controller
                 'description' => $request->description,
             ], [
                 'code' => $request->code,
-                'monthly_increment' => $request->monthly_increment,
-                'credit_deduction' => $request->credit_deduction,
+                'daily_points_earned' => $request->daily_points_earned,
             ]);
             return response()->json(['message' => 'Leave type successfully stored']);
         } catch (\Exception $exception) {

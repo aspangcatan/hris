@@ -86,14 +86,14 @@
                     body: JSON.stringify({
                         employee_id: employee_id,
                         leave_id: leave_id,
-                        base_credit: value
+                        based_credit: value
                     })
                 });
 
                 try {
                     const data = await response.json();
                     if (response.ok) {
-                        toastr.success(data.message);
+                        toastr.success(data.message,"Information");
                     } else {
                         toastr.error(data.error || 'Something went wrong, please try again');
                     }

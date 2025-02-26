@@ -25,7 +25,7 @@
         $("#btn_add_leave").click(function () {
             $("#description").val("");
             $("#code").val("");
-            $("#monthly_increment").val("");
+            $("#daily_points_earned").val("");
             $("#credit_deduction").val("");
             $("#leave_type_modal").modal("show");
         });
@@ -36,14 +36,12 @@
     async function store() {
         const description = $("#description").val();
         const code = $("#code").val();
-        const monthly_increment = $("#monthly_increment").val();
-        const credit_deduction = $("#credit_deduction").val();
+        const daily_points_earned = $("#daily_points_earned").val();
 
         const params = {
             description: description,
             code: code,
-            monthly_increment: monthly_increment,
-            credit_deduction: credit_deduction
+            daily_points_earned: daily_points_earned
         }
 
         const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
@@ -72,13 +70,11 @@
     function editLeave(id) {
         const description = $("#leave_" + id + " td:eq(0)").text();
         const code = $("#leave_" + id + " td:eq(1)").text();
-        const monthly_increment = $("#leave_" + id + " td:eq(2)").text();
-        const credit_deduction = $("#leave_" + id + " td:eq(3)").text();
+        const daily_points_earned = $("#leave_" + id + " td:eq(2)").text();
 
         $("#description").val(description);
         $("#code").val(code);
-        $("#monthly_increment").val(monthly_increment);
-        $("#credit_deduction").val(credit_deduction);
+        $("#daily_points_earned").val(daily_points_earned);
         $("#leave_type_modal").modal("show");
     }
 
@@ -121,8 +117,7 @@
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
                         <td>` + it.code + `</td>
-                        <td>` + it.monthly_increment + `</td>
-                        <td>` + it.credit_deduction + `</td>
+                        <td>` + it.daily_points_earned + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>
