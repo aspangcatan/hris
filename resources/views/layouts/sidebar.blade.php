@@ -34,6 +34,13 @@
                     <span>Position Applied</span>
                 </a>
             </li>
+            <li class="nav-heading">Credits Management</li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('credit_management') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Credits Management</span>
+                </a>
+            </li>
             <li class="nav-heading">Leave Management</li>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('leave_application') }}">

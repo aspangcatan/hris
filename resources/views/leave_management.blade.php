@@ -18,7 +18,9 @@
                     <tr>
                         <th>Description</th>
                         <th>Code</th>
-                        <th>Daily points earned</th>
+                        <th>Monthly points earned</th>
+                        <th>Deduction per minute(s)</th>
+                        <th>Dedcution per day(s)</th>
                         <th colspan="2" style="width: 4%"></th>
                     </tr>
                     </thead>

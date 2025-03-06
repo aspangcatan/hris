@@ -38,7 +38,7 @@ Route::post('/dtr/store', [\App\Http\Controllers\DTRController::class, 'storeDtr
 Route::get('/dtr_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLogs'])->name('getDTRLogs');
 Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLast3']);
 
-Route::get('/update_credit_balance', [\App\Http\Controllers\AutomationController::class, 'updateCreditBalance']);
+Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
 
 Route::group(['middleware' => 'auth'], function () {
@@ -88,6 +88,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/promotion_applied', function () {
         return view('promotion_work_applied');
     })->name('promotion_applied');
+
+    Route::get('/credit_management', function () {
+        return view('credit_management');
+    })->name('credit_management');
 
     Route::get('/leave_management', function () {
         return view('leave_management');
@@ -220,4 +224,6 @@ Route::group(['middleware' => 'auth'], function () {
 #SCHEDULE
     Route::get('/get_employee_schedules',[\App\Http\Controllers\ScheduleController::class,'getSchedules'])->name('getSchedules');
     Route::post('/insert_schedule',[\App\Http\Controllers\ScheduleController::class,'setEmployeeSchedule'])->name('setEmployeeSchedule');
+#CREDIT EARNED POINTS
+    Route::get('/get_credit_earned_logs',[\App\Http\Controllers\CreditController::class,'getCreditEarned'])->name('getCreditEarned');
 });

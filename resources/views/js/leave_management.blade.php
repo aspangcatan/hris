@@ -25,8 +25,8 @@
         $("#btn_add_leave").click(function () {
             $("#description").val("");
             $("#code").val("");
-            $("#daily_points_earned").val("");
-            $("#credit_deduction").val("");
+            $("#monthly_points_earned").val("");
+            $("#minute_deduction").val("");
             $("#leave_type_modal").modal("show");
         });
 
@@ -36,12 +36,16 @@
     async function store() {
         const description = $("#description").val();
         const code = $("#code").val();
-        const daily_points_earned = $("#daily_points_earned").val();
+        const monthly_points_earned = $("#monthly_points_earned").val();
+        const minute_deduction = $("#minute_deduction").val();
+        const day_deduction = $("#day_deduction").val();
 
         const params = {
             description: description,
             code: code,
-            daily_points_earned: daily_points_earned
+            monthly_points_earned: monthly_points_earned,
+            minute_deduction: minute_deduction,
+            day_deduction: day_deduction
         }
 
         const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
@@ -70,11 +74,16 @@
     function editLeave(id) {
         const description = $("#leave_" + id + " td:eq(0)").text();
         const code = $("#leave_" + id + " td:eq(1)").text();
-        const daily_points_earned = $("#leave_" + id + " td:eq(2)").text();
+        const monthly_points_earned = $("#leave_" + id + " td:eq(2)").text();
+        const minute_deduction = $("#leave_" + id + " td:eq(3)").text();
+        const day_deduction = $("#leave_" + id + " td:eq(4)").text();
+
 
         $("#description").val(description);
         $("#code").val(code);
-        $("#daily_points_earned").val(daily_points_earned);
+        $("#monthly_points_earned").val(monthly_points_earned);
+        $("#minute_deduction").val(minute_deduction);
+        $("#day_deduction").val(day_deduction);
         $("#leave_type_modal").modal("show");
     }
 
@@ -117,7 +126,9 @@
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
                         <td>` + it.code + `</td>
-                        <td>` + it.daily_points_earned + `</td>
+                        <td>` + it.monthly_points_earned + `</td>
+                        <td>` + it.minute_deduction + `</td>
+                        <td>` + it.day_deduction + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>
@@ -139,121 +150,5 @@
         } catch (error) {
             toastr.error(error, "Ooops");
         }
-    }
-
-    function saveBalances(id) {
-        let is_valid = true;
-        const vl_bal = $("#balance_id_" + id + " td:eq(1) input").val();
-        const sl_bal = $("#balance_id_" + id + " td:eq(2) input").val();
-        const cto_bal = $("#balance_id_" + id + " td:eq(3) input").val();
-        const fl_bal = $("#balance_id_" + id + " td:eq(4) input").val();
-        const spl_bal = $("#balance_id_" + id + " td:eq(5) input").val();
-
-        if (vl_bal == "") {
-            toastr.error("Please fill in vl balance", "Ooops");
-            is_valid = false;
-        }
-
-        if (sl_bal == "") {
-            toastr.error("Please fill in sl balance", "Ooops");
-            is_valid = false;
-        }
-
-        if (cto_bal == "") {
-            toastr.error("Please fill in cto balance", "Ooops");
-            is_valid = false;
-        }
-
-        if (fl_bal == "") {
-            toastr.error("Please fill in fl balance", "Ooops");
-            is_valid = false;
-        }
-
-        if (spl_bal == "") {
-            toastr.error("Please fill in spl balance", "Ooops");
-            is_valid = false;
-        }
-
-        if (!is_valid) return;
-
-        const params = {
-            user_id: id,
-            vl_bal: vl_bal,
-            sl_bal: sl_bal,
-            cto_bal: cto_bal,
-            fl_bal: fl_bal,
-            spl_bal: spl_bal
-        }
-
-        console.log(params);
-        fetch('{{ route('insertUpdateCredits') }}', {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            body: JSON.stringify(params)
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.code == 500) {
-                    toastr.error(data.message, "Ooops");
-                    return;
-                }
-
-                toastr.success(data.message, "Information");
-            }).catch(err => {
-            toastr.error("Something went wrong, please try again", "Ooops");
-            console.log(err);
-        });
-    }
-
-    function exportToCsv() {
-        const header = ["EMPLOYEE", "VL BALANCE", "SL BALANCE", "CTO BALANCE", "FL BALANCE", "SPL BALANCE"];
-        fetch('{{ route('getAllBalances') }}', {
-            method: "GET"
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.code == 500) {
-                    toastr.error(data.message, "Ooops");
-                    return;
-                }
-
-                const Results = [header];
-                data.results.forEach(it => {
-                    const my_array = [];
-                    const vl_bal = (it.vl_bal) ? it.vl_bal : "0.00";
-                    const sl_bal = (it.sl_bal) ? it.sl_bal : "0.00";
-                    const cto_bal = (it.cto_bal) ? it.cto_bal : "0.00";
-                    const fl_bal = (it.fl_bal) ? it.fl_bal : "0.00";
-                    const spl_bal = (it.spl_bal) ? it.spl_bal : "0.00";
-
-                    my_array.push(it.fname + " " + it.mname + " " + it.lname);
-                    my_array.push(vl_bal);
-                    my_array.push(sl_bal);
-                    my_array.push(cto_bal);
-                    my_array.push(fl_bal);
-                    my_array.push(spl_bal);
-                    Results.push(my_array);
-                });
-
-
-                var CsvString = "";
-                Results.forEach(function (RowItem, RowIndex) {
-                    RowItem.forEach(function (ColItem, ColIndex) {
-                        CsvString += ColItem + ",";
-                    });
-                    CsvString += "\r\n";
-                });
-                CsvString = "data:application/csv," + encodeURIComponent(CsvString);
-                var x = document.createElement("A");
-                x.setAttribute("href", CsvString);
-                x.setAttribute("download", "Credit balances.csv");
-                document.body.appendChild(x);
-                x.click();
-            }).catch(err => {
-            console.log(err);
-        });
     }
 </script>

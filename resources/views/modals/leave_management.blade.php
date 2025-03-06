@@ -19,8 +19,16 @@
                         <label>Code</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="daily_points_earned" placeholder="">
-                        <label>Daily points earned</label>
+                        <input type="number" class="form-control" id="monthly_points_earned" placeholder="">
+                        <label>Monthly points earned</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="number" class="form-control" id="minute_deduction" placeholder="">
+                        <label>Deduction per minute(s)</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="number" class="form-control" id="day_deduction" placeholder="">
+                        <label>Deduction per day(s)</label>
                     </div>
                 </div>
                 <div class="text-center mt-4">

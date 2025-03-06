@@ -96,7 +96,7 @@ class LeaveController extends Controller
             $userid = $request->has('id') ? $request->id : Auth::id();
 
             // Fetch all leave types
-            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code', 'daily_points_earned']);
+            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code', 'monthly_points_earned']);
 
             // Initialize leave credits array
             $leave_credits = [];
@@ -144,7 +144,9 @@ class LeaveController extends Controller
                 'description' => $request->description,
             ], [
                 'code' => $request->code,
-                'daily_points_earned' => $request->daily_points_earned,
+                'monthly_points_earned' => $request->monthly_points_earned,
+                'minute_deduction' => $request->minute_deduction,
+                'day_deduction' => $request->day_deduction,
             ]);
             return response()->json(['message' => 'Leave type successfully stored']);
         } catch (\Exception $exception) {
