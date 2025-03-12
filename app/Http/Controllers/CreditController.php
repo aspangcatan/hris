@@ -27,161 +27,163 @@ class CreditController extends Controller
     public function updateCreditBalance(Request $request)
     {
         try {
-            $shift_start = "08:00:00";
-            $shift_end = "17:00:00";
             $previousMonth = Carbon::now()->subMonth();
             $month = $previousMonth->month;
             $year = $previousMonth->year;
 
-            // Get all workdays for the month (weekdays only)
+            // Get all workdays (you can add holidays filter here if needed)
             $workdays = $this->getWorkDays($year, $month);
-            $holidays = []; // You can enhance this to fetch from DB if needed
-            $workdays = array_diff($workdays, $holidays);
 
-            // Get all employees with logs for the month
-            $employees = DB::table('hris.dtr_logs')
-                ->select('userid')
-                ->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$previousMonth->format('Y-m')])
-                ->groupBy('userid')
+            $employees = DB::table('hris.schedules')
+                ->select('employee_id')
+                ->whereMonth('schedule_date', $month)
+                ->whereYear('schedule_date', $year)
+                ->groupBy('employee_id')
                 ->get();
 
             foreach ($employees as $employee) {
+                $userId = $employee->employee_id;
+
                 $totalLateMinutes = 0;
                 $totalUndertimeMinutes = 0;
+                $totalAbsentDays = 0;
 
-                // All days with logs (actual workdays for this employee)
-                $loggedDays = DB::table('hris.dtr_logs')
-                    ->where('userid', $employee->userid)
-                    ->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$previousMonth->format('Y-m')])
-                    ->select(DB::raw('DATE(created_at) as work_date'))
-                    ->distinct()
-                    ->pluck('work_date')
-                    ->toArray();
+                // Get all plotted schedules for this employee for the month
+                $plottedSchedules = DB::table('hris.schedules as s')
+                    ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
+                    ->where('s.employee_id', $userId)
+                    ->whereMonth('s.schedule_date', $month)
+                    ->whereYear('s.schedule_date', $year)
+                    ->select('s.schedule_date', 'sml.time_in', 'sml.time_out')
+                    ->get();
 
-                $hoDays = []; // Add logic for holidays/official business if needed
-                $presentOrExcusedDays = array_unique(array_merge($loggedDays, $hoDays));
-                $absentDays = array_diff($workdays, $presentOrExcusedDays);
-                $totalAbsents = count($absentDays);
+                $scheduleMap = [];
+                foreach ($plottedSchedules as $schedule) {
+                    $scheduleMap[$schedule->schedule_date] = [
+                        'time_in' => $schedule->time_in,
+                        'time_out' => $schedule->time_out
+                    ];
+                }
 
-                // Calculate total late and undertime minutes
-                foreach ($loggedDays as $work_date) {
-                    $first_in = DB::table('hris.dtr_logs')
-                        ->where('userid', $employee->userid)
-                        ->whereRaw('DATE(created_at) = ?', [$work_date])
+                // Check each plotted schedule date — was it attended?
+                foreach ($scheduleMap as $date => $shift) {
+                    $firstIn = DB::table('hris.dtr_logs')
+                        ->where('userid', $userId)
+                        ->whereDate('created_at', $date)
                         ->where('status', 'IN')
                         ->orderBy('created_at', 'asc')
                         ->value('created_at');
 
-                    $last_out = DB::table('hris.dtr_logs')
-                        ->where('userid', $employee->userid)
-                        ->whereRaw('DATE(created_at) = ?', [$work_date])
+                    $lastOut = DB::table('hris.dtr_logs')
+                        ->where('userid', $userId)
+                        ->whereDate('created_at', $date)
                         ->where('status', 'OUT')
                         ->orderBy('created_at', 'desc')
                         ->value('created_at');
 
-                    $first_in_time = $first_in ? Carbon::parse($first_in) : null;
-                    $last_out_time = $last_out ? Carbon::parse($last_out) : null;
-
-                    $expected_in_time = Carbon::parse("$work_date $shift_start");
-                    if ($first_in_time->greaterThan($expected_in_time)) {
-                        $late_minutes = $expected_in_time->diffInMinutes($first_in_time);
-                        $totalLateMinutes += $late_minutes;
+                    if (!$firstIn && !$lastOut) {
+                        // No logs at all for a scheduled day — ABSENT
+                        $totalAbsentDays++;
+                        continue;
                     }
 
+                    $expectedIn = Carbon::parse("$date {$shift['time_in']}")->startOfMinute();
+                    $expectedOut = Carbon::parse("$date {$shift['time_out']}")->startOfMinute();
 
-                    $expected_out_time = Carbon::parse("$work_date $shift_end");
-                    if ($last_out_time->lessThan($expected_out_time)) {
-                        $undertime_minutes = $last_out_time->diffInMinutes($expected_out_time);
-                        $totalUndertimeMinutes += $undertime_minutes;
+                    if ($firstIn) {
+                        $actualIn = Carbon::parse($firstIn)->startOfMinute();
+
+                        if ($actualIn->greaterThan($expectedIn)) {
+                            $lateMinutes = $expectedIn->diffInMinutes($actualIn); // Minutes only, no seconds
+                            $totalLateMinutes += $lateMinutes;
+                        }
+                    }
+
+                    if ($lastOut) {
+                        $actualOut = Carbon::parse($lastOut)->startOfMinute();
+
+                        if ($actualOut->lessThan($expectedOut)) {
+                            $undertimeMinutes = $actualOut->diffInMinutes($expectedOut); // Minutes only, no seconds
+                            $totalUndertimeMinutes += $undertimeMinutes;
+                        }
                     }
                 }
 
-                // Process leave types
+                // No-schedule days are auto-absent (workdays without plotted schedules)
+                $plottedDays = array_keys($scheduleMap);
+                $noScheduleDays = array_diff($workdays, $plottedDays);
+                $totalAbsentDays += count($noScheduleDays); // Automatically absent for days with no plotted schedule
+
+                // Process leave types (earning & deductions)
                 $leaveTypes = DB::table('hris.leave_types')
                     ->where('monthly_points_earned', '>', 0)
                     ->get();
 
                 foreach ($leaveTypes as $leaveType) {
-                    $minute_deduction = $leaveType->minute_deduction ?? 0;
-                    $day_deduction = $leaveType->day_deduction ?? 0; // Get day_deduction from hris.leave_types
-
-                    // Late and undertime deductions (use normal multiplication here)
-                    $totalLateAndUndertimeDeduction = ($totalLateMinutes + $totalUndertimeMinutes) * $minute_deduction;
-
-                    // Absence deductions (use bcmul for precision)
-                    $totalAbsenceDeductions = bcmul($totalAbsents, $day_deduction, 6);
+                    $minuteDeduction = $leaveType->minute_deduction ?? 0;
+                    $dayDeduction = $leaveType->day_deduction ?? 0;
 
                     // Total deductions
-                    $totalDeductedPoints = $totalLateAndUndertimeDeduction + $totalAbsenceDeductions;
+                    $lateUndertimeDeductions = ($totalLateMinutes + $totalUndertimeMinutes) * $minuteDeduction;
+                    $absentDeductions = $totalAbsentDays * $dayDeduction;
+                    $totalDeduction = $lateUndertimeDeductions + $absentDeductions;
 
-                    // Final earned credit (ensure minimum 0)
-                    $earned_credit = max(0, $leaveType->monthly_points_earned - $totalDeductedPoints);
+                    // Earned credit after deduction
+                    $earnedCredit = max(0, $leaveType->monthly_points_earned - $totalDeduction);
 
                     // Check if already processed
                     $alreadyProcessed = DB::table('hris.leave_credits')
-                        ->where('user_id', $employee->userid)
+                        ->where('user_id', $userId)
                         ->where('leave_id', $leaveType->id)
                         ->where('last_updated_month', $previousMonth->format('Y-m'))
                         ->exists();
 
                     if (!$alreadyProcessed) {
-                        // Update or insert leave credits
-                        $creditRecord = DB::table('hris.leave_credits')
-                            ->where('user_id', $employee->userid)
+                        $credit = DB::table('hris.leave_credits')
+                            ->where('user_id', $userId)
                             ->where('leave_id', $leaveType->id)
                             ->first();
 
-                        if ($creditRecord) {
+                        if ($credit) {
                             DB::table('hris.leave_credits')
-                                ->where('id', $creditRecord->id)
+                                ->where('id', $credit->id)
                                 ->update([
-                                    'based_credit' => $creditRecord->based_credit + $earned_credit,
+                                    'based_credit' => $credit->based_credit + $earnedCredit,
                                     'last_updated_month' => $previousMonth->format('Y-m')
                                 ]);
                         } else {
                             DB::table('hris.leave_credits')->insert([
-                                'user_id' => $employee->userid,
+                                'user_id' => $userId,
                                 'leave_id' => $leaveType->id,
-                                'based_credit' => $earned_credit,
+                                'based_credit' => $earnedCredit,
                                 'used_credit' => 0,
                                 'last_updated_month' => $previousMonth->format('Y-m')
                             ]);
                         }
 
-                        // Log earned points and deducted points
-                        $alreadyLogged = DB::table('credit_earned_logs')
-                            ->where('user_id', $employee->userid)
-                            ->where('leave_type_id', $leaveType->id)
-                            ->where('month', $month)
-                            ->where('year', $year)
-                            ->exists();
-
-                        if (!$alreadyLogged) {
-                            DB::table('credit_earned_logs')->insert([
-                                'user_id' => $employee->userid,
-                                'month' => $month,
-                                'year' => $year,
-                                'total_late_minutes' => $totalLateMinutes,
-                                'total_undertime_minutes' => $totalUndertimeMinutes,
-                                'leave_type_id' => $leaveType->id,
-                                'earned_points' => $leaveType->monthly_points_earned,
-                                'deducted_points' => $totalDeductedPoints,
-                                'total_absent' => $totalAbsents,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ]);
-                        }
+                        DB::table('credit_earned_logs')->insert([
+                            'user_id' => $userId,
+                            'month' => $month,
+                            'year' => $year,
+                            'total_late_minutes' => $totalLateMinutes,
+                            'total_undertime_minutes' => $totalUndertimeMinutes,
+                            'leave_type_id' => $leaveType->id,
+                            'earned_points' => $leaveType->monthly_points_earned,
+                            'deducted_points' => $totalDeduction,
+                            'total_absent' => $totalAbsentDays,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
                     }
                 }
-                Log::info("Employee {$employee->userid} - $work_date - First In: " . ($first_in_time ?? 'None') . " - Last Out: " . ($last_out_time ?? 'None'));
             }
 
             return response()->json(['message' => 'Leave credit balances updated successfully for ' . $previousMonth->format('F Y')]);
-
-        } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
 
     /**
      * Get all workdays (weekdays) in a given month and year.
