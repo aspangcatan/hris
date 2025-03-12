@@ -20,14 +20,14 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
-        <li class="nav-heading">Schedule Management</li>
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ route('schedule') }}">
-                <i class="bi bi-grid"></i>
-                <span>Manage Schedule</span>
-            </a>
-        </li>
         @if(session('access_rights') == 'hr')
+            <li class="nav-heading">Schedule Management</li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('schedule') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Manage Schedule</span>
+                </a>
+            </li>
             <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
                     <i class="bi bi-grid"></i>
