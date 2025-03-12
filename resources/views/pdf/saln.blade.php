@@ -90,7 +90,7 @@
 
 <div style="text-align: center;margin-top: 20px">
     <div style="font-weight: bolder;font-size: 16px;">SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</div>
-    <div style="font-size: 13px">As of <u style="margin-left: 5px">March
+    <div style="font-size: 13px">As of <u style="margin-left: 5px">December
             31, {{ $as_of_year }}</u></div>
     <div style="font-size: 10.66px">(Required by R.A 6713)</div>
     <div style="font-size: 12.5px;margin-top: 15px">
