@@ -472,7 +472,11 @@
         </td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 4px black !important;">
-                {{ number_format(($real_properties_subtotal + $personal_properties_subtotal) - $liabilities_total,2) }}
+                @if(count($personal_properties_extended) > 0)
+                    {{ number_format(($real_properties_subtotal + $personal_properties_subtotal + $personal_properties_extended_subtotal) - $liabilities_total,2) }}
+                @else
+                    {{ number_format(($real_properties_subtotal + $personal_properties_subtotal) - $liabilities_total,2) }}
+                @endif
             </div>
         </td>
     </tr>
