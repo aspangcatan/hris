@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -40,6 +41,15 @@ Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLa
 
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
+Route::get('/download', function () {
+    $filePath = public_path('apk/mobile-dtr.apk');
+
+    if (!file_exists($filePath)) {
+        abort(404, 'File not found.');
+    }
+
+    return Response::download($filePath, 'mobile-dtr.apk');
+})->name('download');
 
 Route::group(['middleware' => 'auth'], function () {
     #PRINTING

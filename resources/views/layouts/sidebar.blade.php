@@ -95,5 +95,12 @@
                 </a>
             </li>
         @endif
+        <li class="nav-heading">Mobile DTR</li>
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('download') }}">
+                <i class="bi bi-android"></i>
+                <span>Download APK</span>
+            </a>
+        </li>
     </ul>
 </aside><!-- End Sidebar-->
