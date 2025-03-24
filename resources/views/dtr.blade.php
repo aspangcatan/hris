@@ -39,10 +39,18 @@
                         <label for="year" class="form-label">Year</label>
                     </div>
                 </div>
+                <!-- DTR Table -->
+                <div class="col-md-2">
+                    @if(session('access_rights') == 'Printer' || session('access_rights') == 'admin')
+                        <button class="btn btn-danger" style="padding: 1rem 1rem;" onclick="printDTR()">
+                            <i class="bi bi-printer mr-2"></i>
+                            PRINT DTR
+                        </button>
+                    @endif
+                </div>
             </div>
 
-            <!-- DTR Table -->
-            <button class="btn btn-success d-none" onclick="printDTR()">PRINT DTR</button>
+
             <div class="row">
                 <div class="col-md-6">
                     <div class="table-responsive">

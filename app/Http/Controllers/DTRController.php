@@ -406,8 +406,8 @@ class DTRController extends Controller
                     $timeInLog = $dayLogs->firstWhere('status', 'IN');
                     $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
 
-                    $dayData['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : $dayData['day_name'];
-                    $dayData['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : $dayData['day_name'];
+                    $dayData['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : ($dayLogs->isEmpty() ? $dayData['day_name'] : '');
+                    $dayData['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : ($dayLogs->isEmpty() ? $dayData['day_name'] : '');
 
                     return $dayData;
                 });
@@ -428,18 +428,17 @@ class DTRController extends Controller
                 ->setOption('margin-bottom', 5)
                 ->setOption('margin-left', 5)
                 ->setOption('margin-right', 5)
-                ->setOption('enable-smart-shrinking', true) // Helps reduce memory usage
-                ->setOption('no-images', false) // Disable if no images are needed
-                ->setOption('disable-javascript', true) // Reduces processing
-                ->setOption('load-error-handling', 'ignore') // Ignore loading errors
-                ->setOption('dpi', 96); // Reduce DPI if high resolution is not needed
+                ->setOption('enable-smart-shrinking', true)
+                ->setOption('no-images', false)
+                ->setOption('disable-javascript', true)
+                ->setOption('load-error-handling', 'ignore')
+                ->setOption('dpi', 96);
 
             return $pdf->inline('DTR.pdf');
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
-
 
     public function getInCharged($division)
     {
