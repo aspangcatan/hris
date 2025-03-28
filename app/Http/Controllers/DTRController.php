@@ -359,6 +359,7 @@ class DTRController extends Controller
             // Fetch all employees in division 10
             $employees = DB::table('tdh_user.users')
                 ->where('division', Auth::user()->division)
+                ->where('id', Auth::id())
                 ->get();
 
             $dtrData = [];

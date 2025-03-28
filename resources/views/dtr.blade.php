@@ -41,7 +41,11 @@
                 </div>
                 <!-- DTR Table -->
                 <div class="col-md-2">
-                    @if(session('access_rights') == 'Printer' || session('access_rights') == 'admin')
+                    <button class="btn btn-danger" style="padding: 1rem 1rem;" onclick="printDTR()">
+                        <i class="bi bi-printer mr-2"></i>
+                        PRINT INDIVIDUAL DTR
+                    </button>
+                    @if(false)
                         <button class="btn btn-danger" style="padding: 1rem 1rem;" onclick="printDTR()">
                             <i class="bi bi-printer mr-2"></i>
                             PRINT DTR
