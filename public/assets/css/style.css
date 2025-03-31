@@ -1272,6 +1272,55 @@ table > thead {
     height: unset !important;
     padding: unset !important;
 }
+/* Custom CSS for the card */
+.custom-card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom CSS for the card header */
+.custom-card-header {
+    background-color: #f8f9fa;
+    border: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    padding: 10px;
+}
+
+
+/* Custom CSS for the name */
+.custom-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 0;
+}
+
+/* Custom CSS for the designation */
+.custom-designation {
+    font-size: 14px;
+    font-weight: 300;
+    color: #888888;
+}
+
+.custom-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+}
+
+/* Custom CSS for values */
+.custom-value {
+    color: #333333;
+    font-weight: bold;
+}
+
+/* Custom CSS for buttons */
+.custom-button {
+    border-radius: 20px;
+}
+
 
 /*.custom-label {*/
 /*    font-size: 10px;*/

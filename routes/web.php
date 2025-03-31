@@ -73,6 +73,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('dtr');
     })->name('dtr');
 
+    Route::get('/employee_dtr', function () {
+        return view('employee_dtr');
+    })->name('employee_dtr');
+
     Route::get('/leave', function () {
         return view('leave');
     })->name('leave');
