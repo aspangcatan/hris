@@ -470,7 +470,7 @@ class DTRController extends Controller
 
             // Start query
             $employee = DB::table('tdh_user.users as u')
-                ->join('tdh_user.designation as d1','d1.id','=','u.designation')
+                ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
                 ->leftJoin('hris.dtr_logs as d', function ($join) {
                     $join->on('u.id', '=', 'd.userid');
                 })
@@ -486,7 +486,8 @@ class DTRController extends Controller
                     DB::raw("(SELECT MIN(d1.created_at) FROM hris.dtr_logs d1 WHERE d1.userid = u.id AND d1.status = 'IN' AND DATE(d1.created_at) = '$today') as time_in"),
                     DB::raw("(SELECT MAX(d2.created_at) FROM hris.dtr_logs d2 WHERE d2.userid = u.id AND d2.status = 'OUT' AND DATE(d2.created_at) = '$today') as time_out")
                 )
-                ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division');
+                ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division')
+                ->orderByRaw('time_in IS NULL, time_in ASC'); // Sort by earliest time_in, NULLs last
 
             // Apply dynamic filters
             if (!empty($search_section)) {
@@ -512,6 +513,7 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
 
     public function getDivisionList()
