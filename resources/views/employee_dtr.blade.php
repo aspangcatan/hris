@@ -18,11 +18,6 @@
         <div class="ms-2 me-1">
             <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
         </div>
-        <div class="ms-1">
-            <button class="btn btn-success" id="btn_search" onclick="getEmployeeDtr()">
-                <i class="bi bi-search"></i>
-            </button>
-        </div>
     </div>
 
     <div class="row mt-5" id="employee-container"></div>
@@ -56,6 +51,16 @@
                     }).catch(err => {
                     alert("Ooops, something went wrong. Please reload");
                 });
+            });
+
+            $("#search_section").change(function (){
+                getEmployeeDtr();
+            });
+
+            $("#search_fname, #search_lname").on("keypress", function (e) {
+                if (e.which === 13) { // 13 is the Enter key code
+                    getEmployeeDtr(); // Call your fetch function
+                }
             });
         });
 
