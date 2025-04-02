@@ -470,6 +470,7 @@ class DTRController extends Controller
 
             // Start query
             $employee = DB::table('tdh_user.users as u')
+                ->join('hris.employees as e','u.id','=','e.user_id')
                 ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
                 ->leftJoin('hris.dtr_logs as d', function ($join) {
                     $join->on('u.id', '=', 'd.userid');
@@ -486,6 +487,11 @@ class DTRController extends Controller
                     DB::raw("(SELECT MIN(d1.created_at) FROM hris.dtr_logs d1 WHERE d1.userid = u.id AND d1.status = 'IN' AND DATE(d1.created_at) = '$today') as time_in"),
                     DB::raw("(SELECT MAX(d2.created_at) FROM hris.dtr_logs d2 WHERE d2.userid = u.id AND d2.status = 'OUT' AND DATE(d2.created_at) = '$today') as time_out")
                 )
+                ->where(function($query) {
+                    // Exclude 'Resigned' employees and include those with NULL 'employee_type'
+                    $query->where('e.employee_type', '!=', 'Resigned')
+                        ->orWhereNull('e.employee_type');
+                })
                 ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division')
                 ->orderByRaw('time_in IS NULL, time_in ASC'); // Sort by earliest time_in, NULLs last
 
