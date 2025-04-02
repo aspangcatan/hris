@@ -169,6 +169,11 @@ class DTRController extends Controller
             $month = $request->month;
             $year = $request->year;
 
+            $userid = Auth::id();
+            if (isset($request->userid)) {
+                $userid = $request->userid;
+            }
+
             // Get the actual number of days in the specified month
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
 
@@ -185,7 +190,7 @@ class DTRController extends Controller
             $logs = DB::table('dtr_logs')
                 ->whereMonth('created_at', $month)
                 ->whereYear('created_at', $year)
-                ->where('userid', '=', Auth::id())
+                ->where('userid', '=', $userid)
                 ->orderBy('created_at', 'ASC')
                 ->get();
 
@@ -447,5 +452,88 @@ class DTRController extends Controller
             ->join('tdh_user.users as u', 'd.head', '=', 'u.id')
             ->where('d.id', '=', $division)
             ->first();
+    }
+
+    public function getEmployeeDtr(Request $request)
+    {
+        try {
+            $search_division = $request->search_division;
+            $search_section = $request->search_section;
+            $search_fname = $request->search_fname;
+            $search_lname = $request->search_lname;
+
+            if ($search_section == 0) {
+                $search_section = Auth::user()->section;
+            }
+
+            $today = Carbon::now()->toDateString(); // Ensure same format as MySQL CURDATE()
+
+            // Start query
+            $employee = DB::table('tdh_user.users as u')
+                ->leftJoin('hris.dtr_logs as d', function ($join) {
+                    $join->on('u.id', '=', 'd.userid');
+                })
+                ->select(
+                    'u.id',
+                    'u.fname',
+                    'u.mname',
+                    'u.lname',
+                    'u.picture',
+                    'u.section',
+                    'u.division',
+                    DB::raw("(SELECT MIN(d1.created_at) FROM hris.dtr_logs d1 WHERE d1.userid = u.id AND d1.status = 'IN' AND DATE(d1.created_at) = '$today') as time_in"),
+                    DB::raw("(SELECT MAX(d2.created_at) FROM hris.dtr_logs d2 WHERE d2.userid = u.id AND d2.status = 'OUT' AND DATE(d2.created_at) = '$today') as time_out")
+                )
+                ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division');
+
+            // Apply dynamic filters
+            if (!empty($search_section)) {
+                $employee->where('u.section', '=', $search_section);
+            }
+
+            if (!empty($search_division)) {
+                $employee->where('u.division', '=', $search_division);
+            }
+
+            if (!empty($search_fname)) {
+                $employee->where('u.fname', 'LIKE', "%$search_fname%");
+            }
+
+            if (!empty($search_lname)) {
+                $employee->where('u.lname', 'LIKE', "%$search_lname%");
+            }
+
+            $result = $employee->get();
+
+            return response()->json($result);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+
+    public function getDivisionList()
+    {
+        try {
+            $list = DB::table('tdh_user.division')
+                ->get(['id', 'description']);
+
+            return response()->json($list);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getSectionList(Request $request)
+    {
+        try {
+            $list = DB::table('tdh_user.section')
+                ->where('division', '=', $request->division)
+                ->get(['id', 'description']);
+
+            return response()->json($list);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
     }
 }

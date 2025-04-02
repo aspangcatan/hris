@@ -20,12 +20,14 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
-        <li class="nav-item d-none">
-            <a class="nav-link collapsed" href="{{ route('employee_dtr') }}">
-                <i class="bi bi-grid"></i>
-                <span>Employee DTR</span>
-            </a>
-        </li>
+        @if(session('is_section_head') || session('access_rights') == 'admin')
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('employee_dtr') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Employee DTR</span>
+                </a>
+            </li>
+        @endif
         @if(session('access_rights') == 'hr' || session('access_rights') == 'admin')
             <li class="nav-heading">Schedule Management</li>
             <li class="nav-item">

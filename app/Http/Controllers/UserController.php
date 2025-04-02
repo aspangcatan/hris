@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserPrivelege;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -37,7 +38,17 @@ class UserController extends Controller
                 session(['designation' => "N/A"]);
             else
                 session(['designation' => $designation->description]);
+
             session(['access_rights' => $user_priv->level]);
+            // Check if the authenticated user is the section head
+            $is_head = DB::table('tdh_user.section')
+                ->where('id', Auth::user()->section)
+                ->where('head', Auth::id())
+                ->exists(); // Use exists() instead of first() for efficiency
+
+            // Store the result in the session
+            session(['is_section_head' => $is_head]);
+
             return redirect()->intended('/profile');
         }
         return back()->with(['message' => 'The provided credentials do not match our records.']);

@@ -1,88 +1,165 @@
 @extends('master')
 @section('content')
-
     <div class="d-flex justify-content-end mb-2">
-        <div>
+        @if(session('access_rights') == 'admin')
+            <div class="ms-2 me-1">
+                <select class="form-control" id="search_division">
+                    <option value="">Search division</option>
+                </select>
+            </div>
+            <div>
+                <select class="form-control d-none" id="search_section">
+                </select>
+            </div>
+        @endif
+        <div class="ms-2 me-1">
             <input class="form-control" placeholder="Search by firstname" id="search_fname"/>
         </div>
         <div class="ms-2 me-1">
             <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
         </div>
         <div class="ms-1">
-            <button class="btn btn-success" id="btn_search">
+            <button class="btn btn-success" id="btn_search" onclick="getEmployeeDtr()">
                 <i class="bi bi-search"></i>
             </button>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card custom-card">
-                <div
-                    class="card-header custom-card-header d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <img src="https://dohcsmc.com/paperless_prescription/avatar/1509.png" class="rounded-circle custom-avatar">
-                        <div class="ms-3">
-                            <p class="font-weight-bold mb-0 custom-name" style="font-size: 18px;">
-                                ASNAUI O. PANGCATAN
-                            </p>
-                            <p class="text-muted custom-designation"
-                               style="font-size: 14px; font-weight: 300;">
-                                CMT II
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body custom-card-body">
-                    <div class="d-flex align-items-center mt-3">
-                        <div class="font-weight-bold custom-label">Time In:</div>
-                        <div class="ms-2 custom-value">09:42 AM</div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <div class="font-weight-bold custom-label">Time Out:</div>
-                        <div class="ms-2 custom-value text-warning"></div>
-                    </div>
-                    <div class="d-flex justify-content-end mt-3">
-                        <button class="btn btn-sm btn-primary">
-                            <i class="fas fa-eye mr-1"></i>
-                            VIEW DTR
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
+    <div class="row mt-5" id="employee-container"></div>
+
+    @include('modals.employee_dtr')
 @stop
-
 @section('js')
     <script>
         $(document).ready(function () {
-            $("#month,#year").change(function () {
-                getDtrLogs();
+            getEmployeeDtr();
+            loadDivision();
+
+            $("#search_division").change(function () {
+                const division = $("#search_division").val();
+                fetch("{{ route('getSectionList') }}?division=" + division, {
+                    method: "GET"
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        $("#search_section").empty();
+                        if (division == 0) {
+                            $("#search_section").addClass("d-none");
+                        } else {
+                            $("#search_section").removeClass("d-none");
+                        }
+
+                        data.forEach(it => {
+                            const option = `<option value="` + it.id + `">` + it.description + `</option>`;
+                            $("#search_section").append(option);
+                        });
+                    }).catch(err => {
+                    alert("Ooops, something went wrong. Please reload");
+                });
             });
         });
 
-        function printDTR(){
-            const month = $("#month").val();
-            const year = $("#year").val();
-
-            window.open(
-                '{{ route('printDTR') }}?month=' + month + "&year=" + year,
-                '_blank' // <- This is what makes it open in a new window.
-            );
+        function loadDivision() {
+            fetch("{{ route('getDivisionList') }}", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(it => {
+                        const option = `<option value="` + it.id + `">` + it.description + `</option>`;
+                        $("#search_division").append(option);
+                    });
+                }).catch(err => {
+                alert("Ooops, something went wrong. Please reload");
+            });
         }
 
-        async function getDtrLogs() {
-            const month = $("#month").val();
-            const year = $("#year").val();
+        async function getEmployeeDtr() {
+            const search_division = ($("#search_division").val() === undefined) ? "" : $("#search_division").val();
+            let search_section = $("#search_section").val();
+            if (search_division == "")
+                search_section = "";
 
-            if (month == "" || year == "") return;
+            const search_fname = $("#search_fname").val();
+            const search_lname = $("#search_lname").val();
 
-            fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year, {
+            fetch("{{ route('getEmployeeDtr') }}?search_section=" + search_section +
+                "&search_division=" + search_division +
+                "&search_fname=" + search_fname +
+                "&search_lname=" + search_lname, {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const container = $("#employee-container"); // jQuery selector
+                    container.empty(); // Clear previous content
+
+                    data.forEach(it => {
+                        const timeIn = it.time_in ? new Date(it.time_in).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) : "N/A";
+                        const timeOut = it.time_out ? new Date(it.time_out).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        }) : "N/A";
+
+                        const employeeCard = `
+                <div class="col-md-3">
+                    <div class="card custom-card">
+                        <div class="card-header custom-card-header d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <img src="https://dohcsmc.com/paperless_prescription/avatar/${it.picture}"
+                                     class="rounded-circle custom-avatar">
+                                <div class="ms-3">
+                                    <p class="font-weight-bold mb-0 custom-name" style="font-size: 18px;">
+                                        ${it.fname} ${it.mname ? it.mname[0] + '.' : ''} ${it.lname}
+                                    </p>
+                                    <p class="text-muted custom-designation" style="font-size: 14px; font-weight: 300;">
+                                        CMT II
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body custom-card-body">
+                            <div class="d-flex align-items-center mt-3">
+                                <div class="font-weight-bold custom-label">Time In:</div>
+                                <div class="ms-2 custom-value">${timeIn}</div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="font-weight-bold custom-label">Time Out:</div>
+                                <div class="ms-2 custom-value text-warning">${timeOut}</div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-3">
+                                <button class="btn btn-sm btn-primary" onclick="viewDtr(` + it.id + `)">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    VIEW DTR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+                        container.append(employeeCard); // jQuery append
+                    });
+                })
+                .catch(error => {
+                    console.log("Error fetching employee DTR:", error);
+                });
+        }
+
+
+        async function viewDtr(id) {
+            const month = moment().format("M");
+            const year = moment().format("YYYY");
+
+            fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year + "&userid=" + id, {
                 method: "GET"
             })
                 .then(res => res.json())
                 .then(data => {
+                    $("#dtr_modal").modal("show");
+
                     $("#dtr_list").empty();
                     $("#raw_list").empty();
                     if (data.code == 500) {
@@ -102,7 +179,7 @@
                         $("#dtr_list").append(tr);
                     });
 
-                    if(data.raw_data.length < 1){
+                    if (data.raw_data.length < 1) {
                         $("#raw_list").append("<tr><td class='text-center' colspan='3'>No record found</td></tr>");
                         return;
                     }

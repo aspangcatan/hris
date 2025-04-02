@@ -227,6 +227,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
 #DTR LOGS
     Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDivisionDTR'])->name('printDTR');
+    Route::get('/get_employee_dtr', [\App\Http\Controllers\DTRController::class, 'getEmployeeDtr'])->name('getEmployeeDtr');
+    Route::get('/get_division_list', [\App\Http\Controllers\DTRController::class, 'getDivisionList'])->name('getDivisionList');
+    Route::get('/get_section_list', [\App\Http\Controllers\DTRController::class, 'getSectionList'])->name('getSectionList');
+
 #SCHEDULE MASTERLIST
     Route::get('/get_schedule_master_lists', [\App\Http\Controllers\ScheduleController::class, 'getScheduleMasterList'])->name('getScheduleMasterList');
 #SCHEDULE
