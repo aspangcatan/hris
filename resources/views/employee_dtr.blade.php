@@ -116,7 +116,7 @@
                                         ${it.fname} ${it.mname ? it.mname[0] + '.' : ''} ${it.lname}
                                     </p>
                                     <p class="text-muted custom-designation" style="font-size: 14px; font-weight: 300;">
-                                        CMT II
+                                        ${it.designation}
                                     </p>
                                 </div>
                             </div>

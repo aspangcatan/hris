@@ -470,6 +470,7 @@ class DTRController extends Controller
 
             // Start query
             $employee = DB::table('tdh_user.users as u')
+                ->join('tdh_user.designation as d1','d1.id','=','u.designation')
                 ->leftJoin('hris.dtr_logs as d', function ($join) {
                     $join->on('u.id', '=', 'd.userid');
                 })
@@ -478,6 +479,7 @@ class DTRController extends Controller
                     'u.fname',
                     'u.mname',
                     'u.lname',
+                    'd1.description as designation',
                     'u.picture',
                     'u.section',
                     'u.division',
