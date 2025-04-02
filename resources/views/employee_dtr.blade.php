@@ -98,8 +98,11 @@
                 .then(data => {
                     const container = $("#employee-container"); // jQuery selector
                     container.empty(); // Clear previous content
+                    const path = '{{ url('/avatar/')}}';
 
                     data.forEach(it => {
+
+                        const image = (it.picture) ? (path + "/" + it.picture) : "assets/img/logo.png";
                         const timeIn = it.time_in ? new Date(it.time_in).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -114,7 +117,7 @@
                     <div class="card custom-card">
                         <div class="card-header custom-card-header d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
-                                <img src="https://dohcsmc.com/paperless_prescription/avatar/${it.picture}"
+                                <img src="` + image + `"
                                      class="rounded-circle custom-avatar">
                                 <div class="ms-3">
                                     <p class="font-weight-bold mb-0 custom-name" style="font-size: 18px;">
