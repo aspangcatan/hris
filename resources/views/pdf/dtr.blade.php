@@ -89,7 +89,8 @@
                             <td></td>
                         </tr>
                     </table>
-                    <div style="margin-top: 15px;font-size: 14px">For the month of: <strong>{{ $employee['date'] }}</strong></div>
+                    <div style="margin-top: 15px;font-size: 14px">For the month of:
+                        <strong>{{ $employee['date'] }}</strong></div>
                     <div style="margin-top: 5px;font-size: 14px">
                         <span>Official hours of arrival and</span>
                         <span style="margin-left: 25px">Reg. days _____ AM _____ PM</span>
@@ -115,24 +116,37 @@
                         <td style="width: 12%;font-size: 12px">Minutes</td>
                     </tr>
                     @foreach($employee['dtrs'] as $dtr)
+                        @php
+                            $time_in_parts = explode("-", $dtr['date_timein']);
+                            $time_out_parts = explode("-", $dtr['date_timeout']);
+                        @endphp
                         <tr>
                             <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                            <td style="font-size: 11px">{{ $dtr['date_timein'] }}</td>
                             <td style="font-size: 11px">
-                                @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
-                                    {{ $dtr['date_timein'] }}
-                                @endif
+                                {{ $time_in_parts[0] }}
                             </td>
                             <td style="font-size: 11px">
                                 @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
-                                    {{ $dtr['date_timein'] }}
+                                    {{ $time_in_parts[0] }}
                                 @endif
                             </td>
-                            <td style="font-size: 11px">{{ $dtr['date_timeout'] }}</td>
-                            <td style="width: 4%;font-size: 12px"></td>
-                            <td style="width: 4%;font-size: 12px"></td>
+                            <td style="font-size: 11px">
+                                @if(!is_numeric(substr($dtr['date_timeout'], 0, 1)))
+                                    {{ $time_out_parts[0] }}
+                                @endif
+                            </td>
+                            <td style="font-size: 11px">
+                                {{ $time_out_parts[0] }}
+                            </td>
+                            @if(count($time_in_parts) > 1)
+                                <td colspan="2" style="font-size: 12px;font-weight: bold">
+                                    {{ $time_in_parts[1] }}
+                                </td>
+                            @else
+                                <td style="font-size: 12px"></td>
+                                <td style="font-size: 12px"></td>
+                            @endif
                         </tr>
-
                     @endforeach
                     <tr>
                         <td style="border: none" colspan="4"></td>
@@ -155,7 +169,8 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours</td>
+                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            </td>
                             <td></td>
                         </tr>
 
@@ -193,7 +208,8 @@
                             <td></td>
                         </tr>
                     </table>
-                    <div style="margin-top: 15px;font-size: 14px">For the month of: <strong>{{ $employee['date'] }}</strong></div>
+                    <div style="margin-top: 15px;font-size: 14px">For the month of:
+                        <strong>{{ $employee['date'] }}</strong></div>
                     <div style="margin-top: 5px;font-size: 14px">
                         <span>Official hours of arrival and</span>
                         <span style="margin-left: 25px">Reg. days _____ AM _____ PM</span>
@@ -219,24 +235,37 @@
                         <td style="width: 12%;font-size: 12px">Minutes</td>
                     </tr>
                     @foreach($employee['dtrs'] as $dtr)
+                        @php
+                            $time_in_parts = explode("-", $dtr['date_timein']);
+                            $time_out_parts = explode("-", $dtr['date_timeout']);
+                        @endphp
                         <tr>
                             <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                            <td style="font-size: 11px">{{ $dtr['date_timein'] }}</td>
                             <td style="font-size: 11px">
-                                @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
-                                    {{ $dtr['date_timein'] }}
-                                @endif
+                                {{ $time_in_parts[0] }}
                             </td>
                             <td style="font-size: 11px">
                                 @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
-                                    {{ $dtr['date_timein'] }}
+                                    {{ $time_in_parts[0] }}
                                 @endif
                             </td>
-                            <td style="font-size: 11px">{{ $dtr['date_timeout'] }}</td>
-                            <td style="width: 4%;font-size: 12px"></td>
-                            <td style="width: 4%;font-size: 12px"></td>
+                            <td style="font-size: 11px">
+                                @if(!is_numeric(substr($dtr['date_timeout'], 0, 1)))
+                                    {{ $time_out_parts[0] }}
+                                @endif
+                            </td>
+                            <td style="font-size: 11px">
+                                {{ $time_out_parts[0] }}
+                            </td>
+                            @if(count($time_in_parts) > 1)
+                                <td colspan="2" style="font-size: 12px;font-weight: bold">
+                                    {{ $time_in_parts[1] }}
+                                </td>
+                            @else
+                                <td style="font-size: 12px"></td>
+                                <td style="font-size: 12px"></td>
+                            @endif
                         </tr>
-
                     @endforeach
                     <tr>
                         <td style="border: none" colspan="4"></td>
@@ -259,7 +288,8 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours</td>
+                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            </td>
                             <td></td>
                         </tr>
 

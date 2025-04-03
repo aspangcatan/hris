@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CalendarController;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
@@ -85,10 +86,6 @@ Route::group(['middleware' => 'auth'], function () {
         return view('leave_application');
     })->name('leave_application');
 
-    Route::get('/timetable', function () {
-        return view('timetable');
-    })->name('timetable');
-
     Route::get('/leave_approval', function () {
         return view('leave_approval');
     })->name('leave_approval');
@@ -101,10 +98,6 @@ Route::group(['middleware' => 'auth'], function () {
         return view('credit_management');
     })->name('credit_management');
 
-    Route::get('/leave_management', function () {
-        return view('leave_management');
-    })->name('leave_management');
-
     Route::get('/schedule', function () {
         return view('schedule');
     })->name('schedule');
@@ -112,6 +105,19 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/review_leave', function () {
         return view('review_leave');
     })->name('review_leave');
+
+    #SETTINGS VIEW
+    Route::get('/calendar', function () {
+        return view('settings.calendar');
+    })->name('calendar');
+
+    Route::get('/leave_management', function () {
+        return view('settings.leave_management');
+    })->name('leave_management');
+
+    Route::get('/timetable', function () {
+        return view('settings.timetable');
+    })->name('timetable');
 
 
     Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
@@ -234,8 +240,14 @@ Route::group(['middleware' => 'auth'], function () {
 #SCHEDULE MASTERLIST
     Route::get('/get_schedule_master_lists', [\App\Http\Controllers\ScheduleController::class, 'getScheduleMasterList'])->name('getScheduleMasterList');
 #SCHEDULE
-    Route::get('/get_employee_schedules',[\App\Http\Controllers\ScheduleController::class,'getSchedules'])->name('getSchedules');
-    Route::post('/insert_schedule',[\App\Http\Controllers\ScheduleController::class,'setEmployeeSchedule'])->name('setEmployeeSchedule');
+    Route::get('/get_employee_schedules', [\App\Http\Controllers\ScheduleController::class, 'getSchedules'])->name('getSchedules');
+    Route::post('/insert_schedule', [\App\Http\Controllers\ScheduleController::class, 'setEmployeeSchedule'])->name('setEmployeeSchedule');
 #CREDIT EARNED POINTS
-    Route::get('/get_credit_earned_logs',[\App\Http\Controllers\CreditController::class,'getCreditEarned'])->name('getCreditEarned');
+    Route::get('/get_credit_earned_logs', [\App\Http\Controllers\CreditController::class, 'getCreditEarned'])->name('getCreditEarned');
+    #SETTINGS
+
+    Route::get('/calendar-events', [CalendarController::class, 'getHolidays'])->name('calendar.events');
+    Route::post('/add-holiday', [CalendarController::class, 'store'])->name('calendar.store');
+    Route::post('/update-holiday', [CalendarController::class, 'update'])->name('calendar.update');
+    Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete');
 });

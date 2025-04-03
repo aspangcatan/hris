@@ -28,11 +28,19 @@ class CreditController extends Controller
     {
         try {
             $previousMonth = Carbon::now()->subMonth();
+
             $month = $previousMonth->month;
             $year = $previousMonth->year;
 
-            // Get all workdays (you can add holidays filter here if needed)
+            // Get all workdays excluding holidays
             $workdays = $this->getWorkDays($year, $month);
+
+            // Fetch all holidays for the month
+            $holidays = DB::table('calendar_holidays')
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->pluck('date')
+                ->toArray();
 
             $employees = DB::table('hris.schedules')
                 ->select('employee_id')
@@ -65,8 +73,12 @@ class CreditController extends Controller
                     ];
                 }
 
-                // Check each plotted schedule date — was it attended?
+                // Check each plotted schedule date
                 foreach ($scheduleMap as $date => $shift) {
+                    if (in_array($date, $holidays)) {
+                        continue; // Skip processing for holidays
+                    }
+
                     $firstIn = DB::table('hris.dtr_logs')
                         ->where('userid', $userId)
                         ->whereDate('created_at', $date)
@@ -82,8 +94,10 @@ class CreditController extends Controller
                         ->value('created_at');
 
                     if (!$firstIn && !$lastOut) {
-                        // No logs at all for a scheduled day — ABSENT
-                        $totalAbsentDays++;
+                        // If absent but the date is a holiday, don't count as absent
+                        if (!in_array($date, $holidays)) {
+                            $totalAbsentDays++;
+                        }
                         continue;
                     }
 
@@ -92,27 +106,25 @@ class CreditController extends Controller
 
                     if ($firstIn) {
                         $actualIn = Carbon::parse($firstIn)->startOfMinute();
-
                         if ($actualIn->greaterThan($expectedIn)) {
-                            $lateMinutes = $expectedIn->diffInMinutes($actualIn); // Minutes only, no seconds
+                            $lateMinutes = $expectedIn->diffInMinutes($actualIn);
                             $totalLateMinutes += $lateMinutes;
                         }
                     }
 
                     if ($lastOut) {
                         $actualOut = Carbon::parse($lastOut)->startOfMinute();
-
                         if ($actualOut->lessThan($expectedOut)) {
-                            $undertimeMinutes = $actualOut->diffInMinutes($expectedOut); // Minutes only, no seconds
+                            $undertimeMinutes = $actualOut->diffInMinutes($expectedOut);
                             $totalUndertimeMinutes += $undertimeMinutes;
                         }
                     }
                 }
 
-                // No-schedule days are auto-absent (workdays without plotted schedules)
+                // No-schedule days are auto-absent (excluding holidays)
                 $plottedDays = array_keys($scheduleMap);
-                $noScheduleDays = array_diff($workdays, $plottedDays);
-                $totalAbsentDays += count($noScheduleDays); // Automatically absent for days with no plotted schedule
+                $noScheduleDays = array_diff($workdays, $plottedDays, $holidays);
+                $totalAbsentDays += count($noScheduleDays);
 
                 // Process leave types (earning & deductions)
                 $leaveTypes = DB::table('hris.leave_types')
@@ -183,7 +195,6 @@ class CreditController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
 
     /**
      * Get all workdays (weekdays) in a given month and year.

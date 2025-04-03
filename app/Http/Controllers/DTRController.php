@@ -361,10 +361,11 @@ class DTRController extends Controller
             $month = $request->month;
             $year = $request->year;
 
-            // Fetch all employees in division 10
+            // Fetch all employees in the current division
             $employees = DB::table('tdh_user.users')
                 ->where('division', Auth::user()->division)
-                ->where('id', Auth::id())
+                // Uncomment the line below if you want to restrict to a specific user (per division)
+                // ->where('id', Auth::id())
                 ->get();
 
             $dtrData = [];
@@ -380,6 +381,12 @@ class DTRController extends Controller
 
             $in_charged = strtoupper($fname . ' ' . $mname . ' ' . $lname . ' ' . $suffix . ' ' . $title);
 
+            // Fetch all holidays for the specified month and year
+            $holidays = DB::table('calendar_holidays')
+                ->whereMonth('date', $month)
+                ->whereYear('date', $year)
+                ->get();
+
             foreach ($employees as $employee) {
                 // Get the actual number of days in the specified month
                 $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
@@ -390,7 +397,7 @@ class DTRController extends Controller
                         'day' => $day,
                         'date_timein' => null,
                         'date_timeout' => null,
-                        'day_name' => Carbon::createFromDate($year, $month, $day)->format('l')
+                        'day_name' => Carbon::createFromDate($year, $month, $day)->format('l') // Day name (e.g., "Sunday")
                     ];
                 });
 
@@ -403,17 +410,32 @@ class DTRController extends Controller
                     ->get();
 
                 // Map each day and attach DTR log data if available
-                $result = $days->map(function ($dayData) use ($logs, $month, $year) {
+                $result = $days->map(function ($dayData) use ($logs, $month, $year, $holidays) {
                     $currentDay = Carbon::createFromDate($year, $month, $dayData['day'])->toDateString();
                     $dayLogs = $logs->filter(function ($log) use ($currentDay) {
                         return Carbon::parse($log->created_at)->toDateString() === $currentDay;
                     });
 
-                    $timeInLog = $dayLogs->firstWhere('status', 'IN');
-                    $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+                    // Check if the day is a holiday
+                    $isHoliday = $holidays->contains('date', $currentDay);
 
-                    $dayData['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : ($dayLogs->isEmpty() ? $dayData['day_name'] : '');
-                    $dayData['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : ($dayLogs->isEmpty() ? $dayData['day_name'] : '');
+                    // Prioritize dtr_logs data over holiday data
+                    if ($dayLogs->isNotEmpty()) {
+                        // If there are DTR logs, use them for time_in and time_out
+                        $timeInLog = $dayLogs->firstWhere('status', 'IN');
+                        $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+
+                        $dayData['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : '';
+                        $dayData['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : '';
+                    } elseif ($isHoliday) {
+                        // If no DTR logs exist, and it's a holiday, mark it as HOLIDAY
+                        $dayData['date_timein'] = $dayData['day_name'] . '-HOLIDAY';
+                        $dayData['date_timeout'] = $dayData['day_name'] . '-HOLIDAY';
+                    } else {
+                        // If neither DTR logs nor a holiday, display the day name
+                        $dayData['date_timein'] = $dayData['day_name'];
+                        $dayData['date_timeout'] = $dayData['day_name'];
+                    }
 
                     return $dayData;
                 });
@@ -428,6 +450,8 @@ class DTRController extends Controller
                 ];
             }
 
+
+            // Generate the PDF using Snappy PDF
             $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 ->setPaper('A4', 'portrait')
                 ->setOption('margin-top', 5)
@@ -445,6 +469,7 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
     public function getInCharged($division)
     {
