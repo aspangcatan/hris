@@ -272,89 +272,6 @@ class DTRController extends Controller
 
 
     //PRINT DTR
-    public function printDTR(Request $request)
-    {
-        try {
-            $month = $request->month;
-            $year = $request->year;
-
-            // Get the actual number of days in the specified month
-            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-
-            // Create a collection of all days in the given month
-            $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year) {
-                return [
-                    'day' => $day,
-                    'date_timein' => null,
-                    'date_timeout' => null,
-                    'day_name' => Carbon::createFromDate($year, $month, $day)->format('l') // Get the day name (e.g., "Sunday")
-                ];
-            });
-
-            // Get all existing DTR logs for the specified month and year
-            $logs = DB::table('dtr_logs')
-                ->whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('userid', '=', Auth::id())
-                ->orderBy('created_at', 'ASC')
-                ->get();
-
-            // Map each day and attach DTR log data if available
-            $result = $days->map(function ($dayData) use ($logs, $month, $year) {
-                $currentDay = Carbon::createFromDate($year, $month, $dayData['day'])->toDateString();
-                $dayLogs = $logs->filter(function ($log) use ($currentDay) {
-                    return Carbon::parse($log->created_at)->toDateString() === $currentDay;
-                });
-
-                $timeInLog = $dayLogs->firstWhere('status', 'IN');
-                $timeOutLog = $dayLogs
-                    ->where('status', 'OUT')
-                    ->sortByDesc('created_at')
-                    ->first();
-
-                if ($timeInLog) {
-                    $dayData['date_timein'] = Carbon::parse($timeInLog->created_at)->format('H:i'); // 24-hour format
-                } else {
-                    $dayData['date_timein'] = $dayData['day_name']; // Use the day name if no time-in
-                }
-
-                if ($timeOutLog) {
-                    $dayData['date_timeout'] = Carbon::parse($timeOutLog->created_at)->format('H:i'); // 24-hour format
-                } else {
-                    $dayData['date_timeout'] = $dayData['day_name']; // Use the day name if no time-out
-                }
-
-                return $dayData;
-            });
-
-
-            $formattedDate = Carbon::createFromFormat('Y-m-d', "$year-$month-01")->format('F Y');
-
-            $in_charged = collect(self::getInCharged(Auth::user()->division))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
-
-            $pdf = Pdf::loadView('pdf.dtr', [
-                'name' => strtoupper(Auth::user()->fname . ' ' .
-                    (Auth::user()->mname ? strtoupper(substr(Auth::user()->mname, 0, 1)) . '.' : '') .
-                    ' ' . Auth::user()->lname),
-
-                'in_charged' => strtoupper(
-                    ($in_charged['fname'] ?? '') . ' ' .
-                    (!empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '') . ' ' .
-                    ($in_charged['lname'] ?? '') .
-                    (!empty($in_charged['suffix']) ? ' ' . strtoupper($in_charged['suffix']) : '') .
-                    (!empty($in_charged['title']) ? ', ' . strtoupper($in_charged['title']) : '')
-                ),
-                'date' => $formattedDate,
-                'dtrs' => $result
-            ]);
-
-            $pdf->setPaper('A4', 'portrait')->setOption('margin', 0);
-            return $pdf->stream('DTR.pdf', ["Attachment" => false]);
-        } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
-        }
-    }
-
     public function printDivisionDTR(Request $request)
     {
         try {
@@ -365,7 +282,7 @@ class DTRController extends Controller
             $employees = DB::table('tdh_user.users')
                 ->where('division', Auth::user()->division)
                 // Uncomment the line below if you want to restrict to a specific user (per division)
-                // ->where('id', Auth::id())
+                 ->where('id', Auth::id())
                 ->get();
 
             $dtrData = [];
