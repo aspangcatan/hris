@@ -31,7 +31,7 @@
                 <div class="col-md-3">
                     <div class="form-floating mb-3">
                         <select class="form-control" id="year">
-                            <option value="" selected disabled>Select year</option>
+                            <option value="">Select year</option>
                             @for($year=2023; $year<= \Carbon\Carbon::now()->format('Y'); $year++)
                                 <option>{{ $year }}</option>
                             @endfor
@@ -95,6 +95,8 @@
             </div>
         </div>
     </div>
+
+    @include('modals.dtr')
 @stop
 
 @section('js')
@@ -105,7 +107,7 @@
             });
         });
 
-        function printDTR(){
+        function printDTR() {
             const month = $("#month").val();
             const year = $("#year").val();
 
@@ -119,7 +121,7 @@
             const month = $("#month").val();
             const year = $("#year").val();
 
-            if (month == "" || year == "") return;
+            if (month === "" || year === "") return;
 
             fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year, {
                 method: "GET"
@@ -145,7 +147,7 @@
                         $("#dtr_list").append(tr);
                     });
 
-                    if(data.raw_data.length < 1){
+                    if (data.raw_data.length < 1) {
                         $("#raw_list").append("<tr><td class='text-center' colspan='3'>No record found</td></tr>");
                         return;
                     }

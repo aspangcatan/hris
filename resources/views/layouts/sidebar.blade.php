@@ -82,12 +82,18 @@
             </li>
             <li class="nav-heading">Settings</li>
             @if(session('access_rights') == 'admin')
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="{{ route('calendar') }}">
-                    <i class="bi bi-calendar"></i>
-                    <span>Calendar</span>
-                </a>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link collapsed" href="{{ route('calendar') }}">
+                        <i class="bi bi-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                </li>
+                <li class="nav-item d-none">
+                    <a class="nav-link collapsed" href="{{ route('hospital_order') }}">
+                        <i class="bi bi-calendar"></i>
+                        <span>Hospital Orders</span>
+                    </a>
+                </li>
             @endif
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('timetable') }}">

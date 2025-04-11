@@ -20,3 +20,40 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="advanceScheduleModal" tabindex="-1" aria-labelledby="advanceScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Advance Set Schedule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Schedule</th>
+                    </tr>
+                    </thead>
+                    <tbody id="advance_schedule_table_body">
+                    @php
+                        $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    @endphp
+                    @foreach($days as $day)
+                        <tr>
+                            <td>{{ $day }}</td>
+                            <td>
+                                <select class="form-control advance-schedule-select" data-day="{{ $day }}">
+                                    <option value="">-- Select --</option>
+                                </select>
+                            </td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+                <button class="btn btn-success" id="save_advance_schedule">Save</button>
+            </div>
+        </div>
+    </div>
+</div>

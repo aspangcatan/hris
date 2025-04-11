@@ -39,9 +39,11 @@
                         @endfor
                     </select>
                 </div>
-                <div class="col-md-3 align-self-end">
+                <div class="col-md-6 align-self-end d-flex gap-2">
                     <button id="applyFilter" class="btn btn-primary">Apply Filter</button>
+                    <button id="btn_advance_schedule" class="btn btn-warning">Advance Set Schedule</button>
                 </div>
+
             </div>
 
             <!-- Schedule Table -->
@@ -74,6 +76,93 @@
             $("#filter_month,#filter_year").change(function () {
                 loadEmployeeSchedule();
             });
+
+            $('#btn_advance_schedule').click(function () {
+                // Populate dropdowns inside modal
+                const options = $("#scheduleSelect").html(); // copy from main schedule select
+                $(".advance-schedule-select").each(function () {
+                    const current = $(this);
+                    if (current.find('option').length <= 1) {
+                        current.append(options); // prevent duplication
+                    }
+                });
+
+                $('#advanceScheduleModal').modal('show');
+            });
+
+            // Save advance schedule logic placeholder (to be implemented as per your requirement)
+            $('#save_advance_schedule').click(function () {
+                const year = $('#filter_year').val();
+                const month = $('#filter_month').val();
+
+                if (!year || !month) {
+                    toastr.error("Please select both year and month", "Error");
+                    return;
+                }
+
+                // Gather all employee IDs from the DOM
+                let employeeIds = [];
+                $('#employee_list tr').each(function () {
+                    const empId = $(this).find('td:first').text().trim();
+                    if (empId) employeeIds.push(empId);
+                });
+
+                if (employeeIds.length === 0) {
+                    toastr.warning("No employees found to apply schedule", "Warning");
+                    return;
+                }
+
+                // Get selected schedule per weekday
+                let scheduleData = [];
+
+                $('.advance-schedule-select').each(function () {
+                    const dayName = $(this).data('day'); // e.g. "Monday"
+                    const schedule_id = $(this).val();
+
+                    if (schedule_id) {
+                        const dates = getDatesForDayOfWeek(dayName, year, month);
+                        dates.forEach(date => {
+                            employeeIds.forEach(employeeId => {
+                                scheduleData.push({
+                                    employee_id: employeeId,
+                                    schedule_id: schedule_id,
+                                    schedule_date: date
+                                });
+                            });
+                        });
+                    }
+                });
+
+                if (scheduleData.length === 0) {
+                    toastr.warning("No schedule days selected.", "Warning");
+                    return;
+                }
+
+
+                // Submit all records in one go
+                fetch("{{ route('saveAdvanceSchedule') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+                    },
+                    body: JSON.stringify({
+                        schedules: scheduleData
+                    })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        toastr.success(data.message, "Success");
+                        $('#advanceScheduleModal').modal('hide');
+                        loadEmployeeSchedule(); // refresh
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        toastr.error("Failed to save schedule", "Error");
+                    });
+            });
+
+
 
             $("body").on("click", ".schedule-cell", function () {
                 let employeeId = $(this).data('employee-id');
@@ -146,6 +235,7 @@
 
                     data.schedules.forEach(it => {
                         let tr = `<tr>
+                            <td class="d-none">${it.id}</td>
                             <td>` + it.name + `</td>
                             <td>` + it.designation + `</td>`;
 
@@ -180,10 +270,35 @@
 
                         $("#legend_list").append(tr);
                         $("#scheduleSelect").append(option);
+
                     });
                 }).catch(err => {
                 console.log(err);
             })
         }
+
+        function getDatesForDayOfWeek(dayName, year, month) {
+            const dayMap = {
+                Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
+                Thursday: 4, Friday: 5, Saturday: 6
+            };
+
+            const dates = [];
+            const date = new Date(`${year}-${month}-01`);
+            const targetDay = dayMap[dayName];
+
+            while (date.getMonth() === parseInt(month) - 1) {
+                if (date.getDay() === targetDay) {
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    dates.push(`${yyyy}-${mm}-${dd}`);
+                }
+                date.setDate(date.getDate() + 1);
+            }
+
+            return dates;
+        }
+
     </script>
 @stop

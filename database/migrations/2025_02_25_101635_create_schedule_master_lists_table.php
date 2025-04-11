@@ -18,7 +18,9 @@ class CreateScheduleMasterListsTable extends Migration
             $table->string('label',50);
             $table->string('code',10);
             $table->time('time_in');
+            $table->time('time_in_latest');
             $table->time('time_out');
+            $table->time('time_out_latest');
             $table->timestamps();
         });
     }

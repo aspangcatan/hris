@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\HospitalOrderController;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
@@ -110,6 +111,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/calendar', function () {
         return view('settings.calendar');
     })->name('calendar');
+
+    Route::get('/hospital_order', function () {
+        return view('hospital_order');
+    })->name('hospital_order');
 
     Route::get('/leave_management', function () {
         return view('settings.leave_management');
@@ -242,12 +247,16 @@ Route::group(['middleware' => 'auth'], function () {
 #SCHEDULE
     Route::get('/get_employee_schedules', [\App\Http\Controllers\ScheduleController::class, 'getSchedules'])->name('getSchedules');
     Route::post('/insert_schedule', [\App\Http\Controllers\ScheduleController::class, 'setEmployeeSchedule'])->name('setEmployeeSchedule');
+    Route::post('/save-advance-schedule', [\App\Http\Controllers\ScheduleController::class, 'saveAdvanceSchedule'])->name('saveAdvanceSchedule');
+
 #CREDIT EARNED POINTS
     Route::get('/get_credit_earned_logs', [\App\Http\Controllers\CreditController::class, 'getCreditEarned'])->name('getCreditEarned');
     #SETTINGS
-
     Route::get('/calendar-events', [CalendarController::class, 'getHolidays'])->name('calendar.events');
     Route::post('/add-holiday', [CalendarController::class, 'store'])->name('calendar.store');
     Route::post('/update-holiday', [CalendarController::class, 'update'])->name('calendar.update');
     Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete');
+    #HOSPITAL ORDERS
+    Route::post('/hospital-orders', [HospitalOrderController::class, 'store'])->name('hospital-orders.store');
+
 });

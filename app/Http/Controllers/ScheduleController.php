@@ -119,4 +119,26 @@ class ScheduleController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
+    public function saveAdvanceSchedule(Request $request)
+    {
+        $schedules = $request->input('schedules');
+
+        foreach ($schedules as $sched) {
+            DB::table('hris.schedules')->updateOrInsert(
+                [
+                    'employee_id' => $sched['employee_id'],
+                    'schedule_date' => $sched['schedule_date'],
+                ],
+                [
+                    'schedule_id' => $sched['schedule_id'],
+                    'updated_by' => Auth::id(),
+                    'updated_at' => now(),
+                    'created_at' => now()
+                ]
+            );
+        }
+
+        return response()->json(['message' => 'Schedules saved successfully']);
+    }
 }
