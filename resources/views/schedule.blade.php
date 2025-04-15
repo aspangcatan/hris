@@ -2,53 +2,43 @@
 
 @section('content')
     <div class="card">
-        <div class="card-body p-3">
-            <div class="d-flex justify-content-between">
-                <h2>Schedule Management</h2>
-                <div style="border: 1px solid rgb(193,193,193)" class="p-3">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <h2 class="mb-0">Schedule Management</h2>
+                <div style="border: 1px solid #c1c1c1;" class="p-3 rounded bg-light">
                     <strong>Legend:</strong>
                     <div class="row" id="legend_list"></div>
                 </div>
             </div>
 
             <!-- Filters -->
-            <div class="row mt-3">
+            <div class="row mt-4">
                 <div class="col-md-3">
                     <label for="filter_month">Month:</label>
                     <select id="filter_month" class="form-control">
-                        <option value="01">January</option>
-                        <option value="02">February</option>
-                        <option value="03">March</option>
-                        <option value="04">April</option>
-                        <option value="05">May</option>
-                        <option value="06">June</option>
-                        <option value="07">July</option>
-                        <option value="08">August</option>
-                        <option value="09">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
+                        @foreach(['01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June','07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'] as $num => $name)
+                            <option value="{{ $num }}" {{ now()->format('m') == $num ? 'selected' : '' }}>{{ $name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label for="filter_year">Year:</label>
                     <select id="filter_year" class="form-control">
                         <option value="">Select year</option>
-                        @for($year=2024; $year<= \Carbon\Carbon::now()->format('Y'); $year++)
-                            <option>{{ $year }}</option>
+                        @for($year = 2024; $year <= \Carbon\Carbon::now()->year; $year++)
+                            <option value="{{ $year }}" {{ now()->year == $year ? 'selected' : '' }}>{{ $year }}</option>
                         @endfor
                     </select>
                 </div>
-                <div class="col-md-6 align-self-end d-flex gap-2">
-                    <button id="applyFilter" class="btn btn-primary">Apply Filter</button>
-                    <button id="btn_advance_schedule" class="btn btn-warning">Advance Set Schedule</button>
+                <div class="col-md-6 d-flex align-items-end gap-2">
+                    <button id="applyFilter" class="btn btn-primary w-100">Apply Filter</button>
+                    <button id="btn_advance_schedule" class="btn btn-warning w-100">Advance Set Schedule</button>
                 </div>
-
             </div>
 
             <!-- Schedule Table -->
-            <div class="table-responsive mt-3">
-                <table class="table table-bordered">
+            <div class="table-responsive mt-4">
+                <table class="table table-bordered table-hover">
                     <thead>
                     <tr id="schedule_header">
                         <th>Name</th>
@@ -60,38 +50,37 @@
             </div>
         </div>
     </div>
-    <!-- Schedule Modal -->
+
+    <!-- Modals -->
     @include('modals.schedule')
 @stop
 
 @section('js')
-    <!-- Bootstrap & jQuery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         $(document).ready(function () {
+            // Initial Load
             loadScheduleMasterList();
+            loadEmployeeSchedule();
 
-            $("#filter_month,#filter_year").change(function () {
-                loadEmployeeSchedule();
-            });
+            // Re-fetch on filter change
+            $('#filter_month, #filter_year').on('change', loadEmployeeSchedule);
 
-            $('#btn_advance_schedule').click(function () {
-                // Populate dropdowns inside modal
-                const options = $("#scheduleSelect").html(); // copy from main schedule select
+            // Advance Set Schedule Button
+            $('#btn_advance_schedule').on('click', function () {
+                const options = $("#scheduleSelect").html();
                 $(".advance-schedule-select").each(function () {
-                    const current = $(this);
-                    if (current.find('option').length <= 1) {
-                        current.append(options); // prevent duplication
+                    if ($(this).children().length <= 1) {
+                        $(this).append(options);
                     }
                 });
-
                 $('#advanceScheduleModal').modal('show');
             });
 
-            // Save advance schedule logic placeholder (to be implemented as per your requirement)
-            $('#save_advance_schedule').click(function () {
+            // Save Advance Schedule
+            $('#save_advance_schedule').on('click', function () {
                 const year = $('#filter_year').val();
                 const month = $('#filter_month').val();
 
@@ -100,61 +89,50 @@
                     return;
                 }
 
-                // Gather all employee IDs from the DOM
                 let employeeIds = [];
                 $('#employee_list tr').each(function () {
-                    const empId = $(this).find('td:first').text().trim();
-                    if (empId) employeeIds.push(empId);
+                    const id = $(this).find('td:first').text().trim();
+                    if (id) employeeIds.push(id);
                 });
 
                 if (employeeIds.length === 0) {
-                    toastr.warning("No employees found to apply schedule", "Warning");
+                    toastr.warning("No employees to schedule", "Warning");
                     return;
                 }
 
-                // Get selected schedule per weekday
                 let scheduleData = [];
 
                 $('.advance-schedule-select').each(function () {
-                    const dayName = $(this).data('day'); // e.g. "Monday"
+                    const dayName = $(this).data('day');
                     const schedule_id = $(this).val();
-
                     if (schedule_id) {
                         const dates = getDatesForDayOfWeek(dayName, year, month);
                         dates.forEach(date => {
-                            employeeIds.forEach(employeeId => {
-                                scheduleData.push({
-                                    employee_id: employeeId,
-                                    schedule_id: schedule_id,
-                                    schedule_date: date
-                                });
+                            employeeIds.forEach(id => {
+                                scheduleData.push({ employee_id: id, schedule_id, schedule_date: date });
                             });
                         });
                     }
                 });
 
                 if (scheduleData.length === 0) {
-                    toastr.warning("No schedule days selected.", "Warning");
+                    toastr.warning("Please select at least one schedule", "Warning");
                     return;
                 }
 
-
-                // Submit all records in one go
                 fetch("{{ route('saveAdvanceSchedule') }}", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
                     },
-                    body: JSON.stringify({
-                        schedules: scheduleData
-                    })
+                    body: JSON.stringify({ schedules: scheduleData })
                 })
                     .then(res => res.json())
                     .then(data => {
                         toastr.success(data.message, "Success");
                         $('#advanceScheduleModal').modal('hide');
-                        loadEmployeeSchedule(); // refresh
+                        loadEmployeeSchedule();
                     })
                     .catch(err => {
                         console.error(err);
@@ -162,31 +140,23 @@
                     });
             });
 
-
-
+            // Open Schedule Modal
             $("body").on("click", ".schedule-cell", function () {
-                let employeeId = $(this).data('employee-id');
-                let day = $(this).data('day');
+                const employeeId = $(this).data('employee-id');
+                const day = $(this).data('day');
 
                 $('#selectedEmployeeId').val(employeeId);
                 $('#selectedDay').val(day);
                 $('#scheduleModal').modal('show');
             });
 
-
-            $('#btn_save_schedule').click(function () {
+            // Save Individual Schedule
+            $('#btn_save_schedule').on('click', function () {
                 const employeeId = $('#selectedEmployeeId').val();
                 const day = $('#selectedDay').val();
                 const schedule_id = $('#scheduleSelect').val();
-                const schedule_code = $("#scheduleSelect option:selected").data("code");
-                const schedule_date = $("#filter_year").val() + "-" + $("#filter_month").val() + "-" + String(day).padStart(2, '0');
-
-                const params = {
-                    employee_id: employeeId,
-                    schedule_date: schedule_date,
-                    schedule_id: schedule_id,
-                    _token: "{{ csrf_token() }}"
-                };
+                const schedule_code = $('#scheduleSelect option:selected').data("code");
+                const schedule_date = `${$('#filter_year').val()}-${$('#filter_month').val()}-${String(day).padStart(2, '0')}`;
 
                 fetch('{{ route('setEmployeeSchedule') }}', {
                     method: "POST",
@@ -194,100 +164,76 @@
                         "Content-Type": "application/json",
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
-                    body: JSON.stringify(params)
+                    body: JSON.stringify({
+                        employee_id: employeeId,
+                        schedule_date: schedule_date,
+                        schedule_id: schedule_id
+                    })
                 })
                     .then(res => res.json())
                     .then(data => {
-                        toastr.success(data.message, "Information");
-                        let cell = $('.schedule-cell[data-employee-id="' + employeeId + '"][data-day="' + day + '"]');
-                        cell.text(schedule_code);
+                        toastr.success(data.message, "Updated");
+                        $(`.schedule-cell[data-employee-id="${employeeId}"][data-day="${day}"]`).text(schedule_code);
                         $('#scheduleModal').modal('hide');
-                    }).catch(err => {
-                    console.log(err);
-                })
+                    })
+                    .catch(console.error);
             });
         });
 
-        function loadEmployeeSchedule() {
-            const month = $("#filter_month").val();
-            const year = $("#filter_year").val();
-
-            if (month == "" || year == "") {
-                toastr.error("Please fill in filter data first", "Ooops");
-                return;
-            }
-
-            fetch('{{ route('getSchedules') }}?month=' + month +
-                "&year=" + year, {
-                method: "GET"
-            })
-                .then(res => res.json())
-                .then(data => {
-                    let header = "";
-                    header += `<th>Name</th>`;
-                    header += `<th>Designation</th>`;
-                    for (let i = 1; i <= data.days; i++) {
-                        header += `<th>` + i + `</th>`;
-                    }
-
-                    $("#schedule_header").html(header);
-                    $("#employee_list").empty();
-
-                    data.schedules.forEach(it => {
-                        let tr = `<tr>
-                            <td class="d-none">${it.id}</td>
-                            <td>` + it.name + `</td>
-                            <td>` + it.designation + `</td>`;
-
-                        for (let j = 0; j < it.schedule.length; j++) {
-                            tr += `<td
-                                      style="cursor: pointer"
-                                    class="fw-bold text-primary schedule-cell"
-                                    data-employee-id="${it.id}"
-                                    data-day="${j + 1}">` + it.schedule[j] + `</td>`;
-                        }
-                        tr += `</tr>`;
-                        $("#employee_list").append(tr);
-                    });
-                }).catch(err => {
-                console.log(err);
-            })
-        }
-
+        // Load Schedule Master List (Legend & Options)
         function loadScheduleMasterList() {
-            fetch('{{ route('getScheduleMasterList') }}', {
-                method: "GET"
-            })
+            fetch('{{ route('getScheduleMasterList') }}')
                 .then(res => res.json())
                 .then(data => {
                     data.forEach(it => {
-                        const tr =
-                            `<div class='col-md-6'>
-                                    <div>` + it.code + ` - ` + it.label + `</div>
-                                 </div>`;
-
-                        const option = `<option value="` + it.id + `" data-code="` + it.code + `">` + it.label + `</option>`;
-
-                        $("#legend_list").append(tr);
-                        $("#scheduleSelect").append(option);
-
+                        $('#legend_list').append(`<div class="col-md-6"><div>${it.code} - ${it.label}</div></div>`);
+                        $('#scheduleSelect').append(`<option value="${it.id}" data-code="${it.code}">${it.label}</option>`);
                     });
-                }).catch(err => {
-                console.log(err);
-            })
+                })
+                .catch(console.error);
         }
 
-        function getDatesForDayOfWeek(dayName, year, month) {
-            const dayMap = {
-                Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3,
-                Thursday: 4, Friday: 5, Saturday: 6
-            };
+        // Load Employee Schedules
+        function loadEmployeeSchedule() {
+            const month = $('#filter_month').val();
+            const year = $('#filter_year').val();
 
+            if (!month || !year) {
+                toastr.error("Please select both month and year.", "Missing Filter");
+                return;
+            }
+
+            fetch(`{{ route('getSchedules') }}?month=${month}&year=${year}`)
+                .then(res => res.json())
+                .then(data => {
+                    let headerHTML = `<th>Name</th><th>Designation</th>`;
+                    for (let i = 1; i <= data.days; i++) {
+                        headerHTML += `<th>${i}</th>`;
+                    }
+                    $('#schedule_header').html(headerHTML);
+
+                    $('#employee_list').empty();
+                    data.schedules.forEach(emp => {
+                        let row = `<tr><td class="d-none">${emp.id}</td><td>${emp.name}</td><td>${emp.designation}</td>`;
+                        emp.schedule.forEach((sched, i) => {
+                            row += `<td class="fw-bold text-primary schedule-cell" style="cursor:pointer"
+                                 data-employee-id="${emp.id}" data-day="${i + 1}">${sched}</td>`;
+                        });
+                        row += `</tr>`;
+                        $('#employee_list').append(row);
+                    });
+                })
+                .catch(console.error);
+        }
+
+        // Get Dates for Day of Week
+        function getDatesForDayOfWeek(dayName, year, month) {
+            const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
             const dates = [];
             const date = new Date(`${year}-${month}-01`);
             const targetDay = dayMap[dayName];
 
-            while (date.getMonth() === parseInt(month) - 1) {
+            while (date.getMonth() === parseInt(month, 10) - 1) {
                 if (date.getDay() === targetDay) {
                     const yyyy = date.getFullYear();
                     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -299,6 +245,5 @@
 
             return dates;
         }
-
     </script>
 @stop

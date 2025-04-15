@@ -105,17 +105,22 @@
             $("#month,#year").change(function () {
                 getDtrLogs();
             });
+
+            $("#btn_print").click(function () {
+                const month = $("#month").val();
+                const year = $("#year").val();
+                const cutoff = $("#cutoff").val();
+                window.open(
+                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff,
+                    '_blank' // <- This is what makes it open in a new window.
+                );
+            });
         });
 
         function printDTR() {
-            const month = $("#month").val();
-            const year = $("#year").val();
-
-            window.open(
-                '{{ route('printDTR') }}?month=' + month + "&year=" + year,
-                '_blank' // <- This is what makes it open in a new window.
-            );
+            $("#print_dtr_modal").modal("show");
         }
+
 
         async function getDtrLogs() {
             const month = $("#month").val();
