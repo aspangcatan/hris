@@ -184,8 +184,6 @@ class CreditController extends Controller
         return [$lateMinutes, $undertimeMinutes];
     }
 
-
-
     private function getNoScheduleDays($scheduleMap, $workdays, $holidays)
     {
         $plottedDays = array_keys($scheduleMap);
@@ -198,12 +196,26 @@ class CreditController extends Controller
             ->where('monthly_points_earned', '>', 0)
             ->get();
 
+        // Total minutes to deduct
+        $totalMinutes = $totalLateMinutes + $totalUndertimeMinutes;
+
+        // Load minute_conversions only once
+        $minuteConversions = DB::table('minute_conversions')
+            ->pluck('points_deduction', 'minute');
+
+        // Calculate minute-based deduction
+        $fullHours = intdiv($totalMinutes, 60);
+        $remainingMinutes = $totalMinutes % 60;
+
+        $deductionFor60 = $minuteConversions[60] ?? 0;
+        $deductionForRemaining = $remainingMinutes > 0 ? ($minuteConversions[$remainingMinutes] ?? 0) : 0;
+
+        $lateUndertimeDeductions = ($deductionFor60 * $fullHours) + $deductionForRemaining;
+
         foreach ($leaveTypes as $leaveType) {
-            $minuteDeduction = $leaveType->minute_deduction ?? 0;
             $dayDeduction = $leaveType->day_deduction ?? 0;
 
             // Total deductions
-            $lateUndertimeDeductions = ($totalLateMinutes + $totalUndertimeMinutes) * $minuteDeduction;
             $absentDeductions = $totalAbsentDays * $dayDeduction;
             $totalDeduction = $lateUndertimeDeductions + $absentDeductions;
 
@@ -257,10 +269,6 @@ class CreditController extends Controller
     }
 
 
-
-    /**
-     * Get all workdays (weekdays) in a given month and year.
-     */
     private function getWorkDays($year, $month)
     {
         $startDate = Carbon::createFromDate($year, $month, 1);

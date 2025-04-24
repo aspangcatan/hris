@@ -14,6 +14,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call(DtrLogsSeeder::class);
+        $this->call(MinuteConversionSeeder::class);
     }
 }
