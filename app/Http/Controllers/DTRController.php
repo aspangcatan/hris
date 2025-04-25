@@ -66,6 +66,17 @@ class DTRController extends Controller
     public function storeDtr(Request $request)
     {
         try {
+
+            // Check IF DEPLOYED STATUS IS MATCH
+            $checkStatus = DB::table('tdh_user.users')
+                ->where('id', '=', $request->input('userid'))
+                ->where('is_deployed', '=', $request->input('is_deployed'))
+                ->first();
+
+            if (!$checkStatus) {
+                return response()->json(['error' => "Your deployment status does not match, please logout then login again"], 500);
+            }
+
             // Check if photo exists
             $photo = $request->input('photo');
             if (!$photo) {
@@ -254,6 +265,7 @@ class DTRController extends Controller
                         'u.mname',
                         'u.lname',
                         'u.picture',
+                        'u.is_deployed',
                         's.description as department',
                         'd.description as division',
                         'de.description as designation'
@@ -412,7 +424,7 @@ class DTRController extends Controller
 
             // Start query
             $employee = DB::table('tdh_user.users as u')
-                ->join('hris.employees as e','u.id','=','e.user_id')
+                ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
                 ->leftJoin('hris.dtr_logs as d', function ($join) {
                     $join->on('u.id', '=', 'd.userid');
@@ -429,7 +441,7 @@ class DTRController extends Controller
                     DB::raw("(SELECT MIN(d1.created_at) FROM hris.dtr_logs d1 WHERE d1.userid = u.id AND d1.status = 'IN' AND DATE(d1.created_at) = '$today') as time_in"),
                     DB::raw("(SELECT MAX(d2.created_at) FROM hris.dtr_logs d2 WHERE d2.userid = u.id AND d2.status = 'OUT' AND DATE(d2.created_at) = '$today') as time_out")
                 )
-                ->where(function($query) {
+                ->where(function ($query) {
                     // Exclude 'Resigned' employees and include those with NULL 'employee_type'
                     $query->where('e.employee_type', '!=', 'Resigned')
                         ->orWhereNull('e.employee_type');
@@ -461,7 +473,6 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
-
 
 
     public function getDivisionList()
