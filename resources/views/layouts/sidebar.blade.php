@@ -121,7 +121,13 @@
         <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('download') }}">
                 <i class="bi bi-android"></i>
-                <span>Download APK</span>
+                <span>Download APK v1.2</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('download_2') }}">
+                <i class="bi bi-android"></i>
+                <span>Download APK v2.0</span>
             </a>
         </li>
     </ul>

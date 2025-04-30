@@ -44,7 +44,11 @@ Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLa
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
 Route::get('/download', function () {
-    return redirect()->to(url('apk/mobile-dtr.apk'));
+    return redirect()->to(url('apk/csmc_mobile_dtr_v1.apk'));
+})->name('download');
+
+Route::get('/download_2', function () {
+    return redirect()->to(url('apk/csmc_mobile_dtr_v2.apk'));
 })->name('download');
 
 Route::group(['middleware' => 'auth'], function () {
