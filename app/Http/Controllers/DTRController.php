@@ -247,11 +247,11 @@ class DTRController extends Controller
                 //CHECK IF user android device is registered
 
                 if (!Auth::user()->android_id) {
-                    return response()->json(['error' => 'Android device not yet registered'], 500);
+                    return response()->json(['error' => 'Device not yet registered'], 500);
                 }
 
                 if (Auth::user()->android_id != $request->imei) {
-                    return response()->json(['error' => 'Android device not matched'], 500);
+                    return response()->json(['error' => 'Device not matched'], 500);
                 }
 
                 $userData = DB::table('tdh_user.users as u')
