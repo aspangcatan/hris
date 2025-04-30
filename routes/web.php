@@ -49,7 +49,7 @@ Route::get('/download', function () {
 
 Route::get('/download_2', function () {
     return redirect()->to(url('apk/csmc_mobile_dtr_v2.apk'));
-})->name('download');
+})->name('download_2');
 
 Route::group(['middleware' => 'auth'], function () {
     #PRINTING
