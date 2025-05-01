@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Date;
 
 class DTRController extends Controller
 {
@@ -495,6 +497,62 @@ class DTRController extends Controller
                 ->get(['id', 'description']);
 
             return response()->json($list);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getLatestLog(Request $request){
+        try {
+            $request->validate([
+                'userid' => 'required|integer',
+            ]);
+
+            $userid = $request->userid;
+            $logs = DB::table('dtr_logs')
+                ->where('userid', '=', $userid)
+                ->orderBy('created_at', 'ASC')
+                ->first();
+            if(!$logs)
+                 return 'OUT';
+            return $logs->status;
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getInOutLogs(Request $request): JsonResponse
+    {
+        try {
+            // Validate userid
+            $request->validate([
+                'userid' => 'required|integer',
+            ]);
+
+            $userId = $request->userid;
+            $today = Date::today(); // Today's date without time
+
+            // Get first IN log for today
+            $start = DB::table('dtr_logs')
+                ->where('userid', $userId)
+                ->where('status', 'IN')
+                ->whereDate('created_at', $today)
+                ->orderBy('created_at', 'ASC')
+                ->first();
+
+            // Get last OUT log for today
+            $end = DB::table('dtr_logs')
+                ->where('userid', $userId)
+                ->where('status', 'OUT')
+                ->whereDate('created_at', $today)
+                ->orderBy('created_at', 'DESC')
+                ->first();
+
+            return response()->json([
+                'in' => $start->created_at ?? null,
+                'out' => $end->created_at ?? null,
+            ]);
+
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
