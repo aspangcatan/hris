@@ -511,7 +511,7 @@ class DTRController extends Controller
             $userid = $request->userid;
             $logs = DB::table('dtr_logs')
                 ->where('userid', '=', $userid)
-                ->orderBy('created_at', 'ASC')
+                ->orderBy('created_at', 'desc')
                 ->first();
             if(!$logs)
                  return 'OUT';
