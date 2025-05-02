@@ -41,6 +41,7 @@ Route::post('/dtr/store', [\App\Http\Controllers\DTRController::class, 'storeDtr
 Route::get('/dtr_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLogs'])->name('getDTRLogs');
 Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLast3']);
 Route::get('/dtr/latestlogs', [\App\Http\Controllers\DTRController::class, 'getLatestLog']);
+Route::get('/dtr/recentlogs', [\App\Http\Controllers\DTRController::class, 'getRecentLogs']);
 Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getInOutLogs']);
 
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');

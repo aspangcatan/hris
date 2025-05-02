@@ -521,6 +521,24 @@ class DTRController extends Controller
         }
     }
 
+    public function getRecentLogs(Request $request){
+        try {
+            $request->validate([
+                'userid' => 'required|integer',
+            ]);
+
+            $userid = $request->userid;
+            $logs = DB::table('dtr_logs')
+                ->where('userid', $userid)
+                ->where('created_at', '>=', Carbon::now()->subDays(30))
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json($logs);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
     public function getInOutLogs(Request $request): JsonResponse
     {
         try {
