@@ -183,7 +183,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">In Charged</td>
+                            <td style="text-align: center;font-size: 14px">In Charge</td>
                             <td></td>
                         </tr>
                     </table>
