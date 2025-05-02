@@ -40,7 +40,7 @@
                     </div>
                 </div>
                 <!-- DTR Table -->
-                <div class="col-md-2">
+                <div class="col-md-6">
                     <button class="btn btn-danger" style="padding: 1rem 1rem;" onclick="printDTR()">
                         <i class="bi bi-printer mr-2"></i>
                         PRINT INDIVIDUAL DTR
