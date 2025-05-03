@@ -1,6 +1,6 @@
 {
   "latest_version": "3.1.0",
-  "apk_url": "https://dohcsmc.com/hris/mobile_dtr_v3.1.0.apk",
+  "apk_url": "https://dohcsmc.com/hris/apk/mobile_dtr_v3.1.0.apk",
   "changelog": "- Bug fixes\n- Improved face detection\n- Faster startup\n- New swipe-to-refresh on logs"
 
 }
