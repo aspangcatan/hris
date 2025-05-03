@@ -43,6 +43,12 @@ Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLa
 Route::get('/dtr/latestlogs', [\App\Http\Controllers\DTRController::class, 'getLatestLog']);
 Route::get('/dtr/recentlogs', [\App\Http\Controllers\DTRController::class, 'getRecentLogs']);
 Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getInOutLogs']);
+Route::get('/apk/download', function () {
+    return response()->file(public_path('apk/mobile_dtr_v3.1.0.apk'), [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'Content-Disposition' => 'attachment; filename=mobile_dtr_v3.1.0.apk',
+    ]);
+});
 
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
