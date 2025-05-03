@@ -44,9 +44,12 @@ Route::get('/dtr/latestlogs', [\App\Http\Controllers\DTRController::class, 'getL
 Route::get('/dtr/recentlogs', [\App\Http\Controllers\DTRController::class, 'getRecentLogs']);
 Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getInOutLogs']);
 Route::get('/apk/download', function () {
-    return response()->file(public_path('apk/mobile_dtr_v3.1.0.apk'), [
+    return response()->file(public_path('apk/mobile_dtr_v3.1.1.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
         'Content-Disposition' => 'attachment; filename=mobile_dtr_v3.1.1.apk',
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
     ]);
 });
 
