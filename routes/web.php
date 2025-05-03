@@ -46,7 +46,7 @@ Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getIn
 Route::get('/apk/download', function () {
     return response()->file(public_path('apk/mobile_dtr_v3.1.0.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
-        'Content-Disposition' => 'attachment; filename=mobile_dtr_v3.1.0.apk',
+        'Content-Disposition' => 'attachment; filename=mobile_dtr_v3.1.1.apk',
     ]);
 });
 
