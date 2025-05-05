@@ -1,5 +1,5 @@
 {
   "latest_version": "3.1.2",
   "apk_url": "https://dohcsmc.com/hris/apk/download?v=3.1.2",
-  "changelog": "- Bug fixes\n- Improved face detection\n- Faster startup\n- New swipe-to-refresh on logs\n- View past 2 months logs"
+  "changelog": "Bug fixes\nImproved face detection\nFaster startup\nNew swipe-to-refresh on logs\nView past 2 months logs"
 }
