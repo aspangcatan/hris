@@ -55,6 +55,16 @@ Route::get('/apk/download', function () {
     ]);
 });
 
+Route::get('/apk/download/facelog', function () {
+    return response()->file(public_path('apk/facelog.apk'), [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'Content-Disposition' => 'attachment; filename=facelog.apk',
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
+    ]);
+});
+
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
 Route::get('/download', function () {
