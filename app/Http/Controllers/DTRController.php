@@ -40,7 +40,7 @@ class DTRController extends Controller
             $user = DB::table('tdh_user.users')
                 ->leftJoin('tdh_user.designation', 'users.designation', '=', 'designation.id')
                 ->leftJoin('tdh_user.division', 'users.division', '=', 'division.id')
-                ->select('users.id', 'fname', 'mname', 'lname','suffix','designation.description as designation','division.description as division')
+                ->select('users.id', 'fname', 'mname', 'lname','suffix','is_deployed','designation.description as designation','division.description as division')
                 ->where('users.username', '=', $request->username)
                 ->first();
             return response()->json($user);
