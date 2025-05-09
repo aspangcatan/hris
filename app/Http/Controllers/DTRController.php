@@ -53,7 +53,7 @@ class DTRController extends Controller
     {
         try {
             $user = DB::table('tdh_user.users')
-                ->where('id', '=', $request->user_id)
+                ->where('username', '=', $request->username)
                 ->first();
 
             if ($user && Hash::check($request->security_pin, $user->security_pin)) {
