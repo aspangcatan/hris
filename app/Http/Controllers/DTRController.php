@@ -8,6 +8,7 @@ use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Date;
@@ -43,6 +44,23 @@ class DTRController extends Controller
                 ->where('users.username', '=', $request->username)
                 ->first();
             return response()->json($user);
+        } catch (\Exception $exception) {
+            return response()->json($exception->getMessage(), 500);
+        }
+    }
+
+    public function verifyPin(Request $request)
+    {
+        try {
+            $user = DB::table('tdh_user.users')
+                ->where('id', '=', $request->user_id)
+                ->first();
+
+            if ($user && Hash::check($request->security_pin, $user->security_pin)) {
+                return response()->json(['message' => 'Pin verified successfully']);
+            } else {
+                return response()->json(['error' => 'Invalid Pin'], 500);
+            }
         } catch (\Exception $exception) {
             return response()->json($exception->getMessage(), 500);
         }

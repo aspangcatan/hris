@@ -15,5 +15,6 @@ class VerifyCsrfToken extends Middleware
         //
         '/dtr/store',
         '/mobile/login',
+        '/user/verify/pin',
     ];
 }
