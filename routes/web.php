@@ -54,6 +54,15 @@ Route::get('/apk/download', function () {
         'Expires' => '0',
     ]);
 });
+Route::get('/apk/download/v1', function () {
+    return response()->file(public_path('apk/mobile_dtr_v1.apk'), [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'Content-Disposition' => 'attachment; filename=mobile_dtr_v1.apk',
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
+    ]);
+})->name('download.v1');
 Route::get('/apk/download/v2', function () {
     return response()->file(public_path('apk/mobile_dtr_v2.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
