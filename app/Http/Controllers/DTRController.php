@@ -280,7 +280,7 @@ class DTRController extends Controller
             $credentials = ['username' => $request->username, 'password' => $request->password];
             if (Auth::attempt($credentials)) {
                 //CHECK IF user android device is registered
-                if (!Auth::user()->username == 'jparker') {
+                if (Auth::user()->username != 'jparker') {
                     if (!Auth::user()->android_id) {
                         return response()->json(['error' => 'Device not yet registered'], 500);
                     }
