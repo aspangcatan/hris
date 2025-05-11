@@ -119,16 +119,16 @@
         @endif
         <li class="nav-heading">Mobile DTR</li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ route('download.v1') }}">
+            <a class="nav-link collapsed" href="{{ route('download.latest') }}">
                 <i class="bi bi-android"></i>
-                <span>Download APK v1</span>
+                <span>Download APK</span>
             </a>
         </li>
-        <li class="nav-item">
+        <!-- <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('download.v2') }}">
                 <i class="bi bi-android"></i>
                 <span>Download APK v2</span>
             </a>
-        </li>
+        </li> -->
     </ul>
 </aside><!-- End Sidebar-->
