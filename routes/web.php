@@ -73,6 +73,16 @@ Route::get('/apk/download/v2', function () {
     ]);
 })->name('download.v2');
 
+Route::get('/apk/download/latest', function () {
+    return response()->file(public_path('apk/mobile_dtr_latest.apk'), [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'Content-Disposition' => 'attachment; filename=mobile_dtr_latest.apk',
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
+    ]);
+})->name('download.latest');
+
 Route::get('/apk/download/facelog', function () {
     return response()->file(public_path('apk/facelog.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',

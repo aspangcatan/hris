@@ -1,5 +1,5 @@
 {
   "latest_version": "3.1.2",
-  "apk_url": "https://dohcsmc.com/hris/apk/download?v=3.1.2.2",
-  "changelog": "Bug fixes\nImproved face detection\nFaster startup\nNew swipe-to-refresh on logs\nView past 2 months logs"
+  "apk_url": "https://dohcsmc.com/hris/apk/download/latest?v=3.2.1",
+  "changelog": "Bug fixes\nRemoved FAB button\nUsers can now directly tap Time In and Out at the top of the screen\nAdded Google Map and removed recent logs from the Home Screen\nAdded location circle to determine correct Time In/Out location"
 }
