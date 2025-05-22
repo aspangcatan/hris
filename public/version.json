@@ -1,5 +1,5 @@
 {
-  "latest_version": "3.3.1",
-  "apk_url": "https://dohcsmc.com/hris/apk/download/latest?v=3.3.1",
-  "changelog": "Adjusted radius to 70m\nRemoved pagination in photo gallery\nAdded version display on Account page\nEnabled mirror toggle for front camera\nFixed minor bugs"
+  "latest_version": "3.3.2",
+  "apk_url": "https://dohcsmc.com/hris/apk/download/latest?v=3.3.2",
+  "changelog": "Fixed minor bugs"
 }

@@ -1,12 +1,12 @@
 {
   "deployed": [
-    [10.257361, 123.859536] //Gaisano SRP
+    { "name": "Gaisano SRP", "coords": [10.257361, 123.859536] }
   ],
   "non_deployed": [
-    [10.25363, 123.83839], //hospital
-    [10.253915, 123.837086], //warehouse
-    [10.258682, 123.8386909], //test location
-    [10.307572, 123.893014], //Region 7
-    [10.267507, 123.836013], //dog site
+    { "name": "hospital", "coords": [10.25363, 123.83839] },
+    { "name": "warehouse", "coords": [10.253915, 123.837086] },
+    { "name": "test location", "coords": [10.258682, 123.8386909] },
+    { "name": "Region 7", "coords": [10.307572, 123.893014] },
+    { "name": "dog site", "coords": [10.267507, 123.836013] }
   ]
 }
