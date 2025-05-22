@@ -5,7 +5,7 @@
   "non_deployed": [
     { "name": "hospital", "coords": [10.25363, 123.83839] },
     { "name": "warehouse", "coords": [10.253915, 123.837086] },
-    { "name": "test location", "coords": [10.258682, 123.8386909] },
+    { "name": "test location", "coords": [10.258528, 123.838923] },
     { "name": "Region 7", "coords": [10.307572, 123.893014] },
     { "name": "dog site", "coords": [10.267507, 123.836013] }
   ]
