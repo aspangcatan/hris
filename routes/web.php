@@ -91,7 +91,7 @@ Route::get('/apk/download/test', function () {
         'Pragma' => 'no-cache',
         'Expires' => '0',
     ]);
-})->name('download.latest');
+})->name('download.test');
 
 Route::get('/apk/download/facelog', function () {
     return response()->file(public_path('apk/facelog.apk'), [
