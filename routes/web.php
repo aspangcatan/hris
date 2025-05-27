@@ -103,6 +103,8 @@ Route::get('/apk/download/facelog', function () {
     ]);
 });
 
+Route::get('/get/employee', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails']);
+
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
 Route::get('/download', function () {
@@ -186,6 +188,10 @@ Route::group(['middleware' => 'auth'], function () {
         return view('settings.leave_management');
     })->name('leave_management');
 
+    Route::get('/payroll_settings', function () {
+        return view('settings.payroll');
+    })->name('payroll_settings');
+
     Route::get('/timetable', function () {
         return view('settings.timetable');
     })->name('timetable');
@@ -199,7 +205,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::put('/update_leave_type', [\App\Http\Controllers\LeaveController::class, 'insertUpdateLeaveType'])->name('insertUpdateLeaveType');
     Route::delete('/delete/leave_type', [\App\Http\Controllers\LeaveController::class, 'deleteLeaveType'])->name('deleteLeaveType');
 
-
+    //PAYROLL SETTINGS
+    Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings');
+    Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings');
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE

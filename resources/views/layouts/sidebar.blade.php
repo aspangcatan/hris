@@ -80,6 +80,21 @@
                     </span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{{ route('payroll_settings') }}">
+                    <i class="bi bi-grid"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link collapsed">
+                    <i class="bi bi-grid"></i>
+                    <span>
+                        Adjustments
+                        <span class="badge bg-danger text-white">Soon</span>
+                    </span>
+                </a>
+            </li>
             <li class="nav-heading">Settings</li>
             @if(session('access_rights') == 'admin')
                 <li class="nav-item">

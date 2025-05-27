@@ -41,7 +41,7 @@ $template = "http://" . $_SERVER['SERVER_NAME'] . "/template";
                         <span class="font-weight-bold">HRIS</span>
                         <br>
                         <small class="text-muted" style="font-size: 0.7em;">
-                            Sign in to start your ssession
+                            Sign in to start your session
                         </small>
                     </h5>
 

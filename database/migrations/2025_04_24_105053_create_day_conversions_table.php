@@ -15,7 +15,7 @@ class CreateDayConversionsTable extends Migration
     {
         Schema::create('day_conversions', function (Blueprint $table) {
             $table->id();
-            $table->integer('days_present', 5, 3);
+            $table->integer('days_present');
             $table->decimal('days_on_leave_without_pay', 5, 3);
             $table->decimal('leave_credits_earned', 6, 3);
             $table->timestamps();

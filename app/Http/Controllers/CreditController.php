@@ -192,6 +192,12 @@ class CreditController extends Controller
 
     private function processLeaveCredits($userId, $previousMonth, $totalLateMinutes, $totalUndertimeMinutes, $totalAbsentDays)
     {
+        //GET POINTS EARNED BASED ON LWOP
+        $monthly_points_earned = DB::table('monthly_earned_points')
+            ->where('lwop', '=', $totalAbsentDays)
+            ->first();
+
+        //GET ALL LEAVES THAT ARE ALLOWED TO EARNED POINTS
         $leaveTypes = DB::table('hris.leave_types')
             ->where('monthly_points_earned', '>', 0)
             ->get();
@@ -220,7 +226,7 @@ class CreditController extends Controller
             $totalDeduction = $lateUndertimeDeductions + $absentDeductions;
 
             // Earned credit after deduction
-            $earnedCredit = max(0, $leaveType->monthly_points_earned - $totalDeduction);
+            $earnedCredit = max(0, $monthly_points_earned->points - $totalDeduction);
 
             // Check if already processed
             $alreadyProcessed = DB::table('hris.leave_credits')
@@ -258,7 +264,7 @@ class CreditController extends Controller
                     'total_late_minutes' => $totalLateMinutes,
                     'total_undertime_minutes' => $totalUndertimeMinutes,
                     'leave_type_id' => $leaveType->id,
-                    'earned_points' => $leaveType->monthly_points_earned,
+                    'earned_points' => $monthly_points_earned->points,
                     'deducted_points' => $totalDeduction,
                     'total_absent' => $totalAbsentDays,
                     'created_at' => now(),
