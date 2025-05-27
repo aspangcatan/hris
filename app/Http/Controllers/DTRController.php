@@ -37,18 +37,38 @@ class DTRController extends Controller
     public function getUserInfoById(Request $request)
     {
         try {
+            // Validate input
+            $request->validate([
+                'employee_no' => 'required|string|regex:/^\d+$/',
+            ]);
+
             $user = DB::table('tdh_user.users')
                 ->leftJoin('hris.employees', 'users.id', '=', 'employees.user_id')
                 ->leftJoin('tdh_user.designation', 'users.designation', '=', 'designation.id')
                 ->leftJoin('tdh_user.division', 'users.division', '=', 'division.id')
-                ->select('users.id','username', 'fname', 'mname', 'lname','suffix','designation.description as designation','division.description as division')
+                ->select(
+                    'users.id',
+                    'username',
+                    'fname',
+                    'mname',
+                    'lname',
+                    'suffix',
+                    'designation.description as designation',
+                    'division.description as division'
+                )
                 ->where('employees.employee_no', '=', (int) $request->employee_no)
                 ->first();
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found.'], 404);
+            }
+
             return response()->json($user);
         } catch (\Exception $exception) {
-            return response()->json($exception->getMessage(), 500);
+            return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
     public function getUserInfo(Request $request)
     {
