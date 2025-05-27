@@ -34,6 +34,22 @@ class DTRController extends Controller
         }
     }
 
+    public function getUserInfoById(Request $request)
+    {
+        try {
+            $user = DB::table('tdh_user.users')
+                ->leftJoin('hris.employees', 'users.id', '=', 'employees.user_id')
+                ->leftJoin('tdh_user.designation', 'users.designation', '=', 'designation.id')
+                ->leftJoin('tdh_user.division', 'users.division', '=', 'division.id')
+                ->select('users.id', 'fname', 'mname', 'lname','suffix','designation.description as designation','division.description as division')
+                ->where('employees.employee_no', '=', $request->employee_no)
+                ->first();
+            return response()->json($user);
+        } catch (\Exception $exception) {
+            return response()->json($exception->getMessage(), 500);
+        }
+    }
+
     public function getUserInfo(Request $request)
     {
         try {

@@ -103,7 +103,7 @@ Route::get('/apk/download/facelog', function () {
     ]);
 });
 
-Route::get('/get/employee', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails']);
+Route::get('/get/employee', [\App\Http\Controllers\DTRController::class, 'getUserInfoById']);
 
 Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
