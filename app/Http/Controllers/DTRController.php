@@ -42,7 +42,7 @@ class DTRController extends Controller
                 ->leftJoin('tdh_user.designation', 'users.designation', '=', 'designation.id')
                 ->leftJoin('tdh_user.division', 'users.division', '=', 'division.id')
                 ->select('users.id','username', 'fname', 'mname', 'lname','suffix','designation.description as designation','division.description as division')
-                ->where('employees.employee_no', '=', $request->employee_no)
+                ->where('employees.employee_no', '=', (int) $request->employee_no)
                 ->first();
             return response()->json($user);
         } catch (\Exception $exception) {
