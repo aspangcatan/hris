@@ -137,6 +137,7 @@ class DTRController extends Controller
     public function storeDtr(Request $request)
     {
         try {
+            return $request;
 
             // Check IF DEPLOYED STATUS IS MATCH
             $checkStatus = DB::table('tdh_user.users')
