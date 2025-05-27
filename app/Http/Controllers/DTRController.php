@@ -137,7 +137,7 @@ class DTRController extends Controller
     public function storeDtr(Request $request)
     {
         try {
-            return response()->json($_POST);
+            return response()->json(['error' => "You are here"], 500);
 
             // Check IF DEPLOYED STATUS IS MATCH
             $checkStatus = DB::table('tdh_user.users')
