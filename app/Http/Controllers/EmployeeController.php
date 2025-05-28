@@ -75,6 +75,32 @@ class EmployeeController extends Controller
         }
     }
 
+    public function getEmployeeByDivisionSection(Request $request)
+    {
+        try {
+
+            $division = $request->division;
+            $section = $request->section;
+
+            $employees = DB::table('hris.employees as e')
+                ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
+                ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->where(function ($query) use ($division, $section) {
+                    $query->where('u.division', '=', $division);
+                    $query->where('u.section', '=', $section);
+                })
+                ->skip($request->page * 10)
+                ->take(11)
+                ->orderBy('u.fname', 'ASC')
+                ->orderBy('u.lname', 'ASC')
+                ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation']);
+
+            return response(['code' => 200, 'results' => $employees]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
     public function getEmployee(Request $request)
     {
         try {
@@ -91,8 +117,8 @@ class EmployeeController extends Controller
                 ->where($search)
                 ->skip($request->page * 10)
                 ->take(11)
-                ->orderBy('u.fname','ASC')
-                ->orderBy('u.lname','ASC')
+                ->orderBy('u.fname', 'ASC')
+                ->orderBy('u.lname', 'ASC')
                 ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
 
             return response(['code' => 200, 'results' => $employees]);

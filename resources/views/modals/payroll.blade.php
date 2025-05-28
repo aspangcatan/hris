@@ -5,11 +5,13 @@
             <!-- Sticky Header -->
             <div class="modal-header bg-primary text-white sticky-top">
                 <h3 class="modal-title">Payroll Settings</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
             </div>
 
             <!-- Scrollable Body -->
-            <div class="modal-body" id="modal_salary_details" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
+            <div class="modal-body" id="modal_salary_details"
+                 style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
 
                 <!-- EMPLOYEE -->
                 <div class="mb-4 border p-3 rounded shadow-sm">
@@ -179,7 +181,116 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="btn_save">Save Changes</button>
             </div>
-
         </div>
     </div>
 </div>
+
+
+<!-- Create Payroll Modal -->
+<div class="modal fade" id="create_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <!-- Sticky Header -->
+            <div class="modal-header bg-primary text-white sticky-top">
+                <h3 class="modal-title">Create Payroll</h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
+
+                <div class="row g-3">
+                    <!-- Payroll Title -->
+                    <div class="col-md-12">
+                        <label for="payroll_title" class="form-label">Payroll Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+
+                    <!-- Payroll Period Start -->
+                    <div class="col-md-6">
+                        <label for="payroll_start" class="form-label">Payroll Period Start</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+
+                    <!-- Payroll Period End -->
+                    <div class="col-md-6">
+                        <label for="payroll_end" class="form-label">Payroll Period End</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="col-md-12">
+                        <label for="payroll_remarks" class="form-label">Remarks</label>
+                        <textarea type="text" class="form-control" id="remarks" name="remarks" rows="5"
+                                  placeholder="Optional"></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer with Save Button -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="btn_save_payroll">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="append_employee_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <!-- Sticky Header -->
+            <div class="modal-header bg-primary text-white sticky-top">
+                <h3 class="modal-title">Append Employees</h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
+
+                <!-- Left Column -->
+
+                <div class="mb-3">
+                    <label for="filter_division" class="form-label">Filter by Division</label>
+                    <select id="filter_division" class="form-select"></select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="filter_section" class="form-label">Filter by Section</label>
+                    <select id="filter_section" class="form-select"></select>
+                </div>
+
+                <div class="border rounded p-2" style="height: 55vh; overflow-y: auto;">
+                    <div>
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light text-center">
+                            <tr>
+                                <th style="width: 10%;"></th>
+                                <th>Full Name</th>
+                                <th>Designation</th>
+                            </tr>
+                            </thead>
+                            <tbody id="employee_list">
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer with Save Button -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="btn_save_employees">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -105,8 +105,6 @@ Route::get('/apk/download/facelog', function () {
 
 Route::get('/get/employee', [\App\Http\Controllers\DTRController::class, 'getUserInfoById']);
 
-Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
-
 Route::get('/download', function () {
     return redirect()->to(url('apk/csmc_mobile_dtr_v1.apk'));
 })->name('download');
@@ -188,6 +186,9 @@ Route::group(['middleware' => 'auth'], function () {
         return view('settings.leave_management');
     })->name('leave_management');
 
+    Route::get('/payroll', function () {
+        return view('payroll');
+    })->name('payroll');
     Route::get('/payroll_settings', function () {
         return view('settings.payroll');
     })->name('payroll_settings');
@@ -197,6 +198,7 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('timetable');
 
 
+    Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
     Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
     Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit');
     Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
@@ -208,6 +210,11 @@ Route::group(['middleware' => 'auth'], function () {
     //PAYROLL SETTINGS
     Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings');
     Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings');
+    //PAYROLL
+    Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');
+    Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll');
+    Route::get('/get_employee_division_section', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeByDivisionSection'])->name('getEmployeeByDivisionSection');
+
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE

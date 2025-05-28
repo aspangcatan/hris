@@ -72,12 +72,9 @@
             </li>
             <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">
-                <a class="nav-link collapsed">
+                <a class="nav-link collapsed" href="{{ route('payroll') }}">
                     <i class="bi bi-grid"></i>
-                    <span>
-                        Payroll
-                        <span class="badge bg-danger text-white">Soon</span>
-                    </span>
+                    <span>Payroll</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -96,7 +93,7 @@
                 </a>
             </li>
             <li class="nav-heading">Settings</li>
-            @if(session('access_rights') == 'admin')
+            @if(session('access_rights') == 'admin' || session('access_rights') == 'calendar')
                 <li class="nav-item">
                     <a class="nav-link collapsed" href="{{ route('calendar') }}">
                         <i class="bi bi-calendar"></i>

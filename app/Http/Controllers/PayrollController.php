@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -153,5 +154,47 @@ class PayrollController extends Controller
         }
     }
 
+
+    public function savePayroll(Request $request)
+    {
+        try {
+            // Validate request
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'remarks' => 'nullable|string',
+            ]);
+
+            // Insert into payroll table (replace 'Payroll' with your actual model or use DB::table)
+            DB::table('payrolls')->insert([
+                'title' => $validated['title'],
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'remarks' => $validated['remarks'],
+                'prepared_by' => Auth::id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['message' => 'Payroll created successfully.']);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getPayroll()
+    {
+        try {
+            $payrolls = DB::table('payrolls')
+                ->select('id', 'title', 'start_date', 'end_date', 'remarks', 'created_at')
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json($payrolls);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
 
 }
