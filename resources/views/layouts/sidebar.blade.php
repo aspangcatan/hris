@@ -28,7 +28,7 @@
                 </a>
             </li>
         @endif
-        @if(session('access_rights') == 'hr' || session('access_rights') == 'admin')
+        @if(session('access_rights') == 'admin')
             <li class="nav-heading">Schedule Management</li>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('schedule') }}">
