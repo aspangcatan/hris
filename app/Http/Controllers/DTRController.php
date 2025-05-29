@@ -379,6 +379,8 @@ class DTRController extends Controller
                     ])
                     ->first();
 
+                $userData->current_date = Carbon::now()->toDateString();
+
                 return response()->json($userData);
             } else {
                 return response()->json(['error' => "Invalid credentials"], 500);
