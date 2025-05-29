@@ -160,11 +160,17 @@ class DTRController extends Controller
                 return response()->json(['error' => 'Invalid image data'], 400);
             }
 
+
+
             $monthYear = Carbon::now()->format('mY'); // e.g., "012025" for January 2025
             $filePath = 'img/' . $request->input('userid') . '/' . $monthYear . '/' . uniqid() . '.jpg';
 
             // Save image to storage
             Storage::disk('public')->put($filePath, $image);
+
+            $eventTime = $request->has('event_time') 
+                ? Carbon::parse($request->input('event_time')) 
+                : Carbon::now(); // fallback if not provided
 
             // Insert into database
             DB::table('dtr_logs')->insert([
@@ -172,7 +178,7 @@ class DTRController extends Controller
                 'status' => $request->input('status'),
                 'type' => 1, // 1 for mobile DTR app
                 'photo_path' => $filePath,
-                'created_at' => Carbon::now(),
+                'created_at' => $eventTime,
             ]);
 
             return response()->json(['message' => 'Successfully Timed ' . $request->input('status')]);
