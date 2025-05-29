@@ -379,7 +379,7 @@ class DTRController extends Controller
                     ])
                     ->first();
 
-                $userData->current_date = Carbon::now()->toDateString();
+                $userData->current_date = Carbon::now()->toDateTimeString();
 
                 return response()->json($userData);
             } else {
