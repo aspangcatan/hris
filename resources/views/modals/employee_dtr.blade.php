@@ -49,3 +49,46 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="add_log_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Time Log</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="log_date" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="log_date" name="date" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="log_time" class="form-label">Time</label>
+                    <input type="time" class="form-control" id="log_time" name="time" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="log_time" class="form-label">Status (IN/OUT)</label>
+                    <select class="form-control" id="log_status">
+                        <option value="IN" selected>IN</option>
+                        <option value="OUT">OUT</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="log_image" class="form-label">Upload Image</label>
+                    <input type="file" class="form-control" id="log_image" name="image" accept="image/*" required>
+                </div>
+
+                <div class="text-end">
+                    <button type="button" class="btn btn-primary" id="btn_save_log">Submit Log</button>
+                </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+

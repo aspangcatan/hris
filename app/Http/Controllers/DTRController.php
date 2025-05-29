@@ -181,6 +181,41 @@ class DTRController extends Controller
         }
     }
 
+    public function storeManual(Request $request)
+    {
+        $request->validate([
+            'status' => 'required|in:IN,OUT',
+            'date'   => 'required|date',
+            'time'   => 'required',
+            'photo'  => 'required|image|max:5120', // max 5MB
+        ]);
+
+        try {
+            $datetime = Carbon::parse("{$request->date} {$request->time}");
+
+            $monthYear = $datetime->format('mY');
+            $filename = uniqid() . '.' . $request->file('photo')->getClientOriginalExtension();
+            $path = "img/{$request->userid}/{$monthYear}/{$filename}";
+
+            // Store image
+            $request->file('photo')->storeAs("public/{$path}", '');
+
+            // Save log
+            DB::table('dtr_logs')->insert([
+                'userid'     => $request->userid,
+                'status'     => $request->status,
+                'type'       => 2, // 2 = manual
+                'photo_path' => $path,
+                'created_at' => $datetime,
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['message' => "Log successfully saved!"]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Server error: ' . $e->getMessage()], 500);
+        }
+    }
 
     public function getDTRLast3(Request $request)
     {

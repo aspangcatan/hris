@@ -26,9 +26,51 @@
 @stop
 @section('js')
     <script>
+        let userid = 0;
         $(document).ready(function () {
             getEmployeeDtr();
             loadDivision();
+
+            $("#btn_save_log").click(async function () {
+                const date = $("#log_date").val();
+                const time = $("#log_time").val();
+                const status = $("#log_status").val();
+                const image = $("#log_image")[0].files[0];
+
+                if (!date || !time || !image) {
+                    alert("All fields are required.");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("userid", userid);
+                formData.append("date", date);
+                formData.append("time", time);
+                formData.append("status", status);
+                formData.append("photo", image);
+                try {
+                    const response = await fetch("{{ route('storeManual') }}", {
+                        method: "POST",
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || "Upload failed");
+                    }
+
+                    const result = await response.json();
+                    alert("Log saved successfully!");
+                    $("#add_log_modal").modal('hide');
+                } catch (err) {
+                    console.error(err);
+                    alert("Error saving log: " + err.message);
+                }
+            });
+
 
             $("#search_division").change(function () {
                 const division = $("#search_division").val();
@@ -53,7 +95,7 @@
                 });
             });
 
-            $("#search_section").change(function (){
+            $("#search_section").change(function () {
                 getEmployeeDtr();
             });
 
@@ -139,7 +181,11 @@
                                 <div class="ms-2 custom-value text-warning">${timeOut}</div>
                             </div>
                             <div class="d-flex justify-content-end mt-3">
-                                <button class="btn btn-sm btn-primary" onclick="viewDtr(` + it.id + `)">
+                                <button class="btn btn-sm btn-success me-1" onclick="addLog(` + it.id + `)">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    ADD LOG
+                                </button>
+                                <button class="btn btn-sm btn-primary ms-1" onclick="viewDtr(` + it.id + `)">
                                     <i class="fas fa-eye mr-1"></i>
                                     VIEW DTR
                                 </button>
@@ -156,6 +202,10 @@
                 });
         }
 
+        async function addLog(id) {
+            userid = id;
+            $("#add_log_modal").modal("show");
+        }
 
         async function viewDtr(id) {
             const month = moment().format("M");
