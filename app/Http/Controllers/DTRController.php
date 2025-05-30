@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 use Barryvdh\Snappy\Facades\SnappyPdf;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Date;
 
 class DTRController extends Controller
 {
@@ -56,7 +55,7 @@ class DTRController extends Controller
                     'designation.description as designation',
                     'division.description as division'
                 )
-                ->where('employees.employee_no', '=', (int) $request->employee_no)
+                ->where('employees.employee_no', '=', (int)$request->employee_no)
                 ->first();
 
             if (!$user) {
@@ -76,7 +75,7 @@ class DTRController extends Controller
             $user = DB::table('tdh_user.users')
                 ->leftJoin('tdh_user.designation', 'users.designation', '=', 'designation.id')
                 ->leftJoin('tdh_user.division', 'users.division', '=', 'division.id')
-                ->select('users.id', 'fname', 'mname', 'lname','suffix','is_deployed','designation.description as designation','division.description as division')
+                ->select('users.id', 'fname', 'mname', 'lname', 'suffix', 'is_deployed', 'designation.description as designation', 'division.description as division')
                 ->where('users.username', '=', $request->username)
                 ->first();
             return response()->json($user);
@@ -185,9 +184,9 @@ class DTRController extends Controller
     {
         $request->validate([
             'status' => 'required|in:IN,OUT',
-            'date'   => 'required|date',
-            'time'   => 'required',
-            'photo'  => 'required|image|max:5120', // max 5MB
+            'date' => 'required|date',
+            'time' => 'required',
+            'photo' => 'required|image|max:5120', // max 5MB
         ]);
 
         try {
@@ -202,9 +201,9 @@ class DTRController extends Controller
 
             // Save log
             DB::table('dtr_logs')->insert([
-                'userid'     => $request->userid,
-                'status'     => $request->status,
-                'type'       => 2, // 2 = manual
+                'userid' => $request->userid,
+                'status' => $request->status,
+                'type' => 2, // 2 = manual
                 'photo_path' => $path,
                 'created_at' => $datetime,
                 'updated_at' => now(),
@@ -607,7 +606,8 @@ class DTRController extends Controller
         }
     }
 
-    public function getLatestLog(Request $request){
+    public function getLatestLog(Request $request)
+    {
         try {
             $request->validate([
                 'userid' => 'required|integer',
@@ -618,15 +618,16 @@ class DTRController extends Controller
                 ->where('userid', '=', $userid)
                 ->orderBy('created_at', 'desc')
                 ->first();
-            if(!$logs)
-                 return 'OUT';
+            if (!$logs)
+                return 'OUT';
             return $logs->status;
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
 
-    public function getRecentLogs(Request $request){
+    public function getRecentLogs(Request $request)
+    {
         try {
             $request->validate([
                 'userid' => 'required|integer',
