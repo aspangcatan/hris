@@ -47,7 +47,7 @@ Route::get('/dtr/recentlogs', [\App\Http\Controllers\DTRController::class, 'getR
 Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getInOutLogs']);
 
 Route::get('/apk/download/old', function () {
-    return response()->file(public_path('apk/mobile_dtr.apk'), [
+    return response()->file(public_path('apk/mobile-dtr.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
         'Content-Disposition' => 'attachment; filename=mobile_dtr_v3.1.2.apk',
         'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
