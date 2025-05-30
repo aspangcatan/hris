@@ -45,6 +45,17 @@ Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLa
 Route::get('/dtr/latestlogs', [\App\Http\Controllers\DTRController::class, 'getLatestLog']);
 Route::get('/dtr/recentlogs', [\App\Http\Controllers\DTRController::class, 'getRecentLogs']);
 Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getInOutLogs']);
+
+Route::get('/apk/download/old', function () {
+    return response()->file(public_path('apk/mobile_dtr.apk'), [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'Content-Disposition' => 'attachment; filename=mobile_dtr_v3.1.2.apk',
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
+    ]);
+})->name('download.old_version');
+
 Route::get('/apk/download', function () {
     return response()->file(public_path('apk/mobile_dtr_v3.1.2.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
@@ -54,6 +65,7 @@ Route::get('/apk/download', function () {
         'Expires' => '0',
     ]);
 });
+
 Route::get('/apk/download/v1', function () {
     return response()->file(public_path('apk/mobile_dtr_v1.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
@@ -63,6 +75,7 @@ Route::get('/apk/download/v1', function () {
         'Expires' => '0',
     ]);
 })->name('download.v1');
+
 Route::get('/apk/download/v2', function () {
     return response()->file(public_path('apk/mobile_dtr_v2.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',

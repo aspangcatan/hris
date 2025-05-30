@@ -136,11 +136,11 @@
                 <span>Download APK</span>
             </a>
         </li>
-        <!-- <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ route('download.v2') }}">
+         <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('download.old_version') }}">
                 <i class="bi bi-android"></i>
                 <span>Download APK v2</span>
             </a>
-        </li> -->
+        </li>
     </ul>
 </aside><!-- End Sidebar-->
