@@ -139,7 +139,7 @@
          <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('download.old_version') }}">
                 <i class="bi bi-android"></i>
-                <span>Download APK v2</span>
+                <span>Download APK Old Version</span>
             </a>
         </li>
     </ul>
