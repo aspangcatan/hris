@@ -1,12 +1,36 @@
 {
   "deployed": [
-    { "name": "Gaisano SRP", "coords": [10.257361, 123.859536] }
+    { 
+      "name": "Gaisano SRP", 
+      "coords": [10.257361, 123.859536],
+      "visible": true
+    }
   ],
   "non_deployed": [
-    { "name": "hospital", "coords": [10.25363, 123.83839] },
-    { "name": "warehouse", "coords": [10.253915, 123.837086] },
-    { "name": "test location", "coords": [10.258528, 123.838923] },
-    { "name": "Region 7", "coords": [10.307572, 123.893014] },
-    { "name": "dog site", "coords": [10.267507, 123.836013] }
+    { 
+      "name": "hospital", 
+      "coords": [10.25363, 123.83839],
+      "visible": true
+    },
+    { 
+      "name": "warehouse", 
+      "coords": [10.253915, 123.837086],
+      "visible": true
+    },
+    { 
+      "name": "test location", 
+      "coords": [10.258528, 123.838923],
+      "visible": false
+    },
+    { 
+      "name": "Region 7", 
+      "coords": [10.307572, 123.893014],
+      "visible": false
+    },
+    { 
+      "name": "dog site", 
+      "coords": [10.267507, 123.836013],
+      "visible": false
+    }
   ]
 }
