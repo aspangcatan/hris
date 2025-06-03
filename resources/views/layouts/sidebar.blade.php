@@ -28,7 +28,7 @@
                 </a>
             </li>
         @endif
-        @if(session('access_rights') == 'hr' || session('access_rights') == 'admin')
+        @if(session('access_rights') == 'admin')
             <li class="nav-heading">Schedule Management</li>
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('schedule') }}">
@@ -72,12 +72,9 @@
             </li>
             <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">
-                <a class="nav-link collapsed">
+                <a class="nav-link collapsed" href="{{ route('payroll') }}">
                     <i class="bi bi-grid"></i>
-                    <span>
-                        Payroll
-                        <span class="badge bg-danger text-white">Soon</span>
-                    </span>
+                    <span>Payroll</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -96,7 +93,7 @@
                 </a>
             </li>
             <li class="nav-heading">Settings</li>
-            @if(session('access_rights') == 'admin')
+            @if(session('access_rights') == 'admin' || session('access_rights') == 'calendar')
                 <li class="nav-item">
                     <a class="nav-link collapsed" href="{{ route('calendar') }}">
                         <i class="bi bi-calendar"></i>
@@ -139,11 +136,11 @@
                 <span>Download APK</span>
             </a>
         </li>
-        <!-- <li class="nav-item">
-            <a class="nav-link collapsed" href="{{ route('download.v2') }}">
+         <li class="nav-item">
+            <a class="nav-link collapsed" href="{{ route('download.old_version') }}">
                 <i class="bi bi-android"></i>
-                <span>Download APK v2</span>
+                <span>Download APK Old Version</span>
             </a>
-        </li> -->
+        </li>
     </ul>
 </aside><!-- End Sidebar-->

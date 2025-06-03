@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 use Barryvdh\Snappy\Facades\SnappyPdf;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Date;
 
 class DTRController extends Controller
 {
@@ -56,7 +55,7 @@ class DTRController extends Controller
                     'designation.description as designation',
                     'division.description as division'
                 )
-                ->where('employees.employee_no', '=', (int) $request->employee_no)
+                ->where('employees.employee_no', '=', (int)$request->employee_no)
                 ->first();
 
             if (!$user) {
@@ -76,7 +75,7 @@ class DTRController extends Controller
             $user = DB::table('tdh_user.users')
                 ->leftJoin('tdh_user.designation', 'users.designation', '=', 'designation.id')
                 ->leftJoin('tdh_user.division', 'users.division', '=', 'division.id')
-                ->select('users.id', 'fname', 'mname', 'lname','suffix','is_deployed','designation.description as designation','division.description as division')
+                ->select('users.id', 'fname', 'mname', 'lname', 'suffix', 'is_deployed', 'designation.description as designation', 'division.description as division')
                 ->where('users.username', '=', $request->username)
                 ->first();
             return response()->json($user);
@@ -160,11 +159,17 @@ class DTRController extends Controller
                 return response()->json(['error' => 'Invalid image data'], 400);
             }
 
+
+
             $monthYear = Carbon::now()->format('mY'); // e.g., "012025" for January 2025
             $filePath = 'img/' . $request->input('userid') . '/' . $monthYear . '/' . uniqid() . '.jpg';
 
             // Save image to storage
             Storage::disk('public')->put($filePath, $image);
+
+            $eventTime = $request->has('event_time') 
+                ? Carbon::parse($request->input('event_time')) 
+                : Carbon::now(); // fallback if not provided
 
             // Insert into database
             DB::table('dtr_logs')->insert([
@@ -172,7 +177,7 @@ class DTRController extends Controller
                 'status' => $request->input('status'),
                 'type' => 1, // 1 for mobile DTR app
                 'photo_path' => $filePath,
-                'created_at' => Carbon::now(),
+                'created_at' => $eventTime,
             ]);
 
             return response()->json(['message' => 'Successfully Timed ' . $request->input('status')]);
@@ -181,6 +186,41 @@ class DTRController extends Controller
         }
     }
 
+    public function storeManual(Request $request)
+    {
+        $request->validate([
+            'status' => 'required|in:IN,OUT',
+            'date' => 'required|date',
+            'time' => 'required',
+            'photo' => 'required|image|max:5120', // max 5MB
+        ]);
+
+        try {
+            $datetime = Carbon::parse("{$request->date} {$request->time}");
+
+            $monthYear = $datetime->format('mY');
+            $filename = uniqid() . '.' . $request->file('photo')->getClientOriginalExtension();
+            $path = "img/{$request->userid}/{$monthYear}/{$filename}";
+
+            // Store image
+            $request->file('photo')->storeAs("public/{$path}", '');
+
+            // Save log
+            DB::table('dtr_logs')->insert([
+                'userid' => $request->userid,
+                'status' => $request->status,
+                'type' => 2, // 2 = manual
+                'photo_path' => $path,
+                'created_at' => $datetime,
+                'updated_at' => now(),
+            ]);
+
+            return response()->json(['message' => "Log successfully saved!"]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Server error: ' . $e->getMessage()], 500);
+        }
+    }
 
     public function getDTRLast3(Request $request)
     {
@@ -343,6 +383,8 @@ class DTRController extends Controller
                         'de.description as designation'
                     ])
                     ->first();
+
+                $userData->current_date = Carbon::now()->toDateTimeString();
 
                 return response()->json($userData);
             } else {
@@ -572,7 +614,8 @@ class DTRController extends Controller
         }
     }
 
-    public function getLatestLog(Request $request){
+    public function getLatestLog(Request $request)
+    {
         try {
             $request->validate([
                 'userid' => 'required|integer',
@@ -583,15 +626,16 @@ class DTRController extends Controller
                 ->where('userid', '=', $userid)
                 ->orderBy('created_at', 'desc')
                 ->first();
-            if(!$logs)
-                 return 'OUT';
+            if (!$logs)
+                return 'OUT';
             return $logs->status;
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
 
-    public function getRecentLogs(Request $request){
+    public function getRecentLogs(Request $request)
+    {
         try {
             $request->validate([
                 'userid' => 'required|integer',

@@ -45,6 +45,17 @@ Route::get('/dtr_3_logs', [\App\Http\Controllers\DTRController::class, 'getDTRLa
 Route::get('/dtr/latestlogs', [\App\Http\Controllers\DTRController::class, 'getLatestLog']);
 Route::get('/dtr/recentlogs', [\App\Http\Controllers\DTRController::class, 'getRecentLogs']);
 Route::get('/dtr/inoutlogs', [\App\Http\Controllers\DTRController::class, 'getInOutLogs']);
+
+Route::get('/apk/download/old', function () {
+    return response()->file(public_path('apk/mobile-dtr.apk'), [
+        'Content-Type' => 'application/vnd.android.package-archive',
+        'Content-Disposition' => 'attachment; filename=mobile_dtr_old_version.apk',
+        'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
+    ]);
+})->name('download.old_version');
+
 Route::get('/apk/download', function () {
     return response()->file(public_path('apk/mobile_dtr_v3.1.2.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
@@ -54,6 +65,7 @@ Route::get('/apk/download', function () {
         'Expires' => '0',
     ]);
 });
+
 Route::get('/apk/download/v1', function () {
     return response()->file(public_path('apk/mobile_dtr_v1.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
@@ -63,6 +75,7 @@ Route::get('/apk/download/v1', function () {
         'Expires' => '0',
     ]);
 })->name('download.v1');
+
 Route::get('/apk/download/v2', function () {
     return response()->file(public_path('apk/mobile_dtr_v2.apk'), [
         'Content-Type' => 'application/vnd.android.package-archive',
@@ -104,8 +117,6 @@ Route::get('/apk/download/facelog', function () {
 });
 
 Route::get('/get/employee', [\App\Http\Controllers\DTRController::class, 'getUserInfoById']);
-
-Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
 
 Route::get('/download', function () {
     return redirect()->to(url('apk/csmc_mobile_dtr_v1.apk'));
@@ -188,6 +199,9 @@ Route::group(['middleware' => 'auth'], function () {
         return view('settings.leave_management');
     })->name('leave_management');
 
+    Route::get('/payroll', function () {
+        return view('payroll');
+    })->name('payroll');
     Route::get('/payroll_settings', function () {
         return view('settings.payroll');
     })->name('payroll_settings');
@@ -197,6 +211,7 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('timetable');
 
 
+    Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
     Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
     Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit');
     Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
@@ -208,6 +223,11 @@ Route::group(['middleware' => 'auth'], function () {
     //PAYROLL SETTINGS
     Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings');
     Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings');
+    //PAYROLL
+    Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');
+    Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll');
+    Route::get('/get_employee_division_section', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeByDivisionSection'])->name('getEmployeeByDivisionSection');
+
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE
@@ -315,6 +335,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_employee_dtr', [\App\Http\Controllers\DTRController::class, 'getEmployeeDtr'])->name('getEmployeeDtr');
     Route::get('/get_division_list', [\App\Http\Controllers\DTRController::class, 'getDivisionList'])->name('getDivisionList');
     Route::get('/get_section_list', [\App\Http\Controllers\DTRController::class, 'getSectionList'])->name('getSectionList');
+    Route::post('/save/dtr_logs', [\App\Http\Controllers\DTRController::class, 'storeManual'])->name('storeManual');
 
 #SCHEDULE MASTERLIST
     Route::get('/get_schedule_master_lists', [\App\Http\Controllers\ScheduleController::class, 'getScheduleMasterList'])->name('getScheduleMasterList');

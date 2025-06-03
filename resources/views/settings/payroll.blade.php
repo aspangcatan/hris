@@ -97,8 +97,6 @@
                     return;
                 }
 
-                console.log(params);
-
                 fetch('{{ route('savePayrollSettings') }}', {
                         method: "POST",
                         headers: {
