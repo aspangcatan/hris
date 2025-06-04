@@ -31,6 +31,11 @@
       "name": "dog site", 
       "coords": [10.267507, 123.836013],
       "visible": false
+    },
+    { 
+      "name": "training", 
+      "coords": [10.324892, 123.915262],
+      "visible": true
     }
   ]
 }
