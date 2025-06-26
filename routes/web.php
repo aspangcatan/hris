@@ -225,6 +225,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings');
     //PAYROLL
     Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');
+    Route::post('/save_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'savePayrollEmployee'])->name('savePayrollEmployee');
     Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll');
     Route::get('/get_employee_division_section', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeByDivisionSection'])->name('getEmployeeByDivisionSection');
 

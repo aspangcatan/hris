@@ -19,6 +19,7 @@ class CreatePayrollsTable extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->text('remarks')->nullable();
+            $table->string('status')->nullable();
             $table->integer('prepared_by');
             $table->timestamps();
         });

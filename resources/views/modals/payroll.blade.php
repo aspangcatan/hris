@@ -242,7 +242,7 @@
 
 <div class="modal fade" id="append_employee_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
 
             <!-- Sticky Header -->
@@ -254,9 +254,6 @@
 
             <!-- Scrollable Body -->
             <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
-
-                <!-- Left Column -->
-
                 <div class="mb-3">
                     <label for="filter_division" class="form-label">Filter by Division</label>
                     <select id="filter_division" class="form-select"></select>
@@ -272,14 +269,19 @@
                         <table class="table table-sm table-bordered align-middle">
                             <thead class="table-light text-center">
                             <tr>
-                                <th style="width: 10%;"></th>
-                                <th>Full Name</th>
-                                <th>Designation</th>
+                                <th rowspan="2" style="width: 4%;"></th>
+                                <th rowspan="2" style="width: 35%">Full Name</th>
+                                <th colspan="5">Adjustment</th>
+                            </tr>
+                            <tr>
+                                <th>Basic Pay</th>
+                                <th>Hazard</th>
+                                <th>PERA</th>
+                                <th>Subsistence</th>
+                                <th>Laundry</th>
                             </tr>
                             </thead>
-                            <tbody id="employee_list">
-
-                            </tbody>
+                            <tbody id="employee_list"></tbody>
                         </table>
                     </div>
                 </div>

@@ -53,7 +53,7 @@
             </div>
 
 
-            <div class="table-responsive mt-3">
+            <div class="table-responsive position-relative" style="overflow: visible;">
                 <table class="table table-bordered align-middle text-center" style="background-color: #fff;">
                     <thead class="table-light">
                     <tr>
@@ -64,7 +64,7 @@
                         <th style="width: 25%">Remarks</th>
                         <th style="width: 10%">Prepared By</th>
                         <th style="width: 10%">Created At</th>
-                        <th colspan="2" style="width: 5%"></th>
+                        <th style="width: 5%"></th>
                     </tr>
                     </thead>
                     <tbody id="payroll_list">
@@ -82,6 +82,8 @@
 @stop
 @section('js')
     <script>
+        let selectedEmployees = [];
+        let payroll_id = 0;
         $(document).ready(function () {
             getPayroll();
             loadDivision();
@@ -93,7 +95,9 @@
                 })
                     .then(response => response.json())
                     .then(data => {
+                        getEmployee($("#filter_division").val(), "");
                         $("#filter_section").empty();
+                        $("#filter_section").append("<option value=''>Select Section</option>");
                         if (division == 0) {
                             $("#filter_section").addClass("d-none");
                         } else {
@@ -104,18 +108,126 @@
                             const option = `<option value="` + it.id + `">` + it.description + `</option>`;
                             $("#filter_section").append(option);
                         });
+
+                        updateCheckedStatus();
                     }).catch(err => {
                     alert("Ooops, something went wrong. Please reload");
                 });
             });
 
+            $("body").on("change", ".employee-checkbox", function () {
+                const value = $(this).val();
+                const row = $(this).closest("tr");
+
+                if ($(this).prop("checked")) {
+                    // Only add if not already present
+                    if (!selectedEmployees.some(emp => emp.userid === value)) {
+                        selectedEmployees.push({
+                            userid: value,
+                            salary: row.find(".employee-adjustment").eq(0).val(),
+                            hazard: row.find(".employee-adjustment").eq(1).val(),
+                            pera: row.find(".employee-adjustment").eq(2).val(),
+                            subsistence: row.find(".employee-adjustment").eq(3).val(),
+                            laundry: row.find(".employee-adjustment").eq(4).val(),
+                        });
+                    }
+                } else {
+                    // Remove from array
+                    selectedEmployees = selectedEmployees.filter(emp => emp.userid !== value);
+                }
+            });
+
+            $("body").on("input", ".employee-adjustment", function () {
+                const row = $(this).closest("tr");
+                const checkbox = row.find(".employee-checkbox");
+                const value = checkbox.val();
+
+                if (checkbox.prop("checked")) {
+                    // Update existing record
+                    const existing = selectedEmployees.find(emp => emp.userid === value);
+                    if (existing) {
+                        existing.salary = row.find(".employee-adjustment").eq(0).val();
+                        existing.hazard = row.find(".employee-adjustment").eq(1).val();
+                        existing.pera = row.find(".employee-adjustment").eq(2).val();
+                        existing.subsistence = row.find(".employee-adjustment").eq(3).val();
+                        existing.laundry = row.find(".employee-adjustment").eq(4).val();
+                    } else {
+                        // If somehow not found but checkbox is checked, add it
+                        selectedEmployees.push({
+                            userid: value,
+                            salary: row.find(".employee-adjustment").eq(0).val(),
+                            hazard: row.find(".employee-adjustment").eq(1).val(),
+                            pera: row.find(".employee-adjustment").eq(2).val(),
+                            subsistence: row.find(".employee-adjustment").eq(3).val(),
+                            laundry: row.find(".employee-adjustment").eq(4).val(),
+                        });
+                    }
+                }
+            });
+
+
             $("#filter_section").change(function () {
-                getEmployee($("#filter_division").val(),$(this).val());
+                getEmployee($("#filter_division").val(), $(this).val());
             });
 
             $("#btn_add").click(function () {
                 $("#create_payroll_modal").modal("show");
             });
+
+            $("#btn_save_employees").click(function () {
+                const checked = [];
+                $(".employee-checkbox:checked").each(function () {
+                    // Get the user_id from the value attribute
+                    var userId = $(this).val();
+
+                    // Get the full name from data-name attribute
+                    var fullName = $(this).data("name");
+
+                    // Get the row of the current checkbox
+                    var row = $(this).closest("tr");
+
+                    // Collect the input values in that row (assuming order matters)
+                    var inputValues = row.find("input[type='number']").map(function () {
+                        return $(this).val();
+                    }).get(); // get() returns the array
+
+                    // Log or process the data
+                    checked.push({
+                        "userid": userId,
+                        "salary_adjustment": inputValues[0],
+                        "hazard_adjustment": inputValues[1],
+                        "pera_adjustment": inputValues[2],
+                        "subsistence_adjustment": inputValues[3],
+                        "laundry_adjustment": inputValues[4]
+                    });
+                });
+
+                console.log({
+                    "payroll_id": payroll_id,
+                    "employees": checked
+                });
+
+
+                fetch('{{ route('savePayrollEmployee') }}', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    body: JSON.stringify({
+                        "payroll_id": payroll_id,
+                        "employees": checked
+                    })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        toastr.success(data.message, 'Information');
+                    }).catch(err => {
+                    console.log(err);
+                });
+
+            });
+
 
             $("#btn_save_payroll").click(function () {
                 const title = $("#title").val().trim();
@@ -179,18 +291,32 @@
                             <input type="checkbox" class="form-check-input employee-checkbox" value="${emp.user_id}" data-name="${fullName}">
                         </td>
                         <td class="text-center">${fullName}</td>
-                        <td class="text-center">${emp.designation}</td>
+                        <td>
+                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
+                        </td>
+                        <td>
+                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
+                        </td>
+                        <td>
+                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
+                        </td>
+                        <td>
+                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
+                        </td>
+                        <td>
+                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
+                        </td>
                     </tr>
                 `;
 
                         $tbody.append(row);
                     });
+                    updateCheckedStatus();
                 })
                 .catch(err => {
                     console.error("Error fetching employees:", err);
                 });
         }
-
 
 
         function loadDivision() {
@@ -199,6 +325,7 @@
             })
                 .then(response => response.json())
                 .then(data => {
+                    $("#filter_division").append("<option value=''>Select division</option>");
                     data.forEach(it => {
                         const option = `<option value="` + it.id + `">` + it.description + `</option>`;
                         $("#filter_division").append(option);
@@ -208,7 +335,27 @@
             });
         }
 
-        function editPayroll(id) {
+        function updateCheckedStatus() {
+            selectedEmployees.forEach(emp => {
+                // Find the checkbox for this employee
+                const checkbox = $(".employee-checkbox[value='" + emp.userid + "']");
+                const row = checkbox.closest("tr");
+
+                // Check the checkbox
+                checkbox.prop("checked", true);
+
+                // Update the input fields
+                row.find(".employee-adjustment").eq(0).val(emp.salary);
+                row.find(".employee-adjustment").eq(1).val(emp.hazard);
+                row.find(".employee-adjustment").eq(2).val(emp.pera);
+                row.find(".employee-adjustment").eq(3).val(emp.subsistence);
+                row.find(".employee-adjustment").eq(4).val(emp.laundry);
+            });
+        }
+
+
+        function managePayroll(id) {
+            payroll_id = id;
             $("#append_employee_modal").modal("show");
         }
 
@@ -226,23 +373,29 @@
 
                     data.forEach(item => {
                         const row = `
-                    <tr>
-                        <td>${item.title}</td>
-                        <td>${moment(item.start_date).format('MM/DD/YYYY')}</td>
-                        <td>${moment(item.end_date).format('MM/DD/YYYY')}</td>
-                        <td></td>
-                        <td>${item.remarks || ''}</td>
-                        <td></td>
-                        <td>${moment(item.created_at).format('MM/DD/YYYY hh:mm:ss A')}</td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editPayroll(${item.id})">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="managePayroll(${item.id})">
-                                <i class="bi bi-gear"></i>
-                            </button>
-                        </td>
-                    </tr>`;
+                        <tr>
+                            <td>${item.title}</td>
+                            <td>${moment(item.start_date).format('MM/DD/YYYY')}</td>
+                            <td>${moment(item.end_date).format('MM/DD/YYYY')}</td>
+                            <td></td>
+                            <td>${item.remarks || ''}</td>
+                            <td></td>
+                            <td>${moment(item.created_at).format('MM/DD/YYYY hh:mm:ss A')}</td>
+                            <td class="text-center position-relative">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu position-absolute" style="z-index: 9999; right: 0; top: 100%;">
+                                        <li><a class="dropdown-item" href="#" onclick="editPayroll(${item.id})">Edit</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="managePayroll(${item.id})">Assign Employee</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="downloadPayroll(${item.id})">Download</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deletePayroll(${item.id})">Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>`;
                         tbody.append(row);
                     });
                 })

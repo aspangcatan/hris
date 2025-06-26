@@ -83,14 +83,13 @@ class EmployeeController extends Controller
             $section = $request->section;
 
             $employees = DB::table('hris.employees as e')
-                ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
-                ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->leftJoin('tdh_user.users as u', 'e.user_id', '=', 'u.id')
+                ->leftJoin('tdh_user.designation as d', 'u.designation', '=', 'd.id')
                 ->where(function ($query) use ($division, $section) {
                     $query->where('u.division', '=', $division);
-                    $query->where('u.section', '=', $section);
+                    if ($section)
+                        $query->where('u.section', '=', $section);
                 })
-                ->skip($request->page * 10)
-                ->take(11)
                 ->orderBy('u.fname', 'ASC')
                 ->orderBy('u.lname', 'ASC')
                 ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation']);

@@ -167,8 +167,8 @@ class DTRController extends Controller
             // Save image to storage
             Storage::disk('public')->put($filePath, $image);
 
-            $eventTime = $request->has('event_time') 
-                ? Carbon::parse($request->input('event_time')) 
+            $eventTime = $request->has('event_time')
+                ? Carbon::parse($request->input('event_time'))
                 : Carbon::now(); // fallback if not provided
 
             // Insert into database
@@ -390,7 +390,6 @@ class DTRController extends Controller
             } else {
                 return response()->json(['error' => "Invalid credentials"], 500);
             }
-            return ['code' => 500, 'message' => 'Invalid credentials'];
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
