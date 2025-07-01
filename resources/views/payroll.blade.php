@@ -88,6 +88,18 @@
             getPayroll();
             loadDivision();
 
+            $("#select_all").change(function () {
+                if ($(this).prop("checked")) {
+                    $(".employee-checkbox").prop("checked", true).change();
+                } else {
+                    $(".employee-checkbox").prop("checked", false).change();
+                }
+            });
+
+            $("#filter_status").change(function () {
+                getEmployee($("#filter_division").val(), $("#filter_section").val(), $("#filter_status").val());
+            });
+
             $("#filter_division").change(function () {
                 const division = $("#filter_division").val();
                 fetch("{{ route('getSectionList') }}?division=" + division, {
@@ -95,7 +107,7 @@
                 })
                     .then(response => response.json())
                     .then(data => {
-                        getEmployee($("#filter_division").val(), "");
+                        getEmployee($("#filter_division").val(), "", $("#filter_status").val());
                         $("#filter_section").empty();
                         $("#filter_section").append("<option value=''>Select Section</option>");
                         if (division == 0) {
@@ -124,11 +136,11 @@
                     if (!selectedEmployees.some(emp => emp.userid === value)) {
                         selectedEmployees.push({
                             userid: value,
-                            salary: row.find(".employee-adjustment").eq(0).val(),
-                            hazard: row.find(".employee-adjustment").eq(1).val(),
-                            pera: row.find(".employee-adjustment").eq(2).val(),
-                            subsistence: row.find(".employee-adjustment").eq(3).val(),
-                            laundry: row.find(".employee-adjustment").eq(4).val(),
+                            salary_adjustment: row.find(".employee-adjustment").eq(0).val(),
+                            hazard_adjustment: row.find(".employee-adjustment").eq(1).val(),
+                            pera_adjustment: row.find(".employee-adjustment").eq(2).val(),
+                            subsistence_adjustment: row.find(".employee-adjustment").eq(3).val(),
+                            laundry_adjustment: row.find(".employee-adjustment").eq(4).val(),
                         });
                     }
                 } else {
@@ -146,20 +158,20 @@
                     // Update existing record
                     const existing = selectedEmployees.find(emp => emp.userid === value);
                     if (existing) {
-                        existing.salary = row.find(".employee-adjustment").eq(0).val();
-                        existing.hazard = row.find(".employee-adjustment").eq(1).val();
-                        existing.pera = row.find(".employee-adjustment").eq(2).val();
-                        existing.subsistence = row.find(".employee-adjustment").eq(3).val();
-                        existing.laundry = row.find(".employee-adjustment").eq(4).val();
+                        existing.salary_adjustment = row.find(".employee-adjustment").eq(0).val();
+                        existing.hazard_adjustment = row.find(".employee-adjustment").eq(1).val();
+                        existing.pera_adjustment = row.find(".employee-adjustment").eq(2).val();
+                        existing.subsistence_adjustment = row.find(".employee-adjustment").eq(3).val();
+                        existing.laundry_adjustment = row.find(".employee-adjustment").eq(4).val();
                     } else {
                         // If somehow not found but checkbox is checked, add it
                         selectedEmployees.push({
                             userid: value,
-                            salary: row.find(".employee-adjustment").eq(0).val(),
-                            hazard: row.find(".employee-adjustment").eq(1).val(),
-                            pera: row.find(".employee-adjustment").eq(2).val(),
-                            subsistence: row.find(".employee-adjustment").eq(3).val(),
-                            laundry: row.find(".employee-adjustment").eq(4).val(),
+                            salary_adjustment: row.find(".employee-adjustment").eq(0).val(),
+                            hazard_adjustment: row.find(".employee-adjustment").eq(1).val(),
+                            pera_adjustment: row.find(".employee-adjustment").eq(2).val(),
+                            subsistence_adjustment: row.find(".employee-adjustment").eq(3).val(),
+                            laundry_adjustment: row.find(".employee-adjustment").eq(4).val(),
                         });
                     }
                 }
@@ -167,7 +179,7 @@
 
 
             $("#filter_section").change(function () {
-                getEmployee($("#filter_division").val(), $(this).val());
+                getEmployee($("#filter_division").val(), $("#filter_section").val(), $("#filter_status").val());
             });
 
             $("#btn_add").click(function () {
@@ -273,13 +285,13 @@
             });
         });
 
-        function getEmployee(division, section) {
-            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}`)
+        function getEmployee(division, section, type) {
+            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}&type=${type}`)
                 .then(response => response.json())
                 .then(data => {
                     const $tbody = $('#employee_list');
                     $tbody.empty(); // Clear current list
-
+                    $("#select_all").prop("checked", false);
                     data.results.forEach(emp => {
                         const middleInitial = emp.mname ? emp.mname.charAt(0) + '.' : '';
                         const suffix = emp.suffix ?? '';
@@ -345,11 +357,11 @@
                 checkbox.prop("checked", true);
 
                 // Update the input fields
-                row.find(".employee-adjustment").eq(0).val(emp.salary);
-                row.find(".employee-adjustment").eq(1).val(emp.hazard);
-                row.find(".employee-adjustment").eq(2).val(emp.pera);
-                row.find(".employee-adjustment").eq(3).val(emp.subsistence);
-                row.find(".employee-adjustment").eq(4).val(emp.laundry);
+                row.find(".employee-adjustment").eq(0).val(emp.salary_adjustment || "0.00");
+                row.find(".employee-adjustment").eq(1).val(emp.hazard_adjustment || "0.00");
+                row.find(".employee-adjustment").eq(2).val(emp.pera_adjustment || "0.00");
+                row.find(".employee-adjustment").eq(3).val(emp.subsistence_adjustment || "0.00");
+                row.find(".employee-adjustment").eq(4).val(emp.laundry_adjustment || "0.00");
             });
         }
 
@@ -389,6 +401,7 @@
                                     <ul class="dropdown-menu position-absolute" style="z-index: 9999; right: 0; top: 100%;">
                                         <li><a class="dropdown-item" href="#" onclick="editPayroll(${item.id})">Edit</a></li>
                                         <li><a class="dropdown-item" href="#" onclick="managePayroll(${item.id})">Assign Employee</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="viewPayroll(${item.id})">View</a></li>
                                         <li><a class="dropdown-item" href="#" onclick="downloadPayroll(${item.id})">Download</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item text-danger" href="#" onclick="deletePayroll(${item.id})">Delete</a></li>

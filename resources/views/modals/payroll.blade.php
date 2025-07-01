@@ -254,22 +254,43 @@
 
             <!-- Scrollable Body -->
             <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
-                <div class="mb-3">
-                    <label for="filter_division" class="form-label">Filter by Division</label>
-                    <select id="filter_division" class="form-select"></select>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="filter_division" class="form-label">Filter by Division</label>
+                            <select id="filter_division" class="form-select"></select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="filter_section" class="form-label">Filter by Section</label>
+                            <select id="filter_section" class="form-select"></select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label for="filter_status" class="form-label">Filter by Status</label>
+                            <select id="filter_status" class="form-select">
+                                <option value="" selected>Select status</option>
+                                <option>Job Order</option>
+                                <option>Permanent</option>
+                                <option>Resigned</option>
+                                <option>Retired</option>
+                                <option>Temporary</option>
+                                <option>EOT</option>
+                                <option>COS</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="mb-3">
-                    <label for="filter_section" class="form-label">Filter by Section</label>
-                    <select id="filter_section" class="form-select"></select>
-                </div>
-
                 <div class="border rounded p-2" style="height: 55vh; overflow-y: auto;">
                     <div>
                         <table class="table table-sm table-bordered align-middle">
                             <thead class="table-light text-center">
                             <tr>
-                                <th rowspan="2" style="width: 4%;"></th>
+                                <th rowspan="2" style="width: 4%;">
+                                    <input class="form-check-input" type="checkbox" id="select_all"/>
+                                </th>
                                 <th rowspan="2" style="width: 35%">Full Name</th>
                                 <th colspan="5">Adjustment</th>
                             </tr>

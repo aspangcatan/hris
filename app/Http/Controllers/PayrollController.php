@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DTRServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -9,6 +10,15 @@ use Illuminate\Validation\ValidationException;
 
 class PayrollController extends Controller
 {
+
+    protected $dtrServices;
+
+
+    public function __construct(DTRServices $dtrServices)
+    {
+        $this->dtrServices = $dtrServices;
+    }
+
     public function getPayrollSettings(Request $request)
     {
         try {
@@ -215,8 +225,18 @@ class PayrollController extends Controller
                     ->where('userid', '=', $employee["userid"])
                     ->first();
 
+                list($totalLateUndertimeMinutes, $totalAbsentDays) = $this->dtrServices->getTotalLateAbsent($employee["userid"], 6, 2025);
 
                 $basic_salary = $salary->basic_salary ?? 0.00;
+                $daily_rate = $basic_salary / 22; // Assuming 22 working days in a month
+                $hourly_rate = $daily_rate / 8;
+                $minute_rate = $hourly_rate / 60;
+
+                $lateUndertimeDeduction = $totalLateUndertimeMinutes * $minute_rate;
+                $absentDeduction = $totalAbsentDays * $daily_rate;
+                $totalTardinessDeductions = $lateUndertimeDeduction + $absentDeduction;
+
+
                 $pera = $benefits->pera ?? 0.00;
                 $rata = $benefits->rata ?? 0.00;
                 $subsistence = $benefits->subsistence ?? 0.00;
@@ -224,8 +244,7 @@ class PayrollController extends Controller
                 $longevity = $benefits->longevity ?? 0.00;
                 $cellphone_allowance = $benefits->cellphone_allowance ?? 0.00;
 
-                $gross_pay = $basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance;
-
+                $gross_pay = ($basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance) - $totalTardinessDeductions;
 
                 // Safely extract each deduction with null fallback
                 $gsis_ps = $deductions->gsis_ps ?? 0.00;
@@ -255,6 +274,7 @@ class PayrollController extends Controller
                 $meds_payable = $deductions->meds_payable ?? 0.00;
                 $sss_deduction = $deductions->sss_deduction ?? 0.00;
 
+
                 $total_deductions = $gsis_ps + $gsis_gs + $gsis_ec + $hdmf + $phic +
                     $pagibig_cal + $pagibig_mpl + $pagibig_mp2 + $pagibig_mp2_2nd + $pagibig_mp2_3rd +
                     $gsis_consoloan + $gsis_emergency_loan + $gsis_educational_loan +
@@ -275,6 +295,7 @@ class PayrollController extends Controller
                     'laundry' => $laundry,
                     'longevity' => $longevity,
                     'cellphone_allowance' => $cellphone_allowance,
+                    'late_absent' => $totalTardinessDeductions,
                     'gross_pay' => $gross_pay,
                     'gsis_ps' => $gsis_ps,
                     'gsis_gs' => $gsis_gs,
@@ -303,11 +324,15 @@ class PayrollController extends Controller
                     'meds_payable' => $meds_payable,
                     'sss_deduction' => $sss_deduction,
                     'deductions' => $total_deductions,
+                    'net_pay' => $gross_pay - $total_deductions,
+                    'salary_adjustment' => $employee['salary_adjustment'],
+                    'hazard_adjustment' => $employee['hazard_adjustment'],
+                    'pera_adjustment' => $employee['pera_adjustment'],
+                    'subsistence_adjustment' => $employee['subsistence_adjustment'],
+                    'laundry_adjustment' => $employee['laundry_adjustment'],
                     'created_at' => now()
                 ]);
-
             }
-
             return response()->json(['message' => "DONE"]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);

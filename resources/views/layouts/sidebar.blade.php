@@ -20,7 +20,7 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
-        @if(session('is_section_head') || session('access_rights') == 'admin')
+        @if(session('SH') || session('access_rights') == 'admin')
             <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('employee_dtr') }}">
                     <i class="bi bi-grid"></i>
