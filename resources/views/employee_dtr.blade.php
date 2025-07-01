@@ -41,7 +41,7 @@
                 const cutoff = undefined;
                 window.open(
                     '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&userid=" + userid,
-                    '_blank' // <- This is what makes it open in a new window.
+                    '_blank' // <- This is what makes  t open in a new window.
                 );
             });
 
