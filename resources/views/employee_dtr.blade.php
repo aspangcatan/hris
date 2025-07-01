@@ -31,6 +31,20 @@
             getEmployeeDtr();
             loadDivision();
 
+            $("#month,#year").change(function () {
+                viewDtr(userid);
+            });
+
+            $("#btn_print").click(function () {
+                const month = $("#month").val();
+                const year = $("#year").val();
+                const cutoff = undefined;
+                window.open(
+                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&userid=" + userid,
+                    '_blank' // <- This is what makes it open in a new window.
+                );
+            });
+
             $("#btn_save_log").click(async function () {
                 const date = $("#log_date").val();
                 const time = $("#log_time").val();
@@ -208,8 +222,14 @@
         }
 
         async function viewDtr(id) {
-            const month = moment().format("M");
-            const year = moment().format("YYYY");
+            userid = id;
+            let month = $("#month").val();
+            let year = $("#year").val();
+
+            if (!month && !year) {
+                month = moment().format("M");
+                year = moment().format("YYYY");
+            }
 
             fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year + "&userid=" + id, {
                 method: "GET"

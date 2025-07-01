@@ -404,6 +404,8 @@ class DTRController extends Controller
             $year = $request->year;
             $cutoff = $request->cutoff ?? 'full'; // default is full month
 
+            $userid = $request->userid ?? Auth::id();
+
             // Determine start and end day based on cutoff
             $startDay = 1;
             $endDay = Carbon::createFromDate($year, $month, 1)->daysInMonth;
@@ -417,7 +419,7 @@ class DTRController extends Controller
             // Fetch all employees in the current division
             $employees = DB::table('tdh_user.users')
                 ->where('division', Auth::user()->division)
-                ->where('id', Auth::id())
+                ->where('id',$userid)
                 ->get();
 
             $dtrData = [];

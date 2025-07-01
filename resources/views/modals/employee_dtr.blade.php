@@ -7,6 +7,47 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div class="row mb-3 mt-3">
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <select class="form-control" id="month">
+                                <option value="" selected disabled>Select month</option>
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                            <label for="floatingInput">Month</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <select class="form-control" id="year">
+                                <option value="">Select year</option>
+                                @for($year=2023; $year<= \Carbon\Carbon::now()->format('Y'); $year++)
+                                    <option>{{ $year }}</option>
+                                @endfor
+                            </select>
+                            <label for="year" class="form-label">Year</label>
+                        </div>
+                    </div>
+                    <!-- DTR Table -->
+                    <div class="col-md-6">
+                        <button class="btn btn-danger" style="padding: 1rem 1rem;" id="btn_print">
+                            <i class="bi bi-printer mr-2"></i>
+                            PRINT DTR
+                        </button>
+                    </div>
+                </div>
+
                 <div class="row mt-5">
                     <div class="col-md-6">
                         <div class="table-responsive">
