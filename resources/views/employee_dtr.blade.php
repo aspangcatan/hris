@@ -1,7 +1,7 @@
 @extends('master')
 @section('content')
     <div class="d-flex justify-content-end mb-2">
-        @if(session('access_rights') == 'admin')
+        @if(session('access_rights') == 'admin' || session('access_rights') == 'DH')
             <div class="ms-2 me-1">
                 <select class="form-control" id="search_division">
                     <option value="">Search division</option>
@@ -20,13 +20,23 @@
         </div>
     </div>
 
-    <div class="row mt-5" id="employee-container"></div>
+    <div id="loading-message" class="text-center my-4" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading, please wait while we fetch the data...</p>
+    </div>
+
+    <div class="row mt-5" id="employee-container">
+        <!-- DTR cards will be appended here -->
+    </div>
 
     @include('modals.employee_dtr')
 @stop
 @section('js')
     <script>
         let userid = 0;
+        let log_id = 0;
         $(document).ready(function () {
             getEmployeeDtr();
             loadDivision();
@@ -49,26 +59,29 @@
                 const date = $("#log_date").val();
                 const time = $("#log_time").val();
                 const status = $("#log_status").val();
-                const image = $("#log_image")[0].files[0];
 
-                if (!date || !time || !image) {
+                if (!date || !time) {
                     alert("All fields are required.");
                     return;
                 }
 
-                const formData = new FormData();
-                formData.append("userid", userid);
-                formData.append("date", date);
-                formData.append("time", time);
-                formData.append("status", status);
-                formData.append("photo", image);
+
+                const params = {
+                    log_id: log_id,
+                    userid: userid,
+                    date: date,
+                    time: time,
+                    status: status
+                }
+
                 try {
                     const response = await fetch("{{ route('storeManual') }}", {
                         method: "POST",
                         headers: {
+                            "Content-Type": "application/json",
                             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                         },
-                        body: formData
+                        body: JSON.stringify(params)
                     });
 
                     if (!response.ok) {
@@ -77,8 +90,15 @@
                     }
 
                     const result = await response.json();
-                    alert("Log saved successfully!");
-                    $("#add_log_modal").modal('hide');
+                    toastr.success(result.message, "Information");
+                    $("#add_log_modal").modal("hide");
+                    // optionally reset form
+                    $("#log_date").val("");
+                    $("#log_time").val("");
+                    $("#log_status").val("");
+
+                    viewDtr(userid);
+
                 } catch (err) {
                     console.error(err);
                     alert("Error saving log: " + err.message);
@@ -118,21 +138,75 @@
                     getEmployeeDtr(); // Call your fetch function
                 }
             });
+
+
+            $(document).on("click", ".empty-field", function (e) {
+                e.preventDefault();
+
+                log_id = 0;
+                const status = $(this).data("type");   // "timein" or "timeout"
+                const day = $(this).data("day");
+
+                // Get values or fallback to current date
+                let month = $("#month").val();
+                let year = $("#year").val();
+
+                const now = moment(); // current date/time
+
+                if (!month) {
+                    month = now.format("MM"); // current month
+                }
+
+                if (!year) {
+                    year = now.format("YYYY"); // current year
+                }
+
+                // Construct and format the date
+                const date = moment(`${year}-${month}-${day}`, "YYYY-MM-DD").format("YYYY-MM-DD");
+
+                // Show modal and populate fields
+                $("#add_log_modal").modal("show");
+                $("#log_date").val(date);
+                $("#log_status").val(status);
+            });
+
+            $("#raw_list").on("click", ".edit-btn", function () {
+                log_id = $(this).data("id");
+                const date = $(this).data("date");
+                const status = $(this).data("status");
+                const time = $(this).data("time");
+
+                // Populate modal fields
+                $("#log_date").val(moment(date, "MM/DD/YYYY").format("YYYY-MM-DD"));
+                $("#log_status").val(status);
+                $("#log_time").val(moment(time, "hh:mm:ss A").format("HH:mm"));
+
+                // Show the modal
+                $("#add_log_modal").modal("show");
+            });
         });
 
         function loadDivision() {
+            const division = @json(Auth::user()->division);
+            const access = @json(session('access_rights'));
+
             fetch("{{ route('getDivisionList') }}", {
                 method: "GET"
             })
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(it => {
-                        const option = `<option value="` + it.id + `">` + it.description + `</option>`;
+                        if (access === "DH" && division != it.id) {
+                            return; // Skip non-matching divisions for DH
+                        }
+
+                        const option = `<option value="${it.id}">${it.description}</option>`;
                         $("#search_division").append(option);
                     });
-                }).catch(err => {
-                alert("Ooops, something went wrong. Please reload");
-            });
+                })
+                .catch(err => {
+                    alert("Ooops, something went wrong. Please reload");
+                });
         }
 
         async function getEmployeeDtr() {
@@ -144,6 +218,12 @@
             const search_fname = $("#search_fname").val();
             const search_lname = $("#search_lname").val();
 
+            const container = $("#employee-container");
+            const loading = $("#loading-message");
+
+            container.empty();         // Clear old results
+            loading.show();            // Show loading spinner
+
             fetch("{{ route('getEmployeeDtr') }}?search_section=" + search_section +
                 "&search_division=" + search_division +
                 "&search_fname=" + search_fname +
@@ -152,12 +232,9 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    const container = $("#employee-container"); // jQuery selector
-                    container.empty(); // Clear previous content
                     const path = '{{ url('/avatar/')}}';
 
                     data.forEach(it => {
-
                         const image = (it.picture) ? (path + "/" + it.picture) : "assets/img/logo.png";
                         const timeIn = it.time_in ? new Date(it.time_in).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -173,8 +250,7 @@
                     <div class="card custom-card">
                         <div class="card-header custom-card-header d-flex justify-content-between align-items-center">
                             <div class="d-flex align-items-center">
-                                <img src="` + image + `"
-                                     class="rounded-circle custom-avatar">
+                                <img src="${image}" class="rounded-circle custom-avatar">
                                 <div class="ms-3">
                                     <p class="font-weight-bold mb-0 custom-name" style="font-size: 18px;">
                                         ${it.fname} ${it.mname ? it.mname[0] + '.' : ''} ${it.lname}
@@ -195,11 +271,7 @@
                                 <div class="ms-2 custom-value text-warning">${timeOut}</div>
                             </div>
                             <div class="d-flex justify-content-end mt-3">
-                                <button class="btn btn-sm btn-success me-1" onclick="addLog(` + it.id + `)">
-                                    <i class="fas fa-clock mr-1"></i>
-                                    ADD LOG
-                                </button>
-                                <button class="btn btn-sm btn-primary ms-1" onclick="viewDtr(` + it.id + `)">
+                                <button class="btn btn-sm btn-primary ms-1" onclick="viewDtr(${it.id})">
                                     <i class="fas fa-eye mr-1"></i>
                                     VIEW DTR
                                 </button>
@@ -207,14 +279,17 @@
                         </div>
                     </div>
                 </div>`;
-
-                        container.append(employeeCard); // jQuery append
+                        container.append(employeeCard);
                     });
+
+                    loading.hide(); // Hide loading spinner after rendering
                 })
                 .catch(error => {
                     console.log("Error fetching employee DTR:", error);
+                    loading.hide(); // Hide even on error
                 });
         }
+
 
         async function addLog(id) {
             userid = id;
@@ -249,13 +324,23 @@
                         const date_timein = (it.date_timein) ? moment(it.date_timein).format("hh:mm A") : "";
                         const date_timeout = (it.date_timeout) ? moment(it.date_timeout).format("hh:mm A") : "";
 
+                        const timeinCell = date_timein
+                            ? date_timein
+                            : `<a href="#" class="empty-field" data-type="IN" data-id="${it.id}" data-day="${it.day}">EMPTY</a>`;
+
+                        const timeoutCell = date_timeout
+                            ? date_timeout
+                            : `<a href="#" class="empty-field" data-type="OUT" data-id="${it.id}" data-day="${it.day}">EMPTY</a>`;
+
                         let tr = `<tr>`;
-                        tr += `<td>` + it.day + `</td>`;
-                        tr += `<td>` + date_timein + `</td>`;
-                        tr += `<td>` + date_timeout + `</td>`;
-                        tr += "</tr>";
+                        tr += `<td>${it.day}</td>`;
+                        tr += `<td>${timeinCell}</td>`;
+                        tr += `<td>${timeoutCell}</td>`;
+                        tr += `</tr>`;
+
                         $("#dtr_list").append(tr);
                     });
+
 
                     if (data.raw_data.length < 1) {
                         $("#raw_list").append("<tr><td class='text-center' colspan='3'>No record found</td></tr>");
@@ -268,12 +353,25 @@
 
                         const imageUrl = "/hris/storage/" + it.photo_path; // Assuming 'photo_path' is the column where the image file path is stored
 
-                        let tr = `<tr>`;
-                        tr += `<td>` + date + `</td>`;
-                        tr += `<td>` + it.status + `</td>`;
-                        tr += `<td><a href="${imageUrl}" target="_blank">${time}</a></td>`;
-                        tr += "</tr>";
+                        let tr = $(`
+                        <tr>
+                            <td>${date}</td>
+                            <td>${it.status}</td>
+                            <td><a href="${imageUrl}" target="_blank">${time}</a></td>
+                            <td>
+                                <button
+                                    class="edit-btn"
+                                    data-id="${it.id}"
+                                    data-date="${date}"
+                                    data-status="${it.status}"
+                                    data-time="${time}"
+                                    style="background: transparent; border: none; cursor: pointer;">
+                                    <i class="fa-solid fa-pen text-success"></i>
+                                </button>
+                            </td>
+                        </tr>`);
                         $("#raw_list").append(tr);
+
                     });
 
                 }).catch(err => {

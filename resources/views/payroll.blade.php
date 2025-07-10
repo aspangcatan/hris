@@ -365,6 +365,99 @@
             });
         }
 
+        function formatCurrency(value) {
+            return parseFloat(value).toLocaleString('en-PH', {
+                style: 'currency',
+                currency: 'PHP',
+                minimumFractionDigits: 2
+            });
+        }
+
+        function viewPayroll(id) {
+            $('#preview_payroll_modal').modal('show');
+
+            fetch(`{{ route('getPayrollEmployee') }}?payroll_id=${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    const $tbody = $('#payroll_employee_list');
+                    $tbody.empty(); // Clear existing rows
+
+                    if (data.length === 0) {
+                        $tbody.append(`
+                    <tr>
+                        <td colspan="55" class="text-center text-muted">No record found</td>
+                    </tr>
+                `);
+                        return;
+                    }
+
+                    data.forEach((item, index) => {
+                        const fullName = [item.fname, item.mname, item.lname, item.suffix].filter(Boolean).join(' ');
+
+                        const row = `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${fullName}</td>
+                            <td>${item.division}</td>
+                            <td>${item.section}</td>
+                            <td>${formatCurrency(item.basic_salary)}</td>
+                            <td>${formatCurrency(item.salary_adjustment)}</td>
+                            <td>${formatCurrency("0.00")}</td>
+                            <td>${formatCurrency(item.pera)}</td>
+                            <td>${formatCurrency(item.rata)}</td>
+                            <td>${formatCurrency(item.subsistence)}</td>
+                            <td>${formatCurrency(item.laundry)}</td>
+                            <td>${formatCurrency(item.hazard)}</td>
+                            <td>${formatCurrency(item.longevity)}</td>
+                            <td>${formatCurrency("0.00")}</td>
+                            <td>${formatCurrency(item.cellphone_allowance)}</td>
+                            <td class="text-danger">${formatCurrency(item.gross_pay)}</td>
+                            <td>${formatCurrency("0.00")}</td>
+                            <td>${formatCurrency("0.00")}</td>
+                            <td>${formatCurrency(item.gsis_ps)}</td>
+                            <td>${formatCurrency(item.gsis_gs)}</td>
+                            <td>${formatCurrency(item.gsis_ec)}</td>
+                            <td>${formatCurrency(item.hdmf)}</td>
+                            <td>${formatCurrency(item.phic)}</td>
+                            <td>${formatCurrency(item.pagibig_cal)}</td>
+                            <td>${formatCurrency(item.pagibig_mpl)}</td>
+                            <td>${formatCurrency(item.pagibig_mp2)}</td>
+                            <td>${formatCurrency(item.pagibig_mp2_2nd)}</td>
+                            <td>${formatCurrency(item.pagibig_mp2_3rd)}</td>
+                            <td>${formatCurrency(item.gsis_consoloan)}</td>
+                            <td>${formatCurrency(item.gsis_emergency_loan)}</td>
+                            <td>${formatCurrency(item.gsis_educational_loan)}</td>
+                            <td>${formatCurrency(item.gsis_policy_loan)}</td>
+                            <td>${formatCurrency(item.gsis_opt_life_loan)}</td>
+                            <td>${formatCurrency(item.gsis_gfal)}</td>
+                            <td>${formatCurrency(item.gsis_mpl)}</td>
+                            <td>${formatCurrency(item.gsis_cpl)}</td>
+                            <td>${formatCurrency(item.gsis_mpl_lite)}</td>
+                            <td>${formatCurrency(item.cfi_coop)}</td>
+                            <td>${formatCurrency(item.first_valley_bank)}</td>
+                            <td>${formatCurrency(item.tdhea)}</td>
+                            <td>${formatCurrency(item.dbp_loan)}</td>
+                            <td>${formatCurrency(item.ucpb_loan)}</td>
+                            <td>${formatCurrency(item.meds_payable)}</td>
+                            <td>${formatCurrency("0.00")}</td>
+                            <td>${formatCurrency("0.00")}</td>
+                            <td>${formatCurrency(item.sss_deduction)}</td>
+                            <td>${formatCurrency(item.deductions)}</td>
+                            <td><strong>${formatCurrency(item.net_pay)}</strong></td>
+                            <td>${formatCurrency(item.hazard_adjustment)}</td>
+                            <td>${formatCurrency(item.pera_adjustment)}</td>
+                            <td>${formatCurrency(item.subsistence_adjustment)}</td>
+                            <td>${formatCurrency(item.laundry_adjustment)}</td>
+                            <td>${formatCurrency(item.net_pay)}</td>
+                        </tr>`;
+                        $tbody.append(row);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching payroll:", error);
+                    $('#payroll_employee_list').html(`<tr><td colspan="55" class="text-center text-danger">An error occurred while loading data.</td></tr>`);
+                });
+        }
 
         function managePayroll(id) {
             payroll_id = id;

@@ -75,6 +75,7 @@
                                     <th>Date</th>
                                     <th>Status</th>
                                     <th>Time</th>
+                                    <th></th>
                                 </tr>
                                 </thead>
                                 <tbody id="raw_list">
@@ -116,11 +117,6 @@
                         <option value="IN" selected>IN</option>
                         <option value="OUT">OUT</option>
                     </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="log_image" class="form-label">Upload Image</label>
-                    <input type="file" class="form-control" id="log_image" name="image" accept="image/*" required>
                 </div>
 
                 <div class="text-end">

@@ -317,3 +317,86 @@
     </div>
 </div>
 
+<div class="modal fade" id="preview_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+
+            <!-- Sticky Header -->
+            <div class="modal-header bg-primary text-white sticky-top">
+                <h3 class="modal-title">Preview Payroll</h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center" style="font-size: 12px">
+                        <thead class="thead-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Employee</th>
+                            <th>Division</th>
+                            <th>Section</th>
+                            <th>Basic</th>
+                            <th>Basic Pay Adj</th>
+                            <th>Basic Pay LWOP</th>
+                            <th>PERA</th>
+                            <th>RATA</th>
+                            <th>Subsistence</th>
+                            <th>Laundry</th>
+                            <th>Hazard</th>
+                            <th>Longevity</th>
+                            <th>Quarters Allowance</th>
+                            <th>Cellphone Allowance</th>
+                            <th class="text-danger">Gross Pay</th>
+                            <th>Witholding Tax</th>
+                            <th>Witholding Adj</th>
+                            <th>GSIS PS</th>
+                            <th>GSIS GS</th>
+                            <th>GSIS EC</th>
+                            <th>HDMF</th>
+                            <th>PHIC</th>
+                            <th>PAGIBIG CAL</th>
+                            <th>PAGIBIG MPL</th>
+                            <th>PAG-IBIG MP2</th>
+                            <th>PAG-IBIG MP2 2nd Account</th>
+                            <th>PAG-IBIG MP2 3rd Account</th>
+                            <th>GSIS CONSO LOAN</th>
+                            <th>GSIS EMERGENCY LOAN</th>
+                            <th>GSIS EDUCATIONAL LOAN</th>
+                            <th>GSIS POLICY LOAN</th>
+                            <th>GSIS OPT_LIFE LOAN</th>
+                            <th>GSIS GFAL</th>
+                            <th>GSIS MPL</th>
+                            <th>GSIS CPL</th>
+                            <th>GSIS MPL LITE</th>
+                            <th>CFI COOP</th>
+                            <th>1ST VALLEY BANK</th>
+                            <th>TDHEA</th>
+                            <th>DBP LOAN</th>
+                            <th>UCPB LOAN</th>
+                            <th>MEDS PAYABLE</th>
+                            <th>PHIC CONTRIB ADJ.</th>
+                            <th>PHIC REFUNDED FROM E.O</th>
+                            <th>HAZARD PAY ADJ</th>
+                            <th>ADJ PERA</th>
+                            <th>ADJ SUBSISTENCE</th>
+                            <th>ADJ LAUNDRY</th>
+                            <th>SSS DEDUCTION</th>
+                            <th>SSS ADJUSTMENT</th>
+                            <th>GSIS PS </th>
+                            <th>Net Pay</th>
+                        </tr>
+                        </thead>
+                        <tbody id="payroll_employee_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

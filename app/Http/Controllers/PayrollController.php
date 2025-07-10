@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\DTRServices;
+use App\Services\PayrollServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,12 +12,13 @@ use Illuminate\Validation\ValidationException;
 class PayrollController extends Controller
 {
 
-    protected $dtrServices;
+    protected $dtrServices, $payrollServices;
 
 
-    public function __construct(DTRServices $dtrServices)
+    public function __construct(DTRServices $dtrServices, PayrollServices $payrollServices)
     {
         $this->dtrServices = $dtrServices;
+        $this->payrollServices = $payrollServices;
     }
 
     public function getPayrollSettings(Request $request)
@@ -246,7 +248,7 @@ class PayrollController extends Controller
 
                 $gross_pay = ($basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance) - $totalTardinessDeductions;
 
-                // Safely extract each deduction with null fallback
+                //Safely extract each deduction with null fallback
                 $gsis_ps = $deductions->gsis_ps ?? 0.00;
                 $gsis_gs = $deductions->gsis_gs ?? 0.00;
                 $gsis_ec = $deductions->gsis_ec ?? 0.00;
@@ -274,14 +276,12 @@ class PayrollController extends Controller
                 $meds_payable = $deductions->meds_payable ?? 0.00;
                 $sss_deduction = $deductions->sss_deduction ?? 0.00;
 
-
                 $total_deductions = $gsis_ps + $gsis_gs + $gsis_ec + $hdmf + $phic +
                     $pagibig_cal + $pagibig_mpl + $pagibig_mp2 + $pagibig_mp2_2nd + $pagibig_mp2_3rd +
                     $gsis_consoloan + $gsis_emergency_loan + $gsis_educational_loan +
                     $gsis_policy_loan + $gsis_opt_life_loan + $gsis_gfal + $gsis_mpl +
                     $gsis_cpl + $gsis_mpl_lite + $cfi_coop + $first_valley_bank +
                     $tdhea + $dbp_loan + $ucpb_loan + $meds_payable + $sss_deduction;
-
 
                 DB::table('hris.payroll_employees')->insert([
                     'payroll_id' => $request->payroll_id,
@@ -339,4 +339,13 @@ class PayrollController extends Controller
         }
     }
 
+
+    public function getPayrollEmployee(Request $request)
+    {
+        try {
+            return response()->json($this->payrollServices->getPayrollEmployee($request->payroll_id));
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
 }

@@ -56,8 +56,11 @@ class CreatePayrollEmployeesTable extends Migration
             $table->decimal('sss_deduction',12,2)->default(0.00);
             $table->decimal('deductions', 12, 2)->default(0.00);
             $table->decimal('net_pay', 12, 2)->default(0.00);
-
-
+            $table->decimal('salary_adjustment', 12, 2)->default(0.00);
+            $table->decimal('hazard_adjustment', 12, 2)->default(0.00);
+            $table->decimal('pera_adjustment', 12, 2)->default(0.00);
+            $table->decimal('subsistence_adjustment', 12, 2)->default(0.00);
+            $table->decimal('laundry_adjustment', 12, 2)->default(0.00);
             //ADD ADJUSTMENT COLUMNS HERE
             $table->timestamps();
         });
