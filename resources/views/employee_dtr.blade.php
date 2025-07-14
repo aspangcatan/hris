@@ -56,6 +56,13 @@
             });
 
             $("#btn_save_log").click(async function () {
+
+                const access = @json(session('access_rights'));
+                if (access !== "DH" || access !== "admin") {
+                    alert("Permission Denied");
+                    return;
+                }
+
                 const date = $("#log_date").val();
                 const time = $("#log_time").val();
                 const status = $("#log_status").val();
@@ -351,13 +358,13 @@
                         const date = moment(it.created_at).format("MM/DD/YYYY");
                         const time = moment(it.created_at).format("hh:mm:ss A");
 
-                        const imageUrl = "/hris/storage/" + it.photo_path; // Assuming 'photo_path' is the column where the image file path is stored
+                        // const imageUrl = "/hris/storage/" + it.photo_path; // Assuming 'photo_path' is the column where the image file path is stored
 
                         let tr = $(`
                         <tr>
                             <td>${date}</td>
                             <td>${it.status}</td>
-                            <td><a href="${imageUrl}" target="_blank">${time}</a></td>
+                            <td><a target="_blank">${time}</a></td>
                             <td>
                                 <button
                                     class="edit-btn"
