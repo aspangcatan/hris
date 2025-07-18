@@ -166,7 +166,7 @@
                         let tr = `<tr>`;
                         tr += `<td>` + date + `</td>`;
                         tr += `<td>` + it.status + `</td>`;
-                        tr += `<td><a href="${imageUrl}" target="_blank">${time}</a></td>`;
+                        tr += `<td><a>${time}</a></td>`;
                         tr += "</tr>";
                         $("#raw_list").append(tr);
                     });

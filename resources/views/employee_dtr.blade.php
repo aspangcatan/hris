@@ -348,7 +348,6 @@
                         $("#dtr_list").append(tr);
                     });
 
-
                     if (data.raw_data.length < 1) {
                         $("#raw_list").append("<tr><td class='text-center' colspan='3'>No record found</td></tr>");
                         return;
@@ -378,7 +377,6 @@
                             </td>
                         </tr>`);
                         $("#raw_list").append(tr);
-
                     });
 
                 }).catch(err => {
