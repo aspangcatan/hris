@@ -162,7 +162,7 @@
                         const time = moment(it.created_at).format("hh:mm:ss A");
 
                         const imageUrl = "/hris/storage/" + it.photo_path; // Assuming 'photo_path' is the column where the image file path is stored
-                        btn_save_log
+
                         let tr = `<tr>`;
                         tr += `<td>` + date + `</td>`;
                         tr += `<td>` + it.status + `</td>`;
