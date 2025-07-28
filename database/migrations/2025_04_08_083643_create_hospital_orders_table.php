@@ -18,7 +18,6 @@ class CreateHospitalOrdersTable extends Migration
             $table->string('hospital_order',100);
             $table->date('start_date');
             $table->date('end_date');
-            $table->integer('userid');
             $table->integer('created_by');
             $table->timestamps();
         });

@@ -355,6 +355,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/update-holiday', [CalendarController::class, 'update'])->name('calendar.update');
     Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete');
     #HOSPITAL ORDERS
-    Route::post('/hospital-orders', [HospitalOrderController::class, 'store'])->name('hospital-orders.store');
+    Route::get('/get_hospital_orders', [HospitalOrderController::class, 'getHospitalOrders'])->name('hospital-orders.get');
+    Route::post('/hospital-orders', [HospitalOrderController::class, 'createHospitalOrder'])->name('hospital-orders.store');
 
 });

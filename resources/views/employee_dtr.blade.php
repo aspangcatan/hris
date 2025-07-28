@@ -56,7 +56,6 @@
             });
 
             $("#btn_save_log").click(async function () {
-
                 const access = @json(session('access_rights'));
                 if (access !== "DH" && access !== "admin") {
                     alert("Permission Denied");

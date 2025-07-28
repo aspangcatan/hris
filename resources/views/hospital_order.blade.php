@@ -63,11 +63,13 @@
 
 @section('js')
     <script>
-        $(document).ready(function (){
+        $(document).ready(function () {
+            getHospitalOrders();
+
             $('#hospitalOrderForm').submit(function (e) {
                 e.preventDefault();
-                const formData = new FormData(this);
 
+                const formData = new FormData(this);
                 fetch('{{ route("hospital-orders.store") }}', {
                     method: 'POST',
                     headers: {
@@ -77,10 +79,10 @@
                 })
                     .then(res => res.json())
                     .then(data => {
-                        console.log(data);
                         toastr.success(data.message, "Success");
                         $('#hospitalOrderModal').modal('hide');
                         this.reset();
+                        getHospitalOrders();
                     })
                     .catch(err => {
                         console.error(err);
@@ -89,8 +91,25 @@
             });
         });
 
-        public function asd(){
-
+        function getHospitalOrders() {
+            fetch("{{ route('hospital-orders.get') }}", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(it => {
+                        $('#order_list').append(`
+                        <tr>
+                            <td>${it.order_number}</td>
+                            <td>${it.start_date}</td>
+                            <td>${it.end_date}</td>
+                            <td></td>
+                        </tr>`);
+                    });
+                })
+                .catch(err => {
+                    alert("Ooops, something went wrong. Please reload");
+                });
         }
     </script>
 @stop

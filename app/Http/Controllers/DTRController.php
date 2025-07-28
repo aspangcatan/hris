@@ -542,7 +542,6 @@ class DTRController extends Controller
 
             $today = Carbon::now()->toDateString(); // Ensure same format as MySQL CURDATE()
 
-            // Start query
             $employee = DB::table('tdh_user.users as u')
                 ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
@@ -562,12 +561,22 @@ class DTRController extends Controller
                     DB::raw("(SELECT MAX(d2.created_at) FROM hris.dtr_logs d2 WHERE d2.userid = u.id AND d2.status = 'OUT' AND DATE(d2.created_at) = '$today') as time_out")
                 )
                 ->where(function ($query) {
-                    // Exclude 'Resigned' employees and include those with NULL 'employee_type'
                     $query->where('e.employee_type', '!=', 'Resigned')
                         ->orWhereNull('e.employee_type');
                 })
-                ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division')
-                ->orderByRaw('time_in IS NULL, time_in ASC'); // Sort by earliest time_in, NULLs last
+                ->when(request('search_fname') || request('search_lname'), function ($query) {
+                    $query->where(function ($subQuery) {
+                        if (request('search_fname')) {
+                            $subQuery->orWhere('u.fname', 'LIKE', '%' . request('search_fname') . '%');
+                        }
+                        if (request('search_lname')) {
+                            $subQuery->orWhere('u.lname', 'LIKE', '%' . request('search_lname') . '%');
+                        }
+                    });
+                })
+                ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division', 'd1.description', 'u.picture')
+                ->orderByRaw('time_in IS NULL, time_in ASC');
+
 
             // Apply dynamic filters
             if (!empty($search_section)) {

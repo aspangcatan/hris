@@ -2,30 +2,50 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\HospitalOrder;
 use App\Models\HospitalOrderMaster;
+use App\Services\HospitalOrderServices;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class HospitalOrderController extends Controller
 {
-    public function store(Request $request)
+    protected $hospitalService;
+
+    public function __construct(HospitalOrderServices $hospitalService)
+    {
+        $this->hospitalService = $hospitalService;
+    }
+
+    public function createHospitalOrder(Request $request)
     {
         try {
             $request->validate([
-                'hospital_order' => 'required|integer',
+                'order_number' => 'required|integer',
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
             ]);
 
-            HospitalOrder::create([
-                'hospital_order' => $request->order_number,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'created_by' => Auth::id(),
-            ]);
-
+            $this->hospitalService->createHospitalOrder($request->order_number, $request->start_date, $request->end_date);
             return response()->json(['message' => 'Hospital Order created successfully.']);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getHospitalOrders(Request $request)
+    {
+        try {
+            $list = $this->hospitalService->getHospitalOrders($request->order_number);
+            return response()->json($list);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getHospitalOrderById(Request $request)
+    {
+        try {
+            $hospital_order = $this->hospitalService->getHospitalOrderById($request->id);
+            return response()->json($hospital_order);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
