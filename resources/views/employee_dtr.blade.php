@@ -313,7 +313,7 @@
             }
 
             $("#month").val(month);
-            $("#year").val(yearg);
+            $("#year").val(year);
 
 
             fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year + "&userid=" + id, {
