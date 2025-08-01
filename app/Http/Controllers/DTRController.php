@@ -492,9 +492,12 @@ class DTRController extends Controller
                 });
 
                 $dtrData[] = [
-                    'name' => strtoupper($employee->fname . ' ' .
-                        ($employee->mname ? strtoupper(substr($employee->mname, 0, 1)) . '.' : '') .
-                        ' ' . $employee->lname),
+                    'name' => strtoupper(
+                        $employee->fname . ' ' .
+                        ($employee->mname ? strtoupper(substr($employee->mname, 0, 1)) . '.' : '') . ' ' .
+                        $employee->lname .
+                        ($employee->suffix ? ', ' . strtoupper($employee->suffix) : '')
+                    ),
                     'in_charged' => $in_charged,
                     'date' => $formattedDate,
                     'dtrs' => $days
