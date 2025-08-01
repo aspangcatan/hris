@@ -496,7 +496,7 @@ class DTRController extends Controller
                         $employee->fname . ' ' .
                         ($employee->mname ? strtoupper(substr($employee->mname, 0, 1)) . '.' : '') . ' ' .
                         $employee->lname .
-                        ($employee->suffix ? ', ' . strtoupper($employee->suffix) : '')
+                        ($employee->suffix ? ' ' . strtoupper($employee->suffix) : '')
                     ),
                     'in_charged' => $in_charged,
                     'date' => $formattedDate,
