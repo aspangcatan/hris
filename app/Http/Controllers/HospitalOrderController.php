@@ -41,11 +41,20 @@ class HospitalOrderController extends Controller
         }
     }
 
-    public function getHospitalOrderById(Request $request)
+    public function assignEmployee(Request $request)
     {
         try {
-            $hospital_order = $this->hospitalService->getHospitalOrderById($request->id);
-            return response()->json($hospital_order);
+            $this->hospitalService->assignEmployee($request->ho_id, $request->userid);
+            return response()->json(['message' => 'Employee(s) assigned successfully']);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getAssignedEmployees(Request $request)
+    {
+        try {
+            return response()->json(['assignedUserIds' => $this->hospitalService->getAssignedEmployee($request->ho_id)]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }

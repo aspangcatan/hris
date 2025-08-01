@@ -4,12 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\EmployeeServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends Controller
 {
+    protected $employeeService;
+
+    public function __construct(EmployeeServices $employeeService)
+    {
+        $this->employeeService = $employeeService;
+    }
+
     public function getEmployeeDetails(Request $request)
     {
         $user_id = ($request->id == 0) ? Auth::id() : $request->id;
@@ -145,4 +153,14 @@ class EmployeeController extends Controller
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
     }
+
+    public function getEmployees(Request $request)
+    {
+        try {
+            return response()->json($this->employeeService->getEmployees());
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
 }

@@ -35,4 +35,34 @@ class HospitalOrderServices
             ->where('id', '=', $id)
             ->first();
     }
+
+    public function assignEmployee($ho_id, $userIds)
+    {
+        // If single id passed as string/int, convert to array for safety
+        if (!is_array($userIds)) {
+            $userIds = [$userIds];
+        }
+
+        $insertData = [];
+        foreach ($userIds as $userId) {
+            $insertData[] = [
+                'ho_id' => $ho_id,
+                'userid' => $userId,
+            ];
+        }
+
+        DB::table('hris.hospital_order_employees')
+            ->where('ho_id', $ho_id)
+            ->whereIn('userid', $userIds)
+            ->delete();
+
+        DB::table('hris.hospital_order_employees')->insert($insertData);
+    }
+
+    public function getAssignedEmployee($ho_id)
+    {
+        return $assigned = DB::table('hris.hospital_order_employees')
+            ->where('ho_id', $ho_id)
+            ->pluck('userid'); // returns collection of user_ids
+    }
 }

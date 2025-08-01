@@ -312,6 +312,10 @@
                 year = moment().format("YYYY");
             }
 
+            $("#month").val(month);
+            $("#year").val(yearg);
+
+
             fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year + "&userid=" + id, {
                 method: "GET"
             })
