@@ -312,7 +312,7 @@
                 year = moment().format("YYYY");
             }
 
-            $("#month").val(month);a
+            $("#month").val(month);
             $("#year").val(year);
 
 
