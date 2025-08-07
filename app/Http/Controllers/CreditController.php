@@ -290,5 +290,4 @@ class CreditController extends Controller
 
         return $workdays;
     }
-
 }
