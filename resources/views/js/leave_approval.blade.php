@@ -28,23 +28,34 @@
         });
 
         $("#btn_approve_leave").click(function () {
-            fetch('{{ route('approveLeave')}}', {
-                method: "PUT",
+            fetch('{{ route('approveLeave') }}', {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    "Accept": "application/json", // Important to ensure JSON response is parsed correctly
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
                 },
-                body: JSON.stringify({id: leave_id})
+                body: JSON.stringify({ id: leave_id })
             })
-                .then(res => res.json())
+                .then(async res => {
+                    if (!res.ok) {
+                        // Extract error message from response body
+                        const error = await res.json();
+                        throw new Error(error.message || "Something went wrong");
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     toastr.success(data.message, "Information");
                     leave_modal.toggle();
                     getLeaves();
-                }).catch(err => {
-                toastr.error(err, "Ooops");
-            });
+                })
+                .catch(err => {
+                    toastr.error(err.message, "Ooops");
+                    console.error("Approval error:", err);
+                });
         });
+
 
         getLeaves();
     });
@@ -101,6 +112,7 @@
     }
 
     function viewStatus(id) {
+        leave_id = id;
         $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}" + id);
         // Fetch leave logs
         fetch('{{ route('getApplicationLogs') }}?id=' + id, {

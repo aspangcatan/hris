@@ -15,7 +15,7 @@ class CreateMonthlyEarnedPointsTable extends Migration
     {
         Schema::create('monthly_earned_points', function (Blueprint $table) {
             $table->id();
-            $table->decimal('lwop',3,2);
+            $table->decimal('present',3,2);
             $table->decimal('points',3,2);
             $table->timestamps();
         });

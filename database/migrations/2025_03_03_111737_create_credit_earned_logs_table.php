@@ -18,8 +18,7 @@ class CreateCreditEarnedLogsTable extends Migration
             $table->integer('user_id');
             $table->integer('month');
             $table->year('year');
-            $table->integer('total_late_minutes');
-            $table->integer('total_undertime_minutes');
+            $table->integer('total_lateundertime_minutes');
             $table->integer('leave_type_id');
             $table->decimal('earned_points',8,2);
             $table->timestamps();

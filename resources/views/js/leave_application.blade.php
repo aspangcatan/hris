@@ -347,35 +347,50 @@
     }
 
     function viewStatus(id) {
+        leave_id = id;
         $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}" + id);
-        // const section = {
-        //     status: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-        //     date_approved: ($("#leave_id_" + id + " td:eq(5)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(5)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        // };
-        //
-        // const division = {
-        //     status: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-        //     date_approved: ($("#leave_id_" + id + " td:eq(6)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(6)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        // };
-        //
-        // const hr = {
-        //     status: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "<span class='badge bg-secondary'>FOR APPROVAL</span>" : "<span class='badge bg-success'>APPROVED</span>",
-        //     date_approved: ($("#leave_id_" + id + " td:eq(7)").text() == "null") ? "" : moment($("#leave_id_" + id + " td:eq(7)").text()).format("MM/DD/YYYY hh:mm:ss A")
-        // };
-        //
-        // $("#leave_status_logs tr:eq(0) td:eq(1)").html(section.status);
-        // $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
-        //
-        // $("#leave_status_logs tr:eq(1) td:eq(1)").html(division.status);
-        // $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
-        //
-        // $("#leave_status_logs tr:eq(2) td:eq(1)").html(hr.status);
-        // $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
-        leave_modal.toggle();
+        // Fetch leave logs
+        fetch('{{ route('getApplicationLogs') }}?id=' + id, {
+                method: "GET"
+            }
+        )
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("Error:", data.error);
+                    return;
+                }
+
+                let section = data.logs.section || {remarks: "-", date_approved: "-"};
+                let division = data.logs.division || {remarks: "-", date_approved: "-"};
+                let hr = data.logs.hr || {remarks: "-", date_approved: "-"};
+
+                $("#leave_status_logs tr:eq(0) td:eq(1)").html(getBadge(section.remarks));
+                $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
+
+                $("#leave_status_logs tr:eq(1) td:eq(1)").html(getBadge(division.remarks));
+                $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
+
+                $("#leave_status_logs tr:eq(2) td:eq(1)").html(getBadge(hr.remarks));
+                $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
+
+                leave_modal.toggle();
+            })
+            .catch(error => console.error("Fetch error:", error));
     }
 
     function clearForm() {
         $("#leave_form input").not("[type='radio']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
+    }
+
+    function getBadge(remarks) {
+        if (remarks === "Approved") {
+            return `<span class="badge bg-success px-2 py-1 rounded-pill">Approved</span>`;
+        } else if (remarks !== "-") {
+            return `<span class="badge bg-secondary px-2 py-1 rounded-pill">${remarks}</span>`;
+        } else {
+            return `<span class="badge bg-light text-dark px-2 py-1 rounded-pill">-</span>`;
+        }
     }
 </script>

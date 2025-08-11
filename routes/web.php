@@ -34,7 +34,6 @@ Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'print
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
 Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
 
-
 //MOBILE API
 Route::post('/mobile/login', [\App\Http\Controllers\DTRController::class, 'login'])->name('mobileLogin');
 Route::post('/dtr/store', [\App\Http\Controllers\DTRController::class, 'storeDtr'])->name('storeDtr');
@@ -117,6 +116,8 @@ Route::get('/apk/download/facelog', function () {
 });
 
 Route::get('/get/employee', [\App\Http\Controllers\DTRController::class, 'getUserInfoById']);
+
+Route::get('/get/totalPresent', [\App\Http\Controllers\CreditController::class, 'displayTotalPresent']);
 
 Route::get('/download', function () {
     return redirect()->to(url('apk/csmc_mobile_dtr_v1.apk'));
@@ -332,7 +333,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'store'])->name('insertLeaveApplications');
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
-    Route::put('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
+    Route::post('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
 #DTR LOGS
     Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDTR'])->name('printDTR');
     Route::get('/get_employee_dtr', [\App\Http\Controllers\DTRController::class, 'getEmployeeDtr'])->name('getEmployeeDtr');

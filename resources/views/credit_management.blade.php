@@ -57,9 +57,8 @@
                     <tr class="text-center">
                         <th>Employee</th>
                         <th>Month & Year</th>
-                        <th>Total Absent</th>
-                        <th>Total Late (mins)</th>
-                        <th>Total Undertime (mins)</th>
+                        <th>Total Present</th>
+                        <th>Total Late/Undertime (mins)</th>
                         <th>Leave Type</th>
                         <th>Points Earned</th>
                         <th>Points Deducted</th>
@@ -90,13 +89,21 @@
         });
 
         function updateCredits() {
-            if (confirm(`Are you sure you want to update credits for the previous month?`)) {
+            const month = $("#month").val();
+            const year = $("#year").val();
+
+            if (month == "" || year == "") {
+                alert("Please fill in month and year");
+                return;
+            }
+
+            if (confirm(`Are you sure you want to update credits?`)) {
                 fetch('{{ route('updateCreditBalance') }}', {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    }
+                    }, body: JSON.stringify({month: month, year: year})
                 })
                     .then(res => res.json())
                     .then(data => {
@@ -143,9 +150,8 @@
                         <tr class="text-center">
                             <td class="text-start">${fullName}</td>
                             <td>${monthYear}</td>
-                            <td>${log.total_absent}</td>
-                            <td>${log.total_late_minutes}</td>
-                            <td>${log.total_undertime_minutes}</td>
+                            <td>${log.total_present}</td>
+                            <td>${log.total_lateundertime_minutes}</td>
                             <td>${log.description}</td>
                            <td>${parseFloat(log.earned_points).toFixed(3)}</td>
                            <td>${parseFloat(log.deducted_points).toFixed(3)}</td>
