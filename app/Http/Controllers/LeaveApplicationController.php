@@ -141,7 +141,7 @@ class LeaveApplicationController extends Controller
                 ->join('tdh_user.users as u', 'l.origin', '=', 'u.id')
                 ->leftJoin('hris.leave_date_applied as d', 'a.id', '=', 'd.leave_application_id')
                 ->leftJoin('hris.leave_types as t', 'a.leave_id', '=', 't.id')
-                ->where('l.destination', Auth::user()->section)
+                ->where('l.destination', Auth::user()->division)
 
                 // Ensure only latest record per leave application is considered
                 ->whereRaw('l.id = (SELECT id FROM hris.leave_application_logs WHERE leave_application_id = l.leave_application_id ORDER BY id DESC LIMIT 1)')
@@ -195,9 +195,11 @@ class LeaveApplicationController extends Controller
                 case "SH":
                 case "admin": // SPECIAL CASE SINCE JIMMY IS OUR SECTION HEAD AND ONLY HIM IS ADMIN
                     $updated = $this->leaveLogService->updateStatus($request->id, '1', 'Approved');
+                    $this->leaveLogService->insertLogs($request->id,Auth::user()->division,'2');
                     break;
                 case "DH":
                     $updated = $this->leaveLogService->updateStatus($request->id, '2', 'Approved');
+                    $this->leaveLogService->insertLogs($request->id,Auth::user()->division,'3');
                     break;
                 case "HRH":
                     $updated = $this->leaveLogService->updateStatus($request->id, '3', 'Approved');

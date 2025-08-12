@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LeaveLogsService
@@ -18,4 +19,16 @@ class LeaveLogsService
             ]);
     }
 
+    public function insertLogs($leave_id, $destination, $type)
+    {
+        return DB::table('hris.leave_application_logs')
+            ->insertGetId([
+                'leave_application_id' => $leave_id,
+                'origin' => Auth::id(),
+                'destination' => $destination,
+                'remarks'=>"For Approval",
+                'type' => $type,
+                'created_at' => Carbon::now()
+            ]);
+    }
 }
