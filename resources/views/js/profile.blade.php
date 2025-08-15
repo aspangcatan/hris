@@ -120,7 +120,7 @@
                 return;
             }
 
-            date = moment(date).format("MM/DD/YYYY");
+            date = moment(date).format("DD/MM/YYYY");
             sworn_date = moment(sworn_date).format("DD/MM/YYYY");
             window.open(
                 '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows+"&sworn_date="+sworn_date,
