@@ -64,8 +64,8 @@
             <td style="width:16%;text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
                 SIGNATURE
             </td>
-            <td style="border-right: solid 1px black;text-align: center;color:red,font-weight:bold">
-                (wet signature/e-signature/digital certificate)
+            <td style="border-right: solid 1px black;text-align: center;color:red;font-weight:bold">
+
             </td>
             <td style="width:14%;text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
                 DATE

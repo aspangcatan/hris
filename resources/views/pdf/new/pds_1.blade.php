@@ -1037,7 +1037,7 @@
                         SIGNATURE
                     </td>
                     <td colspan="2"  style="border-top: solid 1px black;text-align: center;color:red;font-weight: bold;height: unset !important;">
-                        (wet signature/e-signature/digital certificate)
+
                     </td>
                     <td colspan="2" style="text-align: center;font-weight: bold;border-right: solid 1px black"
                         class="gray">
