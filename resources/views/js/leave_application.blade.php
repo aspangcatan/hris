@@ -148,7 +148,7 @@
                 const hours = tr.find("td:eq(1) input").val();
 
                 date_applied_array.push({
-                    date: date,
+                    date_applied: date,
                     hours: hours
                 });
             }
@@ -176,11 +176,11 @@
             if (!is_valid) return;
 
             const params = {
-                leave_id: leave_id,
+                leave_id: parseInt(leave_id),
                 detail: leave_details,
                 extra: leave_extra,
-                date_applied: date_applied_array,
-                commutation: commutation
+                commutation: commutation,
+                dates: date_applied_array
             }
 
             $(this).html(`<button class="btn btn-primary" type="button" disabled>
@@ -189,7 +189,7 @@
             </button>`);
 
             $(this).prop("disabled", true);
-            fetch('{{ route('insertLeaveApplications') }}', {
+            fetch('{{ route('insertLeaveApplication') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -200,8 +200,8 @@
                 .then(res => res.json())
                 .then(data => {
                     toastr.success(data.message, 'Information');
-                    clearForm();
-                    getLeaves();
+                    // clearForm();
+                    // getLeaves();
                 }).catch(err => {
                 console.log(err);
             }).finally(() => {
@@ -334,7 +334,7 @@
                         <td>` + dates_applied_array.join(', ') + `</td>
                         <td>` + status + `</td>
                         <td>
-                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewStatus(` + it.id + `)">
+                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewApplication(` + it.id + `)">
                                 <i class="bi bi-eye-fill text-success"></i>
                             </button>
                         </td>
@@ -345,6 +345,53 @@
             console.log(err);
         })
     }
+
+    function viewApplication(id) {
+        fetch(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to load leave application.");
+                return response.json();
+            })
+            .then(data => {
+                // Fill static info
+                $('#leave_name').text(data.name);
+                $('#leave_type').text(data.type);
+                $('#leave_details').val(data.details || '');
+
+                // Build dates table rows
+                let dateRows = '';
+                data.dates.forEach(d => {
+                    dateRows += `
+                <tr>
+                    <td>${d.date}</td>
+                    <td>${d.duration} hours</td>
+                    <td>${d.remarks || ''}</td>
+                    <td class="text-center align-middle">
+                        ${d.status === 'approved'
+                        ? '<span class="text-success fs-5">&#10004;</span>'
+                        : d.status === 'rejected'
+                            ? '<span class="text-danger fs-5">&#10060;</span>'
+                            : ''}
+                    </td>
+                </tr>
+            `;
+                });
+                $('#dates_applied_body').html(dateRows);
+
+                // Show modal
+                $('#viewLeaveModal').modal('show');
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error loading leave application.");
+            });
+    }
+
 
     function viewStatus(id) {
         leave_id = id;
@@ -393,4 +440,27 @@
             return `<span class="badge bg-light text-dark px-2 py-1 rounded-pill">-</span>`;
         }
     }
+
+    function updateStepStatus(status) {
+        let steps = document.querySelectorAll('.steps .step');
+        steps.forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index < status) {
+                step.classList.add('completed'); // Green
+            } else if (index === status) {
+                step.classList.add('active'); // Blue
+            }
+        });
+
+        // Update line color
+        let line = document.querySelector('.steps .line');
+        if (status === 0) {
+            line.style.background = '#dee2e6';
+        } else if (status > 0 && status < steps.length) {
+            line.style.background = '#0d6efd';
+        } else if (status >= steps.length) {
+            line.style.background = '#198754';
+        }
+    }
+
 </script>

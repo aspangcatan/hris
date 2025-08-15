@@ -29,9 +29,11 @@
                     $("#weight").val(it.weight);
                     $("#blood_type").val(it.blood_type);
                     $("#gsis_id_no").val(it.gsis_id_no);
+                    $("#umid_id_no").val(it.umid_id_no);
                     $("#pagibig_id_no").val(it.pagibig_id_no);
                     $("#philhealth_no").val(it.philhealth_no);
                     $("#sss_no").val(it.sss_no);
+                    $("#philsys_no").val(it.philsys_no);
                     $("#tin_no").val(it.tin_no);
                     $("#employee_no").val(it.employee_no);
                     @if(Route::currentRouteName() == "employee")

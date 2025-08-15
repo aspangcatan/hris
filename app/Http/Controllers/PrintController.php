@@ -795,7 +795,7 @@ class PrintController extends Controller
 
                     $eligibility_column_6 = "N/A";
                     if ($eligiblity[$i]->license_expiry)
-                        $eligibility_column_6 = date('m/d/Y', strtotime($eligiblity[$i]->license_expiry));
+                        $eligibility_column_6 = date('d/m/Y', strtotime($eligiblity[$i]->license_expiry));
                 }
                 $eligibilities[$i] = ['career_service' => $eligibility_column_1, 'rating' => $eligibility_column_2,
                     'examination_date' => $eligibility_column_3, 'examination_place' => $eligibility_column_4,
@@ -825,8 +825,8 @@ class PrintController extends Controller
 
                 #CHECK IF THE LOOP EXCEEDS TO ACTUAL DATA SIZE
                 if ($i < count($work_experience)) {
-                    $work_column_1 = date('m/d/Y', strtotime($work_experience[$i]->working_from));
-                    $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('m/d/Y', strtotime($work_experience[$i]->working_to));
+                    $work_column_1 = date('d/m/Y', strtotime($work_experience[$i]->working_from));
+                    $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('d/m/Y', strtotime($work_experience[$i]->working_to));
                     $work_column_3 = $work_experience[$i]->position;
                     $work_column_4 = $work_experience[$i]->agency;
                     $work_column_5 = number_format($work_experience[$i]->monthly_salary, 2);
@@ -855,8 +855,8 @@ class PrintController extends Controller
                         $next_page_work_inner_array = [];
                     }
 
-                    $work_column_1 = date('m/d/Y', strtotime($work_experience[$i]->working_from));
-                    $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('m/d/Y', strtotime($work_experience[$i]->working_to));
+                    $work_column_1 = date('d/m/Y', strtotime($work_experience[$i]->working_from));
+                    $work_column_2 = ($work_experience[$i]->is_current_work == 1) ? "Present" : date('d/m/Y', strtotime($work_experience[$i]->working_to));
                     $work_column_3 = $work_experience[$i]->position;
                     $work_column_4 = $work_experience[$i]->agency;
                     $work_column_5 = number_format($work_experience[$i]->monthly_salary, 2);
@@ -895,8 +895,8 @@ class PrintController extends Controller
                 #CHECK IF THE LOOP EXCEEDS TO ACTUAL DATA SIZE
                 if ($i < count($voluntary_work)) {
                     $voluntary_column_1 = $voluntary_work[$i]->organization_address;
-                    $voluntary_column_2 = date('m/d/Y', strtotime($voluntary_work[$i]->working_from));
-                    $voluntary_column_3 = date('m/d/Y', strtotime($voluntary_work[$i]->working_to));
+                    $voluntary_column_2 = date('d/m/Y', strtotime($voluntary_work[$i]->working_from));
+                    $voluntary_column_3 = date('d/m/Y', strtotime($voluntary_work[$i]->working_to));
                     $voluntary_column_4 = $voluntary_work[$i]->number_hours;
                     $voluntary_column_5 = $voluntary_work[$i]->position;
                 }
@@ -926,8 +926,8 @@ class PrintController extends Controller
 
                 if ($i < count($learning)) {
                     $learning_column_1 = $learning[$i]->learning_title;
-                    $learning_column_2 = date('m/d/Y', strtotime($learning[$i]->attendance_from));
-                    $learning_column_3 = date('m/d/Y', strtotime($learning[$i]->attendance_to));
+                    $learning_column_2 = date('d/m/Y', strtotime($learning[$i]->attendance_from));
+                    $learning_column_3 = date('d/m/Y', strtotime($learning[$i]->attendance_to));
                     $learning_column_4 = "N/A";
                     if ($learning_column_4)
                         $learning_column_4 = number_format($learning[$i]->number_hours, 1, '.', '');
@@ -954,8 +954,8 @@ class PrintController extends Controller
                     }
 
                     $learning_column_1 = $learning[$i]->learning_title;
-                    $learning_column_2 = date('m/d/Y', strtotime($learning[$i]->attendance_from));
-                    $learning_column_3 = date('m/d/Y', strtotime($learning[$i]->attendance_to));
+                    $learning_column_2 = date('d/m/Y', strtotime($learning[$i]->attendance_from));
+                    $learning_column_3 = date('d/m/Y', strtotime($learning[$i]->attendance_to));
                     $learning_column_4 = $learning[$i]->number_hours;
                     $learning_column_5 = $learning[$i]->learning_type;
                     $learning_column_6 = $learning[$i]->conducted_by;
@@ -1017,7 +1017,7 @@ class PrintController extends Controller
                 $references[$i] = ['name' => $name, 'address' => $address, 'contact_no' => $contact_no];
             }
 
-            $pdf = Pdf::loadView('pdf.pds', ['user' => $user, 'employee' => $employee,
+            $pdf = Pdf::loadView('pdf.new.pds', ['user' => $user, 'employee' => $employee,
                 'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
                 'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences, 'next_page_work' => $next_page_work_outer_array,
                 'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,

@@ -195,11 +195,11 @@ class LeaveApplicationController extends Controller
                 case "SH":
                 case "admin": // SPECIAL CASE SINCE JIMMY IS OUR SECTION HEAD AND ONLY HIM IS ADMIN
                     $updated = $this->leaveLogService->updateStatus($request->id, '1', 'Approved');
-                    $this->leaveLogService->insertLogs($request->id,Auth::user()->division,'2');
+                    $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '2');
                     break;
                 case "DH":
                     $updated = $this->leaveLogService->updateStatus($request->id, '2', 'Approved');
-                    $this->leaveLogService->insertLogs($request->id,Auth::user()->division,'3');
+                    $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '3');
                     break;
                 case "HRH":
                     $updated = $this->leaveLogService->updateStatus($request->id, '3', 'Approved');
@@ -217,12 +217,6 @@ class LeaveApplicationController extends Controller
             return response()->json(['message' => $exception->getMessage()], 500);
         }
     }
-
-
-    //TODO: GET LEAVE APPLICATION LOGS WiTH THIS OUTPUT IN MIND
-    //SECTION    STATUS   REMARKS   DATE APPROVED
-    //DIVISION   STATUS   REMARKS   DATE APPROVED
-    //HR         STATUS   REMARKS   DATE APPROVED
 
     public function getApplicationLogs(Request $request)
     {
@@ -249,5 +243,54 @@ class LeaveApplicationController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    /////////////////
+    public function insertLeaveApplication(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'leave_id' => 'required|integer|exists:leave_types,id',
+                'detail' => 'nullable|string',
+                'extra' => 'nullable|string',
+                'commutation' => 'nullable|string|in:Requested,Not Requested',
+                'dates' => 'required|array|min:1',
+                'dates.*.date_applied' => 'required|date',
+                'dates.*.hours' => 'required|numeric|min:0.5',
+            ]);
+
+            $leaveApplicationId = $this->leaveApplicationService->insertLeaveApplication($validated);
+            return response()->json([
+                'success' => true,
+                'message' => 'Leave application submitted successfully.',
+                'leave_application_id' => $leaveApplicationId
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getLeaveApplication($id)
+    {
+        $leave = $this->leaveApplicationService->findById($id);
+
+        if (!$leave) {
+            return response()->json(['error' => 'Leave application not found'], 404);
+        }
+
+        return response()->json([
+            'name'       => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
+            'type'       => $leave->leave_type,
+            'details'    => $leave->detail,
+            'created_at' => $leave->created_at,
+            'dates'      => collect($leave->dates)->map(function ($d) {
+                return [
+                    'date'     => $d->date_applied,
+                    'duration' => $d->hours,
+                    'remarks'  => $d->remarks ?? '',
+                    'status'   => $d->status ?? ''
+                ];
+            })->values()
+        ]);
     }
 }

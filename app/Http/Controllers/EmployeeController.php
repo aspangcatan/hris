@@ -61,10 +61,12 @@ class EmployeeController extends Controller
             $employee->height = $request->height;
             $employee->weight = $request->weight;
             $employee->blood_type = $request->blood_type;
+            $employee->umid_id_no = $request->umid_id_no;
             $employee->gsis_id_no = $request->gsis_id_no;
             $employee->pagibig_id_no = $request->pagibig_id_no;
             $employee->philhealth_no = $request->philhealth_no;
             $employee->sss_no = $request->sss_no;
+            $employee->philsys_no = $request->philsys_no;
             $employee->tin_no = $request->tin_no;
             $employee->employee_no = $request->employee_no;
             $employee->citizenship = $request->citizenship;

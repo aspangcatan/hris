@@ -8,6 +8,57 @@
 /*--------------------------------------------------------------
 # General
 --------------------------------------------------------------*/
+
+/*CUSTOM CSS*/
+.steps {
+    padding: 20px 0;
+}
+.steps .step {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+}
+.steps .circle {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 50%;
+    background: #dee2e6;
+    display: inline-block;
+    font-weight: bold;
+    color: #6c757d;
+    margin-bottom: 5px;
+}
+.steps .label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+}
+.steps .line {
+    position: absolute;
+    top: 40px; /* aligns with center of circle */
+    left: 10%;
+    width: 80%;
+    height: 4px;
+    background: #dee2e6;
+    z-index: 0;
+}
+
+.steps .circle.pending {
+    background: #6c757d; /* Soft Gray for pending */
+    color: white;
+}
+
+.steps .circle.approve {
+    background: #0d6efd; /* Bootstrap Blue */
+    color: white;
+}
+
+.steps .circle.rejected {
+    background: #dc3545; /* Bootstrap Red */
+    color: white;
+}
+
 :root {
     scroll-behavior: smooth;
 }

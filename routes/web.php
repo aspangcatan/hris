@@ -330,7 +330,11 @@ Route::group(['middleware' => 'auth'], function () {
 #NEW LEAVE APPLICATION
     Route::get('/get_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'index'])->name('getLeaveApplications');
     Route::get('/get_leave_applications_logs', [\App\Http\Controllers\LeaveApplicationController::class, 'getApplicationLogs'])->name('getApplicationLogs');
-    Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'store'])->name('insertLeaveApplications');
+    Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'insertLeaveApplication'])->name('insertLeaveApplication');
+
+    Route::get('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveApplication'])->name('leave-applications.show');
+
+
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
     Route::post('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');

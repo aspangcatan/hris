@@ -9,38 +9,29 @@
                 </button>
             </div>
             <div class="modal-body">
+                <div class="mb-3">
+                    <div class="steps d-flex justify-content-between position-relative">
+                        <div class="step text-center" id="step1">
+                            <div class="circle approve">1</div>
+                            <div class="label">Supervisor</div>
+                        </div>
+                        <div class="step text-center" id="step2">
+                            <div class="circle">2</div>
+                            <div class="label">HR</div>
+                        </div>
+                        <div class="step text-center" id="step3">
+                            <div class="circle">3</div>
+                            <div class="label">Director</div>
+                        </div>
+                        <!-- Connecting line -->
+                        <div class="line"></div>
+                    </div>
+                </div>
+
                 <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"
                         id="leave_frame"></iframe>
             </div>
             <hr/>
-            <div class="table-responsive pe-2 ps-2">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th style="width: 40%">Department</th>
-                        <th style="width: 30%">Status</th>
-                        <th style="width: 30%">Date Approved</th>
-                    </tr>
-                    </thead>
-                    <tbody id="leave_status_logs">
-                    <tr>
-                        <td>Section Head</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>Division Head</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>Human Resource</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
             @if(Route::currentRouteName() == "leave_approval")
                 <div class="modal-footer">
                     <div class="d-flex justify-content-end">
@@ -181,5 +172,70 @@
     </div>
 </div>
 
+<div class="modal fade" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border border-dark">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title" id="viewLeaveModalLabel">Leave Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-5">
+                    <div class="steps d-flex justify-content-between position-relative">
+                        <div class="step text-center" id="step1">
+                            <div class="circle approve">1</div>
+                            <div class="label">Supervisor</div>
+                        </div>
+                        <div class="step text-center" id="step2">
+                            <div class="circle">2</div>
+                            <div class="label">HR</div>
+                        </div>
+                        <div class="step text-center" id="step3">
+                            <div class="circle">3</div>
+                            <div class="label">Director</div>
+                        </div>
+                        <!-- Connecting line -->
+                        <div class="line"></div>
+                    </div>
+                </div>
+                <div class="mt-5">
+                    <p><strong>Name:</strong> <span id="leave_name">Asnaui O. Pangcatan</span></p>
+                    <p><strong>Type:</strong> <span id="leave_type">Sick Leave</span></p>
+                    <p><strong>Details:</strong></p>
+                    <textarea id="leave_details" class="form-control" rows="4" readonly></textarea>
+                </div>
+
+                <div class="mt-3">
+                    <p><strong>Dates Applied:</strong></p>
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th style="width: 30%;">Date</th>
+                            <th style="width: 25%;">Duration</th>
+                            <th style="width: 35%;">Remarks</th>
+                            <th style="width: 10%;"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="dates_applied_body">
+                        <tr>
+                            <td>2025-08-13</td>
+                            <td>8 hours</td>
+                            <td>Medical Certificate Provided</td>
+                            <td class="text-center align-middle">
+                                <span class="text-danger fs-5">&#10060;</span> <!-- Cross -->
+                                <span class="text-success fs-5">&#10004;</span> <!-- Check -->
+                            </td>
+                        </tr>
+                        <!-- More rows dynamically inserted -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 

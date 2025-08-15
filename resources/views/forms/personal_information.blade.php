@@ -111,6 +111,12 @@
         </div>
     </div>
     <div class="row mb-3">
+        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">UMID ID No.</label>
+        <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="umid_id_no">
+        </div>
+    </div>
+    <div class="row mb-3">
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Pag-Ibig ID No.</label>
         <div class="col-md-8 col-lg-9">
             <input type="text" class="form-control" id="pagibig_id_no">
@@ -126,6 +132,12 @@
         <label for="fullName" class="col-md-4 col-lg-3 col-form-label">SSS No.</label>
         <div class="col-md-8 col-lg-9">
             <input type="text" class="form-control" id="sss_no">
+        </div>
+    </div>
+    <div class="row mb-3">
+        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">PhilSys Number (PSN)</label>
+        <div class="col-md-8 col-lg-9">
+            <input type="text" class="form-control" id="philsys_no">
         </div>
     </div>
     <div class="row mb-3">

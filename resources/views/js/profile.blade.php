@@ -241,9 +241,11 @@
             const weight = $("#weight").val().trim();
             const blood_type = $("#blood_type").val();
             const gsis_id_no = $("#gsis_id_no").val().trim();
+            const umid_id_no = $("#umid_id_no").val().trim();
             const pagibig_id_no = $("#pagibig_id_no").val().trim();
             const philhealth_no = $("#philhealth_no").val().trim();
             const sss_no = $("#sss_no").val().trim();
+            const philsys_no = $("#philsys_no").val().trim();
             const tin_no = $("#tin_no").val().trim();
             const employee_no = $("#employee_no").val().trim();
             const employee_status = $("#employee_status").val();
@@ -292,9 +294,11 @@
                 weight: weight,
                 blood_type: blood_type,
                 gsis_id_no: gsis_id_no,
+                umid_id_no: umid_id_no,
                 pagibig_id_no: pagibig_id_no,
                 philhealth_no: philhealth_no,
                 sss_no: sss_no,
+                philsys_no: philsys_no,
                 tin_no: tin_no,
                 employee_no: employee_no,
                 employee_status: employee_status,
