@@ -460,7 +460,7 @@
             </td>
         </tr>
     </table>
-    <div style="display: inline-block;width: 73%">
+    <div style="display: inline-block;width: 75%">
         <table>
             <tr class="gray">
                 <td colspan="3" style="border-right: solid 1px black">
@@ -489,18 +489,17 @@
                 </tr>
             @endforeach
             <tr style="border-top: solid 1px black">
-                <td colspan="3" style="border-right: solid 1px black;font-size: 13px;font-family: 'Arial Narrow'">
-                    42. I declare under oath that I have personally accomplished this Personal Data Sheet which is a
-                    true,
-                    correct and complete statement pursuant to the provisions of pertinent laws, rules and regulations
-                    of
-                    the Republic of the Philippines. I authorize the agency head/authorized representative to
-                    verify/validate the contents stated herein.<br/>I agree that any misrepresentation made in this
-                    document
-                    and
-                    its attachments shall cause the filing of administrative/criminal case/s against me.
+                <td colspan="3" style="border-right: solid 1px black; font-size: 12.3px; font-family: 'Arial Narrow'">
+                    <p style="margin: 0; text-align: justify; text-indent: -20px; padding-left: 25px;">
+                        42. I declare under oath that I have personally accomplished this Personal Data Sheet which is a true,
+                        correct and complete statement pursuant to the provisions of pertinent laws, rules and regulations of the
+                        Republic of the Philippines. I authorize the agency head/authorized representative to verify/validate the
+                        contents stated herein. I agree that any misrepresentation made in this document and its attachments shall
+                        cause the filing of administrative/criminal case/s against me.
+                    </p>
                 </td>
             </tr>
+
         </table>
         <table id="government_id">
             <tr>
@@ -582,7 +581,7 @@
             </tr>
         </table>
     </div>
-    <div style="display: inline-block;float:right;width: 26%">
+    <div style="display: inline-block;float:right;width: 24%">
         <div class="rectangle photo" style="margin-top: 20px">
             <br/><br/><br/>
             Passport-sized unfiltered digital<br />
