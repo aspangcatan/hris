@@ -165,7 +165,7 @@
             </td>
         </tr>
         <tr>
-            <td style="border-right: solid 1px black" class="gray">5. SEX</td>
+            <td style="border-right: solid 1px black" class="gray">5. SEX AT BIRTH</td>
             <td style="border-right: solid 1px black;">
                 <div style="margin-left:10px;margin-top: 3px">
                     <div style="display:inline">
