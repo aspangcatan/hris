@@ -701,7 +701,7 @@ class PrintController extends Controller
                 #CHECK IF THE LOOP EXCEEDS TO ACTUAL DATA SIZE
                 if ($i < count($children)) {
                     $name = $children[$i]->name;
-                    $birthdate = date('m/d/Y', strtotime($children[$i]->birthdate));
+                    $birthdate = date('d/m/Y', strtotime($children[$i]->birthdate));
                 }
 
                 $childrens[$i] = ['name' => $name, 'birthdate' => $birthdate];

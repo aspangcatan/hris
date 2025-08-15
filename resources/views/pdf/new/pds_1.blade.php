@@ -661,7 +661,7 @@
                     list all)
                 </div>
             </td>
-            <td style="text-align: center" class="gray">DATE OF BIRTH<br/>(mm/dd/yyy)</td>
+            <td style="text-align: center" class="gray">DATE OF BIRTH<br/>(dd/mm/yyy)</td>
         </tr>
         <tr style="border-top: solid 1px black">
             <td style="width: 20%;border-right: solid 1px black" class="gray">
