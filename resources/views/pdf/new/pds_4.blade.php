@@ -510,7 +510,7 @@
                         <table class="gray" style="font-size: 10px">
                             <tr>
                                 <td colspan="2" style="height: unset !important;">Government Issued ID
-                                    <span style="font-size: 9px">(i.e.Passport,GSIS,SSS,PRC,Driver's)</span>
+                                    <span style="font-size: 7.5px">(i.e.Passport,GSIS,SSS,PRC,Driver's License, etc.)</span>
                                 </td>
                             </tr>
                             <tr>
