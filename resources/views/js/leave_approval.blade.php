@@ -63,85 +63,107 @@
     function getLeaves() {
         $("#btn_next").prop("disabled", true);
         $("#btn_prev").prop("disabled", true);
-        $("#leave_history_list").empty();
-        $("#leave_history_list").append("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
-        fetch('{{ route('getLeaveForApproval') }}?page=' + page, {
-                method: "GET"
-            }
-        )
-            .then(res => res.json())
-            .then(data => {
+        $("#leave_approval_list").empty();
+        $("#leave_approval_list").append("<tr><td colspan='5'>Loading data, please wait...</td></tr>");
+
+        fetch('{{ route('getLeaveForApproval') }}?page=' + page, { method: "GET" })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch leaves for approval.");
+                return res.json();
+            })
+            .then(resp => {
+                const data = resp.data;
+                const pagination = resp.pagination;
+
                 $("#btn_next").prop("disabled", false);
                 $("#btn_prev").prop("disabled", false);
-                $("#pagination_container").addClass("d-none")
                 $("#leave_approval_list").empty();
-                $("#btn_next").addClass("d-none");
+
                 if (data.length < 1) {
-                    $("#leave_approval_list").append("<tr><td colspan='6'>No record found</td></tr>");
+                    $("#leave_approval_list").append("<tr><td colspan='5'>No record found</td></tr>");
+                    $("#pagination_container").addClass("d-none");
                     return;
                 }
 
-                $("#pagination_container").removeClass("d-none")
-                let max_visible = data.length;
-                if (max_visible == 11) {
-                    max_visible = 10;
+                $("#pagination_container").removeClass("d-none");
+
+                // Update pagination text
+                $("#page_items_count").text("Page " + pagination.current_page + " of " + pagination.last_page);
+
+                // Hide/Show prev button
+                if (pagination.current_page <= 1) {
+                    $("#btn_prev").addClass("d-none");
+                } else {
+                    $("#btn_prev").removeClass("d-none");
+                }
+
+                // Hide/Show next button
+                if (pagination.current_page >= pagination.last_page) {
+                    $("#btn_next").addClass("d-none");
+                } else {
                     $("#btn_next").removeClass("d-none");
                 }
 
-                $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
-                for (let i = 0; i < max_visible; i++) {
-                    const it = data[i];
-                    console.log(it);
+                // Render rows
+                data.forEach(it => {
                     const tr = `
-                    <tr id='leave_id_` + it.id + `'>
-                        <td>` + it.lname + ", " + it.fname + " " + it.mname + `</td>
-                        <td>` + it.description + `</td>
-                        <td>` + it.date_applied + `</td>
-                        <td><span class="badge bg-secondary">` + it.status + `</span></td>
+                    <tr id="leave_id_${it.id}">
+                        <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
+                        <td>${it.description}</td>
+                        <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
                         <td>
-                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="viewStatus(` + it.id + `)">
+                            <button type="button" class="btn btn-sm" style="background: transparent" onClick="viewApplication(${it.id})">
                                 <i class="bi bi-eye-fill text-success"></i>
                             </button>
                         </td>
-                    <tr>`;
+                    </tr>
+                `;
                     $("#leave_approval_list").append(tr);
-                }
-            }).catch(err => {
-            console.log(err);
-        })
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                $("#leave_approval_list").html("<tr><td colspan='5' class='text-danger'>Error loading data</td></tr>");
+            });
     }
 
-    function viewStatus(id) {
-        leave_id = id;
-        $("#leave_frame").attr("src", "{{ url('/print_leave?id=') }}" + id);
-        // Fetch leave logs
-        fetch('{{ route('getApplicationLogs') }}?id=' + id, {
-                method: "GET"
+    function viewApplication(id) {
+        fetch(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
             }
-        )
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error("Error:", data.error);
-                    return;
-                }
-
-                let section = data.logs.section || {remarks: "-", date_approved: "-"};
-                let division = data.logs.division || {remarks: "-", date_approved: "-"};
-                let hr = data.logs.hr || {remarks: "-", date_approved: "-"};
-
-                $("#leave_status_logs tr:eq(0) td:eq(1)").html(getBadge(section.remarks));
-                $("#leave_status_logs tr:eq(0) td:eq(2)").text(section.date_approved);
-
-                $("#leave_status_logs tr:eq(1) td:eq(1)").html(getBadge(division.remarks));
-                $("#leave_status_logs tr:eq(1) td:eq(2)").text(division.date_approved);
-
-                $("#leave_status_logs tr:eq(2) td:eq(1)").html(getBadge(hr.remarks));
-                $("#leave_status_logs tr:eq(2) td:eq(2)").text(hr.date_approved);
-
-                leave_modal.toggle();
+        })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to load leave application.");
+                return response.json();
             })
-            .catch(error => console.error("Fetch error:", error));
+            .then(data => {
+                // Fill static info
+                $('#leave_name').text(data.name);
+                $('#leave_type').text(data.type);
+                $('#leave_commutation').text(data.commutation);
+                $('#leave_details').val(data.details || '');
+
+                // Build dates table rows
+                let dateRows = '';
+                data.dates.forEach(d => {
+                    dateRows += `
+                <tr>
+                    <td>${d.date}</td>
+                    <td>${d.duration} hours</td>
+                </tr>
+            `;
+                });
+                $('#dates_applied_body').html(dateRows);
+
+                // Show modal
+                $('#viewLeaveModal').modal('show');
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error loading leave application.");
+            });
     }
 
     function clearForm() {

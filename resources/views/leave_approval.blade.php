@@ -9,8 +9,7 @@
                     <tr>
                         <th>Employee</th>
                         <th>Type</th>
-                        <th>Dates of leave</th>
-                        <th>Status</th>
+                        <th>Date Created</th>
                         <th style="width: 4%"></th>
                     </tr>
                     </thead>

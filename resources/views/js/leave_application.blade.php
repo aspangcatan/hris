@@ -361,6 +361,7 @@
                 // Fill static info
                 $('#leave_name').text(data.name);
                 $('#leave_type').text(data.type);
+                $('#leave_commutation').text(data.commutation);
                 $('#leave_details').val(data.details || '');
 
                 // Build dates table rows
@@ -370,14 +371,6 @@
                 <tr>
                     <td>${d.date}</td>
                     <td>${d.duration} hours</td>
-                    <td>${d.remarks || ''}</td>
-                    <td class="text-center align-middle">
-                        ${d.status === 'approved'
-                        ? '<span class="text-success fs-5">&#10004;</span>'
-                        : d.status === 'rejected'
-                            ? '<span class="text-danger fs-5">&#10060;</span>'
-                            : ''}
-                    </td>
                 </tr>
             `;
                 });

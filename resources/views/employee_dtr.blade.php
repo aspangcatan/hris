@@ -66,49 +66,66 @@
                 const time = $("#log_time").val();
                 const status = $("#log_status").val();
 
+                const datetime = moment(`${date} ${time}`, "YYYY-MM-DD HH:mm");
+
+
                 if (!date || !time) {
                     alert("All fields are required.");
                     return;
                 }
+                    Swal.fire({
+                        title: "Confirm Action",
+                        html: `Are you sure you want to set the time
+               <b>${datetime.format("hh:mm A")}</b>
+               on <b>${datetime.format("MMMM D, YYYY")}</b>
+               with a status of <b>${status}</b>?`,
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "Yes, confirm",
+                        cancelButtonText: "Cancel",
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33"
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            const params = {
+                                log_id: log_id,
+                                userid: userid,
+                                date: date,
+                                time: time,
+                                status: status
+                            }
 
+                            try {
+                                const response = await fetch("{{ route('storeManual') }}", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                    },
+                                    body: JSON.stringify(params)
+                                });
 
-                const params = {
-                    log_id: log_id,
-                    userid: userid,
-                    date: date,
-                    time: time,
-                    status: status
-                }
+                                if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.message || "Upload failed");
+                                }
 
-                try {
-                    const response = await fetch("{{ route('storeManual') }}", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        },
-                        body: JSON.stringify(params)
-                    });
+                                const result = await response.json();
+                                toastr.success(result.message, "Information");
+                                $("#add_log_modal").modal("hide");
+                                // optionally reset form
+                                $("#log_date").val("");
+                                $("#log_time").val("");
+                                $("#log_status").val("");
 
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.message || "Upload failed");
-                    }
+                                viewDtr(userid);
 
-                    const result = await response.json();
-                    toastr.success(result.message, "Information");
-                    $("#add_log_modal").modal("hide");
-                    // optionally reset form
-                    $("#log_date").val("");
-                    $("#log_time").val("");
-                    $("#log_status").val("");
-
-                    viewDtr(userid);
-
-                } catch (err) {
-                    console.error(err);
-                    alert("Error saving log: " + err.message);
-                }
+                            } catch (err) {
+                                console.error(err);
+                                alert("Error saving log: " + err.message);
+                            }
+                        }
+                });
             });
 
 

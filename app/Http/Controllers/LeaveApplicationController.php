@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LeaveApplication;
 
 use App\Services\LeaveApplicationService;
+use App\Services\LeaveApprovalService;
 use App\Services\LeaveLogsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,12 +14,13 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApplicationController extends Controller
 {
-    protected $leaveLogService, $leaveApplicationService;
+    protected $leaveLogService, $leaveApplicationService,$leaveApprovalService;
 
-    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService)
+    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService,LeaveApprovalService $leaveApprovalService)
     {
         $this->leaveLogService = $leaveLogsService;
         $this->leaveApplicationService = $leaveApplicationService;
+        $this->leaveApprovalService = $leaveApprovalService;
     }
 
     public function store(Request $request)
@@ -116,74 +118,25 @@ class LeaveApplicationController extends Controller
 
     public function getLeaveForApproval(Request $request)
     {
-        try {
-            $accessRight = session('access_rights'); // Retrieve access rights from session
-            $leaveType = null;
+        $perPage = 10;
+        $page = $request->input('page', 1);
 
-            // Determine leaveType based on access right (except admin)
-            switch ($accessRight) {
-                case 'SH':
-                    $leaveType = 1;
-                    break;
-                case 'DH':
-                    $leaveType = 2;
-                    break;
-                case 'HRH':
-                    $leaveType = 3;
-                    break;
-                case 'admin':
-                    $leaveType = null; // Admin sees all
-                    break;
-            }
+        $leaves = $this->leaveApprovalService->getLeavesForApproval();
 
-            $query = DB::table('hris.leave_application_logs as l')
-                ->join('hris.leave_applications as a', 'a.id', '=', 'l.leave_application_id')
-                ->join('tdh_user.users as u', 'l.origin', '=', 'u.id')
-                ->leftJoin('hris.leave_date_applied as d', 'a.id', '=', 'd.leave_application_id')
-                ->leftJoin('hris.leave_types as t', 'a.leave_id', '=', 't.id')
-                ->where('l.destination', Auth::user()->division)
+        // Paginate manually
+        $total = $leaves->count();
+        $paginated = $leaves->forPage($page, $perPage)->values();
 
-                // Ensure only latest record per leave application is considered
-                ->whereRaw('l.id = (SELECT id FROM hris.leave_application_logs WHERE leave_application_id = l.leave_application_id ORDER BY id DESC LIMIT 1)')
-
-                // Exclude already approved leaves
-                ->whereNotExists(function ($query) {
-                    $query->select(DB::raw(1))
-                        ->from('hris.leave_application_logs as sub_l')
-                        ->whereRaw('sub_l.leave_application_id = l.leave_application_id')
-                        ->where('sub_l.remarks', 'Approved');
-                });
-
-            // Apply leaveType filter only if not admin
-            if ($leaveType !== null) {
-                $query->where('l.type', $leaveType);
-            }
-
-            $results = $query->groupBy(
-                'l.id', 'a.id', 'u.id', 'l.leave_application_id', 'l.origin',
-                'l.destination', 'l.type', 'a.status', 't.description',
-                'u.fname', 'u.mname', 'u.lname'
-            )
-                ->select(
-                    'l.id',
-                    'u.fname',
-                    'u.mname',
-                    'u.lname',
-                    't.description',
-                    'a.status',
-                    DB::raw("GROUP_CONCAT(DISTINCT d.date_applied ORDER BY d.date_applied ASC SEPARATOR ', ') as date_applied")
-                )
-                ->skip($request->page * 10)
-                ->take(11)
-                ->get();
-
-            return response()->json($results);
-
-        } catch (\Exception $exception) {
-            return response()->json(['message' => $exception->getMessage()], 500);
-        }
+        return response()->json([
+            'data' => $paginated,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => ceil($total / $perPage)
+            ]
+        ]);
     }
-
 
     public function approveLeave(Request $request)
     {
@@ -282,6 +235,7 @@ class LeaveApplicationController extends Controller
             'name'       => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
             'type'       => $leave->leave_type,
             'details'    => $leave->detail,
+            'commutation'    => $leave->commutation,
             'created_at' => $leave->created_at,
             'dates'      => collect($leave->dates)->map(function ($d) {
                 return [
@@ -293,4 +247,5 @@ class LeaveApplicationController extends Controller
             })->values()
         ]);
     }
+
 }

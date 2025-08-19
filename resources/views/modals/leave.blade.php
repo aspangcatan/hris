@@ -203,6 +203,7 @@
                     <p><strong>Type:</strong> <span id="leave_type">Sick Leave</span></p>
                     <p><strong>Details:</strong></p>
                     <textarea id="leave_details" class="form-control" rows="4" readonly></textarea>
+                    <p class="mt-3"><strong>Commutation:</strong> <span id="leave_commutation"></span></p>
                 </div>
 
                 <div class="mt-3">
@@ -212,22 +213,9 @@
                         <tr>
                             <th style="width: 30%;">Date</th>
                             <th style="width: 25%;">Duration</th>
-                            <th style="width: 35%;">Remarks</th>
-                            <th style="width: 10%;"></th>
                         </tr>
                         </thead>
-                        <tbody id="dates_applied_body">
-                        <tr>
-                            <td>2025-08-13</td>
-                            <td>8 hours</td>
-                            <td>Medical Certificate Provided</td>
-                            <td class="text-center align-middle">
-                                <span class="text-danger fs-5">&#10060;</span> <!-- Cross -->
-                                <span class="text-success fs-5">&#10004;</span> <!-- Check -->
-                            </td>
-                        </tr>
-                        <!-- More rows dynamically inserted -->
-                        </tbody>
+                        <tbody id="dates_applied_body"></tbody>
                     </table>
                 </div>
             </div>

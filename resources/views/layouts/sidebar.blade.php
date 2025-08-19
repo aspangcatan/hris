@@ -1,6 +1,5 @@
 <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
-        {{ session('access_rights') }}
         <li class="nav-heading">General</li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('profile') ? '' : 'collapsed' }}" href="{{ route('profile') }}">

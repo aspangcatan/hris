@@ -33,9 +33,9 @@ class LeaveApplicationService
             ]);
 
             $approvals = [
-                ['role' => 'section_head', 'approver_id' => 1, 'order_no' => 1],
-                ['role' => 'division_head', 'approver_id' => 2, 'order_no' => 2],
-                ['role' => 'hr', 'approver_id' => 3, 'order_no' => 3],
+                ['role' => 'SH', 'approver_id' => 1, 'order_no' => 1],
+                ['role' => 'DH', 'approver_id' => 2, 'order_no' => 2],
+                ['role' => 'HR', 'approver_id' => 3, 'order_no' => 3],
             ];
 
             $approvalData = [];
@@ -81,6 +81,7 @@ class LeaveApplicationService
                 'u.mname',
                 'lt.description as leave_type',
                 'la.detail',
+                'la.commutation',
                 'la.created_at'
             )
             ->first();
