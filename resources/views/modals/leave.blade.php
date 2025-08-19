@@ -218,9 +218,22 @@
                         <tbody id="dates_applied_body"></tbody>
                     </table>
                 </div>
+
+                <!-- Remarks Section -->
+                <div class="mt-4">
+                    <label for="leave_remarks" class="form-label"><strong>Remarks:</strong></label>
+                    <textarea id="leave_remarks" class="form-control" rows="3" placeholder="Enter remarks here..."></textarea>
+                </div>
             </div>
-            <div class="modal-footer border-top-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer border-top-0 d-flex justify-content-end">
+                <div>
+                    <button type="button" class="btn btn-danger" id="rejectLeaveBtn">
+                        <i class="bi bi-x-circle"></i> Reject
+                    </button>
+                    <button type="button" class="btn btn-success" id="approveLeaveBtn">
+                        <i class="bi bi-check-circle"></i> Approve
+                    </button>
+                </div>
             </div>
         </div>
     </div>

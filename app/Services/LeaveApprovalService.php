@@ -33,7 +33,7 @@ class LeaveApprovalService
 
         if ($accessRight === "SH" || $accessRight === "admin") {
             $query->where('lp.approver_id', $user->section)
-                ->where('lp.role', "SH");
+                ->where('lp.role', "=", 'SH');
         } elseif ($accessRight === "DH") {
             $query->where('lp.approver_id', $user->division)
                 ->where('lp.role', "DH");
@@ -42,7 +42,19 @@ class LeaveApprovalService
                 ->where('lp.role', "HR");
         }
 
+        $query->where('lp.status', "=", 'pending');
         return $query->get();
     }
 
+    public function updateApprovalStatus($leave_id, $role, $remarks)
+    {
+        DB::table('hris.leave_application_approvals')->update([
+            'remarks' => $remarks,
+            'approved_at' => Carbon::now(),
+            'updated_at' => Carbon::now()
+        ])->where(function ($query) use ($leave_id, $role) {
+            $query->where('leave_application_id', '=', $leave_id);
+            $query->where('role', '=', $role);
+        });
+    }
 }

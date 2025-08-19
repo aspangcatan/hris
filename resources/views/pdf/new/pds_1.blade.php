@@ -4,7 +4,7 @@
         <div style="font-size: 12px;padding-left:2.5px">Revised 2025</div>
         <div
             style="text-align: center;font-weight: bold;font-size: 29.33px;font-family:'Arial Black',sans-serif !important;">
-            PERSONALS DATA SHEET
+            PERSONAL DATA SHEET
         </div>
         <div style="margin-top:10px;font-weight: bold;font-size: 10px;font-family: 'Arial'">WARNING: Any
             misrepresentation made in the

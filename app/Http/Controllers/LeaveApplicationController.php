@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApplicationController extends Controller
 {
-    protected $leaveLogService, $leaveApplicationService,$leaveApprovalService;
+    protected $leaveLogService, $leaveApplicationService, $leaveApprovalService;
 
-    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService,LeaveApprovalService $leaveApprovalService)
+    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService, LeaveApprovalService $leaveApprovalService)
     {
         $this->leaveLogService = $leaveLogsService;
         $this->leaveApplicationService = $leaveApplicationService;
@@ -138,6 +138,16 @@ class LeaveApplicationController extends Controller
         ]);
     }
 
+    public function updateApprovalStatus(Request $request)
+    {
+        try {
+            $this->leaveApprovalService->updateApprovalStatus($request->leave_id, session('access_rights'), $request->remarks);
+            return response()->json(['message' => 'Update status done']);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
     public function approveLeave(Request $request)
     {
         try {
@@ -232,17 +242,17 @@ class LeaveApplicationController extends Controller
         }
 
         return response()->json([
-            'name'       => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
-            'type'       => $leave->leave_type,
-            'details'    => $leave->detail,
-            'commutation'    => $leave->commutation,
+            'name' => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
+            'type' => $leave->leave_type,
+            'details' => $leave->detail,
+            'commutation' => $leave->commutation,
             'created_at' => $leave->created_at,
-            'dates'      => collect($leave->dates)->map(function ($d) {
+            'dates' => collect($leave->dates)->map(function ($d) {
                 return [
-                    'date'     => $d->date_applied,
+                    'date' => $d->date_applied,
                     'duration' => $d->hours,
-                    'remarks'  => $d->remarks ?? '',
-                    'status'   => $d->status ?? ''
+                    'remarks' => $d->remarks ?? '',
+                    'status' => $d->status ?? ''
                 ];
             })->values()
         ]);
