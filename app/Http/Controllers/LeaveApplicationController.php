@@ -141,7 +141,7 @@ class LeaveApplicationController extends Controller
     public function updateApprovalStatus(Request $request)
     {
         try {
-            $this->leaveApprovalService->updateApprovalStatus($request->leave_id, session('access_rights'), $request->remarks);
+            $this->leaveApprovalService->updateApprovalStatus($request->id, session('access_rights'), $request->remarks,$request->status);
             return response()->json(['message' => 'Update status done']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
@@ -164,6 +164,7 @@ class LeaveApplicationController extends Controller
                     $updated = $this->leaveLogService->updateStatus($request->id, '2', 'Approved');
                     $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '3');
                     break;
+                case "HR":
                 case "HRH":
                     $updated = $this->leaveLogService->updateStatus($request->id, '3', 'Approved');
                     $this->leaveApplicationService->updateStatus($request->id, 'Approved');
@@ -247,12 +248,15 @@ class LeaveApplicationController extends Controller
             'details' => $leave->detail,
             'commutation' => $leave->commutation,
             'created_at' => $leave->created_at,
+            'approvals' => [
+                'sh' => $leave->approvals['SH'] ?? ['status' => 'pending', 'remarks' => ''],
+                'dh' => $leave->approvals['DH'] ?? ['status' => 'pending', 'remarks' => ''],
+                'hr' => $leave->approvals['HR'] ?? ['status' => 'pending', 'remarks' => ''],
+            ],
             'dates' => collect($leave->dates)->map(function ($d) {
                 return [
                     'date' => $d->date_applied,
-                    'duration' => $d->hours,
-                    'remarks' => $d->remarks ?? '',
-                    'status' => $d->status ?? ''
+                    'duration' => $d->hours
                 ];
             })->values()
         ]);

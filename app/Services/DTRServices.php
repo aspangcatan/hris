@@ -10,11 +10,19 @@ class DTRServices
     public function getTotalPresent($userid, $month, $year)
     {
         $workdays = $this->getAllDays($year, $month); // includes weekends
+        $holidays = $this->getHolidays($month, $year); // fetch holidays
         $presentDays = [];
         $absentDays = [];
 
         // Step 1: Determine initial present/absent days
         foreach ($workdays as $date) {
+            // If date is a holiday, mark as present directly
+            if (in_array($date, $holidays)) {
+                $presentDays[$date] = true;
+                unset($absentDays[$date]);
+                continue;
+            }
+
             $firstIn = $this->getFirstInLog($userid, $date);
             $lastOut = $this->getLastOutLog($userid, $date);
 
@@ -28,6 +36,11 @@ class DTRServices
         // Step 2: Apply weekend rules
         foreach ($workdays as $date) {
             $dayOfWeek = Carbon::parse($date)->format('l');
+
+            // Skip weekend rule processing if holiday
+            if (in_array($date, $holidays)) {
+                continue;
+            }
 
             if ($dayOfWeek === 'Saturday') {
                 $friday = Carbon::parse($date)->copy()->subDay()->toDateString();
@@ -62,16 +75,20 @@ class DTRServices
             }
         }
 
-        // Step 3: Recalculate present days after weekend rules
+        // Step 3: Recalculate present days after weekend + holiday rules
         $finalPresentCount = 0;
         foreach ($workdays as $date) {
-            if (!isset($absentDays[$date])) {
+            // If holiday, always count as present
+            if (in_array($date, $holidays)) {
+                $finalPresentCount++;
+            } elseif (!isset($absentDays[$date])) {
                 $finalPresentCount++;
             }
         }
 
         return $finalPresentCount;
     }
+
 
 
     public function getTotalLateAbsent($userid, $month, $year)

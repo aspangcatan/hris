@@ -338,6 +338,8 @@ Route::group(['middleware' => 'auth'], function () {
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
     Route::post('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
+    Route::post('/update/approval_status', [\App\Http\Controllers\LeaveApplicationController::class, 'updateApprovalStatus'])->name('updateApprovalStatus');
+
 #DTR LOGS
     Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDTR'])->name('printDTR');
     Route::get('/get_employee_dtr', [\App\Http\Controllers\DTRController::class, 'getEmployeeDtr'])->name('getEmployeeDtr');

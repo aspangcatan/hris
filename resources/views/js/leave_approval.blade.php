@@ -27,15 +27,18 @@
             getLeaves();
         });
 
-        $("#btn_approve_leave").click(function () {
-            fetch('{{ route('approveLeave') }}', {
+        $("#approveLeaveBtn, #rejectLeaveBtn").click(function () {
+            const remarks = $("#leave_remarks").val().trim();
+            const status = $(this).val();
+
+            fetch('{{ route('updateApprovalStatus') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json", // Important to ensure JSON response is parsed correctly
                     "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
                 },
-                body: JSON.stringify({ id: leave_id })
+                body: JSON.stringify({id: leave_id, remarks: remarks, status: status})
             })
                 .then(async res => {
                     if (!res.ok) {
@@ -66,7 +69,7 @@
         $("#leave_approval_list").empty();
         $("#leave_approval_list").append("<tr><td colspan='5'>Loading data, please wait...</td></tr>");
 
-        fetch('{{ route('getLeaveForApproval') }}?page=' + page, { method: "GET" })
+        fetch('{{ route('getLeaveForApproval') }}?page=' + page, {method: "GET"})
             .then(res => {
                 if (!res.ok) throw new Error("Failed to fetch leaves for approval.");
                 return res.json();
@@ -128,6 +131,7 @@
     }
 
     function viewApplication(id) {
+        leave_id = id;
         fetch(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id), {
             method: 'GET',
             headers: {
@@ -157,6 +161,11 @@
                 });
                 $('#dates_applied_body').html(dateRows);
 
+                updateStepStatus('#step1', data.approvals.sh);
+                updateStepStatus('#step2', data.approvals.dh);
+                updateStepStatus('#step3', data.approvals.hr);
+
+
                 // Show modal
                 $('#viewLeaveModal').modal('show');
             })
@@ -165,6 +174,23 @@
                 alert("Error loading leave application.");
             });
     }
+
+    function updateStepStatus(selector, approval) {
+        $(selector).removeClass("approved rejected pending");
+        $(selector + " .circle").removeClass("approved rejected pending");
+
+        if (approval?.status === 'approved') {
+            $(selector).addClass("approved");
+            $(selector + " .circle").addClass("approved");
+        } else if (approval?.status === 'rejected') {
+            $(selector).addClass("rejected");
+            $(selector + " .circle").addClass("rejected");
+        } else {
+            $(selector).addClass("pending");
+            $(selector + " .circle").addClass("pending");
+        }
+    }
+
 
     function clearForm() {
         $("#leave_form input").val("");

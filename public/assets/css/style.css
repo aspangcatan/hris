@@ -17,7 +17,10 @@
     position: relative;
     z-index: 1;
     flex: 1;
+    text-align: center;
 }
+
+/* Circles */
 .steps .circle {
     width: 40px;
     height: 40px;
@@ -28,36 +31,57 @@
     font-weight: bold;
     color: #6c757d;
     margin-bottom: 5px;
+    position: relative;
+    z-index: 2;
 }
+
+/* Labels */
 .steps .label {
     font-size: 0.9rem;
     font-weight: 500;
     text-align: center;
 }
-.steps .line {
+
+/* Line after each step (default gray) */
+.steps .step::after {
+    content: "";
     position: absolute;
-    top: 40px; /* aligns with center of circle */
-    left: 10%;
-    width: 80%;
+    top: 20px; /* aligns with center of circle */
+    right: -50%;
+    width: 100%;
     height: 4px;
     background: #dee2e6;
-    z-index: 0;
+    z-index: 1;
 }
 
+/* ✅ Remove line after last step */
+.steps .step:last-child::after {
+    content: none !important;
+}
+
+/* Circle status colors */
 .steps .circle.pending {
-    background: #6c757d; /* Soft Gray for pending */
+    background: #6c757d;
     color: white;
 }
-
-.steps .circle.approve {
-    background: #0d6efd; /* Bootstrap Blue */
+.steps .circle.approved {
+    background: #0d6efd;
     color: white;
 }
-
 .steps .circle.rejected {
-    background: #dc3545; /* Bootstrap Red */
+    background: #dc3545;
     color: white;
 }
+
+/* Line progress color (match the step status) */
+.steps .step.approved::after {
+    background: #0d6efd; /* Blue line if step done */
+}
+.steps .step.rejected::after {
+    background: #dc3545; /* Red line if rejected */
+}
+
+
 
 :root {
     scroll-behavior: smooth;

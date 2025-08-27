@@ -37,8 +37,8 @@ class LeaveApprovalService
         } elseif ($accessRight === "DH") {
             $query->where('lp.approver_id', $user->division)
                 ->where('lp.role', "DH");
-        } elseif ($accessRight === "HR") {
-            $query->where('lp.approver_id', $user->section)
+        } elseif ($accessRight === "HR" || $accessRight === "HRH") {
+            $query->where('lp.approver_id', 15)
                 ->where('lp.role', "HR");
         }
 
@@ -46,15 +46,41 @@ class LeaveApprovalService
         return $query->get();
     }
 
-    public function updateApprovalStatus($leave_id, $role, $remarks)
+    public function updateApprovalStatus($leave_id, $role, $remarks, $status)
     {
-        DB::table('hris.leave_application_approvals')->update([
-            'remarks' => $remarks,
-            'approved_at' => Carbon::now(),
-            'updated_at' => Carbon::now()
-        ])->where(function ($query) use ($leave_id, $role) {
-            $query->where('leave_application_id', '=', $leave_id);
-            $query->where('role', '=', $role);
-        });
+        DB::table('hris.leave_application_approvals')
+            ->where(function ($query) use ($leave_id, $role) {
+                $query->where('leave_application_id', '=', $leave_id);
+                if ($role == "admin")
+                    $query->where('role', '=', "SH");
+                else if ($role == "HRH")
+                    $query->where('role', '=', "HR");
+                else
+                    $query->where('role', '=', $role);
+            })->update([
+                'status' => $status,
+                'remarks' => $remarks,
+                'approved_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ]);
+
+        if ($status == "Rejected") {
+            DB::table('hris.leave_applications')
+                ->where('id', '=', $leave_id)
+                ->update([
+                    'status' => $status,
+                    'updated_at' => Carbon::now()
+                ]);
+            return;
+        }
+
+        if ($role == "HRH" || $role == "HR") {
+            DB::table('hris.leave_applications')
+                ->where('id', '=', $leave_id)
+                ->update([
+                    'status' => $status,
+                    'updated_at' => Carbon::now()
+                ]);
+        }
     }
 }

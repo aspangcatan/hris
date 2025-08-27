@@ -9,25 +9,6 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <div class="steps d-flex justify-content-between position-relative">
-                        <div class="step text-center" id="step1">
-                            <div class="circle approve">1</div>
-                            <div class="label">Supervisor</div>
-                        </div>
-                        <div class="step text-center" id="step2">
-                            <div class="circle">2</div>
-                            <div class="label">HR</div>
-                        </div>
-                        <div class="step text-center" id="step3">
-                            <div class="circle">3</div>
-                            <div class="label">Director</div>
-                        </div>
-                        <!-- Connecting line -->
-                        <div class="line"></div>
-                    </div>
-                </div>
-
                 <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"
                         id="leave_frame"></iframe>
             </div>
@@ -65,7 +46,7 @@
                     <div class="fw-bold">A. Type of Leave to be availed of</div>
                     <div class="row mt-2" id="leave_list"></div>
 
-                    <hr />
+                    <hr/>
 
                     <!-- B. Details of Leave -->
                     <div class="fw-bold mt-4">B. Details of leave</div>
@@ -76,14 +57,14 @@
                             <div class="form-check d-flex align-items-center">
                                 <input class="form-check-input me-2" type="radio" name="vacation_leave">
                                 <label class="form-check-label me-2">Within the Philippines</label>
-                                <input class="form-control w-50" type="text" id="within_philippines" />
+                                <input class="form-control w-50" type="text" id="within_philippines"/>
                             </div>
                         </div>
                         <div class="col-md-12 mt-2">
                             <div class="form-check d-flex align-items-center">
                                 <input class="form-check-input me-2" type="radio" name="vacation_leave">
                                 <label class="form-check-label me-2">Abroad (Specify)</label>
-                                <input class="form-control w-50" type="text" id="abroad" />
+                                <input class="form-control w-50" type="text" id="abroad"/>
                             </div>
                         </div>
                     </div>
@@ -92,18 +73,18 @@
                     <div class="form-check d-flex align-items-center mt-1">
                         <input class="form-check-input me-2" type="radio" name="sick_leave">
                         <label class="form-check-label me-2">In Hospital (Specify Illness)</label>
-                        <input class="form-control w-50" type="text" id="in_hospital" />
+                        <input class="form-control w-50" type="text" id="in_hospital"/>
                     </div>
                     <div class="form-check d-flex align-items-center mt-2">
                         <input class="form-check-input me-2" type="radio" name="sick_leave">
                         <label class="form-check-label me-2">Out Patient (Specify Illness)</label>
-                        <input class="form-control w-50" type="text" id="out_hospital" />
+                        <input class="form-control w-50" type="text" id="out_hospital"/>
                     </div>
 
                     <div class="mt-3">In case of Special Leave Benefits for Women:</div>
                     <div class="d-flex align-items-center mt-1">
                         <label class="form-check-label me-2">(Specify Illness)</label>
-                        <input class="form-control w-75" type="text" id="special_leave" />
+                        <input class="form-control w-75" type="text" id="special_leave"/>
                     </div>
 
                     <div class="mt-3">In case of Study Leave:</div>
@@ -116,12 +97,13 @@
                         <label class="form-check-label">BAR/Board Examination Review</label>
                     </div>
 
-                    <hr />
+                    <hr/>
 
                     <!-- C. Leave Dates -->
                     <div class="d-flex align-items-center justify-content-between mt-4">
                         <div class="fw-bold">C. Date applied for leave</div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date
+                        </button>
                     </div>
 
                     <table class="table table-bordered table-sm mt-2" id="dates_table">
@@ -143,7 +125,7 @@
                         </tbody>
                     </table>
 
-                    <hr />
+                    <hr/>
 
                     <!-- D. Commutation -->
                     <div class="fw-bold mt-4">D. Commutation</div>
@@ -172,7 +154,8 @@
     </div>
 </div>
 
-<div class="modal fade" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border border-dark">
             <div class="modal-header border-bottom-0">
@@ -183,24 +166,22 @@
                 <div class="mb-5">
                     <div class="steps d-flex justify-content-between position-relative">
                         <div class="step text-center" id="step1">
-                            <div class="circle approve">1</div>
+                            <div class="circle">1</div>
                             <div class="label">Supervisor</div>
                         </div>
                         <div class="step text-center" id="step2">
                             <div class="circle">2</div>
-                            <div class="label">HR</div>
+                            <div class="label">Division Head</div>
                         </div>
                         <div class="step text-center" id="step3">
                             <div class="circle">3</div>
-                            <div class="label">Director</div>
+                            <div class="label">Human Resource</div>
                         </div>
-                        <!-- Connecting line -->
-                        <div class="line"></div>
                     </div>
                 </div>
                 <div class="mt-5">
-                    <p><strong>Name:</strong> <span id="leave_name">Asnaui O. Pangcatan</span></p>
-                    <p><strong>Type:</strong> <span id="leave_type">Sick Leave</span></p>
+                    <p><strong>Name:</strong> <span id="leave_name"></span></p>
+                    <p><strong>Type:</strong> <span id="leave_type"></span></p>
                     <p><strong>Details:</strong></p>
                     <textarea id="leave_details" class="form-control" rows="4" readonly></textarea>
                     <p class="mt-3"><strong>Commutation:</strong> <span id="leave_commutation"></span></p>
@@ -222,19 +203,28 @@
                 <!-- Remarks Section -->
                 <div class="mt-4">
                     <label for="leave_remarks" class="form-label"><strong>Remarks:</strong></label>
-                    <textarea id="leave_remarks" class="form-control" rows="3" placeholder="Enter remarks here..."></textarea>
+                    <textarea id="leave_remarks"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Enter remarks here..."
+                              @if(request()->routeIs('leave_application')) readonly @endif>
+                    </textarea>
+
                 </div>
             </div>
-            <div class="modal-footer border-top-0 d-flex justify-content-end">
-                <div>
-                    <button type="button" class="btn btn-danger" id="rejectLeaveBtn">
-                        <i class="bi bi-x-circle"></i> Reject
-                    </button>
-                    <button type="button" class="btn btn-success" id="approveLeaveBtn">
-                        <i class="bi bi-check-circle"></i> Approve
-                    </button>
+
+            @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
+                <div class="modal-footer border-top-0 d-flex justify-content-end">
+                    <div>
+                        <button type="button" class="btn btn-danger" id="rejectLeaveBtn" value="Rejected">
+                            <i class="bi bi-x-circle"></i> Reject
+                        </button>
+                        <button type="button" class="btn btn-success" id="approveLeaveBtn" value="Approved">
+                            <i class="bi bi-check-circle"></i> Approve
+                        </button>
+                    </div>
                 </div>
-            </div>
+            @endif
         </div>
     </div>
 </div>

@@ -7,7 +7,7 @@
         <div class="card-body bg-white">
             <!-- Filter Section -->
             <div class="row g-3 align-items-end mb-4 mt-3">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="form-floating">
                         <select class="form-select form-control-sm" id="month">
                             <option value="" selected disabled>Select month</option>
@@ -28,7 +28,7 @@
                     </div>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="form-floating">
                         <select class="form-select form-control-sm" id="year">
                             <option value="" selected disabled>Select year</option>
@@ -39,10 +39,30 @@
                         <label for="year">Year</label>
                     </div>
                 </div>
+                <div class="col-md-3">
+                    <div class="form-floating">
+                        <select class="form-select form-control-sm" id="division">
+
+                        </select>
+                        <label for="month">Division</label>
+                    </div>
+                </div>
 
                 <div class="col-md-3">
-                    <button class="btn btn-success w-100 btn-lg" onclick="updateCredits()">Update Credits</button>
+                    <div class="form-floating">
+                        <select class="form-select form-control-sm" id="section">
+
+                        </select>
+                        <label for="year">Section</label>
+                    </div>
                 </div>
+                <div class="col-md-2">
+                    <button id="updateCreditsBtn" class="btn btn-success w-100 btn-lg" onclick="updateCredits()">
+                        <span id="updateCreditsText">Update Credits</span>
+                        <span id="updateCreditsLoader" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+
             </div>
 
             <!-- Divider -->
@@ -81,47 +101,137 @@
 @section('js')
     <script>
         $(document).ready(function () {
-            $("#month,#year").change(function () {
-                getCreditEarned();
+            loadDivision();
+
+            $("#month,#year,#division,#section").change(function () {
+                const month = $("#month").val();
+                const year = $("#year").val();
+                const division = $("#division").val();
+                const section = $("#section").val();
+
+                if (month == "" || year == "" || division == "" || section == "") return;
+
+                getCreditEarned(month, year, division, section);
+            });
+
+            $("#division").change(function () {
+                const division = $("#division").val();
+                fetch("{{ route('getSectionList') }}?division=" + division, {
+                    method: "GET"
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        $("#section").empty();
+                        if (division == 0) {
+                            $("#section").addClass("d-none");
+                        } else {
+                            $("#section").removeClass("d-none");
+                        }
+
+                        data.forEach(it => {
+                            const option = `<option value="` + it.id + `">` + it.description + `</option>`;
+                            $("#section").append(option);
+                        });
+                    }).catch(err => {
+                    alert("Ooops, something went wrong. Please reload");
+                });
             });
 
             getCreditEarned();
         });
 
+        function loadDivision() {
+            fetch("{{ route('getDivisionList') }}", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(it => {
+                        const option = `<option value="${it.id}">${it.description}</option>`;
+                        $("#division").append(option);
+                    });
+                })
+                .catch(err => {
+                    alert("Ooops, something went wrong. Please reload");
+                });
+        }
+
         function updateCredits() {
             const month = $("#month").val();
             const year = $("#year").val();
+            const division = $("#division").val();
+            const section = $("#section").val();
 
-            if (month == "" || year == "") {
-                alert("Please fill in month and year");
+            if (month === "" || year === "" || division === "" || section === "") {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Missing Fields",
+                    text: "Please fill in all filter fields"
+                });
                 return;
             }
 
-            if (confirm(`Are you sure you want to update credits?`)) {
-                fetch('{{ route('updateCreditBalance') }}', {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    }, body: JSON.stringify({month: month, year: year})
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        toastr.success(data.message, 'Information');
-                    }).catch(err => {
-                    toastr.error(err, "Oops");
-                });
-            }
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Do you want to update credits?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: "Yes, update",
+                cancelButtonText: "Cancel"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // disable button and show loader
+                    const btn = document.getElementById("updateCreditsBtn");
+                    const btnText = document.getElementById("updateCreditsText");
+                    const btnLoader = document.getElementById("updateCreditsLoader");
+
+                    btn.disabled = true;
+                    btnText.textContent = "Updating...";
+                    btnLoader.classList.remove("d-none");
+
+                    fetch('{{ route('updateCreditBalance') }}', {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+                        },
+                        body: JSON.stringify({
+                            month: month,
+                            year: year,
+                            division: division,
+                            section: section
+                        })
+                    })
+                        .then((res) => res.json())
+                        .then((data) => {
+                            Swal.fire({
+                                icon: "success",
+                                title: "Updated",
+                                text: data.message
+                            });
+                            getCreditEarned(month, year, division, section);
+                        })
+                        .catch((err) => {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Oops!",
+                                text: err
+                            });
+                        })
+                        .finally(() => {
+                            // re-enable button
+                            btn.disabled = false;
+                            btnText.textContent = "Update Credits";
+                            btnLoader.classList.add("d-none");
+                        });
+                }
+            });
         }
 
-        function getCreditEarned() {
-            const month = $("#month").val();
-            const year = $("#year").val();
 
-            if (!month || !year) return;
+        function getCreditEarned(month, year, division, section) {
 
-
-            const url = `{{ route('getCreditEarned') }}?month=${month}&year=${year}`;
+            const url = `{{ route('getCreditEarned') }}?month=${month}&year=${year}&division=${division}&section=${section}`;
 
             fetch(url, {method: "GET"})
                 .then(response => response.json())

@@ -33,9 +33,9 @@ class LeaveApplicationService
             ]);
 
             $approvals = [
-                ['role' => 'SH', 'approver_id' => 1, 'order_no' => 1],
-                ['role' => 'DH', 'approver_id' => 2, 'order_no' => 2],
-                ['role' => 'HR', 'approver_id' => 3, 'order_no' => 3],
+                ['role' => 'SH', 'approver_id' => Auth::user()->section, 'order_no' => 1],
+                ['role' => 'DH', 'approver_id' => Auth::user()->division, 'order_no' => 2],
+                ['role' => 'HR', 'approver_id' => 15, 'order_no' => 3],
             ];
 
             $approvalData = [];
@@ -90,20 +90,31 @@ class LeaveApplicationService
             return null;
         }
 
+        // Dates (no remarks/status here)
         $dates = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $id)
-            ->select(
-                'date_applied',
-                'hours'
-            )
+            ->select('date_applied', 'hours')
             ->orderBy('date_applied', 'asc')
             ->get();
 
-        // Always assign a Collection to dates
-        $application->dates = $dates;
+        // Approvals (SH, DH, HR)
+        $approvals = DB::table('hris.leave_application_approvals as laa')
+            ->where('laa.leave_application_id', $id)
+            ->select('laa.role', 'laa.status', 'laa.remarks')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [
+                    $item->role => [
+                        'status'  => $item->status,
+                        'remarks' => $item->remarks,
+                    ]
+                ];
+            })
+            ->toArray();
 
+        $application->dates = $dates;
+        $application->approvals = $approvals;
 
         return $application;
     }
-
 }

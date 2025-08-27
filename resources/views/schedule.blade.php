@@ -12,28 +12,60 @@
             </div>
 
             <!-- Filters -->
-            <div class="row mt-4">
-                <div class="col-md-3">
-                    <label for="filter_month">Month:</label>
-                    <select id="filter_month" class="form-control">
-                        @foreach(['01'=>'January','02'=>'February','03'=>'March','04'=>'April','05'=>'May','06'=>'June','07'=>'July','08'=>'August','09'=>'September','10'=>'October','11'=>'November','12'=>'December'] as $num => $name)
-                            <option value="{{ $num }}" {{ now()->format('m') == $num ? 'selected' : '' }}>{{ $name }}</option>
-                        @endforeach
-                    </select>
+            <div class="row g-3 align-items-end mb-4 mt-3">
+                <div class="col-md-2">
+                    <div class="form-floating">
+                        <select class="form-select form-control-sm" id="filter_month">
+                            <option value="" selected disabled>Select month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <label for="month">Month</label>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="filter_year">Year:</label>
-                    <select id="filter_year" class="form-control">
-                        <option value="">Select year</option>
-                        @for($year = 2024; $year <= \Carbon\Carbon::now()->year; $year++)
-                            <option value="{{ $year }}" {{ now()->year == $year ? 'selected' : '' }}>{{ $year }}</option>
-                        @endfor
-                    </select>
+
+                <div class="col-md-2">
+                    <div class="form-floating">
+                        <select class="form-select form-control-sm" id="filter_year">
+                            <option value="" selected disabled>Select year</option>
+                            @for($year = 2023; $year <= \Carbon\Carbon::now()->format('Y'); $year++)
+                                <option>{{ $year }}</option>
+                            @endfor
+                        </select>
+                        <label for="year">Year</label>
+                    </div>
                 </div>
-                <div class="col-md-6 d-flex align-items-end gap-2">
-                    <button id="applyFilter" class="btn btn-primary w-100">Apply Filter</button>
-                    <button id="btn_advance_schedule" class="btn btn-warning w-100">Advance Set Schedule</button>
+                <div class="col-md-4">
+                    <div class="form-floating">
+                        <select class="form-select form-control-sm" id="division">
+
+                        </select>
+                        <label for="month">Division</label>
+                    </div>
                 </div>
+
+                <div class="col-md-2">
+                    <div class="form-floating">
+                        <select class="form-select form-control-sm" id="section">
+
+                        </select>
+                        <label for="year">Section</label>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button id="btn_advance_schedule" class="btn btn-success btn-lg w-100">Advance Settings</button>
+                </div>
+
             </div>
 
             <!-- Schedule Table -->
@@ -65,8 +97,37 @@
             loadScheduleMasterList();
             loadEmployeeSchedule();
 
+            $("#division").change(function () {
+                const division = $("#division").val();
+                fetch("{{ route('getSectionList') }}?division=" + division, {
+                    method: "GET"
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        $("#section").empty();
+                        if (division == 0) {
+                            $("#section").addClass("d-none");
+                        } else {
+                            $("#section").removeClass("d-none");
+                            $("#section").append(`<option value="0">-- Select Section --</option>`);
+
+                            data.forEach(it => {
+                                const option = `<option value="${it.id}">${it.description}</option>`;
+                                $("#section").append(option);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Oops...",
+                            text: "Something went wrong while loading sections. Please reload the page."
+                        });
+                    });
+            });
+
             // Re-fetch on filter change
-            $('#filter_month, #filter_year').on('change', loadEmployeeSchedule);
+            $('#filter_month, #filter_year,#division,#section').on('change', loadEmployeeSchedule);
 
             // Advance Set Schedule Button
             $('#btn_advance_schedule').on('click', function () {
@@ -178,7 +239,33 @@
                     })
                     .catch(console.error);
             });
+
+            loadDivision();
         });
+
+        function loadDivision() {
+            fetch("{{ route('getDivisionList') }}", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    $("#division").empty(); // clear first to avoid duplicates
+                    $("#division").append(`<option value="0">-- Select Division --</option>`);
+
+                    data.forEach(it => {
+                        const option = `<option value="${it.id}">${it.description}</option>`;
+                        $("#division").append(option);
+                    });
+                })
+                .catch(err => {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Something went wrong while loading divisions. Please reload the page."
+                    });
+                });
+        }
+
 
         // Load Schedule Master List (Legend & Options)
         function loadScheduleMasterList() {
@@ -197,13 +284,15 @@
         function loadEmployeeSchedule() {
             const month = $('#filter_month').val();
             const year = $('#filter_year').val();
+            const division = $('#division').val();
+            const section = $('#section').val();
 
             if (!month || !year) {
                 toastr.error("Please select both month and year.", "Missing Filter");
                 return;
             }
 
-            fetch(`{{ route('getSchedules') }}?month=${month}&year=${year}`)
+            fetch(`{{ route('getSchedules') }}?month=${month}&year=${year}&division=${division}&section=${section}`)
                 .then(res => res.json())
                 .then(data => {
                     let headerHTML = `<th>Name</th><th>Designation</th>`;

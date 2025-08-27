@@ -21,12 +21,16 @@ class CreditController extends Controller
     public function updateCreditBalance(Request $request)
     {
         try {
-            $employees = DB::table('hris.schedules')
-                ->select('employee_id')
-                ->whereMonth('schedule_date', $request->month)
-                ->whereYear('schedule_date', $request->year)
-                ->groupBy('employee_id')
+            $employees = DB::table('hris.schedules as s')
+                ->join('tdh_user.users as u', 'u.id', '=', 's.employee_id')
+                ->select('s.employee_id')
+                ->whereMonth('s.schedule_date', $request->month)
+                ->whereYear('s.schedule_date', $request->year)
+                ->where('u.division', $request->division)
+                ->where('u.section', $request->section)
+                ->groupBy('s.employee_id')
                 ->get();
+
 
             foreach ($employees as $employee) {
                 $userid = $employee->employee_id;
@@ -53,6 +57,8 @@ class CreditController extends Controller
                 ->join('hris.leave_types as t', 't.id', '=', 'l.leave_type_id')
                 ->where('l.year', $request->year)
                 ->where('l.month', $request->month)
+                ->where('u.division', $request->division)
+                ->where('u.section', $request->section)
                 ->get(['u.fname', 'u.mname', 'u.lname', 'u.suffix', 'l.month', 'l.year', 't.description', 'l.total_present', 'l.total_lateundertime_minutes', 'l.earned_points', 'l.deducted_points']);
             return response()->json($logs);
         } catch (\Exception $exception) {

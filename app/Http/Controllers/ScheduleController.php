@@ -22,10 +22,16 @@ class ScheduleController extends Controller
             $year = $request->input('year', date('Y'));
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
+            // Determine section
+            $section = $request->input('section');
+            if (is_null($section) || $section === '' || $section === 'null') {
+                $section = Auth::user()->section;
+            }
+
             // Get employees from the same section
             $employees = DB::table('tdh_user.users as u')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
-                ->where('u.section', Auth::user()->section)
+                ->where('u.section', $section)
                 ->selectRaw("
                 u.id as employee_id,
                 CONCAT(
@@ -56,7 +62,7 @@ class ScheduleController extends Controller
                     'schedule' => []
                 ];
 
-                // Initialize all days with "RD" as a numeric array
+                // Initialize all days with "RD"
                 for ($day = 1; $day <= $daysInMonth; $day++) {
                     $schedule['schedule'][] = "RD";
                 }
@@ -77,6 +83,7 @@ class ScheduleController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
 
     public function getScheduleMasterList()
