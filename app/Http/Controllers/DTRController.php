@@ -535,22 +535,46 @@ class DTRController extends Controller
     {
         try {
             $search_division = $request->search_division;
-            $search_section = $request->search_section;
-            $search_fname = $request->search_fname;
-            $search_lname = $request->search_lname;
+            $search_section  = $request->search_section;
+            $search_fname    = $request->search_fname;
+            $search_lname    = $request->search_lname;
 
+            // Default to logged-in user's section if search_section = 0
             if ($search_section == 0) {
                 $search_section = Auth::user()->section;
             }
 
-            $today = Carbon::now()->toDateString(); // Ensure same format as MySQL CURDATE()
+            // Today range for comparisons
+            $todayStart = Carbon::today()->startOfDay()->toDateTimeString();
+            $todayEnd   = Carbon::today()->endOfDay()->toDateTimeString();
 
             $employee = DB::table('tdh_user.users as u')
                 ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
-                ->leftJoin('hris.dtr_logs as d', function ($join) {
-                    $join->on('u.id', '=', 'd.userid');
-                })
+                // Subquery for time_in
+                ->leftJoinSub(
+                    DB::table('hris.dtr_logs as d1')
+                        ->select('d1.userid', DB::raw('MIN(d1.created_at) as time_in'))
+                        ->where('d1.status', 'IN')
+                        ->whereBetween('d1.created_at', [$todayStart, $todayEnd])
+                        ->groupBy('d1.userid'),
+                    'time_in_table',
+                    'u.id',
+                    '=',
+                    'time_in_table.userid'
+                )
+                // Subquery for time_out
+                ->leftJoinSub(
+                    DB::table('hris.dtr_logs as d2')
+                        ->select('d2.userid', DB::raw('MAX(d2.created_at) as time_out'))
+                        ->where('d2.status', 'OUT')
+                        ->whereBetween('d2.created_at', [$todayStart, $todayEnd])
+                        ->groupBy('d2.userid'),
+                    'time_out_table',
+                    'u.id',
+                    '=',
+                    'time_out_table.userid'
+                )
                 ->select(
                     'u.id',
                     'u.fname',
@@ -560,28 +584,15 @@ class DTRController extends Controller
                     'u.picture',
                     'u.section',
                     'u.division',
-                    DB::raw("(SELECT MIN(d1.created_at) FROM hris.dtr_logs d1 WHERE d1.userid = u.id AND d1.status = 'IN' AND DATE(d1.created_at) = '$today') as time_in"),
-                    DB::raw("(SELECT MAX(d2.created_at) FROM hris.dtr_logs d2 WHERE d2.userid = u.id AND d2.status = 'OUT' AND DATE(d2.created_at) = '$today') as time_out")
+                    'time_in_table.time_in',
+                    'time_out_table.time_out'
                 )
                 ->where(function ($query) {
                     $query->where('e.employee_type', '!=', 'Resigned')
                         ->orWhereNull('e.employee_type');
-                })
-                ->when(request('search_fname') || request('search_lname'), function ($query) {
-                    $query->where(function ($subQuery) {
-                        if (request('search_fname')) {
-                            $subQuery->orWhere('u.fname', 'LIKE', '%' . request('search_fname') . '%');
-                        }
-                        if (request('search_lname')) {
-                            $subQuery->orWhere('u.lname', 'LIKE', '%' . request('search_lname') . '%');
-                        }
-                    });
-                })
-                ->groupBy('u.id', 'u.fname', 'u.mname', 'u.lname', 'u.section', 'u.division', 'd1.description', 'u.picture')
-                ->orderByRaw('time_in IS NULL, time_in ASC');
+                });
 
-
-            // Apply dynamic filters
+            // Apply filters
             if (!empty($search_section)) {
                 $employee->where('u.section', '=', $search_section);
             }
@@ -598,6 +609,9 @@ class DTRController extends Controller
                 $employee->where('u.lname', 'LIKE', "%$search_lname%");
             }
 
+            // Ordering: show employees without time_in last
+            $employee->orderByRaw('time_in IS NULL, time_in ASC');
+
             $result = $employee->get();
 
             return response()->json($result);
@@ -605,6 +619,7 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
 
     public function getDivisionList()
