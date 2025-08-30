@@ -285,14 +285,6 @@
                             </div>
                         </div>
                         <div class="card-body custom-card-body">
-                            <div class="d-flex align-items-center mt-3">
-                                <div class="font-weight-bold custom-label">Time In:</div>
-                                <div class="ms-2 custom-value">${timeIn}</div>
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <div class="font-weight-bold custom-label">Time Out:</div>
-                                <div class="ms-2 custom-value text-warning">${timeOut}</div>
-                            </div>
                             <div class="d-flex justify-content-end mt-3">
                                 <button class="btn btn-sm btn-primary ms-1" onclick="viewDtr(${it.id})">
                                     <i class="fas fa-eye mr-1"></i>

@@ -544,37 +544,9 @@ class DTRController extends Controller
                 $search_section = Auth::user()->section;
             }
 
-            // Today range for comparisons
-            $todayStart = Carbon::today()->startOfDay()->toDateTimeString();
-            $todayEnd   = Carbon::today()->endOfDay()->toDateTimeString();
-
             $employee = DB::table('tdh_user.users as u')
                 ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
-                // Subquery for time_in
-                ->leftJoinSub(
-                    DB::table('hris.dtr_logs as d1')
-                        ->select('d1.userid', DB::raw('MIN(d1.created_at) as time_in'))
-                        ->where('d1.status', 'IN')
-                        ->whereBetween('d1.created_at', [$todayStart, $todayEnd])
-                        ->groupBy('d1.userid'),
-                    'time_in_table',
-                    'u.id',
-                    '=',
-                    'time_in_table.userid'
-                )
-                // Subquery for time_out
-                ->leftJoinSub(
-                    DB::table('hris.dtr_logs as d2')
-                        ->select('d2.userid', DB::raw('MAX(d2.created_at) as time_out'))
-                        ->where('d2.status', 'OUT')
-                        ->whereBetween('d2.created_at', [$todayStart, $todayEnd])
-                        ->groupBy('d2.userid'),
-                    'time_out_table',
-                    'u.id',
-                    '=',
-                    'time_out_table.userid'
-                )
                 ->select(
                     'u.id',
                     'u.fname',
@@ -583,9 +555,7 @@ class DTRController extends Controller
                     'd1.description as designation',
                     'u.picture',
                     'u.section',
-                    'u.division',
-                    'time_in_table.time_in',
-                    'time_out_table.time_out'
+                    'u.division'
                 )
                 ->where(function ($query) {
                     $query->where('e.employee_type', '!=', 'Resigned')
@@ -609,16 +579,14 @@ class DTRController extends Controller
                 $employee->where('u.lname', 'LIKE', "%$search_lname%");
             }
 
-            // Ordering: show employees without time_in last
-            $employee->orderByRaw('time_in IS NULL, time_in ASC');
-
-            $result = $employee->get();
+            $result = $employee->orderBy('u.lname')->get();
 
             return response()->json($result);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
 
 
