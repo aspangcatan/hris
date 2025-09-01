@@ -429,6 +429,7 @@ class DTRController extends Controller
 
             $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
             if(self::checkIfDivisionHead($userid)){
+                //IF USER IS DIVISION HEAD, PRINT MCC DIVISION HEAD
                 $division_id = 1;
             }else{
                 $division_id = self::getDivisionByUser($userid);
