@@ -160,7 +160,6 @@ class DTRController extends Controller
             }
 
 
-
             $monthYear = Carbon::now()->format('mY'); // e.g., "012025" for January 2025
             $filePath = 'img/' . $request->input('userid') . '/' . $monthYear . '/' . uniqid() . '.jpg';
 
@@ -225,7 +224,6 @@ class DTRController extends Controller
             return response()->json(['error' => 'Server error: ' . $e->getMessage()], 500);
         }
     }
-
 
 
     public function getDTRLast3(Request $request)
@@ -424,13 +422,15 @@ class DTRController extends Controller
 
             // Fetch all employees in the current division
             $employees = DB::table('tdh_user.users')
-                ->where('id',$userid)
+                ->where('id', $userid)
                 ->get();
 
             $dtrData = [];
 
             $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
-            $in_charged = collect(self::getInCharged(Auth::user()->division))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
+            $division_id = self::getDivisionByUser($userid);
+            $in_charged = collect(self::getInCharged($division_id))
+                ->only(['fname', 'mname', 'lname', 'suffix', 'title']);
 
             $fname = $in_charged['fname'] ?? '';
             $mname = !empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '';
@@ -531,13 +531,20 @@ class DTRController extends Controller
             ->first();
     }
 
+    public function getDivisionByUser($id)
+    {
+        return DB::table('tdh_user.users')
+            ->where('id','=', $id)
+            ->value('division');
+    }
+
     public function getEmployeeDtr(Request $request)
     {
         try {
             $search_division = $request->search_division;
-            $search_section  = $request->search_section;
-            $search_fname    = $request->search_fname;
-            $search_lname    = $request->search_lname;
+            $search_section = $request->search_section;
+            $search_fname = $request->search_fname;
+            $search_lname = $request->search_lname;
 
             // Default to logged-in user's section if search_section = 0
             if ($search_section == 0) {
@@ -586,8 +593,6 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
-
-
 
 
     public function getDivisionList()
