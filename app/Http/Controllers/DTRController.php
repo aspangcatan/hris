@@ -428,7 +428,12 @@ class DTRController extends Controller
             $dtrData = [];
 
             $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
-            $division_id = self::getDivisionByUser($userid);
+            if(self::checkIfDivisionHead($userid)){
+                $division_id = 1;
+            }else{
+                $division_id = self::getDivisionByUser($userid);
+            }
+
             $in_charged = collect(self::getInCharged($division_id))
                 ->only(['fname', 'mname', 'lname', 'suffix', 'title']);
 
@@ -529,6 +534,12 @@ class DTRController extends Controller
             ->join('tdh_user.users as u', 'd.head', '=', 'u.id')
             ->where('d.id', '=', $division)
             ->first();
+    }
+
+    public function checkIfDivisionHead($id){
+        return DB::table('tdh_user.division')
+            ->where('head','=', $id)
+            ->exists();
     }
 
     public function getDivisionByUser($id)
