@@ -225,6 +225,16 @@ class DTRController extends Controller
         }
     }
 
+    public function deleteTimeLog(Request $request)
+    {
+        try {
+            DB::table('hris.dtr_logs')->where('id', '=', $request->log_id)->delete();
+            return response()->json(['message' => "DTR log successfully deleted"]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Server error: ' . $e->getMessage()], 500);
+        }
+    }
+
 
     public function getDTRLast3(Request $request)
     {
@@ -428,10 +438,10 @@ class DTRController extends Controller
             $dtrData = [];
 
             $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
-            if(self::checkIfDivisionHead($userid)){
+            if (self::checkIfDivisionHead($userid)) {
                 //IF USER IS DIVISION HEAD, PRINT MCC DIVISION HEAD
                 $division_id = 1;
-            }else{
+            } else {
                 $division_id = self::getDivisionByUser($userid);
             }
 
@@ -537,16 +547,17 @@ class DTRController extends Controller
             ->first();
     }
 
-    public function checkIfDivisionHead($id){
+    public function checkIfDivisionHead($id)
+    {
         return DB::table('tdh_user.division')
-            ->where('head','=', $id)
+            ->where('head', '=', $id)
             ->exists();
     }
 
     public function getDivisionByUser($id)
     {
         return DB::table('tdh_user.users')
-            ->where('id','=', $id)
+            ->where('id', '=', $id)
             ->value('division');
     }
 

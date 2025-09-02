@@ -277,6 +277,7 @@
                 })
                     .then(res => res.json())
                     .then(data => {
+                        getPayroll();
                         $("#create_payroll_modal").modal("hide");
                         toastr.success(data.message, 'Information');
                     }).catch(err => {

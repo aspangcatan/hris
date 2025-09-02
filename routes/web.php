@@ -346,6 +346,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_division_list', [\App\Http\Controllers\DTRController::class, 'getDivisionList'])->name('getDivisionList');
     Route::get('/get_section_list', [\App\Http\Controllers\DTRController::class, 'getSectionList'])->name('getSectionList');
     Route::post('/save/dtr_logs', [\App\Http\Controllers\DTRController::class, 'storeManual'])->name('storeManual');
+    Route::delete('/delete/dtr_logs', [\App\Http\Controllers\DTRController::class, 'deleteTimeLog'])->name('deleteTimeLog');
 
 #SCHEDULE MASTERLIST
     Route::get('/get_schedule_master_lists', [\App\Http\Controllers\ScheduleController::class, 'getScheduleMasterList'])->name('getScheduleMasterList');

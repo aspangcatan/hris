@@ -38,7 +38,7 @@ class CreditController extends Controller
 
                 [$totalLateUndertimeMinutes] = $this->dtrService->getTotalLateAbsent($userid, $request->month, $request->year);
 
-                $data = $this->leaveCreditService->computeEarnedCredits($userid, $totalPresent, $totalLateUndertimeMinutes);
+                $data = $this->leaveCreditService->computeEarnedCredits($totalPresent, $totalLateUndertimeMinutes);
 
                 $this->leaveCreditService->updateEarnedCredits($userid, $request->year, $request->month, $totalPresent, $totalLateUndertimeMinutes, $data['monthly_points_earned'], $data['total_deductions']);
             }
@@ -46,7 +46,7 @@ class CreditController extends Controller
             return response()->json(['message' => "Success"]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
-       }
+        }
     }
 
     public function getCreditEarned(Request $request)

@@ -207,6 +207,57 @@
                 // Show the modal
                 $("#add_log_modal").modal("show");
             });
+
+            $("#raw_list").on("click", ".delete-btn", function () {
+                log_id = $(this).data("id");
+                const date = $(this).data("date");
+                const status = $(this).data("status");
+                const time = $(this).data("time");
+
+                Swal.fire({
+                    title: "Confirm Action",
+                    html: `Are you sure you want to delete the log time
+               <b>${time}</b>
+               on <b>${date}</b>
+               with a status of <b>${status}</b>?`,
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, confirm",
+                    cancelButtonText: "Cancel",
+                    confirmButtonColor: "#3085d6",
+                    cancelButtonColor: "#d33"
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        const params = {
+                            log_id: log_id
+                        }
+
+                        try {
+                            const response = await fetch("{{ route('deleteTimeLog') }}", {
+                                method: "DELETE",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                                },
+                                body: JSON.stringify(params)
+                            });
+
+                            if (!response.ok) {
+                                const error = await response.json();
+                                throw new Error(error.message || "Upload failed");
+                            }
+
+                            const result = await response.json();
+                            toastr.success(result.message, "Information");
+                            viewDtr(userid);
+
+                        } catch (err) {
+                            console.error(err);
+                            alert("Error saving log: " + err.message);
+                        }
+                    }
+                });
+            });
         });
 
         function loadDivision() {
@@ -385,6 +436,17 @@
                                     data-time="${time}"
                                     style="background: transparent; border: none; cursor: pointer;">
                                     <i class="fa-solid fa-pen text-success"></i>
+                                </button>
+                            </td>
+                             <td>
+                                <button
+                                    class="delete-btn"
+                                    data-id="${it.id}"
+                                    data-date="${date}"
+                                    data-status="${it.status}"
+                                    data-time="${time}"
+                                    style="background: transparent; border: none; cursor: pointer;">
+                                    <i class="fa-solid fa-trash text-danger"></i>
                                 </button>
                             </td>
                         </tr>`);

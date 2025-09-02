@@ -75,7 +75,7 @@
                                     <th>Date</th>
                                     <th>Status</th>
                                     <th>Time</th>
-                                    <th></th>
+                                    <th colspan="2"></th>
                                 </tr>
                                 </thead>
                                 <tbody id="raw_list">

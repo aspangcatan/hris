@@ -52,21 +52,18 @@ class DTRServices
                     $absentDays[$date] = true; // Saturday
                     $absentDays[$sunday] = true; // Sunday
                     unset($presentDays[$date], $presentDays[$sunday]);
-                }
-                // Rule 2: Present Friday + Absent Monday => Sat Absent (if no entry)
+                } // Rule 2: Present Friday + Absent Monday => Sat Absent (if no entry)
                 elseif (isset($presentDays[$friday]) && isset($absentDays[$monday])) {
                     if (!isset($presentDays[$date])) {
                         $absentDays[$date] = true; // Saturday only
                         unset($presentDays[$date]);
                     }
-                }
-                // Rule 3: Absent Friday + Absent Monday => Sat & Sun Absent
+                } // Rule 3: Absent Friday + Absent Monday => Sat & Sun Absent
                 elseif (isset($absentDays[$friday]) && isset($absentDays[$monday])) {
                     $absentDays[$date] = true; // Saturday
                     $absentDays[$sunday] = true; // Sunday
                     unset($presentDays[$date], $presentDays[$sunday]);
-                }
-                // Rule 4: Present Friday + Present Monday => Sat & Sun Present
+                } // Rule 4: Present Friday + Present Monday => Sat & Sun Present
                 elseif (isset($presentDays[$friday]) && isset($presentDays[$monday])) {
                     $presentDays[$date] = true; // Saturday
                     $presentDays[$sunday] = true; // Sunday
@@ -90,7 +87,6 @@ class DTRServices
     }
 
 
-
     public function getTotalLateAbsent($userid, $month, $year)
     {
         $totalLateMinutes = 0;
@@ -101,11 +97,12 @@ class DTRServices
         $scheduleMap = $this->mapSchedules($plottedSchedules);
         $holidays = $this->getHolidays($month, $year);
         $workdays = $this->getWorkDays($year, $month);
-
+        $leaveDates = $this->getApprovedLeaveDates($userid, $month, $year);
 
         foreach ($scheduleMap as $date => $shift) {
-            if (in_array($date, $holidays)) {
-                continue; // Skip holidays
+            // Skip holidays and approved leaves
+            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
+                continue;
             }
 
             $firstIn = $this->getFirstInLog($userid, $date);
@@ -113,10 +110,8 @@ class DTRServices
 
             // Check for absence if no IN and OUT logs
             if (!$firstIn || !$lastOut) {
-                if (!in_array($date, $holidays)) {
-                    $totalAbsentDays++;
-                }
-                continue; // Skip processing for missing IN/OUT logs
+                $totalAbsentDays++;
+                continue;
             }
 
             // Process the logs and compute lateness and undertime
@@ -128,9 +123,14 @@ class DTRServices
             $totalUndertimeMinutes += $undertimeMinutes;
         }
 
+        // Handle no-schedule days
         $noScheduleDays = $this->getNoScheduleDays($scheduleMap, $workdays, $holidays);
-        $totalAbsentDays += count($noScheduleDays);
-
+        foreach ($noScheduleDays as $day) {
+            if (!in_array($day, $leaveDates)) {
+                $totalAbsentDays++;
+            }
+        }
+        
         return [$totalLateMinutes + $totalUndertimeMinutes, $totalAbsentDays];
     }
 
@@ -264,4 +264,17 @@ class DTRServices
 
         return $days;
     }
+
+    private function getApprovedLeaveDates($userid, $month, $year)
+    {
+        return DB::table('hris.leave_applications as la')
+            ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+            ->where('la.user_id', $userid)
+            ->where('la.status', 'Approved') // only approved leaves
+            ->whereYear('lda.date_applied', $year)
+            ->whereMonth('lda.date_applied', $month)
+            ->pluck('lda.date_applied')
+            ->toArray();
+    }
+
 }

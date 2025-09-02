@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveCreditService
 {
-    public function computeEarnedCredits($userid, $totalPresent, $totalLateUndertime)
+    public function computeEarnedCredits($totalPresent, $totalLateUndertime)
     {
         try {
             // Get monthly earned points for given present days
@@ -38,10 +38,10 @@ class LeaveCreditService
             // Format with 3 decimal places
             return [
                 'monthly_points_earned' => round($monthly_points_earned, 3),
-                'total_deductions'      => round($lateUndertimeDeductions, 3),
-                'net_points'            => round($monthly_points_earned - $lateUndertimeDeductions, 3),
-                'total_present'         => $totalPresent,
-                'total_late_undertime'  => $totalLateUndertime
+                'total_deductions' => round($lateUndertimeDeductions, 3),
+                'net_points' => round($monthly_points_earned - $lateUndertimeDeductions, 3),
+                'total_present' => $totalPresent,
+                'total_late_undertime' => $totalLateUndertime
             ];
 
         } catch (\Exception $exception) {
@@ -49,7 +49,7 @@ class LeaveCreditService
         }
     }
 
-    public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes,$earnedPoints, $deductionPoints)
+    public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes, $earnedPoints, $deductionPoints)
     {
         $leaveTypes = DB::table('hris.leave_types')
             ->where('monthly_points_earned', '>', 0)
