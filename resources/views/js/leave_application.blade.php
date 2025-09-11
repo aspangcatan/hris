@@ -126,6 +126,7 @@
             toastr.success(body.message || "Leave submitted successfully", "Information");
             clearForm();
             getLeaves();
+            init_leave();
         } catch {
             // error already handled in fetchData
         } finally {
