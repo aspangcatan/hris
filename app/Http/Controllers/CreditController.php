@@ -31,12 +31,17 @@ class CreditController extends Controller
                 ->groupBy('s.employee_id')
                 ->get();
 
+            $month = $request->month;
+            $year = $request->year;
+
+            $start_date = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $end_date = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
 
             foreach ($employees as $employee) {
                 $userid = $employee->employee_id;
                 $totalPresent = $this->dtrService->getTotalPresent($userid, $request->month, $request->year);
 
-                [$totalLateUndertimeMinutes] = $this->dtrService->getTotalLateAbsent($userid, $request->month, $request->year);
+                [$totalLateUndertimeMinutes] = $this->dtrService->getTotalLateAbsent($userid, $start_date, $end_date);
 
                 $data = $this->leaveCreditService->computeEarnedCredits($totalPresent, $totalLateUndertimeMinutes);
 

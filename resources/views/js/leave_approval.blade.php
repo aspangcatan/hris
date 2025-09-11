@@ -1,210 +1,102 @@
 <script>
-    let page = 0;
-    let leave_id = 0;
-    const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
-    $(document).ready(function () {
-        $('.datepicker').datepicker({
-            multidate: true
-        });
+    let page = 0, leave_id = 0;
 
-        $("#btn_search").click(function () {
-            employee_id = 0;
-            getLeaves();
-        });
+    // Event bindings
+    $(function () {
+        $("#btn_next").click(() => changePage(1));
+        $("#btn_prev").click(() => changePage(-1));
+        $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
 
-        $("#btn_next").click(function () {
-            page++;
-            getLeaves();
-            $("#btn_prev").removeClass("d-none");
-        });
-
-        $("#btn_prev").click(function () {
-            if (page == 0) return;
-            if (page == 1) {
-                $("#btn_prev").addClass("d-none");
-            }
-            page--;
-            getLeaves();
-        });
-
-        $("#approveLeaveBtn, #rejectLeaveBtn").click(function () {
-            const remarks = $("#leave_remarks").val().trim();
-            const status = $(this).val();
-
-            fetch('{{ route('updateApprovalStatus') }}', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json", // Important to ensure JSON response is parsed correctly
-                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
-                },
-                body: JSON.stringify({id: leave_id, remarks: remarks, status: status})
-            })
-                .then(async res => {
-                    if (!res.ok) {
-                        // Extract error message from response body
-                        const error = await res.json();
-                        throw new Error(error.message || "Something went wrong");
-                    }
-                    return res.json();
-                })
-                .then(data => {
-                    toastr.success(data.message, "Information");
-                    leave_modal.toggle();
-                    getLeaves();
-                })
-                .catch(err => {
-                    toastr.error(err.message, "Ooops");
-                    console.error("Approval error:", err);
-                });
-        });
-
-
-        getLeaves();
+        getLeaves(); // initial load
     });
 
+    function changePage(step) {
+        page = Math.max(0, page + step);
+        getLeaves();
+    }
+
     function getLeaves() {
-        $("#btn_next").prop("disabled", true);
-        $("#btn_prev").prop("disabled", true);
+        $("#leave_approval_list").html("<tr><td colspan='5'>Loading...</td></tr>");
+
+        fetch(`{{ route('getLeaveForApproval') }}?page=${page}`)
+            .then(r => r.json())
+            .then(resp => renderLeaves(resp.data, resp.pagination))
+            .catch(() => $("#leave_approval_list").html("<tr><td colspan='5'>Error</td></tr>"));
+    }
+
+    function renderLeaves(data, pagination) {
         $("#leave_approval_list").empty();
-        $("#leave_approval_list").append("<tr><td colspan='5'>Loading data, please wait...</td></tr>");
+        if (!data.length) return $("#leave_approval_list").html("<tr><td colspan='5'>No records</td></tr>");
 
-        fetch('{{ route('getLeaveForApproval') }}?page=' + page, {method: "GET"})
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to fetch leaves for approval.");
-                return res.json();
-            })
-            .then(resp => {
-                const data = resp.data;
-                const pagination = resp.pagination;
+        data.forEach(it => $("#leave_approval_list").append(`
+        <tr>
+            <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
+            <td>${it.description}</td>
+            <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
+            <td><button class="btn btn-sm" onclick="viewApplication(${it.id})"><i class="bi bi-eye-fill text-success"></i></button></td>
+        </tr>
+    `));
 
-                $("#btn_next").prop("disabled", false);
-                $("#btn_prev").prop("disabled", false);
-                $("#leave_approval_list").empty();
-
-                if (data.length < 1) {
-                    $("#leave_approval_list").append("<tr><td colspan='5'>No record found</td></tr>");
-                    $("#pagination_container").addClass("d-none");
-                    return;
-                }
-
-                $("#pagination_container").removeClass("d-none");
-
-                // Update pagination text
-                $("#page_items_count").text("Page " + pagination.current_page + " of " + pagination.last_page);
-
-                // Hide/Show prev button
-                if (pagination.current_page <= 1) {
-                    $("#btn_prev").addClass("d-none");
-                } else {
-                    $("#btn_prev").removeClass("d-none");
-                }
-
-                // Hide/Show next button
-                if (pagination.current_page >= pagination.last_page) {
-                    $("#btn_next").addClass("d-none");
-                } else {
-                    $("#btn_next").removeClass("d-none");
-                }
-
-                // Render rows
-                data.forEach(it => {
-                    const tr = `
-                    <tr id="leave_id_${it.id}">
-                        <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
-                        <td>${it.description}</td>
-                        <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
-                        <td>
-                            <button type="button" class="btn btn-sm" style="background: transparent" onClick="viewApplication(${it.id})">
-                                <i class="bi bi-eye-fill text-success"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                    $("#leave_approval_list").append(tr);
-                });
-            })
-            .catch(err => {
-                console.error(err);
-                $("#leave_approval_list").html("<tr><td colspan='5' class='text-danger'>Error loading data</td></tr>");
-            });
+        $("#page_items_count").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+        $("#btn_prev").toggleClass("d-none", pagination.current_page <= 1);
+        $("#btn_next").toggleClass("d-none", pagination.current_page >= pagination.last_page);
     }
 
     function viewApplication(id) {
         leave_id = id;
-        fetch(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id), {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
+        fetch(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id))
+            .then(r => r.json())
+            .then(data => renderLeaveModal(data))
+            .catch(() => alert("Error loading leave application."));
+    }
+
+    function renderLeaveModal(data) {
+        $('#leave_name').text(data.name);
+        $('#leave_type').text(data.type);
+        $('#leave_commutation').text(data.commutation);
+        $('#leave_details').val(data.details || '');
+
+        $('#dates_applied_body').html(data.dates.map(d =>
+            `<tr><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`
+        ).join(""));
+
+        updateStepStatus('#step1', data.approvals.sh);
+        updateStepStatus('#step2', data.approvals.dh);
+        updateStepStatus('#step3', data.approvals.hr);
+
+        let remarks = ["sh","dh","hr"].map(role => {
+            let a = data.approvals[role];
+            return a?.remarks ? `
+            <div class="mb-2">
+                <strong>${role.toUpperCase()}:</strong>
+                <p class="mb-0">${a.remarks}</p>
+                <small class="text-muted">Status: ${a.status}</small>
+            </div>
+        ` : "";
+        }).join("") || `<p class="text-muted">No remarks yet.</p>`;
+
+        $('#remarks_history').html(remarks);
+        $('#viewLeaveModal').modal('show');
+    }
+
+    function updateStepStatus(sel, a) {
+        $(sel).removeClass("approved rejected pending")
+            .addClass(a?.status || "pending");
+        $(sel + " .circle").attr("class", "circle " + (a?.status || "pending"));
+    }
+
+    function handleApproval() {
+        fetch('{{ route('updateApprovalStatus') }}', {
+            method: "POST",
+            headers: {"Content-Type": "application/json","X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")},
+            body: JSON.stringify({id: leave_id, remarks: $("#leave_remarks").val().trim(), status: this.value})
         })
-            .then(response => {
-                if (!response.ok) throw new Error("Failed to load leave application.");
-                return response.json();
-            })
+            .then(r => r.json())
             .then(data => {
-                // Fill static info
-                $('#leave_name').text(data.name);
-                $('#leave_type').text(data.type);
-                $('#leave_commutation').text(data.commutation);
-                $('#leave_details').val(data.details || '');
-
-                // Build dates table rows
-                let dateRows = '';
-                data.dates.forEach(d => {
-                    dateRows += `
-                <tr>
-                    <td>${d.date}</td>
-                    <td>${d.duration} hours</td>
-                </tr>
-            `;
-                });
-                $('#dates_applied_body').html(dateRows);
-
-                updateStepStatus('#step1', data.approvals.sh);
-                updateStepStatus('#step2', data.approvals.dh);
-                updateStepStatus('#step3', data.approvals.hr);
-
-
-                // Show modal
-                $('#viewLeaveModal').modal('show');
+                toastr.success(data.message, "Info");
+                $('#viewLeaveModal').modal('hide');
+                getLeaves();
             })
-            .catch(err => {
-                console.error(err);
-                alert("Error loading leave application.");
-            });
-    }
-
-    function updateStepStatus(selector, approval) {
-        $(selector).removeClass("approved rejected pending");
-        $(selector + " .circle").removeClass("approved rejected pending");
-
-        if (approval?.status === 'approved') {
-            $(selector).addClass("approved");
-            $(selector + " .circle").addClass("approved");
-        } else if (approval?.status === 'rejected') {
-            $(selector).addClass("rejected");
-            $(selector + " .circle").addClass("rejected");
-        } else {
-            $(selector).addClass("pending");
-            $(selector + " .circle").addClass("pending");
-        }
-    }
-
-
-    function clearForm() {
-        $("#leave_form input").val("");
-        $("#leave_form input[type='radio']").prop("checked", false);
-    }
-
-
-    function getBadge(remarks) {
-        if (remarks === "Approved") {
-            return `<span class="badge bg-success px-2 py-1 rounded-pill">Approved</span>`;
-        } else if (remarks !== "-") {
-            return `<span class="badge bg-secondary px-2 py-1 rounded-pill">${remarks}</span>`;
-        } else {
-            return `<span class="badge bg-light text-dark px-2 py-1 rounded-pill">-</span>`;
-        }
+            .catch(err => toastr.error(err.message || "Error", "Oops"));
     }
 </script>

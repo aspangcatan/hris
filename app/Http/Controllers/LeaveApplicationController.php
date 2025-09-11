@@ -23,43 +23,43 @@ class LeaveApplicationController extends Controller
         $this->leaveApprovalService = $leaveApprovalService;
     }
 
-    public function store(Request $request)
-    {
-        try {
-            $model = new LeaveApplication();
-            $model->user_id = Auth::id();
-            $model->leave_id = $request->leave_id;
-            $model->detail = $request->detail;
-            $model->extra = $request->extra;
-            $model->status = 'FOR APPROVAL';
-            $model->commutation = $request->commutation;
-            $model->save();
-
-            $leave_id = $model->id;
-            $date_applied = $request->date_applied;
-            for ($i = 0; $i < count($date_applied); $i++) {
-                DB::table('leave_date_applied')->insert([
-                    'leave_application_id' => $leave_id,
-                    'date_applied' => $date_applied[$i]["date"],
-                    'hours' => $date_applied[$i]["hours"]
-                ]);
-            }
-
-            //TODO: INSERT LEAVE LOGS SEND TO SECTION HEAD
-            DB::table("hris.leave_application_logs")->insert([
-                "leave_application_id" => $leave_id,
-                "origin" => Auth::id(),
-                "destination" => Auth::user()->section,
-                "type" => 1,//1 for Section Head
-                "remarks" => "For approval",
-                "created_at" => Carbon::now()
-            ]);
-
-            return response()->json(['code' => 200, 'message' => 'Application filed successfully']);
-        } catch (\Exception $exception) {
-            return response()->json(['message' => $exception->getMessage()], 500);
-        }
-    }
+//    public function store(Request $request)
+//    {
+//        try {
+//            $model = new LeaveApplication();
+//            $model->user_id = Auth::id();
+//            $model->leave_id = $request->leave_id;
+//            $model->detail = $request->detail;
+//            $model->extra = $request->extra;
+//            $model->status = 'FOR APPROVAL';
+//            $model->commutation = $request->commutation;
+//            $model->save();
+//
+//            $leave_id = $model->id;
+//            $date_applied = $request->date_applied;
+//            for ($i = 0; $i < count($date_applied); $i++) {
+//                DB::table('leave_date_applied')->insert([
+//                    'leave_application_id' => $leave_id,
+//                    'date_applied' => $date_applied[$i]["date"],
+//                    'hours' => $date_applied[$i]["hours"]
+//                ]);
+//            }
+//
+//            //TODO: INSERT LEAVE LOGS SEND TO SECTION HEAD
+//            DB::table("hris.leave_application_logs")->insert([
+//                "leave_application_id" => $leave_id,
+//                "origin" => Auth::id(),
+//                "destination" => Auth::user()->section,
+//                "type" => 1,//1 for Section Head
+//                "remarks" => "For approval",
+//                "created_at" => Carbon::now()
+//            ]);
+//
+//            return response()->json(['code' => 200, 'message' => 'Application filed successfully']);
+//        } catch (\Exception $exception) {
+//            return response()->json(['message' => $exception->getMessage()], 500);
+//        }
+//    }
 
     public function index(Request $request)
     {
@@ -224,15 +224,20 @@ class LeaveApplicationController extends Controller
             ]);
 
             $leaveApplicationId = $this->leaveApplicationService->insertLeaveApplication($validated);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Leave application submitted successfully.',
                 'leave_application_id' => $leaveApplicationId
             ]);
         } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'error' => $exception->getMessage()
+            ], 422); // 422 instead of 500 (makes it like validation error)
         }
     }
+
 
     public function getLeaveApplication($id)
     {
@@ -246,6 +251,7 @@ class LeaveApplicationController extends Controller
             'name' => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
             'type' => $leave->leave_type,
             'details' => $leave->detail,
+            'extra' => $leave->extra,
             'commutation' => $leave->commutation,
             'created_at' => $leave->created_at,
             'approvals' => [

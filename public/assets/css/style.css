@@ -10,6 +10,58 @@
 --------------------------------------------------------------*/
 
 /*CUSTOM CSS*/
+
+/* Sticky base */
+#preview_payroll_modal .table th.sticky-col,
+#preview_payroll_modal .table td.sticky-col {
+    position: sticky;
+    background: #fff;
+    z-index: 2;
+}
+
+/* Order of sticky columns */
+#preview_payroll_modal .table th.sticky-1,
+#preview_payroll_modal .table td.sticky-1 {
+    left: 0;
+    min-width: 60px; /* adjust */
+}
+
+#preview_payroll_modal .table th.sticky-2,
+#preview_payroll_modal .table td.sticky-2 {
+    left: 60px;
+    min-width: 120px;
+}
+
+#preview_payroll_modal .table th.sticky-3,
+#preview_payroll_modal .table td.sticky-3 {
+    left: 180px;
+    min-width: 120px;
+}
+
+#preview_payroll_modal .table th.sticky-4,
+#preview_payroll_modal .table td.sticky-4 {
+    left: 300px;
+    min-width: 120px;
+}
+
+#preview_payroll_modal .table th.sticky-5,
+#preview_payroll_modal .table td.sticky-5 {
+    left: 420px;
+    min-width: 80px;
+}
+
+/* Keep header on top */
+#preview_payroll_modal thead th {
+    z-index: 3;
+}
+
+#preview_payroll_modal .table-responsive {
+    overflow-x: auto;
+    overflow-y: hidden; /* optional, prevents double scrollbars */
+    max-width: 100%;
+}
+
+
 .steps {
     padding: 20px 0;
 }

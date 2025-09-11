@@ -28,7 +28,7 @@ Route::get('/logout', function () {
 })->name('logout');
 
 
-Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');
+
 
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
@@ -368,4 +368,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/hospital-orders/assigned-employees', [HospitalOrderController::class, 'getAssignedEmployees'])->name('hospital-orders.assigned');
     Route::post('/hospital-orders', [HospitalOrderController::class, 'createHospitalOrder'])->name('hospital-orders.store');
     Route::post('/hospital-orders/assign', [HospitalOrderController::class, 'assignEmployee'])->name('hospital-orders.assign');
+
+#PRINTING LEAVE FORMS
+    Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');
 });

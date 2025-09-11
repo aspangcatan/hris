@@ -47,55 +47,57 @@
                     <div class="row mt-2" id="leave_list"></div>
 
                     <hr/>
-
                     <!-- B. Details of Leave -->
-                    <div class="fw-bold mt-4">B. Details of leave</div>
-
-                    <div class="mt-2">In case of Vacation/Special Privilege Leave:</div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-check d-flex align-items-center">
-                                <input class="form-check-input me-2" type="radio" name="vacation_leave">
-                                <label class="form-check-label me-2">Within the Philippines</label>
-                                <input class="form-control w-50" type="text" id="within_philippines"/>
+                    <div id="details_leave">
+                        <div class="fw-bold mt-4">B. Details of leave</div>
+                        <div class="mt-2">In case of Vacation/Special Privilege Leave:</div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input me-2" type="radio" name="leave_details">
+                                    <label class="form-check-label me-2">Within the Philippines</label>
+                                    <input class="form-control w-50" type="text" id="within_philippines"/>
+                                </div>
+                            </div>
+                            <div class="col-md-12 mt-2">
+                                <div class="form-check d-flex align-items-center">
+                                    <input class="form-check-input me-2" type="radio" name="leave_details">
+                                    <label class="form-check-label me-2">Abroad (Specify)</label>
+                                    <input class="form-control w-50" type="text" id="abroad"/>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-12 mt-2">
-                            <div class="form-check d-flex align-items-center">
-                                <input class="form-check-input me-2" type="radio" name="vacation_leave">
-                                <label class="form-check-label me-2">Abroad (Specify)</label>
-                                <input class="form-control w-50" type="text" id="abroad"/>
-                            </div>
+
+                        <div class="mt-3">In case of Sick Leave:</div>
+                        <div class="form-check d-flex align-items-center mt-1">
+                            <input class="form-check-input me-2" type="radio" name="leave_details">
+                            <label class="form-check-label me-2">In Hospital (Specify Illness)</label>
+                            <input class="form-control w-50" type="text" id="in_hospital"/>
+                        </div>
+                        <div class="form-check d-flex align-items-center mt-2">
+                            <input class="form-check-input me-2" type="radio" name="leave_details">
+                            <label class="form-check-label me-2">Out Patient (Specify Illness)</label>
+                            <input class="form-control w-50" type="text" id="out_hospital"/>
+                        </div>
+
+                        <div class="mt-3">In case of Special Leave Benefits for Women:</div>
+                        <div class="d-flex align-items-center mt-1">
+                            <input class="form-check-input me-2" type="radio" name="leave_details">
+                            <label class="form-check-label me-2">(Specify Illness)</label>
+                            <input class="form-control w-75" type="text" id="special_leave"/>
+                        </div>
+
+                        <div class="mt-3">In case of Study Leave:</div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="leave_details">
+                            <label class="form-check-label">Completion of Master's Degree</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="leave_details">
+                            <label class="form-check-label">BAR/Board Examination Review</label>
                         </div>
                     </div>
 
-                    <div class="mt-3">In case of Sick Leave:</div>
-                    <div class="form-check d-flex align-items-center mt-1">
-                        <input class="form-check-input me-2" type="radio" name="sick_leave">
-                        <label class="form-check-label me-2">In Hospital (Specify Illness)</label>
-                        <input class="form-control w-50" type="text" id="in_hospital"/>
-                    </div>
-                    <div class="form-check d-flex align-items-center mt-2">
-                        <input class="form-check-input me-2" type="radio" name="sick_leave">
-                        <label class="form-check-label me-2">Out Patient (Specify Illness)</label>
-                        <input class="form-control w-50" type="text" id="out_hospital"/>
-                    </div>
-
-                    <div class="mt-3">In case of Special Leave Benefits for Women:</div>
-                    <div class="d-flex align-items-center mt-1">
-                        <label class="form-check-label me-2">(Specify Illness)</label>
-                        <input class="form-control w-75" type="text" id="special_leave"/>
-                    </div>
-
-                    <div class="mt-3">In case of Study Leave:</div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="study_leave">
-                        <label class="form-check-label">Completion of Master's Degree</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="study_leave">
-                        <label class="form-check-label">BAR/Board Examination Review</label>
-                    </div>
 
                     <hr/>
 
@@ -163,6 +165,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
+                <!-- Steps -->
                 <div class="mb-5">
                     <div class="steps d-flex justify-content-between position-relative">
                         <div class="step text-center" id="step1">
@@ -179,6 +182,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Leave Info -->
                 <div class="mt-5">
                     <p><strong>Name:</strong> <span id="leave_name"></span></p>
                     <p><strong>Type:</strong> <span id="leave_type"></span></p>
@@ -187,6 +192,7 @@
                     <p class="mt-3"><strong>Commutation:</strong> <span id="leave_commutation"></span></p>
                 </div>
 
+                <!-- Dates Applied -->
                 <div class="mt-3">
                     <p><strong>Dates Applied:</strong></p>
                     <table class="table table-bordered mb-0">
@@ -196,23 +202,39 @@
                             <th style="width: 25%;">Duration</th>
                         </tr>
                         </thead>
-                        <tbody id="dates_applied_body"></tbody>
+                        <tbody id="dates_applied_body">
+                        <tr>
+                            <td>2025-09-15</td>
+                            <td>8 hours</td>
+                        </tr>
+                        <tr>
+                            <td>2025-09-16</td>
+                            <td>4 hours</td>
+                        </tr>
+                        </tbody>
                     </table>
                 </div>
 
                 <!-- Remarks Section -->
                 <div class="mt-4">
-                    <label for="leave_remarks" class="form-label"><strong>Remarks:</strong></label>
-                    <textarea id="leave_remarks"
-                              class="form-control"
-                              rows="3"
-                              placeholder="Enter remarks here..."
-                              @if(request()->routeIs('leave_application')) readonly @endif>
-                    </textarea>
+                    <label class="form-label"><strong>Remarks History:</strong></label>
+                    <div id="remarks_history" class="border rounded p-3 mb-3 bg-light"
+                         style="max-height: 200px; overflow-y: auto;">
+                        <!-- Remarks will be injected here -->
+                    </div>
 
+                    <!-- Only for approvers -->
+                    @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
+                        <label for="leave_remarks" class="form-label"><strong>Add Your Remark:</strong></label>
+                        <textarea id="leave_remarks"
+                                  class="form-control"
+                                  rows="3"
+                                  placeholder="Enter your remarks here..."></textarea>
+                    @endif
                 </div>
             </div>
 
+            <!-- Footer with action buttons -->
             @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
                 <div class="modal-footer border-top-0 d-flex justify-content-end">
                     <div>
@@ -228,5 +250,6 @@
         </div>
     </div>
 </div>
+
 
 

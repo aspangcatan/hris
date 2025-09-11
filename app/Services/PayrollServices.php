@@ -20,8 +20,8 @@ class PayrollServices
                 'u.mname',
                 'u.lname',
                 'u.suffix',
-                'd.description as division',
-                's.description as section'
+                'd.code as division',
+                's.code as section'
             )
             ->get();
 
@@ -54,8 +54,15 @@ class PayrollServices
         return $count; // only integer
     }
 
+    public function getPayrollPeriod($id)
+    {
+        return DB::table('hris.payrolls')
+            ->where('id', '=', $id)
+            ->first();
+    }
 
-    public function savePayrollEmployee($payroll_id, $employee,$totalLateUndertimeMinutes, $totalAbsentDays,$totalWorkingDays)
+
+    public function savePayrollEmployee($payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays, $totalWorkingDays)
     {
         $salary = DB::table('hris.payroll_settings')
             ->where('userid', '=', $employee["userid"])
@@ -87,7 +94,7 @@ class PayrollServices
         $longevity = $benefits->longevity ?? 0.00;
         $cellphone_allowance = $benefits->cellphone_allowance ?? 0.00;
 
-        $gross_pay = ($basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance) - $totalTardinessDeductions;
+        $gross_pay = ($basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance);
 
         //Safely extract each deduction with null fallback
         $gsis_ps = $deductions->gsis_ps ?? 0.00;
@@ -122,7 +129,7 @@ class PayrollServices
             $gsis_consoloan + $gsis_emergency_loan + $gsis_educational_loan +
             $gsis_policy_loan + $gsis_opt_life_loan + $gsis_gfal + $gsis_mpl +
             $gsis_cpl + $gsis_mpl_lite + $cfi_coop + $first_valley_bank +
-            $tdhea + $dbp_loan + $ucpb_loan + $meds_payable + $sss_deduction;
+            $tdhea + $dbp_loan + $ucpb_loan + $meds_payable + $sss_deduction + $totalTardinessDeductions;
 
         return DB::table('hris.payroll_employees')->insertGetId([
             'payroll_id' => $payroll_id,
@@ -137,7 +144,7 @@ class PayrollServices
             'longevity' => $longevity,
             'cellphone_allowance' => $cellphone_allowance,
             'late_absent' => $totalTardinessDeductions,
-            'gross_pay' => $gross_pay,
+            'gross_pay' => $gross_pay - $totalTardinessDeductions,
             'gsis_ps' => $gsis_ps,
             'gsis_gs' => $gsis_gs,
             'gsis_ec' => $gsis_ec,

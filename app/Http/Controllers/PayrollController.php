@@ -213,10 +213,15 @@ class PayrollController extends Controller
     {
         try {
             $employees = $request->employees;
+            $period = $this->payrollServices->getPayrollPeriod($request->payroll_id);
+            if (!$period) return response()->json(['error' => "Payroll doesn't exists"]);
+
+            $month = date('m', strtotime($period->start_date));
+            $year = date('Y', strtotime($period->start_date));
             foreach ($employees as $employee) {
-                list($totalLateUndertimeMinutes, $totalAbsentDays) = $this->dtrServices->getTotalLateAbsent($employee["userid"], 6, 2025);
-                $totalWorkingDays = $this->payrollServices->getWorkingDays(6,2025);
-                $this->payrollServices->savePayrollEmployee($request->payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays,$totalWorkingDays);
+                list($totalLateUndertimeMinutes, $totalAbsentDays) = $this->dtrServices->getTotalLateAbsent($employee["userid"], $period->start_date, $period->end_date);
+                $totalWorkingDays = $this->payrollServices->getWorkingDays($year,$month);
+                $this->payrollServices->savePayrollEmployee($request->payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays, $totalWorkingDays);
             }
             return response()->json(['message' => "DONE"]);
         } catch (\Exception $exception) {

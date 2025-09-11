@@ -95,7 +95,6 @@
         $(document).ready(function () {
             // Initial Load
             loadScheduleMasterList();
-            loadEmployeeSchedule();
 
             $("#division").change(function () {
                 const division = $("#division").val();

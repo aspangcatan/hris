@@ -11,13 +11,14 @@ class DTRServices
     {
         $workdays = $this->getAllDays($year, $month); // includes weekends
         $holidays = $this->getHolidays($month, $year); // fetch holidays
+        $leaveDates = $this->getApprovedLeaveDates($userid, $month, $year); // fetch approved leave dates
         $presentDays = [];
         $absentDays = [];
 
         // Step 1: Determine initial present/absent days
         foreach ($workdays as $date) {
-            // If date is a holiday, mark as present directly
-            if (in_array($date, $holidays)) {
+            // If date is a holiday OR approved leave, mark as present directly
+            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
                 $presentDays[$date] = true;
                 unset($absentDays[$date]);
                 continue;
@@ -37,8 +38,8 @@ class DTRServices
         foreach ($workdays as $date) {
             $dayOfWeek = Carbon::parse($date)->format('l');
 
-            // Skip weekend rule processing if holiday
-            if (in_array($date, $holidays)) {
+            // Skip weekend rule processing if holiday or leave
+            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
                 continue;
             }
 
@@ -52,18 +53,21 @@ class DTRServices
                     $absentDays[$date] = true; // Saturday
                     $absentDays[$sunday] = true; // Sunday
                     unset($presentDays[$date], $presentDays[$sunday]);
-                } // Rule 2: Present Friday + Absent Monday => Sat Absent (if no entry)
+                }
+                // Rule 2: Present Friday + Absent Monday => Sat Absent (if no entry)
                 elseif (isset($presentDays[$friday]) && isset($absentDays[$monday])) {
                     if (!isset($presentDays[$date])) {
                         $absentDays[$date] = true; // Saturday only
                         unset($presentDays[$date]);
                     }
-                } // Rule 3: Absent Friday + Absent Monday => Sat & Sun Absent
+                }
+                // Rule 3: Absent Friday + Absent Monday => Sat & Sun Absent
                 elseif (isset($absentDays[$friday]) && isset($absentDays[$monday])) {
                     $absentDays[$date] = true; // Saturday
                     $absentDays[$sunday] = true; // Sunday
                     unset($presentDays[$date], $presentDays[$sunday]);
-                } // Rule 4: Present Friday + Present Monday => Sat & Sun Present
+                }
+                // Rule 4: Present Friday + Present Monday => Sat & Sun Present
                 elseif (isset($presentDays[$friday]) && isset($presentDays[$monday])) {
                     $presentDays[$date] = true; // Saturday
                     $presentDays[$sunday] = true; // Sunday
@@ -72,11 +76,10 @@ class DTRServices
             }
         }
 
-        // Step 3: Recalculate present days after weekend + holiday rules
+        // Step 3: Recalculate present days after weekend + holiday + leave rules
         $finalPresentCount = 0;
         foreach ($workdays as $date) {
-            // If holiday, always count as present
-            if (in_array($date, $holidays)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
                 $finalPresentCount++;
             } elseif (!isset($absentDays[$date])) {
                 $finalPresentCount++;
@@ -86,14 +89,16 @@ class DTRServices
         return $finalPresentCount;
     }
 
-
-    public function getTotalLateAbsent($userid, $month, $year)
+    public function getTotalLateAbsent($userid, $start_date, $end_date)
     {
         $totalLateMinutes = 0;
         $totalUndertimeMinutes = 0;
         $totalAbsentDays = 0;
 
-        $plottedSchedules = $this->getEmployeePlottedSchedules($userid, $month, $year);
+        $month = date('m', strtotime($start_date));
+        $year = date('Y', strtotime($start_date));
+
+        $plottedSchedules = $this->getEmployeePlottedSchedules($userid, $start_date, $end_date);
         $scheduleMap = $this->mapSchedules($plottedSchedules);
         $holidays = $this->getHolidays($month, $year);
         $workdays = $this->getWorkDays($year, $month);
@@ -130,7 +135,7 @@ class DTRServices
                 $totalAbsentDays++;
             }
         }
-        
+
         return [$totalLateMinutes + $totalUndertimeMinutes, $totalAbsentDays];
     }
 
@@ -141,17 +146,14 @@ class DTRServices
             ->whereYear('date', $year)
             ->pluck('date')
             ->toArray();
-
     }
 
-    private function getEmployeePlottedSchedules($userid, $month, $year)
+    public function getEmployeePlottedSchedules($userid, $startDate, $endDate)
     {
         return DB::table('hris.schedules as s')
             ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
             ->where('s.employee_id', $userid)
-            ->whereMonth('s.schedule_date', $month)
-            ->whereYear('s.schedule_date', $year)
-            ->select('s.schedule_date', 'sml.time_in', 'sml.time_out', 'sml.time_in_latest', 'sml.time_out_latest')
+            ->whereBetween('s.schedule_date', [$startDate, $endDate])
             ->get();
     }
 

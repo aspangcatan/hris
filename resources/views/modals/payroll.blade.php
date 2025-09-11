@@ -220,7 +220,20 @@
                         <label for="payroll_end" class="form-label">Payroll Period End</label>
                         <input type="date" class="form-control" id="end_date" name="end_date" required>
                     </div>
-
+                    <div class="col-md-6">
+                        <label for="payroll_type" class="form-label">Type</label>
+                        <select class="form-control" id="payroll_type">
+                                <option value="1" selected>Regular</option>
+                                <option value="2">Job Order</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="rate_type" class="form-label">Rate Type</label>
+                        <select class="form-control" id="rate_type">
+                            <option value="1" selected>Non Pro-rated</option>
+                            <option value="2">Pro-rated</option>
+                        </select>
+                    </div>
                     <!-- Remarks -->
                     <div class="col-md-12">
                         <label for="payroll_remarks" class="form-label">Remarks</label>
@@ -330,18 +343,28 @@
             </div>
 
             <!-- Scrollable Body -->
-            <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
+            <div class="modal-body">
                 <div class="table-responsive">
-                    <table class="table table-bordered text-center" style="font-size: 12px">
-                        <thead class="thead-dark">
+                    <table class="table table-bordered text-center">
+                        <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Employee</th>
+                            <th class="sticky-col sticky-1">No.</th>
+                            <th class="sticky-col sticky-2">Family Name</th>
+                            <th class="sticky-col sticky-3">First Name</th>
+                            <th class="sticky-col sticky-4">Middle Name</th>
+                            <th class="sticky-col sticky-5">Suffix</th>
+                            <th class="sticky-col sticky-6">MI</th>
+                            <th class="sticky-col sticky-7">STAT</th>
                             <th>Division</th>
-                            <th>Section</th>
-                            <th>Basic</th>
+                            <th>Designation</th>
+                            <th>zz</th>
+                            <th>SG</th>
+                            <th>Step</th>
+                            <th>SG B</th>
+                            <th>SSL 6 Basic Pay</th>
                             <th>Basic Pay Adj</th>
                             <th>Basic Pay LWOP</th>
+                            <th>Final Basic Pay</th>
                             <th>PERA</th>
                             <th>RATA</th>
                             <th>Subsistence</th>
@@ -351,8 +374,8 @@
                             <th>Quarters Allowance</th>
                             <th>Cellphone Allowance</th>
                             <th class="text-danger">Gross Pay</th>
-                            <th>Witholding Tax</th>
-                            <th>Witholding Adj</th>
+                            <th>Withholding Tax</th>
+                            <th>Withholding Tax (Adjustment)</th>
                             <th>GSIS PS</th>
                             <th>GSIS GS</th>
                             <th>GSIS EC</th>
@@ -363,34 +386,94 @@
                             <th>PAG-IBIG MP2</th>
                             <th>PAG-IBIG MP2 2nd Account</th>
                             <th>PAG-IBIG MP2 3rd Account</th>
-                            <th>GSIS CONSO LOAN</th>
-                            <th>GSIS EMERGENCY LOAN</th>
-                            <th>GSIS EDUCATIONAL LOAN</th>
-                            <th>GSIS POLICY LOAN</th>
-                            <th>GSIS OPT_LIFE LOAN</th>
+                            <th>GSIS Conso Loan</th>
+                            <th>GSIS Emergency Loan</th>
+                            <th>GSIS Educational Loan</th>
+                            <th>GSIS Policy Loan</th>
+                            <th>GSIS Opt_Life Loan</th>
                             <th>GSIS GFAL</th>
                             <th>GSIS MPL</th>
                             <th>GSIS CPL</th>
-                            <th>GSIS MPL LITE</th>
-                            <th>CFI COOP</th>
-                            <th>1ST VALLEY BANK</th>
+                            <th>GSIS MPL Lite</th>
+                            <th>CFI Coop</th>
+                            <th>1st Valley Bank</th>
                             <th>TDHEA</th>
-                            <th>DBP LOAN</th>
-                            <th>UCPB LOAN</th>
-                            <th>MEDS PAYABLE</th>
-                            <th>PHIC CONTRIB ADJ.</th>
-                            <th>PHIC REFUNDED FROM E.O</th>
-                            <th>HAZARD PAY ADJ</th>
-                            <th>ADJ PERA</th>
-                            <th>ADJ SUBSISTENCE</th>
-                            <th>ADJ LAUNDRY</th>
-                            <th>SSS DEDUCTION</th>
-                            <th>SSS ADJUSTMENT</th>
-                            <th>GSIS PS </th>
-                            <th>Net Pay</th>
+                            <th>DBP Loan</th>
+                            <th>UCPB Loan</th>
+                            <th>Meds Payable</th>
+                            <th>PHIC Contri Adj</th>
+                            <th>PHIC Refund from E.O.</th>
+                            <th>Hazard Pay Adj</th>
+                            <th>Adj PERA</th>
+                            <th>Adj Subsistence</th>
+                            <th>Adj Laundry</th>
+                            <th>SSS Deduction</th>
+                            <th>SSS Adjustment</th>
+                            <th>GSIS PS LWOP (2%)</th>
+                            <th>GSIS GS LWOP (2%)</th>
+                            <th>GSIS PLREG Refund</th>
+                            <th>GSIS MPL Refund</th>
+                            <th>GSIS Emergency Refund</th>
+                            <th>GSIS Conso Loan Refund</th>
+                            <th>Subsistence Deduction from Leave</th>
+                            <th>2nd Half Adjustment (Resigned Employee)</th>
+                            <th>Total Deduction</th>
+                            <th class="text-danger">Net Pay</th>
+                            <th>1st Half 10th</th>
+                            <th>2nd Half 25th</th>
                         </tr>
                         </thead>
                         <tbody id="payroll_employee_list">
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="jo_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+
+            <!-- Sticky Header -->
+            <div class="modal-header bg-primary text-white sticky-top">
+                <h3 class="modal-title">Preview Payroll</h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead>
+                        <tr>
+                            <th class="sticky-col sticky-1">No.</th>
+                            <th class="sticky-col sticky-2">Family Name</th>
+                            <th class="sticky-col sticky-3">First Name</th>
+                            <th class="sticky-col sticky-4">Middle Name</th>
+                            <th class="sticky-col sticky-5">Suffix</th>
+                            <th>RATE/DAY</th>
+                            <th># OF DAYS WORK</th>
+                            <th>OVERTIME MINUTES</th>
+                            <th>AMOUNT</th>
+                            <th>TARDINESS MINUTES</th>
+                            <th>AMOUNT</th>
+                            <th>SALARY ADJUSTMENT</th>
+                            <th>GROSS AMOUNT EARNED</th>
+                            <th>SSS DEDUCTION</th>
+                            <th>INCOME TAX (5%)</th>
+                            <th>5% TAX DEDUCTION FROM PREVIOUS PAYROLL</th>
+                            <th>PERCENTAGE TAX (3%)</th>
+                            <th>PROFESSIONAL FEE%</th>
+                            <th>TOTAL DEDUCTION</th>
+                            <th>NET AMOUNT DUE</th>
+                        </tr>
+                        </thead>
+                        <tbody id="jo_payroll_list">
 
                         </tbody>
                     </table>

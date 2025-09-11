@@ -21,6 +21,26 @@ class LeaveApplicationService
     public function insertLeaveApplication(array $data)
     {
         return DB::transaction(function () use ($data) {
+            // Step 1: Get available leave credits
+            $availableCredits = DB::table('leave_credits')
+                ->where('user_id', Auth::id())
+                ->where('leave_id', $data['leave_id'])
+                ->value('based_credit');
+
+            if ($availableCredits === null) {
+                throw new \Exception("No leave credits found for this leave type.");
+            }
+
+            // Step 2: Calculate total hours requested
+            $totalHours = collect($data['dates'])->sum('hours');
+            $deductPoints = $totalHours / 8; // 8 hrs = 1 point
+
+            // Step 3: Check if balance is enough
+            if ($availableCredits < $deductPoints) {
+                throw new \Exception("Insufficient leave credits. You only have {$availableCredits} credit(s).");
+            }
+
+            // Step 4: Insert leave application
             $leaveApplicationId = DB::table('leave_applications')->insertGetId([
                 'user_id' => Auth::id(),
                 'leave_id' => $data['leave_id'],
@@ -32,15 +52,15 @@ class LeaveApplicationService
                 'updated_at' => now(),
             ]);
 
+            // Step 5: Insert approvers
             $approvals = [
                 ['role' => 'SH', 'approver_id' => Auth::user()->section, 'order_no' => 1],
                 ['role' => 'DH', 'approver_id' => Auth::user()->division, 'order_no' => 2],
                 ['role' => 'HR', 'approver_id' => 15, 'order_no' => 3],
             ];
 
-            $approvalData = [];
-            foreach ($approvals as $approval) {
-                $approvalData[] = [
+            $approvalData = collect($approvals)->map(function ($approval) use ($leaveApplicationId) {
+                return [
                     'leave_application_id' => $leaveApplicationId,
                     'approver_id' => $approval['approver_id'],
                     'role' => $approval['role'],
@@ -49,20 +69,26 @@ class LeaveApplicationService
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
-            }
+            })->toArray();
+
             DB::table('leave_application_approvals')->insert($approvalData);
 
-            if (!empty($data['dates'])) {
-                $datesData = [];
-                foreach ($data['dates'] as $date) {
-                    $datesData[] = [
-                        'leave_application_id' => $leaveApplicationId,
-                        'date_applied' => $date['date_applied'],
-                        'hours' => $date['hours']
-                    ];
-                }
-                DB::table('leave_date_applied')->insert($datesData);
-            }
+            // Step 6: Insert leave dates
+            $datesData = collect($data['dates'])->map(function ($date) use ($leaveApplicationId) {
+                return [
+                    'leave_application_id' => $leaveApplicationId,
+                    'date_applied' => $date['date_applied'],
+                    'hours' => $date['hours']
+                ];
+            })->toArray();
+
+            DB::table('leave_date_applied')->insert($datesData);
+
+            // Step 7: Deduct leave credits
+            DB::table('leave_credits')
+                ->where('user_id', Auth::id())
+                ->where('leave_id', $data['leave_id'])
+                ->decrement('based_credit', $deductPoints);
 
             return $leaveApplicationId;
         });
@@ -81,6 +107,7 @@ class LeaveApplicationService
                 'u.mname',
                 'lt.description as leave_type',
                 'la.detail',
+                'la.extra',
                 'la.commutation',
                 'la.created_at'
             )
@@ -90,14 +117,12 @@ class LeaveApplicationService
             return null;
         }
 
-        // Dates (no remarks/status here)
         $dates = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $id)
             ->select('date_applied', 'hours')
             ->orderBy('date_applied', 'asc')
             ->get();
 
-        // Approvals (SH, DH, HR)
         $approvals = DB::table('hris.leave_application_approvals as laa')
             ->where('laa.leave_application_id', $id)
             ->select('laa.role', 'laa.status', 'laa.remarks')
@@ -105,12 +130,11 @@ class LeaveApplicationService
             ->mapWithKeys(function ($item) {
                 return [
                     $item->role => [
-                        'status'  => $item->status,
+                        'status' => $item->status,
                         'remarks' => $item->remarks,
                     ]
                 ];
-            })
-            ->toArray();
+            })->toArray();
 
         $application->dates = $dates;
         $application->approvals = $approvals;
