@@ -54,7 +54,7 @@
                 </a>
             </li>
         @endif
-        @if(in_array(session('access_rights'), ['admin']))
+        @if(in_array(session('access_rights'), ['hr', 'admin']))
             {{-- CREDITS MANAGEMENT --}}
             <li class="nav-heading">Credits Management</li>
             <li class="nav-item">
@@ -74,7 +74,6 @@
                 <span>Leave Application</span>
             </a>
         </li>
-
         @if(in_array(session('access_rights'), ['admin', 'HRH', 'SH', 'DH']))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_approval') ? '' : 'collapsed' }}"
@@ -84,8 +83,7 @@
                 </a>
             </li>
         @endif
-
-        @if(in_array(session('access_rights'), ['admin']))
+        @if(in_array(session('access_rights'), ['hr','admin']))
             {{-- HR MANAGEMENT --}}
             <li class="nav-heading">HR Management</li>
             <li class="nav-item">
@@ -95,7 +93,6 @@
                     <span>Employee</span>
                 </a>
             </li>
-
             {{-- PAYROLL MANAGEMENT --}}
             <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">

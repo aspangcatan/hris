@@ -39,13 +39,25 @@
                             <label for="year" class="form-label">Year</label>
                         </div>
                     </div>
+                    <div class="col-md-3">
+                        <div class="form-floating mb-3">
+                            <select class="form-control" id="cutoff">
+                                <option value="full" selected>Whole Month</option>
+                                <option value="first">1st Half (1–15)</option>
+                                <option value="second">2nd Half (16–end)</option>
+                            </select>
+                            <label for="floatingInput">Printing Period</label>
+                        </div>
+                    </div>
                     <!-- DTR Table -->
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <button class="btn btn-danger" style="padding: 1rem 1rem;" id="btn_print">
                             <i class="bi bi-printer mr-2"></i>
                             PRINT DTR
                         </button>
+
                     </div>
+
                 </div>
 
                 <div class="row mt-5">

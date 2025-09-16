@@ -48,12 +48,14 @@
             $("#btn_print").click(function () {
                 const month = $("#month").val();
                 const year = $("#year").val();
-                const cutoff = undefined;
+                const cutoff = $("#cutoff").val();
                 window.open(
                     '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&userid=" + userid,
                     '_blank' // <- This is what makes  t open in a new window.
                 );
             });
+
+
 
             $("#btn_save_log").click(async function () {
                 const access = @json(session('access_rights'));
