@@ -416,30 +416,23 @@ class DTRController extends Controller
         try {
             $month = $request->month;
             $year = $request->year;
-            $cutoff = $request->cutoff ?? 'full'; // default is full month
-
+            $cutoff = $request->cutoff ?? 'full';
             $userid = $request->userid ?? Auth::id();
 
-            // Determine start and end day based on cutoff
             $startDay = 1;
             $endDay = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            if ($cutoff === 'first') $endDay = 15;
+            elseif ($cutoff === 'second') $startDay = 16;
 
-            if ($cutoff === 'first') {
-                $endDay = 15;
-            } elseif ($cutoff === 'second') {
-                $startDay = 16;
-            }
-
-            // Fetch all employees in the current division
+            // fetch employees (in your case per userid)
             $employees = DB::table('tdh_user.users')
                 ->where('id', $userid)
                 ->get();
 
             $dtrData = [];
-
             $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
+
             if (self::checkIfDivisionHead($userid)) {
-                //IF USER IS DIVISION HEAD, PRINT MCC DIVISION HEAD
                 $division_id = 1;
             } else {
                 $division_id = self::getDivisionByUser($userid);
@@ -453,17 +446,21 @@ class DTRController extends Controller
             $lname = $in_charged['lname'] ?? '';
             $suffix = !empty($in_charged['suffix']) ? ' ' . strtoupper($in_charged['suffix']) : '';
             $title = !empty($in_charged['title']) ? ', ' . strtoupper($in_charged['title']) : '';
-
             $in_charged = strtoupper(trim("$fname $mname $lname$suffix$title"));
 
-            // Fetch all holidays for the specified month and year
+            // Holidays normalized to Y-m-d strings
             $holidays = DB::table('calendar_holidays')
                 ->whereMonth('date', $month)
                 ->whereYear('date', $year)
-                ->get();
+                ->get()
+                ->pluck('date')
+                ->map(function ($d) {
+                    return Carbon::parse($d)->toDateString();
+                })
+                ->toArray();
 
             foreach ($employees as $employee) {
-                // Get all DTR logs for this employee within the full month
+                // DTR logs for this user + month
                 $logs = DB::table('dtr_logs')
                     ->whereMonth('created_at', $month)
                     ->whereYear('created_at', $year)
@@ -471,41 +468,65 @@ class DTRController extends Controller
                     ->orderBy('created_at', 'ASC')
                     ->get();
 
-                // Generate full month range, populate only within cutoff
-                $days = collect(range(1, Carbon::createFromDate($year, $month, 1)->daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays) {
-                    $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
-                    $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
-                    $isHoliday = $holidays->contains('date', $currentDay);
+                // Leaves for this user in the month -> map DATE => code
+                $leavesRaw = DB::table('hris.leave_applications as la')
+                    ->join('hris.leave_types as lt', 'la.leave_id', '=', 'lt.id')
+                    ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+                    ->where('la.user_id', $employee->id)
+                    ->whereMonth('lda.date_applied', $month)
+                    ->whereYear('lda.date_applied', $year)
+                    ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code')
+                    ->get();
 
-                    $data = [
-                        'day' => $day,
-                        'date_timein' => '',
-                        'date_timeout' => '',
-                        'day_name' => $dayName,
-                    ];
+                $leaves = $leavesRaw->mapWithKeys(function ($l) {
+                    return [Carbon::parse($l->date_applied)->toDateString() => $l->code];
+                })->toArray();
 
-                    if ($day >= $startDay && $day <= $endDay) {
-                        $dayLogs = $logs->filter(function ($log) use ($currentDay) {
-                            return Carbon::parse($log->created_at)->toDateString() === $currentDay;
-                        });
+                $days = collect(range(1, Carbon::createFromDate($year, $month, 1)->daysInMonth))
+                    ->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves) {
+                        $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
+                        $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
+                        $isHoliday = in_array($currentDay, $holidays, true);
 
-                        if ($dayLogs->isNotEmpty()) {
-                            $timeInLog = $dayLogs->firstWhere('status', 'IN');
-                            $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+                        $data = [
+                            'day' => $day,
+                            'day_name' => $dayName,
+                            'date_timein' => '',
+                            'date_timeout' => '',
+                        ];
 
-                            $data['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : '';
-                            $data['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : '';
-                        } elseif ($isHoliday) {
-                            $data['date_timein'] = $dayName . '-HOLIDAY';
-                            $data['date_timeout'] = $dayName . '-HOLIDAY';
-                        } else {
-                            $data['date_timein'] = $dayName;
-                            $data['date_timeout'] = $dayName;
+                        if ($day >= $startDay && $day <= $endDay) {
+                            // logs for that day
+                            $dayLogs = $logs->filter(function ($log) use ($currentDay) {
+                                return Carbon::parse($log->created_at)->toDateString() === $currentDay;
+                            });
+
+                            if ($dayLogs->isNotEmpty()) {
+                                $timeInLog = $dayLogs->firstWhere('status', 'IN');
+                                $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+
+                                // set actual times (no dash)
+                                $data['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : $dayName;
+                                $data['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : $dayName;
+                            } else {
+                                // no logs -> the Blade expects dayName or dayName-CODE
+                                if (!empty($leaves[$currentDay])) {
+                                    // leave -> embed code into the time fields so Blade handles colspan
+                                    $code = $leaves[$currentDay];
+                                    $data['date_timein'] = $dayName . '-' . $code;       // e.g. "Thursday-VL"
+                                    $data['date_timeout'] = $dayName . '-' . $code;
+                                } elseif ($isHoliday) {
+                                    $data['date_timein'] = $dayName . '-HOLIDAY';
+                                    $data['date_timeout'] = $dayName . '-HOLIDAY';
+                                } else {
+                                    $data['date_timein'] = $dayName;
+                                    $data['date_timeout'] = $dayName;
+                                }
+                            }
                         }
-                    }
 
-                    return $data;
-                });
+                        return $data;
+                    });
 
                 $dtrData[] = [
                     'name' => strtoupper(
@@ -520,7 +541,6 @@ class DTRController extends Controller
                 ];
             }
 
-            // Generate PDF
             $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 ->setPaper('A4', 'portrait')
                 ->setOption('margin-top', 5)
@@ -538,6 +558,8 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
+
 
     public function getInCharged($division)
     {

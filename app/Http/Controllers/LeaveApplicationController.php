@@ -121,7 +121,7 @@ class LeaveApplicationController extends Controller
         $perPage = 10;
         $page = $request->input('page', 1);
 
-        $leaves = $this->leaveApprovalService->getLeavesForApproval();
+        $leaves = $this->leaveApprovalService->getLeavesForApproval($request->search_employee);
 
         // Paginate manually
         $total = $leaves->count();

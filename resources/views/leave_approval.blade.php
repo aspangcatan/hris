@@ -16,11 +16,6 @@
                         <label for="search_employee">Search Employee</label>
                     </div>
                 </div>
-                <div class="col-md-3 offset-md-6">
-                    <button id="filterBtn" class="btn btn-success w-100 btn-lg">
-                        <i class="bi bi-funnel"></i> Apply Filters
-                    </button>
-                </div>
             </div>
 
             <!-- Divider -->

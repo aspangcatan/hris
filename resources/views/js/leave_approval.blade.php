@@ -1,5 +1,5 @@
 <script>
-    let page = 0, leave_id = 0;
+    let page = 1, leave_id = 0;
 
     // Event bindings
     $(function () {
@@ -7,18 +7,28 @@
         $("#btn_prev").click(() => changePage(-1));
         $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
 
+        $("#search_employee").on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();   // prevent form submission (if inside a form)
+                page = 1;             // reset back to first page when searching
+                getLeaves();
+            }
+        });
+
+
         getLeaves(); // initial load
     });
 
     function changePage(step) {
-        page = Math.max(0, page + step);
+        page = Math.max(1, page + step);
         getLeaves();
     }
 
     function getLeaves() {
+        const search_employee = $("#search_employee").val().trim();
         $("#leave_approval_list").html("<tr><td colspan='5'>Loading...</td></tr>");
 
-        fetch(`{{ route('getLeaveForApproval') }}?page=${page}`)
+        fetch(`{{ route('getLeaveForApproval') }}?page=${page}&search_employee=${search_employee}`)
             .then(r => r.json())
             .then(resp => renderLeaves(resp.data, resp.pagination))
             .catch(() => $("#leave_approval_list").html("<tr><td colspan='5'>Error</td></tr>"));
@@ -26,7 +36,14 @@
 
     function renderLeaves(data, pagination) {
         $("#leave_approval_list").empty();
-        if (!data.length) return $("#leave_approval_list").html("<tr><td colspan='5'>No records</td></tr>");
+
+        if (!data.length) {
+            $("#leave_approval_list").html("<tr><td colspan='5'>No records</td></tr>");
+            $("#pagination_container").hide(); // 👈 hide pagination when empty
+            return;
+        }
+
+        $("#pagination_container").show(); // show only when there’s data
 
         data.forEach(it => $("#leave_approval_list").append(`
         <tr>
@@ -41,6 +58,7 @@
         $("#btn_prev").toggleClass("d-none", pagination.current_page <= 1);
         $("#btn_next").toggleClass("d-none", pagination.current_page >= pagination.last_page);
     }
+
 
     function viewApplication(id) {
         leave_id = id;
@@ -64,7 +82,7 @@
         updateStepStatus('#step2', data.approvals.dh);
         updateStepStatus('#step3', data.approvals.hr);
 
-        let remarks = ["sh","dh","hr"].map(role => {
+        let remarks = ["sh", "dh", "hr"].map(role => {
             let a = data.approvals[role];
             return a?.remarks ? `
             <div class="mb-2">
@@ -88,7 +106,7 @@
     function handleApproval() {
         fetch('{{ route('updateApprovalStatus') }}', {
             method: "POST",
-            headers: {"Content-Type": "application/json","X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")},
+            headers: {"Content-Type": "application/json", "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")},
             body: JSON.stringify({id: leave_id, remarks: $("#leave_remarks").val().trim(), status: this.value})
         })
             .then(r => r.json())

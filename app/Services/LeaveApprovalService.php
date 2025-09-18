@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApprovalService
 {
-    public function getLeavesForApproval()
+    public function getLeavesForApproval($search_employee = null)
     {
         $accessRight = session('access_rights');
         $user = Auth::user();
@@ -31,6 +31,7 @@ class LeaveApprovalService
                 'la.created_at'
             );
 
+        // 🔎 Apply role-based filters
         if ($accessRight === "SH" || $accessRight === "admin") {
             $query->where('lp.approver_id', $user->section)
                 ->where('lp.role', "SH");
@@ -63,9 +64,20 @@ class LeaveApprovalService
                 });
         }
 
-        $query->where('lp.status', "=", 'pending');
+        // Always pending
+        $query->where('lp.status', "pending");
+
+        // 🔎 Optional search
+        if (!empty($search_employee)) {
+            $query->where(function ($q) use ($search_employee) {
+                $q->where('u.fname', 'like', "%{$search_employee}%")
+                    ->orWhere('u.lname', 'like', "%{$search_employee}%");
+            });
+        }
+
         return $query->get();
     }
+
 
 
     public function updateApprovalStatus($leave_id, $role, $remarks, $status)
