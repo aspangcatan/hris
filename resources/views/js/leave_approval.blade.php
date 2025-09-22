@@ -72,7 +72,7 @@
         $('#leave_name').text(data.name);
         $('#leave_type').text(data.type);
         $('#leave_commutation').text(data.commutation);
-        $('#leave_details').val(data.details || '');
+        $('#leave_details').val((data.details || '') + ':' + (data.extra || ''));
 
         $('#dates_applied_body').html(data.dates.map(d =>
             `<tr><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`

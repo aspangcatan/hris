@@ -441,9 +441,9 @@ class DTRController extends Controller
             $in_charged = collect(self::getInCharged($division_id))
                 ->only(['fname', 'mname', 'lname', 'suffix', 'title']);
 
-            $fname = $in_charged['fname'] ?? '';
+            $fname = isset($in_charged['fname']) ? $in_charged['fname'] : '';
             $mname = !empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '';
-            $lname = $in_charged['lname'] ?? '';
+            $lname = isset($in_charged['lname']) ? $in_charged['lname'] : '';
             $suffix = !empty($in_charged['suffix']) ? ' ' . strtoupper($in_charged['suffix']) : '';
             $title = !empty($in_charged['title']) ? ', ' . strtoupper($in_charged['title']) : '';
             $in_charged = strtoupper(trim("$fname $mname $lname$suffix$title"));
@@ -468,7 +468,7 @@ class DTRController extends Controller
                     ->orderBy('created_at', 'ASC')
                     ->get();
 
-                // Leaves for this user in the month -> map DATE => code
+                // Leaves for this user in the month
                 $leavesRaw = DB::table('hris.leave_applications as la')
                     ->join('hris.leave_types as lt', 'la.leave_id', '=', 'lt.id')
                     ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
@@ -478,12 +478,37 @@ class DTRController extends Controller
                     ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code')
                     ->get();
 
-                $leaves = $leavesRaw->mapWithKeys(function ($l) {
-                    return [Carbon::parse($l->date_applied)->toDateString() => $l->code];
-                })->toArray();
+                $leaves = [];
+                foreach ($leavesRaw as $l) {
+                    $leaves[Carbon::parse($l->date_applied)->toDateString()] = $l->code;
+                }
 
+                // Hospital Orders for this user
+                $hosRaw = DB::table('hris.hospital_orders as ho')
+                    ->join('hris.hospital_order_employees as hoe', 'ho.id', '=', 'hoe.ho_id')
+                    ->where('hoe.userid', $employee->id)
+                    ->where(function ($q) use ($month, $year) {
+                        $q->whereMonth('ho.start_date', $month)
+                            ->whereYear('ho.start_date', $year)
+                            ->orWhereMonth('ho.end_date', $month)
+                            ->whereYear('ho.end_date', $year);
+                    })
+                    ->select(DB::raw('DATE(ho.start_date) as start_date'), DB::raw('DATE(ho.end_date) as end_date'), 'ho.order_number')
+                    ->get();
+
+                $hospitalOrders = [];
+                foreach ($hosRaw as $ho) {
+                    $start = Carbon::parse($ho->start_date);
+                    $end = Carbon::parse($ho->end_date);
+                    while ($start->lte($end)) {
+                        $hospitalOrders[$start->toDateString()] = '#' . $ho->order_number;
+                        $start->addDay();
+                    }
+                }
+
+                // Prepare days
                 $days = collect(range(1, Carbon::createFromDate($year, $month, 1)->daysInMonth))
-                    ->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves) {
+                    ->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders) {
                         $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                         $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                         $isHoliday = in_array($currentDay, $holidays, true);
@@ -505,15 +530,16 @@ class DTRController extends Controller
                                 $timeInLog = $dayLogs->firstWhere('status', 'IN');
                                 $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
 
-                                // set actual times (no dash)
                                 $data['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : $dayName;
                                 $data['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : $dayName;
                             } else {
-                                // no logs -> the Blade expects dayName or dayName-CODE
                                 if (!empty($leaves[$currentDay])) {
-                                    // leave -> embed code into the time fields so Blade handles colspan
                                     $code = $leaves[$currentDay];
-                                    $data['date_timein'] = $dayName . '-' . $code;       // e.g. "Thursday-VL"
+                                    $data['date_timein'] = $dayName . '-' . $code;
+                                    $data['date_timeout'] = $dayName . '-' . $code;
+                                } elseif (!empty($hospitalOrders[$currentDay])) {
+                                    $code = $hospitalOrders[$currentDay];
+                                    $data['date_timein'] = $dayName . '-' . $code;
                                     $data['date_timeout'] = $dayName . '-' . $code;
                                 } elseif ($isHoliday) {
                                     $data['date_timein'] = $dayName . '-HOLIDAY';
@@ -558,6 +584,7 @@ class DTRController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
+
 
 
 

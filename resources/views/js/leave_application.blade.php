@@ -275,11 +275,11 @@
     /** ------------------------
      *  View Application
      * ------------------------ */
-    async function printApplication(id){
+    async function printApplication(id) {
         window.open(`{{ route('printLeaveForm') }}?id=${id}`, '_blank');
     }
 
-    async function cancelApplication(id){
+    async function cancelApplication(id) {
         while (true) {
             if (!confirm("Are you sure you want to cancel your application?")) {
                 break;
@@ -292,7 +292,6 @@
     }
 
 
-
     async function viewApplication(id) {
         try {
             const data = await fetchData(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id), {
@@ -303,7 +302,7 @@
             $('#leave_name').text(data.name);
             $('#leave_type').text(data.type);
             $('#leave_commutation').text(data.commutation);
-            $('#leave_details').val(data.details || '');
+            $('#leave_details').val((data.details || '') + ':' + (data.extra || ''));
 
             // Dates
             $('#dates_applied_body').html(

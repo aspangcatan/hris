@@ -185,12 +185,13 @@ class PrintController extends Controller
     public function printLeaveForm(Request $request)
     {
         $leave_application = DB::table('hris.leave_applications as l')
+            ->leftJoin('hris.payroll_settings as p', 'p.userid', '=', 'l.user_id')
             ->join('tdh_user.users as u', 'l.user_id', '=', 'u.id')
             ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
             ->join('tdh_user.division as di', 'u.division', '=', 'di.id')
             ->join('tdh_user.section as s', 'u.section', '=', 's.id')
             ->where('l.id', '=', $request->id)
-            ->get(['di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id', 'l.created_at'])
+            ->get(['p.basic_salary','di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id', 'l.created_at'])
             ->first();
 
         $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
@@ -239,7 +240,8 @@ class PrintController extends Controller
         $pdf->SetXY(77, 43);
         $pdf->Write(0.1, self::minifyDesignation($leave_application->designation));
         $pdf->SetXY(123, 43);
-        $pdf->Write(0.1, "P36,600.00");
+        $pdf->Write(0.1, 'P'.number_format($leave_application->basic_salary ?? 0, 2, '.', ','));
+
 //
 //        #DETAILS OF LEAVE
         $leave_type = self::getTypeXY($leave_application->leave_id);
