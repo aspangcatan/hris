@@ -100,6 +100,11 @@
                                                 Leave Credits
                                             </button>
                                         </li>
+                                        <li class="nav-item">
+                                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#payroll">
+                                                Payroll
+                                            </button>
+                                        </li>
                                     </ul>
                                     <div class="tab-content pt-2">
                                         <div class="tab-pane fade pt-3" id="personal_information">
@@ -140,6 +145,9 @@
                                         </div>
                                         <div class="tab-pane fade pt-3" id="leave_credits">
                                             @include('forms.leave_credits')
+                                        </div>
+                                        <div class="tab-pane fade pt-3" id="payroll">
+                                            @include('forms.payroll')
                                         </div>
                                     </div><!-- End Bordered Tabs -->
                                 </div>

@@ -32,11 +32,8 @@
             </li>
         @endif
 
-        {{-- ADMIN ONLY --}}
-
-
-        {{-- SCHEDULE MANAGEMENT --}}
-        @if(in_array(session('access_rights'), ['admin']))
+        {{-- SCHEDULE MANAGEMENT (only HRH + admin) --}}
+        @if(in_array(session('access_rights'), ['admin','HRH']))
             <li class="nav-heading">Schedule Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('schedule') ? '' : 'collapsed' }}"
@@ -46,6 +43,7 @@
                 </a>
             </li>
         @endif
+
         @if(in_array(session('access_rights'), ['admin']))
             <li class="nav-item d-none">
                 <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
@@ -54,8 +52,9 @@
                 </a>
             </li>
         @endif
-        @if(in_array(session('access_rights'), ['hr', 'admin']))
-            {{-- CREDITS MANAGEMENT --}}
+
+        {{-- CREDITS MANAGEMENT (only HRH + admin) --}}
+        @if(in_array(session('access_rights'), ['HRH','admin']))
             <li class="nav-heading">Credits Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('credit_management') ? '' : 'collapsed' }}"
@@ -65,6 +64,7 @@
                 </a>
             </li>
         @endif
+
         {{-- LEAVE MANAGEMENT --}}
         <li class="nav-heading">Leave Management</li>
         <li class="nav-item">
@@ -74,7 +74,7 @@
                 <span>Leave Application</span>
             </a>
         </li>
-        @if(in_array(session('access_rights'), ['admin', 'HRH', 'SH', 'DH']))
+        @if(in_array(session('access_rights'), ['admin', 'HRH', 'SH', 'DH', 'hr']))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_approval') ? '' : 'collapsed' }}"
                    href="{{ route('leave_approval') }}">
@@ -83,8 +83,9 @@
                 </a>
             </li>
         @endif
-        @if(in_array(session('access_rights'), ['hr','admin']))
-            {{-- HR MANAGEMENT --}}
+
+        {{-- HR MANAGEMENT (hr + HRH + admin) --}}
+        @if(in_array(session('access_rights'), ['hr','HRH','admin']))
             <li class="nav-heading">HR Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee') ? '' : 'collapsed' }}"
@@ -93,6 +94,7 @@
                     <span>Employee</span>
                 </a>
             </li>
+
             {{-- PAYROLL MANAGEMENT --}}
             <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">
@@ -100,13 +102,6 @@
                    href="{{ route('payroll') }}">
                     <i class="bi bi-cash-stack"></i>
                     <span>Payroll</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('payroll_settings') ? '' : 'collapsed' }}"
-                   href="{{ route('payroll_settings') }}">
-                    <i class="bi bi-gear"></i>
-                    <span>Settings</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -119,6 +114,7 @@
                 </a>
             </li>
         @endif
+
         @if(in_array(session('access_rights'), ['admin', 'calendar']))
             {{-- SETTINGS --}}
             <li class="nav-heading">Settings</li>
@@ -129,7 +125,7 @@
                     <span>Calendar</span>
                 </a>
             </li>
-            <li class="nav-item d-none">
+            <li class="nav-item">
                 <a class="nav-link collapsed" href="{{ route('hospital_order') }}">
                     <i class="bi bi-hospital"></i>
                     <span>Hospital Orders</span>
@@ -149,16 +145,8 @@
                     <span>Leave Settings</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#">
-                    <i class="bi bi-tools"></i>
-                    <span>
-                        Payroll Settings
-                        <span class="badge bg-danger text-white ms-1">Soon</span>
-                    </span>
-                </a>
-            </li>
         @endif
+
         {{-- MOBILE DTR --}}
         <li class="nav-heading">Mobile DTR</li>
         <li class="nav-item">

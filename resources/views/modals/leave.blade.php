@@ -117,13 +117,6 @@
                         </tr>
                         </thead>
                         <tbody id="dates_table_body">
-                        <tr>
-                            <td><input type="date" class="form-control" name="leave_dates[]"></td>
-                            <td><input type="number" class="form-control" name="leave_hours[]" min="1" max="24"></td>
-                            <td>
-                                <button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button>
-                            </td>
-                        </tr>
                         </tbody>
                     </table>
 

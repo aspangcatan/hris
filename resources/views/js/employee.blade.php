@@ -165,6 +165,54 @@
             getEmployee({fname: fname, lname: lname, page: page});
         });
 
+        $("#btn_save_payroll").click(function () {
+            let isValid = true;
+            let params = {};
+
+            params["userid"] = employee_id;
+
+            // Select all input fields inside the modal (adjust selector if needed)
+            $("#payroll input").each(function () {
+                let input = $(this);
+                let name = input.attr("id");
+                let value = parseFloat(input.val());
+
+                // Check for invalid value (empty or less than 0)
+                if (isNaN(value) || value < 0) {
+                    input.addClass("is-invalid"); // Optional: add red border
+                    isValid = false;
+                } else {
+                    input.removeClass("is-invalid");
+                    if (name === 'salary_grade' || name === 'step') {
+                        params[name] = parseInt(value); // keep as integer
+                    } else {
+                        params[name] = parseFloat(value).toFixed(2); // 2 decimal format
+                    }
+                }
+            });
+
+            if (!isValid) {
+                alert("All input fields must have a valid number (0.00 or higher).");
+                return;
+            }
+
+            fetch('{{ route('savePayrollSettings') }}', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    body: JSON.stringify(params)
+                }
+            )
+                .then(res => res.json())
+                .then(data => {
+                    toastr.success(data.message, 'Information');
+                }).catch(err => {
+                console.log(err);
+            });
+        });
+
         $("#btn_save_personal").click(function () {
             const employee_type = $("#employee_type").val();
             const date_hired = $("#date_hired").val();
@@ -320,11 +368,37 @@
                 case "#leave_credits":
                     getCredits(employee_id);
                     break;
+                case "#payroll":
+                    getCredits(employee_id);
+                    break;
             }
         });
 
         getEmployee({fname: "", lname: "", page: page});
     });
+
+    function getCredits(id) {
+        employee_id = id;
+        $("#payroll input").val("0.00"); // Reset all inputs
+        // Fetch existing employee payroll data
+        fetch('{{ route('getPayrollSettings') }}?userid=' + id)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Fill inputs with the retrieved data
+                    for (const [key, value] of Object.entries(data.data)) {
+                        const input = $(`#${key}`); // Select input using ID
+                        if (input.length) {
+                            input.val(key === 'salary_grade' || key === 'step' ? parseInt(value) : parseFloat(value).toFixed(2));
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+                alert("An error occurred while fetching employee data.");
+            });
+    }
 
     function editService(id) {
         service_id = id;

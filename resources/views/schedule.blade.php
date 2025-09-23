@@ -45,26 +45,29 @@
                         <label for="year">Year</label>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="form-floating">
-                        <select class="form-select form-control-sm" id="division">
+                @if(in_array(session('access_rights'), ['admin']))
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            <select class="form-select form-control-sm" id="division">
 
-                        </select>
-                        <label for="month">Division</label>
+                            </select>
+                            <label for="month">Division</label>
+                        </div>
                     </div>
-                </div>
 
-                <div class="col-md-2">
-                    <div class="form-floating">
-                        <select class="form-select form-control-sm" id="section">
+                    <div class="col-md-2">
+                        <div class="form-floating">
+                            <select class="form-select form-control-sm" id="section">
 
-                        </select>
-                        <label for="year">Section</label>
+                            </select>
+                            <label for="year">Section</label>
+                        </div>
                     </div>
-                </div>
+                @endif
                 <div class="col-md-2 d-flex align-items-end gap-2">
                     <button id="btn_advance_schedule" class="btn btn-success btn-lg w-100">Advance Settings</button>
                 </div>
+
 
             </div>
 
@@ -169,7 +172,7 @@
                         const dates = getDatesForDayOfWeek(dayName, year, month);
                         dates.forEach(date => {
                             employeeIds.forEach(id => {
-                                scheduleData.push({ employee_id: id, schedule_id, schedule_date: date });
+                                scheduleData.push({employee_id: id, schedule_id, schedule_date: date});
                             });
                         });
                     }
@@ -186,7 +189,7 @@
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
                     },
-                    body: JSON.stringify({ schedules: scheduleData })
+                    body: JSON.stringify({schedules: scheduleData})
                 })
                     .then(res => res.json())
                     .then(data => {
@@ -239,7 +242,9 @@
                     .catch(console.error);
             });
 
+            @if(in_array(session('access_rights'), ['admin']))
             loadDivision();
+            @endif
         });
 
         function loadDivision() {
@@ -283,8 +288,8 @@
         function loadEmployeeSchedule() {
             const month = $('#filter_month').val();
             const year = $('#filter_year').val();
-            const division = $('#division').val();
-            const section = $('#section').val();
+            const division = $('#division').val() ?? '';
+            const section = $('#section').val() ?? '';
 
             if (!month || !year) {
                 toastr.error("Please select both month and year.", "Missing Filter");
@@ -316,7 +321,7 @@
 
         // Get Dates for Day of Week
         function getDatesForDayOfWeek(dayName, year, month) {
-            const dayMap = { Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6 };
+            const dayMap = {Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6};
             const dates = [];
             const date = new Date(`${year}-${month}-01`);
             const targetDay = dayMap[dayName];

@@ -8,7 +8,11 @@
         $('.datepicker').datepicker({multidate: true});
 
         // Button actions
-        $("#btn_file_leave").click(() => file_leave_modal.toggle());
+        $("#btn_file_leave").click(function (){
+            $("#dates_table_body").empty();
+            addRow();
+            file_leave_modal.toggle()
+        });
         $("#btn_reload").click(init_leave);
         $("#btn_search").click(() => {
             page = 0;
@@ -76,7 +80,7 @@
 
         $("#dates_table_body tr").each(function () {
             const date = $(this).find("td:eq(0) input").val();
-            const hours = $(this).find("td:eq(1) input").val();
+            const hours = $(this).find("td:eq(1) select").val();
             if (date && hours) {
                 date_applied_array.push({date_applied: date, hours: hours});
             }
@@ -139,13 +143,19 @@
      * ------------------------ */
     function addRow() {
         $("#dates_table_body").append(`
-            <tr>
-                <td><input type="date" class="form-control" name="leave_dates[]"></td>
-                <td><input type="number" class="form-control" name="leave_hours[]" min="1" max="24"></td>
-                <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
-            </tr>
-        `);
+        <tr>
+            <td><input type="date" class="form-control" name="leave_dates[]"></td>
+            <td>
+                <select class="form-control" name="leave_hours[]">
+                    <option value="4">4</option>
+                    <option value="8">8</option>
+                </select>
+            </td>
+            <td><button type="button" class="btn btn-danger" onclick="removeRow(this)">Remove</button></td>
+        </tr>
+    `);
     }
+
 
     function removeRow(button) {
         if ($("#dates_table_body tr").length <= 1) {
@@ -253,11 +263,6 @@
                                 <li>
                                     <a class="dropdown-item" href="javascript:void(0)" onclick="printApplication(${it.id})">
                                         <i class="bi bi-printer text-primary me-2"></i> Print
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelApplication(${it.id})">
-                                        <i class="bi bi-x-circle-fill me-2"></i> Cancel
                                     </a>
                                 </li>
                             </ul>

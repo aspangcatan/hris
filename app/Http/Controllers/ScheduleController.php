@@ -31,7 +31,7 @@ class ScheduleController extends Controller
             // Get employees from the same section
             $employees = DB::table('tdh_user.users as u')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
-                ->where('u.section', $section)
+                ->where('u.section','=', $section)
                 ->selectRaw("
                 u.id as employee_id,
                 CONCAT(

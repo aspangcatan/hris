@@ -128,6 +128,8 @@
                             $("#section").removeClass("d-none");
                         }
 
+                        $("#section").append(`<option value="">----Select Section----</option>`);
+
                         data.forEach(it => {
                             const option = `<option value="` + it.id + `">` + it.description + `</option>`;
                             $("#section").append(option);
@@ -146,6 +148,7 @@
             })
                 .then(response => response.json())
                 .then(data => {
+                    $("#division").append(`<option value="">----Select Division----</option>`);
                     data.forEach(it => {
                         const option = `<option value="${it.id}">${it.description}</option>`;
                         $("#division").append(option);

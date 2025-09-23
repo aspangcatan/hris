@@ -200,6 +200,7 @@ class PrintController extends Controller
         $pdf = new Fpdi();
         $pdf->AddPage();
 
+//        $pdf->setSourceFile(public_path("pdf/leave_form_mcc.pdf"));
         switch ($leave_application->division_id) {
             case 1:
                 $pdf->setSourceFile(public_path("pdf/leave_form_mcc.pdf"));

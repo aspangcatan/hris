@@ -108,9 +108,7 @@
                 )
                     .then(res => res.json())
                     .then(data => {
-                        console.log(data);
                         toastr.success(data.message, 'Information');
-                        // $("#payroll_settings_modal").modal("hide");
                     }).catch(err => {
                     console.log(err);
                 });
