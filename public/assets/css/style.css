@@ -10,7 +10,9 @@
 --------------------------------------------------------------*/
 
 /*CUSTOM CSS*/
-
+.modal-xxl {
+    max-width: 90%; /* adjust as needed */
+}
 /* Sticky base */
 #preview_payroll_modal .table th.sticky-col,
 #preview_payroll_modal .table td.sticky-col {

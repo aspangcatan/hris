@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class PayrollController extends Controller
 {
@@ -175,6 +177,8 @@ class PayrollController extends Controller
                 'title' => 'required|string|max:255',
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
+                'payroll_type' => 'string',
+                'rate_type' => 'string',
                 'remarks' => 'nullable|string',
             ]);
 
@@ -183,6 +187,8 @@ class PayrollController extends Controller
                 'title' => $validated['title'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
+                'payroll_type' => $validated['payroll_type'],
+                'rate_type' => $validated['rate_type'],
                 'remarks' => $validated['remarks'],
                 'prepared_by' => Auth::id(),
                 'created_at' => now(),
@@ -199,7 +205,7 @@ class PayrollController extends Controller
     {
         try {
             $payrolls = DB::table('payrolls')
-                ->select('id', 'title', 'start_date', 'end_date', 'remarks', 'created_at')
+                ->select('id', 'title', 'start_date', 'end_date','payroll_type','rate_type', 'remarks', 'created_at')
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -237,5 +243,20 @@ class PayrollController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    public function export($payroll_id)
+    {
+        // Get employees for payroll
+        $employees = $this->payrollServices->getPayrollEmployee($payroll_id);
+
+        if($employees->isEmpty()){
+            return back()->with('error', 'No employees found for this payroll.');
+        }
+
+        $exportPath = storage_path('app/exports/payroll.xlsx');
+        $this->payrollServices->export($employees, $exportPath);
+
+        return response()->download($exportPath)->deleteFileAfterSend(true);
     }
 }

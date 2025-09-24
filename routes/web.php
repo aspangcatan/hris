@@ -231,7 +231,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll');
     Route::get('/get_employee_division_section', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeByDivisionSection'])->name('getEmployeeByDivisionSection');
     Route::get('/get_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'getPayrollEmployee'])->name('getPayrollEmployee');
-
+    Route::get('/payroll/export/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'export'])->name('exportPayroll');
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE

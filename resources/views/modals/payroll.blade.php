@@ -222,15 +222,15 @@
                     <div class="col-md-6">
                         <label for="payroll_type" class="form-label">Type</label>
                         <select class="form-control" id="payroll_type">
-                            <option value="1" selected>Regular</option>
-                            <option value="2">Job Order</option>
+                            <option selected>Regular</option>
+                            <option>Job Order</option>
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label for="rate_type" class="form-label">Rate Type</label>
                         <select class="form-control" id="rate_type">
-                            <option value="1" selected>Non Pro-rated</option>
-                            <option value="2">Pro-rated</option>
+                            <option selected>Non Pro-rated</option>
+                            <option>Pro-rated</option>
                         </select>
                     </div>
                     <!-- Remarks -->
@@ -329,24 +329,24 @@
     </div>
 </div>
 
-<div class="modal fade" id="preview_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade" id="regular_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-fullscreen">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content">
 
             <!-- Sticky Header -->
-            <div class="modal-header bg-primary text-white sticky-top">
-                <h3 class="modal-title">Preview Payroll</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            <div class="modal-header bg-light border-bottom sticky-top shadow-sm">
+                <h3 class="modal-title">Regular Payroll</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
             <!-- Scrollable Body -->
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center">
-                        <thead>
-                        <tr>
+            <div class="modal-body p-3">
+                <div class="table-responsive shadow-sm rounded">
+                    <table class="table table-bordered table-striped align-middle">
+                        <thead class="table-light">
+                        <tr class="text-center align-middle">
                             <th class="sticky-col sticky-1">No.</th>
                             <th class="sticky-col sticky-2">Family Name</th>
                             <th class="sticky-col sticky-3">First Name</th>
@@ -360,125 +360,162 @@
                             <th>SG</th>
                             <th>Step</th>
                             <th>SG B</th>
-                            <th>SSL 6 Basic Pay</th>
-                            <th>Basic Pay Adj</th>
-                            <th>Basic Pay LWOP</th>
-                            <th>Final Basic Pay</th>
-                            <th>PERA</th>
-                            <th>RATA</th>
-                            <th>Subsistence</th>
-                            <th>Laundry</th>
-                            <th>Hazard</th>
-                            <th>Longevity</th>
-                            <th>Quarters Allowance</th>
-                            <th>Cellphone Allowance</th>
-                            <th class="text-danger">Gross Pay</th>
-                            <th>Withholding Tax</th>
-                            <th>Withholding Tax (Adjustment)</th>
-                            <th>GSIS PS</th>
-                            <th>GSIS GS</th>
-                            <th>GSIS EC</th>
-                            <th>HDMF</th>
-                            <th>PHIC</th>
-                            <th>PAGIBIG CAL</th>
-                            <th>PAGIBIG MPL</th>
-                            <th>PAG-IBIG MP2</th>
-                            <th>PAG-IBIG MP2 2nd Account</th>
-                            <th>PAG-IBIG MP2 3rd Account</th>
-                            <th>GSIS Conso Loan</th>
-                            <th>GSIS Emergency Loan</th>
-                            <th>GSIS Educational Loan</th>
-                            <th>GSIS Policy Loan</th>
-                            <th>GSIS Opt_Life Loan</th>
-                            <th>GSIS GFAL</th>
-                            <th>GSIS MPL</th>
-                            <th>GSIS CPL</th>
-                            <th>GSIS MPL Lite</th>
-                            <th>CFI Coop</th>
-                            <th>1st Valley Bank</th>
-                            <th>TDHEA</th>
-                            <th>DBP Loan</th>
-                            <th>UCPB Loan</th>
-                            <th>Meds Payable</th>
-                            <th>PHIC Contri Adj</th>
-                            <th>PHIC Refund from E.O.</th>
-                            <th>Hazard Pay Adj</th>
-                            <th>Adj PERA</th>
-                            <th>Adj Subsistence</th>
-                            <th>Adj Laundry</th>
-                            <th>SSS Deduction</th>
-                            <th>SSS Adjustment</th>
-                            <th>GSIS PS LWOP (2%)</th>
-                            <th>GSIS GS LWOP (2%)</th>
-                            <th>GSIS PLREG Refund</th>
-                            <th>GSIS MPL Refund</th>
-                            <th>GSIS Emergency Refund</th>
-                            <th>GSIS Conso Loan Refund</th>
-                            <th>Subsistence Deduction from Leave</th>
-                            <th>2nd Half Adjustment (Resigned Employee)</th>
-                            <th>Total Deduction</th>
-                            <th class="text-danger">Net Pay</th>
-                            <th>1st Half 10th</th>
-                            <th>2nd Half 25th</th>
+                            <th class="text-end">SSL 6 Basic Pay</th>
+                            <th class="text-end">Basic Pay Adj</th>
+                            <th class="text-end">Basic Pay LWOP</th>
+                            <th class="text-end">Final Basic Pay</th>
+                            <th class="text-end">PERA</th>
+                            <th class="text-end">RATA</th>
+                            <th class="text-end">Subsistence</th>
+                            <th class="text-end">Laundry</th>
+                            <th class="text-end">Hazard</th>
+                            <th class="text-end">Longevity</th>
+                            <th class="text-end">Quarters Allowance</th>
+                            <th class="text-end">Cellphone Allowance</th>
+                            <th class="fw-bold text-end">Gross Pay</th>
+                            <th class="text-end">Withholding Tax</th>
+                            <th class="text-end">Withholding Tax (Adjustment)</th>
+                            <th class="text-end">GSIS PS</th>
+                            <th class="text-end">GSIS GS</th>
+                            <th class="text-end">GSIS EC</th>
+                            <th class="text-end">HDMF</th>
+                            <th class="text-end">PHIC</th>
+                            <th class="text-end">PAGIBIG CAL</th>
+                            <th class="text-end">PAGIBIG MPL</th>
+                            <th class="text-end">PAG-IBIG MP2</th>
+                            <th class="text-end">PAG-IBIG MP2 2nd Account</th>
+                            <th class="text-end">PAG-IBIG MP2 3rd Account</th>
+                            <th class="text-end">GSIS Conso Loan</th>
+                            <th class="text-end">GSIS Emergency Loan</th>
+                            <th class="text-end">GSIS Educational Loan</th>
+                            <th class="text-end">GSIS Policy Loan</th>
+                            <th class="text-end">GSIS Opt_Life Loan</th>
+                            <th class="text-end">GSIS GFAL</th>
+                            <th class="text-end">GSIS MPL</th>
+                            <th class="text-end">GSIS CPL</th>
+                            <th class="text-end">GSIS MPL Lite</th>
+                            <th class="text-end">CFI Coop</th>
+                            <th class="text-end">1st Valley Bank</th>
+                            <th class="text-end">TDHEA</th>
+                            <th class="text-end">DBP Loan</th>
+                            <th class="text-end">UCPB Loan</th>
+                            <th class="text-end">Meds Payable</th>
+                            <th class="text-end">PHIC Contri Adj</th>
+                            <th class="text-end">PHIC Refund from E.O.</th>
+                            <th class="text-end">Hazard Pay Adj</th>
+                            <th class="text-end">Adj PERA</th>
+                            <th class="text-end">Adj Subsistence</th>
+                            <th class="text-end">Adj Laundry</th>
+                            <th class="text-end">SSS Deduction</th>
+                            <th class="text-end">SSS Adjustment</th>
+                            <th class="text-end">GSIS PS LWOP (2%)</th>
+                            <th class="text-end">GSIS GS LWOP (2%)</th>
+                            <th class="text-end">GSIS PLREG Refund</th>
+                            <th class="text-end">GSIS MPL Refund</th>
+                            <th class="text-end">GSIS Emergency Refund</th>
+                            <th class="text-end">GSIS Conso Loan Refund</th>
+                            <th class="text-end">Subsistence Deduction from Leave</th>
+                            <th class="text-end">2nd Half Adjustment (Resigned Employee)</th>
+                            <th class="fw-bold text-end">Total Deduction</th>
+                            <th class="fw-bold text-end">Net Pay</th>
+                            <th class="text-end">1st Half 10th</th>
+                            <th class="text-end">2nd Half 25th</th>
                         </tr>
                         </thead>
-                        <tbody id="payroll_employee_list">
-
-                        </tbody>
+                        <tbody id="payroll_employee_list"></tbody>
+                        <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="25" class="text-end">TOTAL:</td>
+                            <td class="text-end" id="total_gross">0.00</td>
+                            <td colspan="44"></td>
+                            <td class="text-end" id="total_deduction">0.00</td>
+                            <td class="text-end" id="total_net">0.00</td>
+                            <td colspan="2"></td>
+                        </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
+
+            <!-- Optional Footer -->
+            <div class="modal-footer bg-light">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Close
+                </button>
+                <button class="btn btn-outline-primary" id="btn_export_regular">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
+                </button>
+            </div>
+
         </div>
     </div>
 </div>
 
 <div class="modal fade" id="jo_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-fullscreen">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content">
 
             <!-- Sticky Header -->
-            <div class="modal-header bg-primary text-white sticky-top">
-                <h3 class="modal-title">Preview Payroll</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            <div class="modal-header bg-light border-bottom sticky-top shadow-sm">
+                <h3 class="modal-title">Job Order Payroll</h3>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
             <!-- Scrollable Body -->
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center">
-                        <thead>
+            <div class="modal-body p-3">
+                <div class="table-responsive shadow-sm rounded">
+                    <table class="table table-bordered table-hover align-middle text-center">
+                        <thead class="table-light">
                         <tr>
-                            <th class="sticky-col sticky-1">No.</th>
+                            <th class="sticky-col sticky-1">Serial No.</th>
                             <th class="sticky-col sticky-2">Family Name</th>
                             <th class="sticky-col sticky-3">First Name</th>
                             <th class="sticky-col sticky-4">Middle Name</th>
                             <th class="sticky-col sticky-5">Suffix</th>
-                            <th>RATE/DAY</th>
-                            <th># OF DAYS WORK</th>
-                            <th>OVERTIME MINUTES</th>
-                            <th>AMOUNT</th>
-                            <th>TARDINESS MINUTES</th>
-                            <th>AMOUNT</th>
-                            <th>SALARY ADJUSTMENT</th>
-                            <th>GROSS AMOUNT EARNED</th>
-                            <th>SSS DEDUCTION</th>
-                            <th>INCOME TAX (5%)</th>
-                            <th>5% TAX DEDUCTION FROM PREVIOUS PAYROLL</th>
-                            <th>PERCENTAGE TAX (3%)</th>
-                            <th>PROFESSIONAL FEE%</th>
-                            <th>TOTAL DEDUCTION</th>
-                            <th>NET AMOUNT DUE</th>
+                            <th>Position</th>
+                            <th>Rate/Day</th>
+                            <th># of Days Work</th>
+                            <th>Overtime Minutes</th>
+                            <th>Amount</th>
+                            <th>Tardiness Minutes</th>
+                            <th>Amount</th>
+                            <th>Salary Adjustment</th>
+                            <th>Gross Amount Earned</th>
+                            <th>SSS Deduction</th>
+                            <th>Income Tax (5%)</th>
+                            <th>5% Tax Prev. Payroll</th>
+                            <th>Percentage Tax (3%)</th>
+                            <th>Professional Fee %</th>
+                            <th>Total Deduction</th>
+                            <th>Net Amount Due</th>
                         </tr>
                         </thead>
                         <tbody id="jo_payroll_list">
-
+                        <!-- Payroll rows go here -->
                         </tbody>
+                        <tfoot class="fw-bold table-light">
+                        <tr>
+                            <td colspan="13" class="text-end">TOTAL:</td>
+                            <td id="total_gross" class="text-end">0.00</td>
+                            <td colspan="5"></td>
+                            <td id="total_deduction" class="text-end">0.00</td>
+                            <td id="total_net" class="text-end">0.00</td>
+                        </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
+
+            <!-- Footer -->
+            <div class="modal-footer border-top">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-outline-success">Export</button>
+            </div>
+
         </div>
     </div>
 </div>
+
 

@@ -215,12 +215,6 @@
                     });
                 });
 
-                console.log({
-                    "payroll_id": payroll_id,
-                    "employees": checked
-                });
-
-
                 fetch('{{ route('savePayrollEmployee') }}', {
                     method: "POST",
                     headers: {
@@ -246,6 +240,8 @@
                 const title = $("#title").val().trim();
                 const start = $("#start_date").val();
                 const end = $("#end_date").val();
+                const payroll_type = $("#payroll_type").val();
+                const rate_type = $("#rate_type").val();
                 const remarks = $("#remarks").val().trim();
 
                 // Basic validation
@@ -265,6 +261,8 @@
                     title: title,
                     start_date: start,
                     end_date: end,
+                    payroll_type: payroll_type,
+                    rate_type: rate_type,
                     remarks: remarks
                 };
 
@@ -285,6 +283,11 @@
                     console.log(err);
                 });
             });
+
+            $("#btn_export_regular").click(function () {
+                window.location.href = "{{ url('/payroll/export') }}/" + payroll_id;
+            });
+
         });
 
         function getEmployee(division, section, type) {
@@ -375,114 +378,166 @@
             });
         }
 
-        function viewPayroll(id) {
-            $('#preview_payroll_modal').modal('show');
+        function viewPayroll(id, type) {
+            payroll_id = id;
+            const config = {
+                Regular: {
+                    tbodyId: '#payroll_employee_list',
+                    modalId: '#regular_payroll_modal',
+                    populate: populateRegularRows,
+                    colspan: 72 // adjust based on your total columns
+                },
+                "Job Order": {
+                    tbodyId: '#jo_payroll_list',
+                    modalId: '#jo_payroll_modal',
+                    populate: populateJobOrderRows,
+                    colspan: 20 // adjust based on your total columns
+                }
+            };
+
+            const settings = config[type];
+            if (!settings) {
+                console.error(`Invalid payroll type: ${type}`);
+                return;
+            }
 
             fetch(`{{ route('getPayrollEmployee') }}?payroll_id=${id}`)
                 .then(response => response.json())
                 .then(data => {
-                    const $tbody = $('#payroll_employee_list');
-                    $tbody.empty(); // Clear existing rows
+                    const tbody = $(settings.tbodyId);
+                    tbody.empty();
 
-                    if (data.length === 0) {
-                        $tbody.append(`
-                    <tr>
-                        <td colspan="55" class="text-center text-muted">No record found</td>
-                    </tr>
-                `);
+                    if (!data || data.length === 0) {
+                        toastr.error("There are no employee assigned", "Information");
                         return;
                     }
 
-                    data.forEach((item, index) => {
-                        const row = `
-    <tr>
-        <td class="sticky-col sticky-1">${index + 1}</td>
-        <td class="sticky-col sticky-2">${item.lname}</td>
-        <td class="sticky-col sticky-3">${item.fname}</td>
-        <td class="sticky-col sticky-4">${item.mname ?? ''}</td>
-        <td class="sticky-col sticky-5">${item.suffix ?? ''}</td>
-        <td class="sticky-col sticky-6">${item.mi ?? ''}</td>
-        <td class="sticky-col sticky-7">${item.stat ?? ''}</td>
-        <td>${item.division}</td>
-        <td>${item.section ?? ''}</td>
-        <td>${item.zz ?? ''}</td>
-        <td>${item.sg ?? ''}</td>
-        <td>${item.step ?? ''}</td>
-        <td>${item.sg_b ?? ''}</td>
-        <td>${formatCurrency(item.basic_salary)}</td>
-        <td>${formatCurrency(item.salary_adjustment)}</td>
-        <td>${formatCurrency(item.late_absent)}</td>
-        <td>${formatCurrency(item.final_basic_pay ?? "0.00")}</td>
-        <td>${formatCurrency(item.pera)}</td>
-        <td>${formatCurrency(item.rata)}</td>
-        <td>${formatCurrency(item.subsistence)}</td>
-        <td>${formatCurrency(item.laundry)}</td>
-        <td>${formatCurrency(item.hazard)}</td>
-        <td>${formatCurrency(item.longevity)}</td>
-        <td>${formatCurrency(item.quarters_allowance ?? "0.00")}</td>
-        <td>${formatCurrency(item.cellphone_allowance)}</td>
-        <td class="text-danger">${formatCurrency(item.gross_pay)}</td>
-        <td>${formatCurrency(item.withholding_tax ?? "0.00")}</td>
-        <td>${formatCurrency(item.withholding_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_ps)}</td>
-        <td>${formatCurrency(item.gsis_gs)}</td>
-        <td>${formatCurrency(item.gsis_ec)}</td>
-        <td>${formatCurrency(item.hdmf)}</td>
-        <td>${formatCurrency(item.phic)}</td>
-        <td>${formatCurrency(item.pagibig_cal)}</td>
-        <td>${formatCurrency(item.pagibig_mpl)}</td>
-        <td>${formatCurrency(item.pagibig_mp2)}</td>
-        <td>${formatCurrency(item.pagibig_mp2_2nd)}</td>
-        <td>${formatCurrency(item.pagibig_mp2_3rd)}</td>
-        <td>${formatCurrency(item.gsis_consoloan)}</td>
-        <td>${formatCurrency(item.gsis_emergency_loan)}</td>
-        <td>${formatCurrency(item.gsis_educational_loan)}</td>
-        <td>${formatCurrency(item.gsis_policy_loan)}</td>
-        <td>${formatCurrency(item.gsis_opt_life_loan)}</td>
-        <td>${formatCurrency(item.gsis_gfal)}</td>
-        <td>${formatCurrency(item.gsis_mpl)}</td>
-        <td>${formatCurrency(item.gsis_cpl)}</td>
-        <td>${formatCurrency(item.gsis_mpl_lite)}</td>
-        <td>${formatCurrency(item.cfi_coop)}</td>
-        <td>${formatCurrency(item.first_valley_bank)}</td>
-        <td>${formatCurrency(item.tdhea)}</td>
-        <td>${formatCurrency(item.dbp_loan)}</td>
-        <td>${formatCurrency(item.ucpb_loan)}</td>
-        <td>${formatCurrency(item.meds_payable)}</td>
-        <td>${formatCurrency(item.phic_contri_adj ?? "0.00")}</td>
-        <td>${formatCurrency(item.phic_refund_eo ?? "0.00")}</td>
-        <td>${formatCurrency(item.hazard_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.pera_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.subsistence_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.laundry_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.sss_deduction)}</td>
-        <td>${formatCurrency(item.sss_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_ps_lwop ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_gs_lwop ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_plreg_refund ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_mpl_refund ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_emergency_refund ?? "0.00")}</td>
-        <td>${formatCurrency(item.gsis_consoloan_refund ?? "0.00")}</td>
-        <td>${formatCurrency(item.subsistence_deduction_leave ?? "0.00")}</td>
-        <td>${formatCurrency(item.resigned_adjustment ?? "0.00")}</td>
-        <td>${formatCurrency(item.deductions ?? "0.00")}</td>
-        <td class="text-danger">${formatCurrency(item.net_pay)}</td>
-        <td>${formatCurrency((item.net_pay/2) ?? "0.00")}</td>
-        <td>${formatCurrency((item.net_pay/2) ?? "0.00")}</td>
-    </tr>`;
-                        $tbody.append(row);
-                    });
-
+                    $(settings.modalId).modal('show');
+                    settings.populate(tbody, data);
                 })
                 .catch(error => {
-                    console.error("Error fetching payroll:", error);
-                    $('#payroll_employee_list').html(`<tr><td colspan="55" class="text-center text-danger">An error occurred while loading data.</td></tr>`);
+                    console.error(error);
+                    $(settings.tbodyId).html(`<tr><td colspan="${settings.colspan}" class="text-center text-danger">An error occurred while loading data.</td></tr>`);
                 });
         }
 
-        function managePayroll(id) {
+
+        function assignEmployee(id) {
             payroll_id = id;
             $("#append_employee_modal").modal("show");
+        }
+
+        function populateRegularRows(tbody, data) {
+            data.forEach((item, index) => {
+                const row = `
+                        <tr>
+                            <td class="sticky-col sticky-1">${index + 1}</td>
+                            <td class="sticky-col sticky-2">${item.lname}</td>
+                            <td class="sticky-col sticky-3">${item.fname}</td>
+                            <td class="sticky-col sticky-4">${item.mname ?? ''}</td>
+                            <td class="sticky-col sticky-5">${item.suffix ?? ''}</td>
+                            <td class="sticky-col sticky-6">${item.mi ?? ''}</td>
+                            <td class="sticky-col sticky-7">${item.stat ?? ''}</td>
+                            <td>${item.division}</td>
+                            <td>${item.section ?? ''}</td>
+                            <td>${item.zz ?? ''}</td>
+                            <td>${item.sg ?? ''}</td>
+                            <td>${item.step ?? ''}</td>
+                            <td>${item.sg_b ?? ''}</td>
+                            <td>${formatCurrency(item.basic_salary)}</td>
+                            <td>${formatCurrency(item.salary_adjustment)}</td>
+                            <td>${formatCurrency(item.late_absent)}</td>
+                            <td>${formatCurrency(item.final_basic_pay ?? "0.00")}</td>
+                            <td>${formatCurrency(item.pera)}</td>
+                            <td>${formatCurrency(item.rata)}</td>
+                            <td>${formatCurrency(item.subsistence)}</td>
+                            <td>${formatCurrency(item.laundry)}</td>
+                            <td>${formatCurrency(item.hazard)}</td>
+                            <td>${formatCurrency(item.longevity)}</td>
+                            <td>${formatCurrency(item.quarters_allowance ?? "0.00")}</td>
+                            <td>${formatCurrency(item.cellphone_allowance)}</td>
+                            <td class="text-danger">${formatCurrency(item.gross_pay)}</td>
+                            <td>${formatCurrency(item.withholding_tax ?? "0.00")}</td>
+                            <td>${formatCurrency(item.withholding_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_ps)}</td>
+                            <td>${formatCurrency(item.gsis_gs)}</td>
+                            <td>${formatCurrency(item.gsis_ec)}</td>
+                            <td>${formatCurrency(item.hdmf)}</td>
+                            <td>${formatCurrency(item.phic)}</td>
+                            <td>${formatCurrency(item.pagibig_cal)}</td>
+                            <td>${formatCurrency(item.pagibig_mpl)}</td>
+                            <td>${formatCurrency(item.pagibig_mp2)}</td>
+                            <td>${formatCurrency(item.pagibig_mp2_2nd)}</td>
+                            <td>${formatCurrency(item.pagibig_mp2_3rd)}</td>
+                            <td>${formatCurrency(item.gsis_consoloan)}</td>
+                            <td>${formatCurrency(item.gsis_emergency_loan)}</td>
+                            <td>${formatCurrency(item.gsis_educational_loan)}</td>
+                            <td>${formatCurrency(item.gsis_policy_loan)}</td>
+                            <td>${formatCurrency(item.gsis_opt_life_loan)}</td>
+                            <td>${formatCurrency(item.gsis_gfal)}</td>
+                            <td>${formatCurrency(item.gsis_mpl)}</td>
+                            <td>${formatCurrency(item.gsis_cpl)}</td>
+                            <td>${formatCurrency(item.gsis_mpl_lite)}</td>
+                            <td>${formatCurrency(item.cfi_coop)}</td>
+                            <td>${formatCurrency(item.first_valley_bank)}</td>
+                            <td>${formatCurrency(item.tdhea)}</td>
+                            <td>${formatCurrency(item.dbp_loan)}</td>
+                            <td>${formatCurrency(item.ucpb_loan)}</td>
+                            <td>${formatCurrency(item.meds_payable)}</td>
+                            <td>${formatCurrency(item.phic_contri_adj ?? "0.00")}</td>
+                            <td>${formatCurrency(item.phic_refund_eo ?? "0.00")}</td>
+                            <td>${formatCurrency(item.hazard_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.pera_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.subsistence_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.laundry_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.sss_deduction)}</td>
+                            <td>${formatCurrency(item.sss_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_ps_lwop ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_gs_lwop ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_plreg_refund ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_mpl_refund ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_emergency_refund ?? "0.00")}</td>
+                            <td>${formatCurrency(item.gsis_consoloan_refund ?? "0.00")}</td>
+                            <td>${formatCurrency(item.subsistence_deduction_leave ?? "0.00")}</td>
+                            <td>${formatCurrency(item.resigned_adjustment ?? "0.00")}</td>
+                            <td>${formatCurrency(item.deductions ?? "0.00")}</td>
+                            <td class="text-danger">${formatCurrency(item.net_pay)}</td>
+                            <td>${formatCurrency(item.first_half_10th ?? "0.00")}</td>
+                            <td>${formatCurrency(item.second_half_25th ?? "0.00")}</td>
+                        </tr>`;
+                tbody.append(row);
+            });
+        }
+
+        function populateJobOrderRows(tbody, data) {
+            console.log(data);
+            data.forEach((item, index) => {
+                const row = `
+                        <tr>
+                            <td class="sticky-col sticky-1">${index + 1}</td>
+                            <td class="sticky-col sticky-2">${item.lname}</td>
+                            <td class="sticky-col sticky-3">${item.fname}</td>
+                            <td class="sticky-col sticky-4">${item.mname ?? ''}</td>
+                            <td class="sticky-col sticky-5">${item.suffix ?? ''}</td>
+                            <td>${item.designation}</td>
+                            <td>${formatCurrency(item.basic_salary)}</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>`;
+                tbody.append(row);
+            });
         }
 
         function getPayroll() {
@@ -513,12 +568,10 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu position-absolute" style="z-index: 9999; right: 0; top: 100%;">
-                                        <li><a class="dropdown-item" href="#" onclick="editPayroll(${item.id})">Edit</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="managePayroll(${item.id})">Assign Employee</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="viewPayroll(${item.id})">View</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="downloadPayroll(${item.id})">Download</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="assignEmployee(${item.id})">Assign Employee</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="viewPayroll(${item.id},'${item.payroll_type}')">View</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deletePayroll(${item.id})">Delete</a></li>
+                                        <li class="d-none"><a class="dropdown-item text-danger" href="#" onclick="deletePayroll(${item.id})">Delete</a></li>
                                     </ul>
                                 </div>
                             </td>
@@ -530,6 +583,5 @@
                     console.error("Error fetching payroll:", error);
                 });
         }
-
     </script>
 @stop
