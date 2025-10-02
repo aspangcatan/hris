@@ -52,7 +52,6 @@
             padding-bottom: 3px;
         }
 
-
         table.logs td:first-child {
             border-left: none;
         }
@@ -64,22 +63,19 @@
         table.logs tr.header {
             font-weight: bold;
         }
-
     </style>
 </head>
 <body>
 @foreach($employees as $employee)
     <table>
         <tr>
-            <!-- First Column -->
+            <!-- Left column -->
             <td style="width: 46%; vertical-align: top; padding: 0;  border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
                         <tr>
-                            <td style="width: 10%">
-                                <img src="{{ url('img/logo.png') }}" width="75"/>
-                            </td>
+                            <td style="width: 10%"><img src="{{ url('img/logo.png') }}" width="75"/></td>
                             <td style="width: 13%"></td>
                             <td style="vertical-align: top;width: 50%">
                                 <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
@@ -89,6 +85,7 @@
                             <td></td>
                         </tr>
                     </table>
+
                     <div style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
                     <div style="margin-top: 5px;font-size: 14px">
@@ -100,6 +97,7 @@
                         <span style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
+
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
@@ -115,39 +113,19 @@
                         <td style="width: 12%;font-size: 12px">Hours</td>
                         <td style="width: 12%;font-size: 12px">Minutes</td>
                     </tr>
+
                     @foreach($employee['dtrs'] as $dtr)
-                        @php
-                            $time_in_parts = explode("-", $dtr['date_timein']);
-                            $time_out_parts = explode("-", $dtr['date_timeout']);
-                        @endphp
                         <tr>
                             <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                            <td style="font-size: 11px">
-                                {{ $time_in_parts[0] }}
-                            </td>
-                            <td style="font-size: 11px">
-                                @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
-                                    {{ $time_in_parts[0] }}
-                                @endif
-                            </td>
-                            <td style="font-size: 11px">
-                                @if(!is_numeric(substr($dtr['date_timeout'], 0, 1)))
-                                    {{ $time_out_parts[0] }}
-                                @endif
-                            </td>
-                            <td style="font-size: 11px">
-                                {{ $time_out_parts[0] }}
-                            </td>
-                            @if(count($time_in_parts) > 1)
-                                <td colspan="2" style="font-size: 12px;font-weight: bold">
-                                    {{ $time_in_parts[1] }}
-                                </td>
-                            @else
-                                <td style="font-size: 12px"></td>
-                                <td style="font-size: 12px"></td>
-                            @endif
+                            <td style="font-size: 11px">{{ $dtr['am_arrival'] ?? '' }}</td>
+                            <td style="font-size: 11px">{{ $dtr['am_departure'] ?? '' }}</td>
+                            <td style="font-size: 11px">{{ $dtr['pm_arrival'] ?? '' }}</td>
+                            <td style="font-size: 11px">{{ $dtr['pm_departure'] ?? '' }}</td>
+                            <td style="font-size: 12px"></td>
+                            <td style="font-size: 12px"></td>
                         </tr>
                     @endforeach
+
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
@@ -155,6 +133,7 @@
                         <td></td>
                     </tr>
                 </table>
+
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
@@ -169,12 +148,10 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
-                            </td>
+                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours</td>
                             <td></td>
                         </tr>
-
-                        <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
+                        <tr style="border-top: 20px solid transparent;">
                             <td></td>
                             <td style="border-bottom: 1px solid black;text-align: center">
                                 {{ $employee['in_charged'] }}
@@ -187,18 +164,18 @@
                             <td></td>
                         </tr>
                     </table>
-
                 </div>
             </td>
+
             <td style="width: 8%"></td>
+
+            <!-- Right column (copy of left) -->
             <td style="width: 46%; vertical-align: top; padding: 0;  border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
                         <tr>
-                            <td style="width: 10%">
-                                <img src="{{ url('img/logo.png') }}" width="75"/>
-                            </td>
+                            <td style="width: 10%"><img src="{{ url('img/logo.png') }}" width="75"/></td>
                             <td style="width: 13%"></td>
                             <td style="vertical-align: top;width: 50%">
                                 <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
@@ -208,6 +185,7 @@
                             <td></td>
                         </tr>
                     </table>
+
                     <div style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
                     <div style="margin-top: 5px;font-size: 14px">
@@ -219,6 +197,7 @@
                         <span style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
+
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
@@ -234,39 +213,19 @@
                         <td style="width: 12%;font-size: 12px">Hours</td>
                         <td style="width: 12%;font-size: 12px">Minutes</td>
                     </tr>
+
                     @foreach($employee['dtrs'] as $dtr)
-                        @php
-                            $time_in_parts = explode("-", $dtr['date_timein']);
-                            $time_out_parts = explode("-", $dtr['date_timeout']);
-                        @endphp
                         <tr>
                             <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                            <td style="font-size: 11px">
-                                {{ $time_in_parts[0] }}
-                            </td>
-                            <td style="font-size: 11px">
-                                @if(!is_numeric(substr($dtr['date_timein'], 0, 1)))
-                                    {{ $time_in_parts[0] }}
-                                @endif
-                            </td>
-                            <td style="font-size: 11px">
-                                @if(!is_numeric(substr($dtr['date_timeout'], 0, 1)))
-                                    {{ $time_out_parts[0] }}
-                                @endif
-                            </td>
-                            <td style="font-size: 11px">
-                                {{ $time_out_parts[0] }}
-                            </td>
-                            @if(count($time_in_parts) > 1)
-                                <td colspan="2" style="font-size: 12px;font-weight: bold">
-                                    {{ $time_in_parts[1] }}
-                                </td>
-                            @else
-                                <td style="font-size: 12px"></td>
-                                <td style="font-size: 12px"></td>
-                            @endif
+                            <td style="font-size: 11px">{{ $dtr['am_arrival'] ?? '' }}</td>
+                            <td style="font-size: 11px">{{ $dtr['am_departure'] ?? '' }}</td>
+                            <td style="font-size: 11px">{{ $dtr['pm_arrival'] ?? '' }}</td>
+                            <td style="font-size: 11px">{{ $dtr['pm_departure'] ?? '' }}</td>
+                            <td style="font-size: 12px"></td>
+                            <td style="font-size: 12px"></td>
                         </tr>
                     @endforeach
+
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
@@ -274,6 +233,7 @@
                         <td></td>
                     </tr>
                 </table>
+
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
@@ -288,12 +248,10 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
-                            </td>
+                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours</td>
                             <td></td>
                         </tr>
-
-                        <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
+                        <tr style="border-top: 20px solid transparent;">
                             <td></td>
                             <td style="border-bottom: 1px solid black;text-align: center">
                                 {{ $employee['in_charged'] }}
@@ -306,7 +264,6 @@
                             <td></td>
                         </tr>
                     </table>
-
                 </div>
             </td>
         </tr>
@@ -314,4 +271,3 @@
 @endforeach
 </body>
 </html>
-

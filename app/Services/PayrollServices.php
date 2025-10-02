@@ -7,7 +7,12 @@ use Illuminate\Support\Facades\DB;
 
 class PayrollServices
 {
-    public function export($payrollEmployees, $exportPath)
+    public function getPayroll($id)
+    {
+        return DB::table('hris.payroll')->where('id', $id)->first();
+    }
+
+    public function exportRegularPayroll($payrollEmployees, $exportPath)
     {
         // Load template
         $templatePath = storage_path('app/templates/payroll_template.xlsx');
@@ -121,6 +126,62 @@ class PayrollServices
         $writer->save($exportPath);
     }
 
+    public function exportJobOrderPayroll($payrollEmployees, $exportPath)
+    {
+        // Load template
+        $templatePath = storage_path('app/templates/jo_payroll_template.xlsx');
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Define column mapping according to your new desired order
+        $columns = [
+            'Serial No.' => null,
+            'LAST NAME' => 'lname',
+            'FIRST NAME' => 'fname',
+            'MIDDLE INITIAL' => 'mi',
+            'POSITION' => 'designation',
+            'RATE/DAY' => 'rate_per_day',
+            '# OF DAYS WORK' => 'days_worked',
+            'GROSS AMOUNT' => 'gross_amount',
+            'OVERTIME MINUTES' => 'overtime_minutes',
+            'AMOUNT (OT)' => 'overtime_amount',
+            'TARDINESS MINUTES' => 'tardiness_minutes',
+            'AMOUNT (Tardiness)' => 'tardiness_amount',
+            'SALARY ADJUSTMENT' => 'salary_adjustment',
+            'GROSS AMOUNT EARNED' => 'gross_amount_earned',
+            'SSS DEDUCTION' => 'sss_deduction',
+            'INCOME TAX (3%)' => 'income_tax',
+            '5% TAX DEDUCTION FROM PREVIOUS PAYROLL' => 'prev_payroll_tax_deduction',
+            'PERCENTAGE TAX (3%)' => 'percentage_tax',
+            'PROFESSIONAL FEE (10%)' => 'professional_fee',
+            'TOTAL DEDUCTION' => 'total_deduction',
+            'NET AMOUNT DUE' => 'net_amount_due',
+        ];
+
+        $row = 3; // Start from row 2 (headers in row 1)
+
+        foreach ($payrollEmployees as $index => $item) {
+            $colIndex = 0;
+            foreach ($columns as $header => $field) {
+                $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1) . $row;
+
+                if ($field === null) {
+                    // Auto number column
+                    $sheet->setCellValue($cell, $index + 1);
+                } else {
+                    $sheet->setCellValue($cell, $item->$field ?? 0);
+                }
+
+                $colIndex++;
+            }
+
+            $row++;
+        }
+
+        // Save to export path
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($exportPath);
+    }
 
 
     public function getPayrollEmployee($payroll_id)

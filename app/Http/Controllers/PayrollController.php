@@ -13,9 +13,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class PayrollController extends Controller
 {
-
     protected $dtrServices, $payrollServices;
-
 
     public function __construct(DTRServices $dtrServices, PayrollServices $payrollServices)
     {
@@ -46,7 +44,6 @@ class PayrollController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-
 
     public function savePayrollSettings(Request $request)
     {
@@ -168,7 +165,6 @@ class PayrollController extends Controller
         }
     }
 
-
     public function savePayroll(Request $request)
     {
         try {
@@ -235,7 +231,6 @@ class PayrollController extends Controller
         }
     }
 
-
     public function getPayrollEmployee(Request $request)
     {
         try {
@@ -249,14 +244,11 @@ class PayrollController extends Controller
     {
         // Get employees for payroll
         $employees = $this->payrollServices->getPayrollEmployee($payroll_id);
-
         if($employees->isEmpty()){
             return back()->with('error', 'No employees found for this payroll.');
         }
-
         $exportPath = storage_path('app/exports/payroll.xlsx');
-        $this->payrollServices->export($employees, $exportPath);
-
+        $this->payrollServices->exportRegularPayroll($employees, $exportPath);
         return response()->download($exportPath)->deleteFileAfterSend(true);
     }
 }

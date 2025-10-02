@@ -414,13 +414,14 @@ class DTRController extends Controller
     public function printDTR(Request $request)
     {
         try {
-            $month = $request->month;
-            $year = $request->year;
+            $month = intval($request->month);
+            $year = intval($request->year);
             $cutoff = $request->cutoff ?? 'full';
             $userid = $request->userid ?? Auth::id();
 
             $startDay = 1;
-            $endDay = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+            $endDay = $daysInMonth;
             if ($cutoff === 'first') $endDay = 15;
             elseif ($cutoff === 'second') $startDay = 16;
 
@@ -430,7 +431,7 @@ class DTRController extends Controller
                 ->get();
 
             $dtrData = [];
-            $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
+            $formattedDate = Carbon::createFromDate($year, $month, 1)->format('F Y');
 
             if (self::checkIfDivisionHead($userid)) {
                 $division_id = 1;
@@ -460,15 +461,18 @@ class DTRController extends Controller
                 ->toArray();
 
             foreach ($employees as $employee) {
-                // DTR logs for this user + month
+                // fetch logs for the month PLUS one extra day at the end (helps with night-shift OUTs falling next day)
+                $monthStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
+                $monthEnd = Carbon::createFromDate($year, $month, $daysInMonth)->endOfDay();
+                $logEnd = $monthEnd->copy()->addDay()->endOfDay(); // include next day
+
                 $logs = DB::table('dtr_logs')
-                    ->whereMonth('created_at', $month)
-                    ->whereYear('created_at', $year)
-                    ->where('userid', '=', $employee->id)
+                    ->where('userid', $employee->id)
+                    ->whereBetween('created_at', [$monthStart->toDateTimeString(), $logEnd->toDateTimeString()])
                     ->orderBy('created_at', 'ASC')
                     ->get();
 
-                // Leaves for this user in the month
+                // Leaves for this user in the month (same as your original)
                 $leavesRaw = DB::table('hris.leave_applications as la')
                     ->join('hris.leave_types as lt', 'la.leave_id', '=', 'lt.id')
                     ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
@@ -483,7 +487,7 @@ class DTRController extends Controller
                     $leaves[Carbon::parse($l->date_applied)->toDateString()] = $l->code;
                 }
 
-                // Hospital Orders for this user
+                // Hospital Orders for this user (same as your original)
                 $hosRaw = DB::table('hris.hospital_orders as ho')
                     ->join('hris.hospital_order_employees as hoe', 'ho.id', '=', 'hoe.ho_id')
                     ->where('hoe.userid', $employee->id)
@@ -506,18 +510,23 @@ class DTRController extends Controller
                     }
                 }
 
-                // Prepare days
-                $days = collect(range(1, Carbon::createFromDate($year, $month, 1)->daysInMonth))
+                // Prepare days (1..daysInMonth) and compute am/pm arrival/departure
+                $days = collect(range(1, $daysInMonth))
                     ->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders) {
-                        $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
-                        $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
+                        $currentDayDate = Carbon::createFromDate($year, $month, $day);
+                        $currentDay = $currentDayDate->toDateString();
+                        $dayName = $currentDayDate->format('l');
                         $isHoliday = in_array($currentDay, $holidays, true);
 
+                        // prepare default slots
                         $data = [
                             'day' => $day,
-                            'day_name' => $dayName,
-                            'date_timein' => '',
-                            'date_timeout' => '',
+                            'date' => $currentDay,
+                            'am_arrival' => '',
+                            'am_departure' => '',
+                            'pm_arrival' => '',
+                            'pm_departure' => '',
+                            'remarks' => '',
                         ];
 
                         if ($day >= $startDay && $day <= $endDay) {
@@ -527,26 +536,82 @@ class DTRController extends Controller
                             });
 
                             if ($dayLogs->isNotEmpty()) {
-                                $timeInLog = $dayLogs->firstWhere('status', 'IN');
-                                $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+                                // IN logs (earliest per half)
+                                $inLogs = $dayLogs->where('status', 'IN')->values();
+                                $outLogs = $dayLogs->where('status', 'OUT')->values();
 
-                                $data['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : $dayName;
-                                $data['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : $dayName;
+                                // AM arrival: earliest IN with hour < 12
+                                foreach ($inLogs as $l) {
+                                    $t = Carbon::parse($l->created_at);
+                                    if ((int)$t->format('H') < 12) {
+                                        $data['am_arrival'] = $t->format('H:i');
+                                        break;
+                                    }
+                                }
+
+                                // PM arrival: earliest IN with hour >= 12
+                                foreach ($inLogs as $l) {
+                                    $t = Carbon::parse($l->created_at);
+                                    if ((int)$t->format('H') >= 12) {
+                                        $data['pm_arrival'] = $t->format('H:i');
+                                        break;
+                                    }
+                                }
+
+                                // AM departure: latest OUT with hour < 12
+                                foreach ($outLogs->sortByDesc('created_at') as $l) {
+                                    $t = Carbon::parse($l->created_at);
+                                    if ((int)$t->format('H') < 12) {
+                                        $data['am_departure'] = $t->format('H:i');
+                                        break;
+                                    }
+                                }
+
+                                // PM departure: latest OUT with hour >= 12
+                                foreach ($outLogs->sortByDesc('created_at') as $l) {
+                                    $t = Carbon::parse($l->created_at);
+                                    if ((int)$t->format('H') >= 12) {
+                                        $data['pm_departure'] = $t->format('H:i');
+                                        break;
+                                    }
+                                }
+
+                                // NOTE: Night-shift scenario (IN late evening & OUT next morning) will show:
+                                // - pm_arrival on the IN day's row (because IN hour >= 12)
+                                // - am_departure on the OUT next-day row (because OUT hour < 12)
+                                // we fetch logs for next day in the overall logs window above so next day will pick that OUT.
                             } else {
+                                // no logs → show leave / hospital order / holiday / day name (original behavior)
                                 if (!empty($leaves[$currentDay])) {
-                                    $code = $leaves[$currentDay];
-                                    $data['date_timein'] = $dayName . '-' . $code;
-                                    $data['date_timeout'] = $dayName . '-' . $code;
+                                    $r = $dayName . '-' . $leaves[$currentDay];
+                                    $data['remarks'] = $r;
+                                    // set remark across columns (keeps template look similar to original)
+                                    $data['am_arrival'] = $r;
+                                    $data['am_departure'] = $r;
+                                    $data['pm_arrival'] = $r;
+                                    $data['pm_departure'] = $r;
                                 } elseif (!empty($hospitalOrders[$currentDay])) {
-                                    $code = $hospitalOrders[$currentDay];
-                                    $data['date_timein'] = $dayName . '-' . $code;
-                                    $data['date_timeout'] = $dayName . '-' . $code;
+                                    $r = $dayName . '-' . $hospitalOrders[$currentDay];
+                                    $data['remarks'] = $r;
+                                    $data['am_arrival'] = $r;
+                                    $data['am_departure'] = $r;
+                                    $data['pm_arrival'] = $r;
+                                    $data['pm_departure'] = $r;
                                 } elseif ($isHoliday) {
-                                    $data['date_timein'] = $dayName . '-HOLIDAY';
-                                    $data['date_timeout'] = $dayName . '-HOLIDAY';
+                                    $r = $dayName . '-HOLIDAY';
+                                    $data['remarks'] = $r;
+                                    $data['am_arrival'] = $r;
+                                    $data['am_departure'] = $r;
+                                    $data['pm_arrival'] = $r;
+                                    $data['pm_departure'] = $r;
                                 } else {
-                                    $data['date_timein'] = $dayName;
-                                    $data['date_timeout'] = $dayName;
+                                    // no logs and no special remark — show day name (original behavior)
+                                    $r = $dayName;
+                                    $data['remarks'] = $r;
+                                    $data['am_arrival'] = $r;
+                                    $data['am_departure'] = $r;
+                                    $data['pm_arrival'] = $r;
+                                    $data['pm_departure'] = $r;
                                 }
                             }
                         }

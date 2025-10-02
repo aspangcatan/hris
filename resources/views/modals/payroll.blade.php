@@ -511,7 +511,9 @@
             <!-- Footer -->
             <div class="modal-footer border-top">
                 <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                <button class="btn btn-outline-success">Export</button>
+                <button class="btn btn-outline-primary" id="btn_export_jo">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
+                </button>
             </div>
 
         </div>
