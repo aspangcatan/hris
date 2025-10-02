@@ -60,9 +60,21 @@
 
         table.logs tr.header {
             font-weight: bold;
-        } </style>
+        }
+
+        .page-divider {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 50%; /* center of the page */
+            width: 0;
+            border-left: 2px dashed black;
+        }
+    </style>
 </head>
-<body> @foreach($employees as $employee)
+<body>
+<div class="page-divider"></div>
+@foreach($employees as $employee)
     <table>
         <tr> <!-- First Column -->
             <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
@@ -101,17 +113,66 @@
                         <td style="font-size: 12px">Departure</td>
                         <td style="width: 12%;font-size: 12px">Hours</td>
                         <td style="width: 12%;font-size: 12px">Minutes</td>
-                    </tr> @foreach($employee['dtrs'] as $dtr) @php $time_in_parts = explode("-", $dtr['date_timein']); $time_out_parts = explode("-", $dtr['date_timeout']); @endphp
-                    <tr>
-                        <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                        <td style="font-size: 11px"> {{ $time_in_parts[0] }} </td>
-                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timein'], 0, 1))) {{ $time_in_parts[0] }} @endif </td>
-                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timeout'], 0, 1))) {{ $time_out_parts[0] }} @endif </td>
-                        <td style="font-size: 11px"> {{ $time_out_parts[0] }} </td> @if(count($time_in_parts) > 1)
-                            <td colspan="2"
-                                style="font-size: 12px;font-weight: bold"> {{ $time_in_parts[1] }} </td> @else
-                            <td style="font-size: 12px"></td>
-                            <td style="font-size: 12px"></td> @endif </tr> @endforeach
+                    </tr>
+                    @foreach($employee['dtrs'] as $dtr)
+                        @php
+                            // Split the datetime into parts
+                            $time_in_parts = explode("-", $dtr['date_timein']);
+                            $time_out_parts = explode("-", $dtr['date_timeout']);
+                        @endphp
+                        <tr>
+                            <!-- Day # -->
+                            <td style="font-weight: bold">
+                                {{ $dtr['day'] }}
+                            </td>
+
+                            <!-- AM Arrival -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_in_period'] === 'Morning')
+                                    {{ $dtr['date_timein'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- AM Departure -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_out_period'] === 'Morning')
+                                    {{ $dtr['date_timeout'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- PM Arrival -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_in_period'] === 'Afternoon')
+                                    {{ $dtr['date_timein'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- PM Departure -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_out_period'] === 'Afternoon')
+                                    {{ $dtr['date_timeout'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- Undertime Hours -->
+                            <td style="font-size: 11px">
+                                {{ $dtr['undertime_hours'] ?? '' }}
+                            </td>
+
+                            <!-- Undertime Minutes -->
+                            <td style="font-size: 11px">
+                                {{ $dtr['undertime_minutes'] ?? '' }}
+                            </td>
+                        </tr>
+                    @endforeach
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
@@ -148,10 +209,7 @@
                     </table>
                 </div>
             </td>
-
-
-
-            <td style="width: 8%"></td>
+            <td style="width: 8%;"></td>
             <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
@@ -188,17 +246,66 @@
                         <td style="font-size: 12px">Departure</td>
                         <td style="width: 12%;font-size: 12px">Hours</td>
                         <td style="width: 12%;font-size: 12px">Minutes</td>
-                    </tr> @foreach($employee['dtrs'] as $dtr) @php $time_in_parts = explode("-", $dtr['date_timein']); $time_out_parts = explode("-", $dtr['date_timeout']); @endphp
-                    <tr>
-                        <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                        <td style="font-size: 11px"> {{ $time_in_parts[0] }} </td>
-                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timein'], 0, 1))) {{ $time_in_parts[0] }} @endif </td>
-                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timeout'], 0, 1))) {{ $time_out_parts[0] }} @endif </td>
-                        <td style="font-size: 11px"> {{ $time_out_parts[0] }} </td> @if(count($time_in_parts) > 1)
-                            <td colspan="2"
-                                style="font-size: 12px;font-weight: bold"> {{ $time_in_parts[1] }} </td> @else
-                            <td style="font-size: 12px"></td>
-                            <td style="font-size: 12px"></td> @endif </tr> @endforeach
+                    </tr>
+                    @foreach($employee['dtrs'] as $dtr)
+                        @php
+                            // Split the datetime into parts
+                            $time_in_parts = explode("-", $dtr['date_timein']);
+                            $time_out_parts = explode("-", $dtr['date_timeout']);
+                        @endphp
+                        <tr>
+                            <!-- Day # -->
+                            <td style="font-weight: bold">
+                                {{ $dtr['day'] }}
+                            </td>
+
+                            <!-- AM Arrival -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_in_period'] === 'Morning')
+                                    {{ $dtr['date_timein'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- AM Departure -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_out_period'] === 'Morning')
+                                    {{ $dtr['date_timeout'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- PM Arrival -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_in_period'] === 'Afternoon')
+                                    {{ $dtr['date_timein'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- PM Departure -->
+                            <td style="font-size: 11px">
+                                @if($dtr['time_out_period'] === 'Afternoon')
+                                    {{ $dtr['date_timeout'] }}
+                                @elseif($dtr['isEmpty'])
+                                    {{ $dtr['day_name'] }}
+                                @endif
+                            </td>
+
+                            <!-- Undertime Hours -->
+                            <td style="font-size: 11px">
+                                {{ $dtr['undertime_hours'] ?? '' }}
+                            </td>
+
+                            <!-- Undertime Minutes -->
+                            <td style="font-size: 11px">
+                                {{ $dtr['undertime_minutes'] ?? '' }}
+                            </td>
+                        </tr>
+                    @endforeach
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
