@@ -1,9 +1,7 @@
 <html>
-<head>
-    <title>DTR</title>
+<head><title>DTR</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <style>
-        html, body {
+    <style> html, body {
             font-family: Arial, sans-serif;
             font-size: 11px !important;
             margin: 0;
@@ -62,15 +60,12 @@
 
         table.logs tr.header {
             font-weight: bold;
-        }
-    </style>
+        } </style>
 </head>
-<body>
-@foreach($employees as $employee)
+<body> @foreach($employees as $employee)
     <table>
-        <tr>
-            <!-- Left column -->
-            <td style="width: 46%; vertical-align: top; padding: 0;  border: 1px solid black;">
+        <tr> <!-- First Column -->
+            <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
@@ -85,19 +80,13 @@
                             <td></td>
                         </tr>
                     </table>
-
                     <div style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
-                    <div style="margin-top: 5px;font-size: 14px">
-                        <span>Official hours of arrival and</span>
-                        <span style="margin-left: 25px">Reg. days _____ AM _____ PM</span>
-                    </div>
-                    <div style="font-size: 14px">
-                        <span>departure</span>
-                        <span style="margin-left: 132px">Saturdays _______________</span>
+                    <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
+                            style="margin-left: 25px">Reg. days _____ AM _____ PM</span></div>
+                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
-
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
@@ -112,20 +101,17 @@
                         <td style="font-size: 12px">Departure</td>
                         <td style="width: 12%;font-size: 12px">Hours</td>
                         <td style="width: 12%;font-size: 12px">Minutes</td>
-                    </tr>
-
-                    @foreach($employee['dtrs'] as $dtr)
-                        <tr>
-                            <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                            <td style="font-size: 11px">{{ $dtr['am_arrival'] ?? '' }}</td>
-                            <td style="font-size: 11px">{{ $dtr['am_departure'] ?? '' }}</td>
-                            <td style="font-size: 11px">{{ $dtr['pm_arrival'] ?? '' }}</td>
-                            <td style="font-size: 11px">{{ $dtr['pm_departure'] ?? '' }}</td>
+                    </tr> @foreach($employee['dtrs'] as $dtr) @php $time_in_parts = explode("-", $dtr['date_timein']); $time_out_parts = explode("-", $dtr['date_timeout']); @endphp
+                    <tr>
+                        <td style="font-weight: bold">{{ $dtr['day'] }}</td>
+                        <td style="font-size: 11px"> {{ $time_in_parts[0] }} </td>
+                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timein'], 0, 1))) {{ $time_in_parts[0] }} @endif </td>
+                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timeout'], 0, 1))) {{ $time_out_parts[0] }} @endif </td>
+                        <td style="font-size: 11px"> {{ $time_out_parts[0] }} </td> @if(count($time_in_parts) > 1)
+                            <td colspan="2"
+                                style="font-size: 12px;font-weight: bold"> {{ $time_in_parts[1] }} </td> @else
                             <td style="font-size: 12px"></td>
-                            <td style="font-size: 12px"></td>
-                        </tr>
-                    @endforeach
-
+                            <td style="font-size: 12px"></td> @endif </tr> @endforeach
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
@@ -133,7 +119,6 @@
                         <td></td>
                     </tr>
                 </table>
-
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
@@ -141,21 +126,18 @@
                     <table style="margin-top: 20px">
                         <tr>
                             <td style="width: 18%"></td>
-                            <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center">
-                                {{ $employee['name'] }}
-                            </td>
+                            <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center"> {{ $employee['name'] }} </td>
                             <td style="width: 18%"></td>
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours</td>
+                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            </td>
                             <td></td>
                         </tr>
-                        <tr style="border-top: 20px solid transparent;">
+                        <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
                             <td></td>
-                            <td style="border-bottom: 1px solid black;text-align: center">
-                                {{ $employee['in_charged'] }}
-                            </td>
+                            <td style="border-bottom: 1px solid black;text-align: center"> {{ $employee['in_charged'] }} </td>
                             <td></td>
                         </tr>
                         <tr>
@@ -167,10 +149,10 @@
                 </div>
             </td>
 
-            <td style="width: 8%"></td>
 
-            <!-- Right column (copy of left) -->
-            <td style="width: 46%; vertical-align: top; padding: 0;  border: 1px solid black;">
+
+            <td style="width: 8%"></td>
+            <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
@@ -185,19 +167,13 @@
                             <td></td>
                         </tr>
                     </table>
-
                     <div style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
-                    <div style="margin-top: 5px;font-size: 14px">
-                        <span>Official hours of arrival and</span>
-                        <span style="margin-left: 25px">Reg. days _____ AM _____ PM</span>
-                    </div>
-                    <div style="font-size: 14px">
-                        <span>departure</span>
-                        <span style="margin-left: 132px">Saturdays _______________</span>
+                    <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
+                            style="margin-left: 25px">Reg. days _____ AM _____ PM</span></div>
+                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
-
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
@@ -212,20 +188,17 @@
                         <td style="font-size: 12px">Departure</td>
                         <td style="width: 12%;font-size: 12px">Hours</td>
                         <td style="width: 12%;font-size: 12px">Minutes</td>
-                    </tr>
-
-                    @foreach($employee['dtrs'] as $dtr)
-                        <tr>
-                            <td style="font-weight: bold">{{ $dtr['day'] }}</td>
-                            <td style="font-size: 11px">{{ $dtr['am_arrival'] ?? '' }}</td>
-                            <td style="font-size: 11px">{{ $dtr['am_departure'] ?? '' }}</td>
-                            <td style="font-size: 11px">{{ $dtr['pm_arrival'] ?? '' }}</td>
-                            <td style="font-size: 11px">{{ $dtr['pm_departure'] ?? '' }}</td>
+                    </tr> @foreach($employee['dtrs'] as $dtr) @php $time_in_parts = explode("-", $dtr['date_timein']); $time_out_parts = explode("-", $dtr['date_timeout']); @endphp
+                    <tr>
+                        <td style="font-weight: bold">{{ $dtr['day'] }}</td>
+                        <td style="font-size: 11px"> {{ $time_in_parts[0] }} </td>
+                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timein'], 0, 1))) {{ $time_in_parts[0] }} @endif </td>
+                        <td style="font-size: 11px"> @if(!is_numeric(substr($dtr['date_timeout'], 0, 1))) {{ $time_out_parts[0] }} @endif </td>
+                        <td style="font-size: 11px"> {{ $time_out_parts[0] }} </td> @if(count($time_in_parts) > 1)
+                            <td colspan="2"
+                                style="font-size: 12px;font-weight: bold"> {{ $time_in_parts[1] }} </td> @else
                             <td style="font-size: 12px"></td>
-                            <td style="font-size: 12px"></td>
-                        </tr>
-                    @endforeach
-
+                            <td style="font-size: 12px"></td> @endif </tr> @endforeach
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
@@ -233,7 +206,6 @@
                         <td></td>
                     </tr>
                 </table>
-
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
@@ -241,21 +213,18 @@
                     <table style="margin-top: 20px">
                         <tr>
                             <td style="width: 18%"></td>
-                            <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center">
-                                {{ $employee['name'] }}
-                            </td>
+                            <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center"> {{ $employee['name'] }} </td>
                             <td style="width: 18%"></td>
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours</td>
+                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            </td>
                             <td></td>
                         </tr>
-                        <tr style="border-top: 20px solid transparent;">
+                        <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
                             <td></td>
-                            <td style="border-bottom: 1px solid black;text-align: center">
-                                {{ $employee['in_charged'] }}
-                            </td>
+                            <td style="border-bottom: 1px solid black;text-align: center"> {{ $employee['in_charged'] }} </td>
                             <td></td>
                         </tr>
                         <tr>
@@ -267,7 +236,5 @@
                 </div>
             </td>
         </tr>
-    </table>
-@endforeach
-</body>
+    </table> @endforeach </body>
 </html>
