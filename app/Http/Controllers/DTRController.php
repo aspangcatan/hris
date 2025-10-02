@@ -499,7 +499,6 @@ class DTRController extends Controller
                     }
                 }
 
-                // Prepare days
                 $days = collect(range(1, Carbon::createFromDate($year, $month, 1)->daysInMonth))
                     ->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders) {
 
@@ -507,66 +506,65 @@ class DTRController extends Controller
                         $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                         $isHoliday = in_array($currentDay, $holidays, true);
 
+                        // Default data
                         $data = [
                             'day' => $day,
                             'day_name' => $dayName,
                             'date_timein' => '',
                             'date_timeout' => '',
-                            'time_in_period' => '',   // Morning/Afternoon
+                            'time_in_period' => '',
                             'time_out_period' => '',
-                            'isEmpty' => true,// Morning/Afternoon
+                            'isEmpty' => true,
                         ];
 
-                        if ($day >= $startDay && $day <= $endDay) {
-                            // logs for that day
-                            $dayLogs = $logs->filter(fn($log) => Carbon::parse($log->created_at)->toDateString() === $currentDay);
+                        // 👇 if day is outside cutoff → keep it blank
+                        if ($day < $startDay || $day > $endDay) {
+                            return $data; // everything blank except day #
+                        }
 
-                            if ($dayLogs->isNotEmpty()) {
-                                $timeInLog = $dayLogs->firstWhere('status', 'IN');
-                                $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
+                        // Otherwise, process logs/leaves/holidays
+                        $dayLogs = $logs->filter(fn($log) => Carbon::parse($log->created_at)->toDateString() === $currentDay);
 
-                                $data['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : $dayName;
-                                $data['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : $dayName;
+                        if ($dayLogs->isNotEmpty()) {
+                            $timeInLog = $dayLogs->firstWhere('status', 'IN');
+                            $timeOutLog = $dayLogs->where('status', 'OUT')->sortByDesc('created_at')->first();
 
-                                // Morning / Afternoon
-                                $data['time_in_period'] = preg_match('/^\d{1,2}:\d{2}$/', $data['date_timein'])
-                                    ? ((int)explode(':', $data['date_timein'])[0] < 12 ? 'Morning' : 'Afternoon')
-                                    : '';
-                                $data['time_out_period'] = preg_match('/^\d{1,2}:\d{2}$/', $data['date_timeout'])
-                                    ? ((int)explode(':', $data['date_timeout'])[0] < 12 ? 'Morning' : 'Afternoon')
-                                    : '';
-                                $data['isEmpty'] = false;
-                            } else {
-                                if (!empty($leaves[$currentDay])) {
-                                    $code = $leaves[$currentDay];
-                                    $data['date_timein'] = $dayName . '-' . $code;
-                                    $data['date_timeout'] = $dayName . '-' . $code;
-                                } elseif (!empty($hospitalOrders[$currentDay])) {
-                                    $code = $hospitalOrders[$currentDay];
-                                    $data['date_timein'] = $dayName . '-' . $code;
-                                    $data['date_timeout'] = $dayName . '-' . $code;
-                                } elseif ($isHoliday) {
-                                    $data['date_timein'] = $dayName . '-HOLIDAY';
-                                    $data['date_timeout'] = $dayName . '-HOLIDAY';
-                                } else {
-                                    $data['date_timein'] = $dayName;
-                                    $data['date_timeout'] = $dayName;
-                                }
+                            $data['date_timein'] = $timeInLog ? Carbon::parse($timeInLog->created_at)->format('H:i') : '';
+                            $data['date_timeout'] = $timeOutLog ? Carbon::parse($timeOutLog->created_at)->format('H:i') : '';
 
-                                // Non-time values remain empty
-                                $data['time_in_period'] = '';
-                                $data['time_out_period'] = '';
+                            $data['time_in_period'] = preg_match('/^\d{1,2}:\d{2}$/', $data['date_timein'])
+                                ? ((int)explode(':', $data['date_timein'])[0] < 12 ? 'Morning' : 'Afternoon')
+                                : '';
+                            $data['time_out_period'] = preg_match('/^\d{1,2}:\d{2}$/', $data['date_timeout'])
+                                ? ((int)explode(':', $data['date_timeout'])[0] < 12 ? 'Morning' : 'Afternoon')
+                                : '';
+                            $data['isEmpty'] = false;
+                        } else {
+                            if (!empty($leaves[$currentDay])) {
+                                $code = $leaves[$currentDay];
+                                $data['date_timein'] = $code;
+                                $data['date_timeout'] = $code;
+                            } elseif (!empty($hospitalOrders[$currentDay])) {
+                                $code = $hospitalOrders[$currentDay];
+                                $data['date_timein'] = $code;
+                                $data['date_timeout'] = $code;
+                            } elseif ($isHoliday) {
+                                $data['date_timein'] = 'HOLIDAY';
+                                $data['date_timeout'] = 'HOLIDAY';
                             }
                         }
 
                         return $data;
                     });
 
+
                 $dtrData[] = [
                     'name' => strtoupper($employee->fname . ' ' . ($employee->mname ? strtoupper(substr($employee->mname, 0, 1)) . '.' : '') . ' ' . $employee->lname . ($employee->suffix ? ' ' . strtoupper($employee->suffix) : '')),
                     'in_charged' => $in_charged,
                     'date' => $formattedDate,
-                    'dtrs' => $days
+                    'dtrs' => $days,
+                    'start_day' => $startDay,
+                    'end_day' => $endDay
                 ];
             }
 
