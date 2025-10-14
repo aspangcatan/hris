@@ -582,8 +582,6 @@ class DTRController extends Controller
         }
     }
 
-
-
     public
     function getInCharged($division)
     {

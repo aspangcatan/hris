@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\HospitalOrderController;
+use App\Http\Controllers\PassSlipApproverController;
+use App\Http\Controllers\PassSlipController;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 
@@ -154,6 +156,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/dtr', function () {
         return view('dtr');
     })->name('dtr');
+
+    Route::get('/pass_slip', function () {
+        return view('pass_slip');
+    })->name('pass_slip');
 
     Route::get('/employee_dtr', function () {
         return view('employee_dtr');
@@ -371,4 +377,21 @@ Route::group(['middleware' => 'auth'], function () {
 
 #PRINTING LEAVE FORMS
     Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');
+
+#PASS SLIP
+    Route::get('/pass-slip', [PassSlipController::class, 'index'])->name('pass-slip.index');
+    Route::get('/pass-slip/list', [PassSlipController::class, 'list'])->name('pass-slip.list');
+    Route::post('/pass-slip/store', [PassSlipController::class, 'store'])->name('pass-slip.store');
+    Route::delete('/pass-slip/{id}', [PassSlipController::class, 'destroy'])->name('pass-slip.destroy');
+
+
+    // Pass Slip Approver Routes
+    Route::prefix('pass-slip-approver')->group(function () {
+        Route::get('/', [PassSlipApproverController::class, 'index'])->name('pass-slip.approver.index');
+        Route::get('/list', [PassSlipApproverController::class, 'list'])->name('pass-slip.approver.list');
+        Route::post('/approve/{id}', [PassSlipApproverController::class, 'approve'])->name('pass-slip.approver.approve');
+        Route::post('/reject/{id}', [PassSlipApproverController::class, 'reject'])->name('pass-slip.approver.reject');
+    });
+
+
 });

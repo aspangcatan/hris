@@ -91,53 +91,66 @@ class DTRServices
 
     public function getTotalLateAbsent($userid, $start_date, $end_date)
     {
-        $totalLateMinutes = 0;
-        $totalUndertimeMinutes = 0;
-        $totalAbsentDays = 0;
+        $lates = 0;
+        $undertime = 0;
+        $absences = 0;
 
-        $month = date('m', strtotime($start_date));
-        $year = date('Y', strtotime($start_date));
+        $holidays = $this->getHolidays($start_date, $end_date);
+        $approvedLeaves = $this->getApprovedLeaveDates($userid, $start_date, $end_date);
+        $approvedPassSlips = $this->getApprovedPassSlipDates($userid, $start_date, $end_date);
 
-        $plottedSchedules = $this->getEmployeePlottedSchedules($userid, $start_date, $end_date);
-        $scheduleMap = $this->mapSchedules($plottedSchedules);
-        $holidays = $this->getHolidays($month, $year);
-        $workdays = $this->getWorkDays($year, $month);
-        $leaveDates = $this->getApprovedLeaveDates($userid, $month, $year);
+        $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
 
-        foreach ($scheduleMap as $date => $shift) {
-            // Skip holidays and approved leaves
-            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
+        foreach ($schedules as $date => $schedule) {
+            // Skip weekends and holidays
+            if (in_array($date, $holidays) || in_array(Carbon::parse($date)->format('l'), ['Saturday', 'Sunday'])) {
                 continue;
             }
 
+            // Skip approved leaves
+            if (in_array($date, $approvedLeaves)) {
+                continue;
+            }
+
+            // Get logs
             $firstIn = $this->getFirstInLog($userid, $date);
             $lastOut = $this->getLastOutLog($userid, $date);
 
-            // Check for absence if no IN and OUT logs
-            if (!$firstIn || !$lastOut) {
-                $totalAbsentDays++;
+            // Handle approved pass slips
+            $passSlip = collect($approvedPassSlips)->firstWhere('slip_date', $date);
+            if ($passSlip) {
+                if ($passSlip['type'] === 'official') {
+                    // Excused — no late or undertime
+                    continue;
+                } elseif ($passSlip['type'] === 'personal') {
+                    // Compute full duration as undertime/late
+                    $timeOut = Carbon::parse($passSlip['time_out']);
+                    $timeIn = Carbon::parse($passSlip['time_in']);
+                    $minutes = $timeOut->diffInMinutes($timeIn);
+                    $lates += $minutes;
+                    continue;
+                }
+            }
+
+            // If no logs — count absence
+            if (!$firstIn && !$lastOut) {
+                $absences++;
                 continue;
             }
 
-            // Process the logs and compute lateness and undertime
-            list($lateMinutes, $undertimeMinutes) = $this->processLogs(
-                $firstIn, $lastOut, $shift, $date
-            );
-
-            $totalLateMinutes += $lateMinutes;
-            $totalUndertimeMinutes += $undertimeMinutes;
+            // Process late and undertime
+            $results = $this->processLogs($firstIn, $lastOut, $schedule);
+            $lates += $results['late'];
+            $undertime += $results['undertime'];
         }
 
-        // Handle no-schedule days
-        $noScheduleDays = $this->getNoScheduleDays($scheduleMap, $workdays, $holidays);
-        foreach ($noScheduleDays as $day) {
-            if (!in_array($day, $leaveDates)) {
-                $totalAbsentDays++;
-            }
-        }
-
-        return [$totalLateMinutes + $totalUndertimeMinutes, $totalAbsentDays];
+        return [
+            'late_minutes' => $lates,
+            'undertime_minutes' => $undertime,
+            'absences' => $absences
+        ];
     }
+
 
     public function getHolidays($month, $year)
     {
@@ -277,6 +290,23 @@ class DTRServices
             ->whereMonth('lda.date_applied', $month)
             ->pluck('lda.date_applied')
             ->toArray();
+    }
+
+    private function getApprovedPassSlipDates($userid, $month, $year)
+    {
+        $passSlips = DB::table('hris.pass_slips')
+            ->where('userid', $userid)
+            ->where('status', 'approved')
+            ->whereMonth('slip_date', $month)
+            ->whereYear('slip_date', $year)
+            ->get(['slip_date', 'type']);
+
+        $result = [];
+        foreach ($passSlips as $ps) {
+            $result[$ps->slip_date] = $ps->type; // map date to type ('official' or 'personal')
+        }
+
+        return $result;
     }
 
 }

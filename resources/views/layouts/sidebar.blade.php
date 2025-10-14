@@ -21,6 +21,23 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('pass_slip') ? '' : 'collapsed' }}" href="{{ route('pass_slip') }}">
+                <i class="bi bi-calendar-check"></i>
+                <span>Pass Slips</span>
+            </a>
+        </li>
+
+        {{-- ✅ PASS SLIP APPROVAL MODULE (SH, DH, HRH, HR, admin) --}}
+        @if(in_array(session('access_rights'), ['SH', 'DH', 'HRH', 'hr', 'admin']))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('pass-slip.approver.index') ? '' : 'collapsed' }}"
+                   href="{{ route('pass-slip.approver.index') }}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Pass Slip Approval</span>
+                </a>
+            </li>
+        @endif
 
         @if(in_array(session('access_rights'), ['SH', 'DH', 'admin']))
             <li class="nav-item">
