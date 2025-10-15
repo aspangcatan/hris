@@ -25,14 +25,24 @@
             </option>
         @endforeach
     </select>
+
+    <select class="underline" id="as_of_day">
+        @for($day = 1; $day <= 31; $day++)
+            <option value="{{ $day }}" {{ $day == 31 ? 'selected' : '' }}>
+                {{ $day }}
+            </option>
+        @endfor
+    </select>,
+
+    <select class="underline" id="as_of_year">
+        @for($year = 2023; $year <= \Carbon\Carbon::now()->format('Y'); $year++)
+            <option value="{{ $year }}" {{ $year == \Carbon\Carbon::now()->format('Y') ? 'selected' : '' }}>
+                {{ $year }}
+            </option>
+        @endfor
+    </select>
 </span>
-                    <span>
-                    <select class="underline" id="as_of_year">
-                        @for($year=2023; $year<= \Carbon\Carbon::now()->format('Y'); $year++)
-                            <option>{{ $year }}</option>
-                        @endfor
-                    </select>
-                </span>
+
                     <div class="mt-3">
                         <strong>Note:</strong>
                         <span>

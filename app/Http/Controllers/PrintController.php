@@ -550,6 +550,8 @@ class PrintController extends Controller
 
             $pdf = Pdf::loadView('pdf.saln', [
                 'as_of_month' => $request->as_of_month,
+                'as_of_day' => $request->as_of_day,
+                'as_of_year' => $request->as_of_year,
                 'declarant' => $declarant,
                 'address' => $formattedAddress,
                 'spouse' => $spouse,
@@ -565,7 +567,6 @@ class PrintController extends Controller
                 'business' => $business_array,
                 'relatives' => $relatives_array,
                 'print_date' => $request->print_date,
-                'as_of_year' => $request->as_of_year,
                 'filing_type' => $request->filing_type,
                 'business_interest' => $request->business_interest,
                 'government_relatives' => $request->government_relatives,

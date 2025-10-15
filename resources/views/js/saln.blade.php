@@ -14,7 +14,7 @@
     let business_interest_id = 0;
     let government_relative_id = 0;
 
-    let as_of_month = "December";
+
     $(document).ready(function () {
 
         $("#btn_print_saln").click(function () {
@@ -24,9 +24,12 @@
 
         $("#btn_confirm_print").click(function () {
             const filing_type = $("input[name='filing_type']:checked").val();
-            const as_of_year = $("#as_of_year").val();
+
             const spouse_signature = $("#spouse_signature").val();
-            as_of_month = $("#as_of_month").val();
+            const as_of_month = $("#as_of_month").val();
+            const as_of_day = $("#as_of_day").val();
+            const as_of_year = $("#as_of_year").val();
+
             if (filing_type === undefined) {
                 alert("Please specify Filing type");
                 return;
@@ -55,11 +58,12 @@
                 '{{ route('printSaln') }}?id=0&print_date=' + date + '&filing_type=' + filing_type +
                 '&business_interest=' + business_interest_checkbox +
                 '&government_relatives=' + government_relatives_checkbox +
+                '&as_of_month=' + as_of_month +
+                '&as_of_day=' + as_of_day +
                 '&as_of_year=' + as_of_year +
                 '&before_me=' + before_me +
                 '&spouse_signature=' + spouse_signature +
-                '&day_of=' + day_of +
-                '&as_of_month=' + as_of_month,
+                '&day_of=' + day_of,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
