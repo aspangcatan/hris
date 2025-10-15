@@ -191,7 +191,7 @@ class PrintController extends Controller
             ->join('tdh_user.division as di', 'u.division', '=', 'di.id')
             ->join('tdh_user.section as s', 'u.section', '=', 's.id')
             ->where('l.id', '=', $request->id)
-            ->get(['p.basic_salary','di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id', 'l.created_at'])
+            ->get(['p.basic_salary', 'di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id', 'l.created_at'])
             ->first();
 
         $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
@@ -241,7 +241,7 @@ class PrintController extends Controller
         $pdf->SetXY(77, 43);
         $pdf->Write(0.1, self::minifyDesignation($leave_application->designation));
         $pdf->SetXY(123, 43);
-        $pdf->Write(0.1, 'P'.number_format($leave_application->basic_salary ?? 0, 2, '.', ','));
+        $pdf->Write(0.1, 'P' . number_format($leave_application->basic_salary ?? 0, 2, '.', ','));
 
 //
 //        #DETAILS OF LEAVE
@@ -549,6 +549,7 @@ class PrintController extends Controller
             $formattedAddress = $addressParts->join(', ');
 
             $pdf = Pdf::loadView('pdf.saln', [
+                'as_of_month' => $request->as_of_month,
                 'declarant' => $declarant,
                 'address' => $formattedAddress,
                 'spouse' => $spouse,
