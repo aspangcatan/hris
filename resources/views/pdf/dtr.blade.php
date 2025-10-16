@@ -263,7 +263,7 @@
                             <td style="font-size: 11px">
                                 @if($dtr['time_in_period'] === 'Morning')
                                     {{ $dtr['date_timein'] }}
-                                @elseif($dtr['isEmpty'])
+                                @elseif($dtr['isEmpty'] && ($dtr['day'] >= $employee['start_day'] && $dtr['day'] <= $employee['end_day']))
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -272,7 +272,7 @@
                             <td style="font-size: 11px">
                                 @if($dtr['time_out_period'] === 'Morning')
                                     {{ $dtr['date_timeout'] }}
-                                @elseif($dtr['isEmpty'])
+                                @elseif($dtr['isEmpty'] && ($dtr['day'] >= $employee['start_day'] && $dtr['day'] <= $employee['end_day']))
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -281,7 +281,7 @@
                             <td style="font-size: 11px">
                                 @if($dtr['time_in_period'] === 'Afternoon')
                                     {{ $dtr['date_timein'] }}
-                                @elseif($dtr['isEmpty'])
+                                @elseif($dtr['isEmpty'] && ($dtr['day'] >= $employee['start_day'] && $dtr['day'] <= $employee['end_day']))
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -290,7 +290,7 @@
                             <td style="font-size: 11px">
                                 @if($dtr['time_out_period'] === 'Afternoon')
                                     {{ $dtr['date_timeout'] }}
-                                @elseif($dtr['isEmpty'])
+                                @elseif($dtr['isEmpty'] && ($dtr['day'] >= $employee['start_day'] && $dtr['day'] <= $employee['end_day']))
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
