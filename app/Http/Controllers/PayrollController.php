@@ -221,7 +221,10 @@ class PayrollController extends Controller
             $month = date('m', strtotime($period->start_date));
             $year = date('Y', strtotime($period->start_date));
             foreach ($employees as $employee) {
-                list($totalLateUndertimeMinutes, $totalAbsentDays) = $this->dtrServices->getTotalLateAbsent($employee["userid"], $period->start_date, $period->end_date);
+                $result = $this->dtrServices->getTotalLateAbsent($employee["userid"], $period->start_date, $period->end_date);
+                $totalLateUndertimeMinutes = $result['late_minutes'] + $result['undertime_minutes'];
+                $totalAbsentDays = $result['absences'];
+
                 $totalWorkingDays = $this->payrollServices->getWorkingDays($year,$month);
                 $this->payrollServices->savePayrollEmployee($request->payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays, $totalWorkingDays);
             }

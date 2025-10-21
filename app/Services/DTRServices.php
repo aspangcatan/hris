@@ -139,9 +139,9 @@ class DTRServices
             }
 
             // Process late and undertime
-            $results = $this->processLogs($firstIn, $lastOut, $schedule);
-            $lates += $results['late'];
-            $undertime += $results['undertime'];
+            list($late, $undertime) = $this->processLogs($firstIn, $lastOut, $schedule, $date);
+            $lates += $late;
+            $undertime += $undertime;
         }
 
         return [

@@ -163,14 +163,14 @@
                             </td>
 
                             <!-- Undertime Hours -->
-                            <td style="font-size: 11px">
-                                {{ $dtr['undertime_hours'] ?? '' }}
-                            </td>
-
-                            <!-- Undertime Minutes -->
-                            <td style="font-size: 11px">
-                                {{ $dtr['undertime_minutes'] ?? '' }}
-                            </td>
+                            @if(!empty($dtr['date_timein']) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein']))
+                                <td style="font-size: 11px;font-weight: bold" colspan="2">
+                                    {{ $dtr['date_timein'] }}
+                                </td>
+                            @else
+                                <td style="font-size: 11px"></td>
+                                <td style="font-size: 11px"></td>
+                            @endif
                         </tr>
                     @endforeach
                     <tr>

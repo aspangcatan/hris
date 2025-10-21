@@ -41,16 +41,21 @@ class CreditController extends Controller
                 $userid = $employee->employee_id;
                 $totalPresent = $this->dtrService->getTotalPresent($userid, $request->month, $request->year);
 
-                [$totalLateUndertimeMinutes] = $this->dtrService->getTotalLateAbsent($userid, $start_date, $end_date);
+                $result = $this->dtrService->getTotalLateAbsent($userid, $start_date, $end_date);
+                $totalLateUndertimeMinutes = $result['late_minutes'] + $result['undertime_minutes'];
 
                 $data = $this->leaveCreditService->computeEarnedCredits($totalPresent, $totalLateUndertimeMinutes);
-
                 $this->leaveCreditService->updateEarnedCredits($userid, $request->year, $request->month, $totalPresent, $totalLateUndertimeMinutes, $data['monthly_points_earned'], $data['total_deductions']);
             }
 
             return response()->json(['message' => "Success"]);
         } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
+            return response()->json([
+                'error' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTraceAsString()
+            ], 500);
         }
     }
 

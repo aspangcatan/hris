@@ -450,7 +450,9 @@ class DTRController extends Controller
                 ->whereYear('date', $year)
                 ->get()
                 ->pluck('date')
-                ->map(fn($d) => Carbon::parse($d)->toDateString())
+                ->map(function ($d) {
+                    return Carbon::parse($d)->toDateString();
+                })
                 ->toArray();
 
             foreach ($employees as $employee) {
