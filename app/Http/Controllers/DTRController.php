@@ -492,7 +492,7 @@ class DTRController extends Controller
                     $start = Carbon::parse($ho->start_date);
                     $end = Carbon::parse($ho->end_date);
                     while ($start->lte($end)) {
-                        $hospitalOrders[$start->toDateString()] = '#' . $ho->order_number;
+                        $hospitalOrders[$start->toDateString()] = 'H.O #' . $ho->order_number;
                         $start->addDay();
                     }
                 }
