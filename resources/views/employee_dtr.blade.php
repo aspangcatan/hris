@@ -164,7 +164,6 @@
                 }
             });
 
-
             $(document).on("click", ".empty-field", function (e) {
                 e.preventDefault();
 
@@ -261,6 +260,16 @@
                 });
             });
         });
+
+        function addRawLog(){
+            // Populate modal fields
+            $("#log_date").val("");
+            $("#log_status").val("");
+            $("#log_time").val("");
+
+            // Show the modal
+            $("#add_log_modal").modal("show");
+        }
 
         function loadDivision() {
             const division = @json(Auth::user()->division);

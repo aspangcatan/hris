@@ -538,7 +538,6 @@ class DTRController extends Controller
 
                             $isAM = $time->format('H:i:s') <= '12:59:59';
 
-
                             if ($log->status === 'IN') {
                                 $isAM ? $amIns[] = $t : $pmIns[] = $t;
                             } else {

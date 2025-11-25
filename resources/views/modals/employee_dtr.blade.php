@@ -80,7 +80,13 @@
                     </div>
                     <div class="col-md-6">
                         <div class="table-responsive">
-                            <h3>Raw Data</h3>
+                            <div class="d-flex justify-content-between">
+                                <h3>Raw Data</h3>
+                                <div>
+                                    <button class="btn btn-success" onclick="addRawLog()">ADD RAW LOG</button>
+                                </div>
+                            </div>
+
                             <table class="table table-bordered text-center">
                                 <thead class="table-dark">
                                 <tr>
