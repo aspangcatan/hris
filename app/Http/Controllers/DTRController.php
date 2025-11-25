@@ -536,7 +536,7 @@ class DTRController extends Controller
                             $time = Carbon::parse($log->created_at);
                             $t = $time->format('H:i');
 
-                            $isAM = $time->format('H:i:s') <= '12:00:00';
+                            $isAM = $time->format('H:i:s') <= '12:59:59';
 
 
                             if ($log->status === 'IN') {
