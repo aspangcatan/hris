@@ -535,13 +535,24 @@ class DTRController extends Controller
                         foreach ($dayLogs as $log) {
                             $time = Carbon::parse($log->created_at);
                             $t = $time->format('H:i');
-
-                            $isAM = $time->format('H:i:s') <= '12:59:59';
+                            $timeString = $time->format('H:i:s');
 
                             if ($log->status === 'IN') {
-                                $isAM ? $amIns[] = $t : $pmIns[] = $t;
+                                // AM IN: Before 12NN (< 12:00:00)
+                                // PM IN: After 12NN (>= 12:00:00)
+                                if ($timeString < '12:00:00') {
+                                    $amIns[] = $t;
+                                } else {
+                                    $pmIns[] = $t;
+                                }
                             } else {
-                                $isAM ? $amOuts[] = $t : $pmOuts[] = $t;
+                                // AM OUT: Before 1PM (< 13:00:00)
+                                // PM OUT: 1PM onwards (>= 13:00:00)
+                                if ($timeString < '13:00:00') {
+                                    $amOuts[] = $t;
+                                } else {
+                                    $pmOuts[] = $t;
+                                }
                             }
                         }
 
