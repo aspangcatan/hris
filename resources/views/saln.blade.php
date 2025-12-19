@@ -156,11 +156,6 @@
                                         role="tab">Multiple Marriages
                                 </button>
                             </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#annex_c" type="button"
-                                        role="tab">Annex C
-                                </button>
-                            </li>
                         </ul>
 
                         <div class="tab-content pt-2">
@@ -447,35 +442,6 @@
                                     <div>
                                         <h5 class="card-title fw-bold text-center">
                                             IF WITH MULTIPLE MARRIAGES, INDICATE NAME(S) OF SPOUSES
-                                        </h5>
-                                    </div>
-                                    <div>
-                                        <button class="btn btn-sm btn-success" id="btn_add_marriages">ADD NEW
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table text-center">
-                                        <thead>
-                                        <tr>
-                                            <th>Name of Spouses</th>
-                                            <th style="width: 10%"></th>
-                                        </tr>
-                                        </thead>
-                                        <tbody id="marriages_list">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="annex_c" role="tabpanel">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div></div>
-                                    <div>
-                                        <h5 class="card-title fw-bold text-center">
-                                            (Additional sheet/s for the exclusive properties of the declarant's spouse
-                                            and
-                                            unmarried children below eighteen (18) years of age living in declarant's
-                                            household)
                                         </h5>
                                     </div>
                                     <div>
