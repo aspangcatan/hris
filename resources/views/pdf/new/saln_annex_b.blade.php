@@ -77,7 +77,7 @@
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
     <div style="margin-top: 10px;text-decoration: underline" class="fw-bold title">
-        ASSETS, LIABILITIES AND NETWORTH
+        ASSETS, LIABILITIES AND NET WORTH
     </div>
 </div>
 <div class="fw-bold" style="margin-top: 10px;font-size: 13px">
@@ -152,7 +152,7 @@
 <table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left">
         <td class="border-right">DESCRIPTION</td>
-        <td class="border-right border-top">YEAR ACQUIRED</td>
+        <td class="border-right border-top">ACQUISITION YEAR</td>
         <td class="border-top border-right">AQUISITION<br/>COST/AMOUNT</td>
     </tr>
     @forelse($personal_properties_ext as $key)
@@ -174,11 +174,7 @@
                 {{ number_format($personal_properties_ext_subtotal,2) }}
             </div>
         </td>
-    </tr>
-    <tr>
-        <td colspan="3" style="color: white">&nbsp;</td>
-    </tr>
-    @if(count($personal_properties_ext) > 0)
+    </tr> 
         <tr style="font-size: 13px">
             <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
             <td style="text-align: left">
@@ -187,7 +183,6 @@
                 </div>
             </td>
         </tr>
-    @endif
 </table>
 
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
@@ -215,16 +210,6 @@
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
                 {{ number_format($liabilities_ext_total,2) }}
-            </div>
-        </td>
-    </tr>
-    <tr style="font-size: 13.33px">
-        <td colspan="2" style="text-align: right;" class="fw-bold">
-            NET WORTH : Total Assets less Total Liabilities =
-        </td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 4px black !important;">
-                {{ number_format(($real_properties_ext_subtotal + $personal_properties_ext_subtotal) - $liabilities_ext_total, 2) }}
             </div>
         </td>
     </tr>

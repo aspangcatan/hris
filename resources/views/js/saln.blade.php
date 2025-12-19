@@ -1234,6 +1234,7 @@
     }
 
     function editRealProperties(id) {
+        is_spouse_real_properties = false;
         const description = $("#real_properties_" + id + " td:eq(0)").text();
         const kind = $("#real_properties_" + id + " td:eq(1)").text();
         const exact_location = $("#real_properties_" + id + " td:eq(2)").text();
@@ -1256,6 +1257,7 @@
     }
 
     function editPersonalProperties(id) {
+        is_spouse_personal_properties = false;
         const gadget = $("#personal_properties_" + id + " td:eq(0)").text();
         const various_years = $("#personal_properties_" + id + " td:eq(1)").text();
         const acquisition_cost = $("#personal_properties_" + id + " td:eq(2)").text();
@@ -1268,6 +1270,7 @@
     }
 
     function editLiabilities(id) {
+        is_spouse_liabilities = false;
         const nature = $("#liabilities_" + id + " td:eq(0)").text();
         const creditors_name = $("#liabilities_" + id + " td:eq(1)").text();
         const oustanding_balance = $("#liabilities_" + id + " td:eq(2)").text();
@@ -1280,6 +1283,7 @@
     }
 
     function editBusinessInterest(id) {
+        is_spouse_business_interest = false;
         const enterprise = $("#business_interest_" + id + " td:eq(0)").text();
         const address = $("#business_interest_" + id + " td:eq(1)").text();
         const nature = $("#business_interest_" + id + " td:eq(2)").text();

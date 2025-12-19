@@ -30,25 +30,25 @@
                 <table style="text-align: center" class="box">
                     <tr>
                         <td style="font-size: 13px">
-                            {{ isset($spouse->spouse_lname) ? strtoupper($spouse->spouse_lname) : '' }}
+                            {{ isset($declarant->lname) ? strtoupper($declarant->lname) : '' }}
                         </td>
                         <td>
-                            {{ isset($spouse->spouse_fname) ? strtoupper($spouse->spouse_fname) : '' }}
-                            @if(isset($spouse->spouse_ext_name))
+                            {{ isset($declarant->fname) ? strtoupper($declarant->fname) : '' }}
+                            @if(isset($declarant->suffix))
                                 @php
                                     $suffixes = ['Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V'];
                                 @endphp
 
-                                @if(in_array($spouse->spouse_ext_name, $suffixes))
+                                @if(in_array($declarant->suffix, $suffixes))
                                     <span style="text-transform: uppercase">
-                                      {{ $spouse->spouse_ext_name }}
+                                      {{ $declarant->suffix }}
                                      </span>
                                 @endif
                             @endif
                         </td>
                         <td>
-                            @if(isset($spouse->spouse_mname) && !empty($spouse->spouse_mname[0]))
-                                {{ strtoupper($spouse->spouse_mname[0]) }}.
+                            @if(isset($declarant->mname) && !empty($declarant->mname[0]))
+                                {{ strtoupper($declarant->mname[0]) }}.
                             @else
                                 
                             @endif
@@ -58,7 +58,7 @@
             </td>
             <td style="width: 5%"></td>
             <td class="fw-bold" style="width: 15%">POSITION:</td>
-            <td style="width: 30%" class="border-bottom">{{ isset($spouse->position) ? strtoupper($spouse->position) : '' }}</td>
+            <td style="width: 30%" class="border-bottom">{{ isset($declarant->position) ? strtoupper($declarant->position) : '' }}</td>
         </tr>
         <tr>
             <td></td>
@@ -73,13 +73,13 @@
             </td>
             <td></td>
             <td class="fw-bold">AGENCY/OFFICE:</td>
-            <td class="border-bottom">{{ isset($spouse->agency) ? strtoupper($spouse->agency) : '' }}</td>
+            <td class="border-bottom">{{ isset($declarant->agency) ? strtoupper($declarant->agency) : '' }}</td>
         </tr>
     </table>
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
     <div style="margin-top: 10px;text-decoration: underline" class="fw-bold title">
-        ASSETS, LIABILITIES AND NETWORTH
+        ASSETS, LIABILITIES AND NET WORTH
     </div>
 </div>
 <div class="fw-bold" style="margin-top: 10px;font-size: 13px">
@@ -138,15 +138,6 @@
             <td colspan="8" class="fw-bold" style="text-align: center">N/A</td>
         </tr>
     @endforelse
-
-    <tr class="border-top" style="font-size: 13px;">
-        <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">
-                {{ number_format($spouse_real_properties_subtotal,2) }}
-            </div>
-        </td>
-    </tr>
 </table>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
     b. Personal Properties
@@ -154,7 +145,7 @@
 <table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left">
         <td class="border-right">DESCRIPTION</td>
-        <td class="border-right border-top">YEAR ACQUIRED</td>
+        <td class="border-right border-top">ACQUISITION YEAR</td>
         <td class="border-top border-right">AQUISITION<br/>COST/AMOUNT</td>
     </tr>
     @forelse($spouse_personal_properties as $key)
@@ -168,26 +159,6 @@
             <td colspan="3" class="fw-bold" style="text-align: center">N/A</td>
         </tr>
     @endforelse
-
-    <tr class="border-top" style="font-size: 13px;">
-        <td colspan="2" style="text-align: right;" class="fw-bold">Subtotal:</td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">
-                {{ number_format($spouse_personal_properties_subtotal,2) }}
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="3" style="color: white">&nbsp;</td>
-    </tr>
-        <tr style="font-size: 13px">
-            <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
-            <td style="text-align: left">
-                <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
-                    {{ number_format($spouse_real_properties_subtotal + $spouse_personal_properties_subtotal, 2) }}
-                </div>
-            </td>
-        </tr>
 </table>
 
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
@@ -210,24 +181,6 @@
             <td colspan="3" class="fw-bold" style="text-align: center">N/A</td>
         </tr>
     @endforelse
-    <tr class="border-top" style="font-size: 13px">
-        <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL LIABILITIES:</td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;">
-                {{ number_format($spouse_liabilities_total, 2) }}
-            </div>
-        </td>
-    </tr>
-    <tr style="font-size: 13.33px">
-        <td colspan="2" style="text-align: right;" class="fw-bold">
-            NET WORTH : Total Assets less Total Liabilities =
-        </td>
-        <td style="text-align: left">
-            <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 4px black !important;">
-                {{ number_format(($spouse_real_properties_subtotal + $spouse_personal_properties_subtotal) - $spouse_liabilities_total, 2) }}
-            </div>
-        </td>
-    </tr>
 </table>
 <div class="border-bottom" style="margin-top: 20px"></div>
 <div class="border-bottom" style="margin-top: 2px"></div>

@@ -323,10 +323,10 @@
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
     <div style="margin-top: 10px;text-decoration: underline" class="fw-bold title">
-        ASSETS, LIABILITIES AND NETWORTH
+        ASSETS, LIABILITIES AND NET WORTH
     </div>
     <div style="text-align: center;" class="title">
-        (Including those of the spouse and unmarried children below eighteen (18)<br/>years of age living in declarant's
+        (Including those of the spouse and unmarried children below eighteen (18) years of age living in declarant's
         household)
     </div>
 </div>
@@ -364,7 +364,7 @@
     <tr class="fw-bold gray border-bottom border-left border-right">
         <td colspan="2" class="border-top border-right">
             <div style="font-size: 8px;font-style: normal !important;">
-                (As found in the Tax Declaration of<br/>Real Property)
+                (As found in the Tax Declaration of<br/>Real Property, if available)
             </div>
         </td>
         <td class="fw-bold border-top border-right" style="font-size: 10px">YEAR</td>
