@@ -134,6 +134,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/pds', [\App\Http\Controllers\PrintController::class, 'printPds'])->name('printPds');
     Route::get('/service_records', [\App\Http\Controllers\PrintController::class, 'printServiceRecord'])->name('printServiceRecord');
     Route::get('/print_saln', [\App\Http\Controllers\PrintController::class, 'printSaln'])->name('printSaln');
+    Route::get('/saln-report/pdf', [\App\Http\Controllers\PrintController::class, 'generateSALNReport']);
     Route::get('/print_work_experience', [\App\Http\Controllers\PrintController::class, 'printWorkExperience'])->name('printWorkExperience');
 
     #NAVIGATION
@@ -296,12 +297,20 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/reports/leave_bal', [\App\Http\Controllers\ReportController::class, 'leaveBalance'])->name('leaveBalance');
 #SALN
     Route::post('/insert_declarant', [\App\Http\Controllers\SalnController::class, 'updateDeclarant'])->name('updateDeclarant');
+    Route::post('/insert_spouse', [\App\Http\Controllers\SalnController::class, 'updateSpouse'])->name('updateSpouse');
+    Route::post('/insert_saln_children', [\App\Http\Controllers\SalnController::class, 'insertSalnChildren'])->name('insertSalnChildren');    Route::post('/insert_declarant', [\App\Http\Controllers\SalnController::class, 'updateDeclarant'])->name('updateDeclarant');
+    Route::post('/insert_spouse', [\App\Http\Controllers\SalnController::class, 'updateSpouse'])->name('updateSpouse');
     Route::post('/insert_saln_children', [\App\Http\Controllers\SalnController::class, 'insertSalnChildren'])->name('insertSalnChildren');
     Route::post('/insert_real_properties', [\App\Http\Controllers\SalnController::class, 'insertRealProperties'])->name('insertRealProperties');
     Route::post('/insert_personal_properties', [\App\Http\Controllers\SalnController::class, 'insertPersonalProperties'])->name('insertPersonalProperties');
     Route::post('/insert_liabilities', [\App\Http\Controllers\SalnController::class, 'insertLiabilities'])->name('insertLiabilities');
     Route::post('/insert_business_interest', [\App\Http\Controllers\SalnController::class, 'insertBusinessInterest'])->name('insertBusinessInterest');
     Route::post('/insert_government_relative', [\App\Http\Controllers\SalnController::class, 'insertGovernmentRelative'])->name('insertGovernmentRelative');
+    Route::post('/insert_marriages', [\App\Http\Controllers\SalnController::class, 'insertMarriages'])->name('insertMarriages');
+    Route::post('/insert_spouse_real_properties', [\App\Http\Controllers\SalnController::class, 'insertSpouseRealProperties'])->name('insertSpouseRealProperties');
+    Route::post('/insert_spouse_personal_properties', [\App\Http\Controllers\SalnController::class, 'insertSpousePersonalProperties'])->name('insertSpousePersonalProperties');
+    Route::post('/insert_spouse_liabilities', [\App\Http\Controllers\SalnController::class, 'insertSpouseLiabilities'])->name('insertSpouseLiabilities');
+    Route::post('/insert_spouse_business_interest', [\App\Http\Controllers\SalnController::class, 'insertSpouseBusinessInterest'])->name('insertSpouseBusinessInterest');
     Route::get('/get_declarant', [\App\Http\Controllers\SalnController::class, 'getDeclarant'])->name('getDeclarant');
     Route::get('/get_declarant_spouse', [\App\Http\Controllers\SalnController::class, 'getDeclarantSpouse'])->name('getDeclarantSpouse');
     Route::get('/get_saln_children', [\App\Http\Controllers\SalnController::class, 'getChildren'])->name('getChildren');
@@ -310,12 +319,22 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_liabilities', [\App\Http\Controllers\SalnController::class, 'getLiabilities'])->name('getLiabilities');
     Route::get('/get_business_interest', [\App\Http\Controllers\SalnController::class, 'getBusinessInterest'])->name('getBusinessInterest');
     Route::get('/get_government_relative', [\App\Http\Controllers\SalnController::class, 'getGovernmentRelative'])->name('getGovernmentRelative');
+    Route::get('/get_marriages', [\App\Http\Controllers\SalnController::class, 'getMarriages'])->name('getMarriages');
+    Route::get('/get_spouse_real_properties', [\App\Http\Controllers\SalnController::class, 'getSpouseRealProperties'])->name('getSpouseRealProperties');
+    Route::get('/get_spouse_personal_properties', [\App\Http\Controllers\SalnController::class, 'getSpousePersonalProperties'])->name('getSpousePersonalProperties');
+    Route::get('/get_spouse_liabilities', [\App\Http\Controllers\SalnController::class, 'getSpouseLiabilities'])->name('getSpouseLiabilities');
+    Route::get('/get_spouse_business_interest', [\App\Http\Controllers\SalnController::class, 'getSpouseBusinessInterest'])->name('getSpouseBusinessInterest');
     Route::delete('/delete_saln_children', [\App\Http\Controllers\SalnController::class, 'deleteSalnChildren'])->name('deleteSalnChildren');
     Route::delete('/delete_real_properties', [\App\Http\Controllers\SalnController::class, 'deleteRealProperties'])->name('deleteRealProperties');
     Route::delete('/delete_personal_properties', [\App\Http\Controllers\SalnController::class, 'deletePersonalProperties'])->name('deletePersonalProperties');
     Route::delete('/delete_liabilities', [\App\Http\Controllers\SalnController::class, 'deleteLiabilities'])->name('deleteLiabilities');
     Route::delete('/delete_business_interest', [\App\Http\Controllers\SalnController::class, 'deleteBusinessInterest'])->name('deleteBusinessInterest');
     Route::delete('/delete_government_relative', [\App\Http\Controllers\SalnController::class, 'deleteGovernmentRelative'])->name('deleteGovernmentRelative');
+    Route::delete('/delete_marriage', [\App\Http\Controllers\SalnController::class, 'deleteMarriage'])->name('deleteMarriage');
+    Route::delete('/delete_spouse_real_properties', [\App\Http\Controllers\SalnController::class, 'deleteSpouseRealProperties'])->name('deleteSpouseRealProperties');
+    Route::delete('/delete_spouse_personal_properties', [\App\Http\Controllers\SalnController::class, 'deleteSpousePersonalProperties'])->name('deleteSpousePersonalProperties');
+    Route::delete('/delete_spouse_liabilities', [\App\Http\Controllers\SalnController::class, 'deleteSpouseLiabilities'])->name('deleteSpouseLiabilities');
+    Route::delete('/delete_spouse_business_interest', [\App\Http\Controllers\SalnController::class, 'deleteSpouseBusinessInterest'])->name('deleteSpouseBusinessInterest');
 #PROMOTION WORK EXPERIENCE
     Route::post('/insert_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'store'])->name('insertPositionApplied');
     Route::post('/insert_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'insertRelatedWork'])->name('insertRelatedWork');

@@ -82,49 +82,51 @@
     </style>
 </head>
 <body>
-<div style="font-size: 9.33px;margin-left: 82%">
-    <div>Revised as of January 2015</div>
-    <div>Per CSC Resolution No. 1500088</div>
-    <div>Promulgated on January 23, 2015</div>
-</div>
+<table style="width:100%; font-size:9.33px;">
+    <tr>
+        <td style="width:70%"></td>
+        <td style="width:30%; text-align:right;">
+            <div>2025 SALN Form</div>
+            <div>Per CSC Resolution No. 2500632</div>
+            <div>Promulgated on 25 June 2025</div>
+        </td>
+    </tr>
+</table>
 
-<div style="text-align: center;margin-top: 20px">
-    <div style="font-weight: bolder;font-size: 16px;">SWORN STATEMENT OF ASSETS, LIABILITIES AND NET WORTH</div>
-    <div style="font-size: 13px">As of <u style="margin-left: 5px">{{ $as_of_month }}
-            {{ $as_of_day }}, {{ $as_of_year }}</u></div>
-    <div style="font-size: 10.66px">(Required by R.A 6713)</div>
-    <div style="font-size: 12.5px;margin-top: 15px">
-        <strong>Note:</strong>
-        <i>Husband and wife who are both public officials and employees may file the required statements jointly or
-            separately.</i>
+<!-- TITLE -->
+<div style="text-align:center; margin-top:20px;">
+    <div style="font-size:14.66px; font-weight:bold;">
+        SWORN STATEMENT OF ASSETS, LIABILITIES, AND NET WORTH
     </div>
-    <div style="font-size:13.33px;margin-left: 20%;margin-right:20%;text-align: center">
-        <div style="display: inline-block;width: 32%">
-            @if($filing_type == 'Joint Filing')
-                <input type="checkbox" style="display: inline" checked/>
-            @else
-                <input type="checkbox" style="display: inline"/>
-            @endif
-            <div style="display: inline;font-style: italic;">Joint Filing</div>
+    <div style="font-size:10.66px; margin-top:2px;">
+        (As required by R.A. No. 6713)
+    </div>
+
+    <div style="font-size:12px;text-align: center;margin-top:20px">
+        <div style="display: inline-block;width: 33%">
+            <input type="checkbox" style="display: inline"/>
+            <div style="display: inline;font-style: italic;">Assumption of office as of <span
+                    style="text-decoration: underline">{{ $as_of_month }} {{$as_of_day  }}, {{ $as_of_year }}</span>
+            </div>
         </div>
-        <div style="display: inline-block;width: 32%">
-            @if($filing_type == 'Separate Filing')
-                <input type="checkbox" style="display: inline" checked/>
-            @else
-                <input type="checkbox" style="display: inline"/>
-            @endif
-            <div style="display: inline;font-style: italic;">Separate Filing</div>
+        <div style="display: inline-block;width: 33%">
+            <input type="checkbox" style="display: inline"/>
+            <div style="display: inline;font-style: italic;">Annual filing as of December 31,<span
+                    style="border-bottom: 1px solid black;padding-left: 10px;padding-right: 10px">{{ $as_of_year }}</span>
+            </div>
         </div>
-        <div style="display: inline-block;width: 32%">
-            @if($filing_type == 'Not Applicable')
-                <input type="checkbox" style="display: inline" checked/>
-            @else
-                <input type="checkbox" style="display: inline"/>
-            @endif
-            <div style="display: inline;font-style: italic;">Not Applicable</div>
+        <div style="display: inline-block;width: 33%">
+            <input type="checkbox" style="display: inline"/>
+            <div style="display: inline;font-style: italic;">Exit as of
+                <span style="text-decoration: underline">{{ $as_of_month }} {{$as_of_day  }}, {{ $as_of_year }}</span>
+            </div>
         </div>
     </div>
-    <table id="declarant" style="margin-top: 20px;text-align: center;">
+</div>
+<div class="border-bottom" style="margin-top: 10px"></div>
+<div class="border-bottom" style="margin-top: 2px"></div>
+<div style="text-align: center;">
+    <table id="declarant" style="text-align: center;">
         <tr>
             <td class="fw-bold" style="width: 11%">DECLARANT:</td>
             <td style="width: 39%">
@@ -287,6 +289,59 @@
             </td>
         </tr>
     </table>
+    <div style="text-align: left;margin-top: 20px;" class="fw-bold">
+        <div>SPOUSES, WHO ARE BOTH PUBLIC OFFICIALS OR EMPLOYEES, MAY FILE THE SALN JOINTLY OR SEPARATELY.</div>
+        <div>THE DECLARANT SHALL CHECK THE APPROPRIATE BOX</div>
+    </div>
+    <div style="font-size:13.33px;margin-top:5px">
+        <div style="display: inline-block;width: 32%">
+            @if($filing_type == 'Joint Filing')
+                <input type="checkbox" style="display: inline" checked/>
+            @else
+                <input type="checkbox" style="display: inline"/>
+            @endif
+            <div style="display: inline;font-style: italic;">Joint Filing</div>
+        </div>
+        <div style="display: inline-block;width: 32%">
+            @if($filing_type == 'Separate Filing')
+                <input type="checkbox" style="display: inline" checked/>
+            @else
+                <input type="checkbox" style="display: inline"/>
+            @endif
+            <div style="display: inline;font-style: italic;">Separate Filing</div>
+        </div>
+        <div style="display: inline-block;width: 32%">
+            @if($filing_type == 'Not Applicable')
+                <input type="checkbox" style="display: inline" checked/>
+            @else
+                <input type="checkbox" style="display: inline"/>
+            @endif
+            <div style="display: inline;font-style: italic;">Not Applicable</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 10px;font-size: 12px;text-align: left" class="title fw-bold">
+        IF WITH MULTIPLE MARRIAGES, INDICATE NAME(S) OF SPOUSES, OTHERWISE CHECK THE "NOT APPLICABLE" BOX.
+    </div>
+    <table style="font-size: 14px;text-align: center;margin-top: 5px;padding-left: 25px">
+        <tr>
+            <td>
+                <div style="border-bottom: 1px solid black"></div>
+            </td>
+            <td>
+                <div style="display: inline-block;">
+                    <input type="checkbox" style="display: inline"/>
+                    <div style="display: inline;font-style: italic;">Not Applicable</div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div style="border-bottom: 1px solid black"></div>
+            </td>
+            <td></td>
+        </tr>
+    </table>
 
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
@@ -333,7 +388,7 @@
     1. ASSETS
 </div>
 <div class="fw-bold" style="margin-top: 10px;margin-left: 30px;font-size: 14px">
-    a. Real Properties*
+    a. Real Properties
 </div>
 <table id="assets" style="text-align: center;margin-top: 10px;font-size: 12px">
     <tr class="fw-bold gray border-top border-left border-right">
@@ -381,7 +436,7 @@
             <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
         </tr>
     @endforeach
-    
+
     <tr class="border-top" style="font-size: 13.33px;">
         <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
@@ -392,7 +447,7 @@
     </tr>
 </table>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
-    b. Personal Properties*
+    b. Personal Properties
 </div>
 <table style="text-align: center;margin-top: 10px;font-size: 12px">
     <tr class="fw-bold gray border-top border-left">
@@ -421,7 +476,7 @@
     </tr>
     @if(count($personal_properties_extended) < 1)
         <tr style="font-size: 14px">
-            <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS (a+b):</td>
+            <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
             <td style="text-align: left">
                 <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
                     {{ number_format($real_properties_subtotal + $personal_properties_subtotal,2)   }}
@@ -430,7 +485,6 @@
         </tr>
     @endif
 </table>
-<div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
 <div
     style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">
     @if(count($personal_properties_extended) < 1)
@@ -452,7 +506,7 @@
 
 <div style="page-break-before: always !important;"></div>
 <div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
-    2. LIABILITIES*
+    2. LIABILITIES
 </div>
 <table style="text-align: center;margin-top: 10px;font-size: 12px">
     <tr class="fw-bold gray border-top border-left" style="font-size: 10px">
@@ -490,7 +544,6 @@
         </td>
     </tr>
 </table>
-<div style="font-size: 13.33px;font-style: italic">* Additional sheet/s may be used, if necessary.</div>
 <div style="margin-top: 20px;font-size: 13.33px;text-decoration: underline;text-align: center" class="fw-bold">
     BUSINESS INTERESTS AND FINANCIAL CONNECTIONS
 </div>
@@ -686,6 +739,26 @@
         </div>
     </div>
 </div>
+
+<div style="text-align:left;">
+    <ol style="
+        list-style-type: lower-roman;
+        padding-left: 24px;   /* controls text start */
+    ">
+        <li style="padding-left:6px;">
+            Position, Agency, and Address shall only be declared if the spouse is a public official or employee.
+        </li>
+        <li style="padding-left:6px;">
+            Capital or paraphernal assets, and liabilities of the declarant’s spouse, and properties of children below 18 years of age and living in the declarant’s household shall be disclosed
+            using the additional sheets provided.
+        </li>
+        <li style="padding-left:6px;">
+            Balae refers to the parent of one’s son or daughter-in-law; Bilas refers to a brother-in-law’s wife or sister-in-law’s husband; Inso refers to the appellation for the wife of an elder
+            brother or male cousin.
+        </li>
+    </ol>
+</div>
+
 
 <div
     style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; color: gray; font-style: italic; font-family: 'Times New Roman'; width: 100%;">

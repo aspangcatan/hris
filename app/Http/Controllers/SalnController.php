@@ -7,10 +7,15 @@ use App\Models\Declarant;
 use App\Models\FamilyBackground;
 use App\Models\GovernmentRelative;
 use App\Models\Liabilities;
+use App\Models\Marriages;
 use App\Models\PersonalProperties;
 use App\Models\RealProperties;
 use App\Models\SalnChildren;
 use App\Models\Spouse;
+use App\Models\SpouseBusinessInterest;
+use App\Models\SpouseLiabilities;
+use App\Models\SpousePersonalProperties;
+use App\Models\SpouseRealProperties;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -35,12 +40,31 @@ class SalnController extends Controller
     {
         try {
             $declarant = Declarant::where('user_id',Auth::id())->first();
-            $spouse = Spouse::where('user_id',Auth::id())->first();
-            $familyBackground = FamilyBackground::where('user_id',Auth::id())->first();
+
             if (!$declarant) {
                 $declarant = new Declarant;
                 $declarant->user_id = Auth::id();
             }
+
+            $declarant->position = $request->declarant_position;
+            $declarant->agency = $request->declarant_agency;
+            $declarant->office = $request->declarant_office;
+            $declarant->government_id_issued = $request->declarant_government_id_issued;
+            $declarant->government_id_no = $request->declarant_government_id_no;
+            $declarant->date_issued = $request->declarant_date_issued;
+            $declarant->save();
+
+            return response(['code' => 200, 'message' => 'Declarant Information updated']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function updateSpouse(Request $request)
+    {
+        try {
+            $spouse = Spouse::where('user_id',Auth::id())->first();
+            $familyBackground = FamilyBackground::where('user_id',Auth::id())->first();
 
             if (!$spouse) {
                 $spouse = new Spouse;
@@ -51,14 +75,6 @@ class SalnController extends Controller
                 $familyBackground = new FamilyBackground;
                 $familyBackground->user_id = Auth::id();
             }
-
-            $declarant->position = $request->declarant_position;
-            $declarant->agency = $request->declarant_agency;
-            $declarant->office = $request->declarant_office;
-            $declarant->government_id_issued = $request->declarant_government_id_issued;
-            $declarant->government_id_no = $request->declarant_government_id_no;
-            $declarant->date_issued = $request->declarant_date_issued;
-            $declarant->save();
 
             $familyBackground->spouse_fname = $request->spouse_fname;
             $familyBackground->spouse_mname = $request->spouse_mname;
@@ -72,7 +88,7 @@ class SalnController extends Controller
             $spouse->government_id_no = $request->spouse_government_id_no;
             $spouse->date_issued = $request->spouse_date_issued;
             $spouse->save();
-            return response(['code' => 200, 'message' => 'Information updated']);
+            return response(['code' => 200, 'message' => 'Spouse Information updated']);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -376,6 +392,236 @@ class SalnController extends Controller
                 $query->where('user_id', '=', Auth::id());
             })->first();
             $government_relative->forceDelete();
+            return response(['code' => 200, 'message' => 'Item deleted']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function insertMarriages(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $marriages = Marriages::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('userid', '=', Auth::id());
+            })->first();
+
+            if (!$marriages) {
+                $marriages = new Marriages;
+                $marriages->userid = Auth::id();
+            }
+
+            $marriages->spouse = $request->spouse;
+            $marriages->save();
+            return response(['code' => 200, 'message' => 'New item added']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function getMarriages(Request $request)
+    {
+        try {
+            $result = Marriages::where('userid', Auth::id())->get();
+            return response(['code' => 200, 'results' => $result]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+
+    // ... existing methods ...
+
+    // SPOUSE REAL PROPERTIES
+    public function insertSpouseRealProperties(Request $request)
+    {
+        try {
+            $real_properties = SpouseRealProperties::find($request->id);
+            if (!$real_properties) {
+                $real_properties = new SpouseRealProperties;
+                $real_properties->user_id = Auth::id();
+            }
+            $real_properties->description = $request->description;
+            $real_properties->kind = $request->kind;
+            $real_properties->exact_location = $request->exact_location;
+            $real_properties->assessed_value = $request->assessed_value;
+            $real_properties->current_fair = $request->current_fair;
+            $real_properties->acquisition_year = $request->acquisition_year;
+            $real_properties->acquisition_mode = $request->acquisition_mode;
+            $real_properties->acquisition_cost = $request->acquisition_cost;
+            $real_properties->save();
+            return response(['code' => 200, 'message' => 'New item added']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function getSpouseRealProperties(Request $request)
+    {
+        try {
+            $results = SpouseRealProperties::where('user_id', Auth::id())->get();
+            return response(['code' => 200, 'results' => $results]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function deleteSpouseRealProperties(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $real_properties = SpouseRealProperties::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+            $real_properties->forceDelete();
+            return response(['code' => 200, 'message' => 'Item deleted']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    // SPOUSE PERSONAL PROPERTIES
+    public function insertSpousePersonalProperties(Request $request)
+    {
+        try {
+            $personal_properties = SpousePersonalProperties::find($request->id);
+            if (!$personal_properties) {
+                $personal_properties = new SpousePersonalProperties;
+                $personal_properties->user_id = Auth::id();
+            }
+
+            $personal_properties->gadget = $request->gadget;
+            $personal_properties->various_years = $request->various_years;
+            $personal_properties->acquisition_cost = $request->acquisition_cost;
+            $personal_properties->save();
+            return response(['code' => 200, 'message' => 'New item added']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function getSpousePersonalProperties(Request $request)
+    {
+        try {
+            $results = SpousePersonalProperties::where('user_id', Auth::id())->get();
+            return response(['code' => 200, 'results' => $results]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function deleteSpousePersonalProperties(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $personal_properties = SpousePersonalProperties::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+            $personal_properties->forceDelete();
+            return response(['code' => 200, 'message' => 'Item deleted']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    // SPOUSE LIABILITIES
+    public function insertSpouseLiabilities(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $liabilities = SpouseLiabilities::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+
+            if (!$liabilities) {
+                $liabilities = new SpouseLiabilities;
+                $liabilities->user_id = Auth::id();
+            }
+
+            $liabilities->nature = $request->nature;
+            $liabilities->creditors_name = $request->creditors_name;
+            $liabilities->outstanding_balance = $request->outstanding_balance;
+            $liabilities->save();
+            return response(['code' => 200, 'message' => 'New item added']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function getSpouseLiabilities()
+    {
+        try {
+            $results = SpouseLiabilities::where('user_id', Auth::id())->get();
+            return response(['code' => 200, 'results' => $results]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function deleteSpouseLiabilities(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $liabilities = SpouseLiabilities::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+            $liabilities->forceDelete();
+            return response(['code' => 200, 'message' => 'Item deleted']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    // SPOUSE BUSINESS INTEREST
+    public function insertSpouseBusinessInterest(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $business_interest = SpouseBusinessInterest::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+
+            if (!$business_interest) {
+                $business_interest = new SpouseBusinessInterest;
+                $business_interest->user_id = Auth::id();
+            }
+
+            $business_interest->enterprise = $request->enterprise;
+            $business_interest->address = $request->address;
+            $business_interest->nature = $request->nature;
+            $business_interest->date_acquisition = $request->date_acquisition;
+            $business_interest->save();
+            return response(['code' => 200, 'message' => 'New item added']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function getSpouseBusinessInterest(Request $request)
+    {
+        try {
+            $result = SpouseBusinessInterest::where('user_id', Auth::id())->get();
+            return response(['code' => 200, 'results' => $result]);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    public function deleteSpouseBusinessInterest(Request $request)
+    {
+        try {
+            $id = $request->id;
+            $business_interest = SpouseBusinessInterest::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+            $business_interest->forceDelete();
             return response(['code' => 200, 'message' => 'Item deleted']);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);

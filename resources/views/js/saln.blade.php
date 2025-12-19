@@ -5,6 +5,7 @@
     const liabilities_modal = new bootstrap.Modal(document.getElementById('liabilities_modal'));
     const business_interest_modal = new bootstrap.Modal(document.getElementById('business_interest_modal'));
     const government_relative_modal = new bootstrap.Modal(document.getElementById('government_relative_modal'));
+    const marriages_modal = new bootstrap.Modal(document.getElementById('marriages_modal'));
     const saln_modal = new bootstrap.Modal(document.getElementById('saln_modal'));
 
     let children_id = 0;
@@ -13,6 +14,17 @@
     let liabilities_id = 0;
     let business_interest_id = 0;
     let government_relative_id = 0;
+    let marriages_id = 0;
+
+    let spouse_real_properties_id = 0;
+    let spouse_personal_properties_id = 0;
+    let spouse_liabilities_id = 0;
+    let spouse_business_interest_id = 0;
+
+    let is_spouse_real_properties = false;
+    let is_spouse_personal_properties = false;
+    let is_spouse_liabilities = false;
+    let is_spouse_business_interest = false;
 
 
     $(document).ready(function () {
@@ -24,6 +36,7 @@
 
         $("#btn_confirm_print").click(function () {
             const filing_type = $("input[name='filing_type']:checked").val();
+            const compliance_for = $("input[name='compliance_for']:checked").val();
 
             const spouse_signature = $("#spouse_signature").val();
             const as_of_month = $("#as_of_month").val();
@@ -56,6 +69,7 @@
 
             window.open(
                 '{{ route('printSaln') }}?id=0&print_date=' + date + '&filing_type=' + filing_type +
+                '&compliance_for=' + compliance_for +
                 '&business_interest=' + business_interest_checkbox +
                 '&government_relatives=' + government_relatives_checkbox +
                 '&as_of_month=' + as_of_month +
@@ -76,6 +90,7 @@
         });
 
         $("#btn_add_real_properties").click(function () {
+            is_spouse_real_properties = false;
             real_properties_id = 0;
             $("#real_description").val("");
             $("#real_kind").val("")
@@ -88,7 +103,22 @@
             real_properties_modal.toggle();
         });
 
+        $("#spouse_btn_add_real_properties").click(function () {
+            is_spouse_real_properties = true;
+            spouse_real_properties_id = 0;
+            $("#real_description").val("");
+            $("#real_kind").val("")
+            $("#real_location").val("");
+            $('#real_assessed_value').val("");
+            $("#real_current_fair").val("");
+            $("#real_acquisition_year").val("");
+            $("#real_acquisition_mode").val("");
+            $("#real_acquisition_cost").val("");
+            real_properties_modal.toggle();
+        });
+
         $("#btn_add_personal_properties").click(function () {
+            is_spouse_personal_properties = false;
             personal_properties_id = 0;
             $("#personal_gadget").val("");
             $("#personal_various_years").val("");
@@ -96,7 +126,17 @@
             personal_properties_modal.toggle();
         });
 
+        $("#spouse_btn_add_personal_properties").click(function () {
+            is_spouse_personal_properties = true;
+            spouse_personal_properties_id = 0;
+            $("#personal_gadget").val("");
+            $("#personal_various_years").val("");
+            $("#personal_acquisition_cost").val("");
+            personal_properties_modal.toggle();
+        });
+
         $("#btn_add_liabilities").click(function () {
+            is_spouse_liabilities = false;
             liabilities_id = 0;
             $("#liabilities_nature").val("");
             $("#liabilities_creditors_name").val("");
@@ -104,8 +144,28 @@
             liabilities_modal.toggle();
         });
 
+        $("#spouse_btn_add_liabilities").click(function () {
+            is_spouse_liabilities = true;
+            spouse_liabilities_id = 0;
+            $("#liabilities_nature").val("");
+            $("#liabilities_creditors_name").val("");
+            $("#liabilities_outstanding_balance").val("");
+            liabilities_modal.toggle();
+        });
+
         $("#btn_add_business_interest").click(function () {
+            is_spouse_business_interest = false;
             business_interest_id = 0;
+            $("#business_enterprise").val("");
+            $("#business_address").val("");
+            $("#business_nature").val("");
+            $("#business_date_acquisition").val("");
+            business_interest_modal.toggle();
+        });
+
+        $("#spouse_btn_add_business_interest").click(function () {
+            is_spouse_business_interest = true;
+            spouse_business_interest_id = 0;
             $("#business_enterprise").val("");
             $("#business_address").val("");
             $("#business_nature").val("");
@@ -122,6 +182,12 @@
             government_relative_modal.toggle();
         });
 
+        $("#btn_add_marriages").click(function () {
+            marriages_id = 0;
+            $("#spouse_name").val("");
+            marriages_modal.toggle();
+        });
+
         $("#btn_save_declarant").click(function () {
             let is_valid = true;
 
@@ -133,17 +199,6 @@
             const declarant_government_issued_id = $("#declarant_issued_id").val().trim().toUpperCase();
             const declarant_government_id_no = $("#declarant_id_no").val().trim().toUpperCase();
             const declarant_date_issued = $("#declarant_date_issued").val().trim().toUpperCase();
-
-
-            const spouse_fname = $("#spouse_fname").val().trim().toUpperCase();
-            const spouse_mname = $("#spouse_mname").val().trim().toUpperCase();
-            const spouse_lname = $("#spouse_lname").val().trim().toUpperCase();
-            const spouse_position = $("#spouse_position").val().trim().toUpperCase();
-            const spouse_agency = $("#spouse_agency").val().trim().toUpperCase();
-            const spouse_office = $("#spouse_address").val().trim().toUpperCase();
-            const spouse_government_issued_id = $("#spouse_issued_id").val().trim().toUpperCase();
-            const spouse_government_id_no = $("#spouse_id_no").val().trim().toUpperCase();
-            const spouse_date_issued = $("#spouse_date_issued").val().trim().toUpperCase();
 
             if (declarant_position == "") {
                 is_valid = false;
@@ -183,6 +238,77 @@
                 declarant_government_id_issued: declarant_government_issued_id,
                 declarant_government_id_no: declarant_government_id_no,
                 declarant_date_issued: (declarant_date_issued == "") ? null : declarant_date_issued,
+            }
+
+            fetch('{{ route('updateDeclarant') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
+                    }
+
+                    toastr.success(data.message, "Information");
+                }).catch(err => {
+                console.log(err);
+            })
+        });
+
+        $("#spouse_btn_save_declarant").click(function () {
+            let is_valid = true;
+
+            $(".is-invalid").removeClass("is-invalid");
+
+            const spouse_fname = $("#spouse_fname").val().trim().toUpperCase();
+            const spouse_mname = $("#spouse_mname").val().trim().toUpperCase();
+            const spouse_lname = $("#spouse_lname").val().trim().toUpperCase();
+            const spouse_position = $("#spouse_position").val().trim().toUpperCase();
+            const spouse_agency = $("#spouse_agency").val().trim().toUpperCase();
+            const spouse_office = $("#spouse_address").val().trim().toUpperCase();
+            const spouse_government_issued_id = $("#spouse_issued_id").val().trim().toUpperCase();
+            const spouse_government_id_no = $("#spouse_id_no").val().trim().toUpperCase();
+            const spouse_date_issued = $("#spouse_date_issued").val().trim().toUpperCase();
+
+            // Validate Spouse Fields (Assuming similar required fields as declarant for now)
+             if (spouse_position == "") {
+                is_valid = false;
+                $("#spouse_position").addClass("is-invalid");
+            }
+
+            if (spouse_agency == "") {
+                is_valid = false;
+                $("#spouse_agency").addClass("is-invalid");
+            }
+
+            if (spouse_office == "") {
+                is_valid = false;
+                $("#spouse_address").addClass("is-invalid");
+            }
+
+            if (spouse_government_issued_id == "") {
+                is_valid = false;
+                $("#spouse_issued_id").addClass("is-invalid");
+            }
+
+             if (spouse_government_id_no == "") {
+                is_valid = false;
+                $("#spouse_id_no").addClass("is-invalid");
+            }
+
+
+            if (!is_valid) {
+                 alert("Please fill in required fields");
+                 return;
+             }
+
+            const params = {
                 spouse_fname: spouse_fname,
                 spouse_mname: spouse_mname,
                 spouse_lname: spouse_lname,
@@ -194,7 +320,7 @@
                 spouse_date_issued: (spouse_date_issued == "") ? null : spouse_date_issued,
             }
 
-            fetch('{{ route('updateDeclarant') }}', {
+             fetch('{{ route('updateSpouse') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -222,14 +348,16 @@
             const date_acquisition = $("#business_date_acquisition").val().trim().toUpperCase();
 
             const params = {
-                id: business_interest_id,
+                id: (is_spouse_business_interest) ? spouse_business_interest_id : business_interest_id,
                 enterprise: business_enterprise,
                 address: business_address,
                 nature: nature,
                 date_acquisition: date_acquisition
             }
 
-            fetch('{{ route('insertBusinessInterest') }}', {
+            const route = (is_spouse_business_interest) ? '{{ route('insertSpouseBusinessInterest') }}' : '{{ route('insertBusinessInterest') }}';
+
+            fetch(route, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -246,7 +374,11 @@
 
                     business_interest_modal.toggle();
                     toastr.success(data.message, "Information");
-                    getBusinessInterest();
+                    if(is_spouse_business_interest){
+                        getSpouseBusinessInterest();
+                    }else{
+                        getBusinessInterest();
+                    }
                 }).catch(err => {
                 console.log(err);
                 toastr.error(err, 'Something went wrong');
@@ -346,7 +478,7 @@
             }
 
             const params = {
-                id: real_properties_id,
+                id: (is_spouse_real_properties) ? spouse_real_properties_id : real_properties_id,
                 description: description,
                 kind: kind,
                 exact_location: exact_location,
@@ -357,7 +489,9 @@
                 acquisition_cost: acquisition_cost
             }
 
-            fetch('{{ route('insertRealProperties') }}', {
+            const route = (is_spouse_real_properties) ? '{{ route('insertSpouseRealProperties') }}' : '{{ route('insertRealProperties') }}';
+
+            fetch(route, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -374,7 +508,11 @@
 
                     real_properties_modal.toggle();
                     toastr.success(data.message, "Information");
-                    getRealProperties()
+                    if(is_spouse_real_properties){
+                        getSpouseRealProperties();
+                    }else{
+                        getRealProperties();
+                    }
                 }).catch(err => {
                 console.log(err);
             })
@@ -402,13 +540,15 @@
             }
 
             const params = {
-                id: personal_properties_id,
+                id: (is_spouse_personal_properties) ? spouse_personal_properties_id : personal_properties_id,
                 gadget: gadget,
                 various_years: various_years,
                 acquisition_cost: acquisition_cost
             }
 
-            fetch('{{ route('insertPersonalProperties') }}', {
+            const route = (is_spouse_personal_properties) ? '{{ route('insertSpousePersonalProperties') }}' : '{{ route('insertPersonalProperties') }}';
+
+            fetch(route, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -425,7 +565,11 @@
 
                     personal_properties_modal.toggle();
                     toastr.success(data.message, "Information");
-                    getPersonalProperties();
+                    if(is_spouse_personal_properties){
+                        getSpousePersonalProperties();
+                    }else{
+                        getPersonalProperties();
+                    }
                 }).catch(err => {
                 console.log(err);
             });
@@ -452,13 +596,15 @@
             }
 
             const params = {
-                id: liabilities_id,
+                id: (is_spouse_liabilities) ? spouse_liabilities_id : liabilities_id,
                 nature: nature,
                 creditors_name: creditors_name,
                 outstanding_balance: outstanding_balance
             }
 
-            fetch('{{ route('insertLiabilities') }}', {
+            const route = (is_spouse_liabilities) ? '{{ route('insertSpouseLiabilities') }}' : '{{ route('insertLiabilities') }}';
+
+            fetch(route, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -475,7 +621,11 @@
 
                     liabilities_modal.toggle();
                     toastr.success(data.message, "Information");
-                    getLiabilities();
+                    if(is_spouse_liabilities){
+                        getSpouseLiabilities();
+                    }else{
+                        getLiabilities();
+                    }
                 }).catch(err => {
                 console.log(err);
             });
@@ -539,6 +689,42 @@
             });
         });
 
+        $("#btn_save_marriage").click(function () {
+            const spouse_name = $("#spouse_name").val().trim().toUpperCase();
+
+            if (spouse_name == "") {
+                alert("Name is required");
+                return;
+            }
+
+            const params = {
+                id: marriages_id,
+                spouse: spouse_name,
+            }
+
+            fetch('{{ route('insertMarriages') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
+                    }
+
+                    marriages_modal.toggle();
+                    toastr.success(data.message, "Information");
+                    getMarriages();
+                }).catch(err => {
+                console.log(err);
+            });
+        });
+
         getDeclarant();
         getDeclarantSpouse();
         getChildren();
@@ -547,6 +733,12 @@
         getLiabilities();
         getBusinessInterest();
         getGovernmentRelative();
+        getMarriages();
+
+        getSpouseRealProperties();
+        getSpousePersonalProperties();
+        getSpouseLiabilities();
+        getSpouseBusinessInterest();
     });
 
     function getDeclarant() {
@@ -555,7 +747,6 @@
         })
             .then(res => res.json())
             .then(data => {
-                console.log(data);
                 if (data.code == 500) {
                     console.log(data.message)
                     return;
@@ -584,7 +775,6 @@
         })
             .then(res => res.json())
             .then(data => {
-                console.log(data);
                 if (data.code == 500) {
                     console.log(data.message)
                     return;
@@ -825,6 +1015,39 @@
         })
     }
 
+    function getMarriages() {
+        fetch('{{ route('getMarriages') }}', {
+            method: "GET"
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code == 500) {
+                    console.log(data.message);
+                    return;
+                }
+
+                $("#marriages_list").empty();
+                data.results.forEach(it => {
+                    const tr = `
+                   <tr id='marriage_` + it.id + `'>
+                       <td>` + it.spouse + `</td>
+                       <td>
+                            <button class="btn btn-sm btn-success me-1" onClick='editMarriage(` + it.id + `)'>
+                                <span class="bi bi-pencil"></span>
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteMarriage(` + it.id + `)'>
+                                <span class="bi bi-trash"></span>
+                            </button>
+                       </td>
+                   </tr>`;
+
+                    $("#marriages_list").append(tr);
+                });
+            }).catch(err => {
+            console.log(err);
+        })
+    }
+
     function deleteChildren(id) {
         if (confirm("Are you sure you want to delete this record?")) {
             fetch('{{ route('deleteSalnChildren') }}', {
@@ -975,6 +1198,31 @@
         }
     }
 
+    function deleteMarriage(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch('{{ route('deleteMarriage') }}', {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({id: id})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
+                    }
+
+                    toastr.success(data.message, "Information");
+                    getMarriages();
+                }).catch(err => {
+                console.log(err);
+            })
+        }
+    }
+
     function editChildren(id) {
         const name = $("#children_" + id + " td:eq(0)").text();
         const birthdate = $("#children_" + id + " td:eq(1)").text();
@@ -1057,5 +1305,243 @@
         $("#relative_position").val(position);
         $("#relative_agency").val(agency);
         government_relative_modal.toggle();
+    }
+
+    function editMarriage(id) {
+        const spouse = $("#marriage_" + id + " td:eq(0)").text();
+        marriages_id = id;
+        $("#spouse_name").val(spouse);
+        marriages_modal.toggle();
+    }
+    function getSpouseRealProperties() {
+        fetch('{{ route('getSpouseRealProperties') }}', {
+            method: "GET"
+        })
+            .then(res => res.json())
+            .then(data => {
+                $("#spouse_real_properties_list").empty();
+                if (data.code == 500) return;
+                data.results.forEach(it => {
+                    const tr = `
+                   <tr id='spouse_real_properties_` + it.id + `'>
+                       <td>` + it.description + `</td>
+                       <td>` + it.kind + `</td>
+                       <td>` + it.exact_location + `</td>
+                       <td>` + it.assessed_value + `</td>
+                       <td>` + it.current_fair + `</td>
+                       <td>` + it.acquisition_year + `</td>
+                       <td>` + it.acquisition_mode + `</td>
+                       <td>` + it.acquisition_cost + `</td>
+                       <td>
+                            <button class="btn btn-sm btn-success me-1" onClick='editSpouseRealProperties(` + it.id + `)'>
+                                <span class="bi bi-pencil"></span>
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpouseRealProperties(` + it.id + `)'>
+                                <span class="bi bi-trash"></span>
+                            </button>
+                       </td>
+                   </tr>`;
+                    $("#spouse_real_properties_list").append(tr);
+                });
+            }).catch(e => console.log(e));
+    }
+
+    function getSpousePersonalProperties() {
+        fetch('{{ route('getSpousePersonalProperties') }}', { method: "GET" })
+            .then(res => res.json())
+            .then(data => {
+                $("#spouse_personal_properties_list").empty();
+                if (data.code == 500) return;
+                data.results.forEach(it => {
+                    const tr = `
+                   <tr id='spouse_personal_properties_` + it.id + `'>
+                       <td>` + it.gadget + `</td>
+                       <td>` + it.various_years + `</td>
+                       <td>` + it.acquisition_cost + `</td>
+                       <td>
+                            <button class="btn btn-sm btn-success me-1" onClick='editSpousePersonalProperties(` + it.id + `)'>
+                                <span class="bi bi-pencil"></span>
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpousePersonalProperties(` + it.id + `)'>
+                                <span class="bi bi-trash"></span>
+                            </button>
+                       </td>
+                   </tr>`;
+                    $("#spouse_personal_properties_list").append(tr);
+                });
+            }).catch(e => console.log(e));
+    }
+
+    function getSpouseLiabilities() {
+        fetch('{{ route('getSpouseLiabilities') }}', { method: "GET" })
+            .then(res => res.json())
+            .then(data => {
+                $("#spouse_liabilities_list").empty();
+                if (data.code == 500) return;
+                data.results.forEach(it => {
+                    const tr = `
+                   <tr id='spouse_liabilities_` + it.id + `'>
+                       <td>` + it.nature + `</td>
+                       <td>` + it.creditors_name + `</td>
+                       <td>` + it.outstanding_balance + `</td>
+                       <td>
+                            <button class="btn btn-sm btn-success me-1" onClick='editSpouseLiabilities(` + it.id + `)'>
+                                <span class="bi bi-pencil"></span>
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpouseLiabilities(` + it.id + `)'>
+                                <span class="bi bi-trash"></span>
+                            </button>
+                       </td>
+                   </tr>`;
+                    $("#spouse_liabilities_list").append(tr);
+                });
+            }).catch(e => console.log(e));
+    }
+
+    function getSpouseBusinessInterest() {
+        fetch('{{ route('getSpouseBusinessInterest') }}', { method: "GET" })
+            .then(res => res.json())
+            .then(data => {
+                $("#spouse_business_interest_list").empty();
+                if (data.code == 500) return;
+                data.results.forEach(it => {
+                     const tr = `
+                   <tr id='spouse_business_interest_` + it.id + `'>
+                       <td>` + it.enterprise + `</td>
+                       <td>` + it.address + `</td>
+                       <td>` + it.nature + `</td>
+                       <td>` + moment(it.date_acquisition).format("MM/DD/YYYY") + `</td>
+                       <td>
+                            <button class="btn btn-sm btn-success me-1" onClick='editSpouseBusinessInterest(` + it.id + `)'>
+                                <span class="bi bi-pencil"></span>
+                            </button>
+                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpouseBusinessInterest(` + it.id + `)'>
+                                <span class="bi bi-trash"></span>
+                            </button>
+                       </td>
+                   </tr>`;
+                    $("#spouse_business_interest_list").append(tr);
+                });
+            }).catch(e => console.log(e));
+    }
+
+    function deleteSpouseRealProperties(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch('{{ route('deleteSpouseRealProperties') }}', {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                body: JSON.stringify({id: id})
+            }).then(res => res.json()).then(data => {
+                if (data.code == 500) { toastr.error(data.message, "Ooops"); return; }
+                toastr.success(data.message, "Information");
+                getSpouseRealProperties();
+            }).catch(e => console.log(e));
+        }
+    }
+
+    function deleteSpousePersonalProperties(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch('{{ route('deleteSpousePersonalProperties') }}', {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                body: JSON.stringify({id: id})
+            }).then(res => res.json()).then(data => {
+                if (data.code == 500) { toastr.error(data.message, "Ooops"); return; }
+                toastr.success(data.message, "Information");
+                getSpousePersonalProperties();
+            }).catch(e => console.log(e));
+        }
+    }
+
+    function deleteSpouseLiabilities(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch('{{ route('deleteSpouseLiabilities') }}', {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                body: JSON.stringify({id: id})
+            }).then(res => res.json()).then(data => {
+                if (data.code == 500) { toastr.error(data.message, "Ooops"); return; }
+                toastr.success(data.message, "Information");
+                getSpouseLiabilities();
+            }).catch(e => console.log(e));
+        }
+    }
+
+    function deleteSpouseBusinessInterest(id) {
+        if (confirm("Are you sure you want to delete this record?")) {
+            fetch('{{ route('deleteSpouseBusinessInterest') }}', {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                body: JSON.stringify({id: id})
+            }).then(res => res.json()).then(data => {
+                if (data.code == 500) { toastr.error(data.message, "Ooops"); return; }
+                toastr.success(data.message, "Information");
+                getSpouseBusinessInterest();
+            }).catch(e => console.log(e));
+        }
+    }
+
+    function editSpouseRealProperties(id) {
+        is_spouse_real_properties = true;
+        const description = $("#spouse_real_properties_" + id + " td:eq(0)").text();
+        const kind = $("#spouse_real_properties_" + id + " td:eq(1)").text();
+        const exact_location = $("#spouse_real_properties_" + id + " td:eq(2)").text();
+        const assessed_value = $("#spouse_real_properties_" + id + " td:eq(3)").text();
+        const current_fair = $("#spouse_real_properties_" + id + " td:eq(4)").text();
+        const acquisition_year = $("#spouse_real_properties_" + id + " td:eq(5)").text();
+        const acquisition_mode = $("#spouse_real_properties_" + id + " td:eq(6)").text();
+        const acquisition_cost = $("#spouse_real_properties_" + id + " td:eq(7)").text();
+
+        spouse_real_properties_id = id;
+        $("#real_description").val(description);
+        $("#real_kind").val(kind);
+        $("#real_location").val(exact_location);
+        $("#real_assessed_value").val(assessed_value);
+        $("#real_current_fair").val(current_fair);
+        $("#real_acquisition_year").val(acquisition_year);
+        $("#real_acquisition_mode").val(acquisition_mode);
+        $("#real_acquisition_cost").val(acquisition_cost);
+        real_properties_modal.toggle();
+    }
+
+    function editSpousePersonalProperties(id) {
+        is_spouse_personal_properties = true;
+        const gadget = $("#spouse_personal_properties_" + id + " td:eq(0)").text();
+        const various_years = $("#spouse_personal_properties_" + id + " td:eq(1)").text();
+        const acquisition_cost = $("#spouse_personal_properties_" + id + " td:eq(2)").text();
+
+        spouse_personal_properties_id = id;
+        $("#personal_gadget").val(gadget);
+        $("#personal_various_years").val(various_years);
+        $("#personal_acquisition_cost").val(acquisition_cost);
+        personal_properties_modal.toggle();
+    }
+
+    function editSpouseLiabilities(id) {
+        is_spouse_liabilities = true;
+        const nature = $("#spouse_liabilities_" + id + " td:eq(0)").text();
+        const creditors_name = $("#spouse_liabilities_" + id + " td:eq(1)").text();
+        const oustanding_balance = $("#spouse_liabilities_" + id + " td:eq(2)").text();
+
+        spouse_liabilities_id = id;
+        $("#liabilities_nature").val(nature);
+        $("#liabilities_creditors_name").val(creditors_name);
+        $("#liabilities_outstanding_balance").val(oustanding_balance);
+        liabilities_modal.toggle();
+    }
+
+    function editSpouseBusinessInterest(id) {
+        is_spouse_business_interest = true;
+        const enterprise = $("#spouse_business_interest_" + id + " td:eq(0)").text();
+        const address = $("#spouse_business_interest_" + id + " td:eq(1)").text();
+        const nature = $("#spouse_business_interest_" + id + " td:eq(2)").text();
+        const date_acquisition = $("#spouse_business_interest_" + id + " td:eq(3)").text();
+
+        spouse_business_interest_id = id;
+        $("#business_enterprise").val(enterprise);
+        $("#business_address").val(address);
+        $("#business_nature").val(nature);
+        $("#business_date_acquisition").val(moment(date_acquisition).format("YYYY-MM-DD"));
+        business_interest_modal.toggle();
     }
 </script>

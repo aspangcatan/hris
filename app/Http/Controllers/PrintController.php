@@ -12,6 +12,7 @@ use App\Models\FamilyBackground;
 use App\Models\GovernmentRelative;
 use App\Models\Learning;
 use App\Models\Liabilities;
+use App\Models\Marriages;
 use App\Models\Membership;
 use App\Models\PersonalProperties;
 use App\Models\RealProperties;
@@ -23,6 +24,10 @@ use App\Models\RelatedWork;
 use App\Models\SalnChildren;
 use App\Models\ServiceRecords;
 use App\Models\Skill;
+use App\Models\SpouseBusinessInterest;
+use App\Models\SpouseLiabilities;
+use App\Models\SpousePersonalProperties;
+use App\Models\SpouseRealProperties;
 use App\Models\Survey;
 use App\Models\User;
 use App\Models\Voluntary;
@@ -298,6 +303,32 @@ class PrintController extends Controller
         }
     }
 
+    public function generateSALNReport()
+    {
+        // sample data (replace with DB data)
+        $employees = collect(range(1, 35))->map(function ($i) {
+            return [
+                'no' => $i,
+                'lastname' => '',
+                'firstname' => '',
+                'middlename' => '',
+                'tin' => '',
+                'position' => '',
+                'net_worth' => '',
+            ];
+        });
+
+        $pdf = Pdf::loadView('pdf.saln-report', [
+            'employees' => $employees,
+            'agency' => 'CEBU SOUTH MEDICAL CENTER',
+            'calendar_year' => '2024'
+        ])
+            ->setPaper('legal', 'landscape');
+
+        // 👇 PREVIEW instead of download
+        return $pdf->stream('SALN_Report.pdf');
+    }
+
     public function printSaln(Request $request)
     {
         try {
@@ -334,16 +365,24 @@ class PrintController extends Controller
             $spouse = DB::table('hris.family_backgrounds as f')
                 ->leftJoin('hris.saln_spouse as d', 'f.user_id', '=', 'd.user_id')
                 ->where('f.user_id', '=', Auth::id())
-                ->get(['f.spouse_fname', 'f.spouse_mname', 'f.spouse_lname', 'd.position', 'd.agency',
+                ->get(['f.spouse_fname', 'f.spouse_mname', 'f.spouse_lname', 'f.spouse_ext_name', 'd.position', 'd.agency',
                     'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued'])
                 ->first();
 
+
             $children_array = [
-                ['name' => 'N/A', 'birthdate' => 'N/A', 'age' => 'N/A'],
-                ['name' => 'N/A', 'birthdate' => 'N/A', 'age' => 'N/A'],
-                ['name' => 'N/A', 'birthdate' => 'N/A', 'age' => 'N/A'],
-                ['name' => 'N/A', 'birthdate' => 'N/A', 'age' => 'N/A'],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
+                ['name' => '', 'birthdate' => '', 'age' => ''],
             ];
+
+            $marriages_array = [
+                ['name' => ''],
+                ['name' => ''],
+            ];
+
+
             $real_properties_array = [
                 [
                     'description' => 'N/A',
@@ -365,6 +404,29 @@ class PrintController extends Controller
                     'acquisition_mode' => 'N/A',
                     'acquisition_cost' => 'N/A',
                 ],
+                [
+                    'description' => 'N/A',
+                    'kind' => 'N/A',
+                    'exact_location' => 'N/A',
+                    'assessed_value' => 'N/A',
+                    'current_fair' => 'N/A',
+                    'acquisition_year' => 'N/A',
+                    'acquisition_mode' => 'N/A',
+                    'acquisition_cost' => 'N/A',
+                ],
+                [
+                    'description' => 'N/A',
+                    'kind' => 'N/A',
+                    'exact_location' => 'N/A',
+                    'assessed_value' => 'N/A',
+                    'current_fair' => 'N/A',
+                    'acquisition_year' => 'N/A',
+                    'acquisition_mode' => 'N/A',
+                    'acquisition_cost' => 'N/A',
+                ]
+            ];
+
+            $spouse_real_properties_array = [
                 [
                     'description' => 'N/A',
                     'kind' => 'N/A',
@@ -416,29 +478,44 @@ class PrintController extends Controller
                 ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
             ];
 
+            $spouse_personal_properties_array = [
+                ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
+                ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
+                ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
+                ['gadget' => 'N/A', 'various_years' => 'N/A', 'acquisition_cost' => 'N/A'],
+            ];
+
+
             $personal_properties_extended = [];
+            $spouse_personal_properties_extended = [];
 
             $liabilities_array = [
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
                 ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
-                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
-                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
-                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
+            ];
 
+            $spouse_liabilities_array = [
+                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
+                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
+                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
+                ['nature' => 'N/A', 'creditors_name' => 'N/A', 'outstanding_balance' => 'N/A'],
             ];
 
             $business_array = [
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
+            ];
+
+            $spouse_business_array = [
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
                 ['enterprise' => 'N/A', 'address' => 'N/A', 'nature' => 'N/A', 'date_acquisition' => 'N/A'],
             ];
+
             $relatives_array = [
-                ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
                 ['name' => 'N/A', 'relationship' => 'N/A', 'position' => 'N/A', 'agency' => 'N/A'],
@@ -458,82 +535,274 @@ class PrintController extends Controller
                 ];
             }
 
-            $real_properties_subtotal = 0;
-            $real_properties = RealProperties::where('user_id', Auth::id())->get();
-            for ($i = 0; $i < count($real_properties); $i++) {
-                $acquisition_cost = str_replace(',', '', $real_properties[$i]['acquisition_cost']);
-                $real_properties_array[$i] = [
-                    'description' => $real_properties[$i]['description'],
-                    'kind' => $real_properties[$i]['kind'],
-                    'exact_location' => $real_properties[$i]['exact_location'],
-                    'assessed_value' => $real_properties[$i]['assessed_value'],
-                    'current_fair' => $real_properties[$i]['current_fair'],
-                    'acquisition_year' => $real_properties[$i]['acquisition_year'],
-                    'acquisition_mode' => $real_properties[$i]['acquisition_mode'],
-                    'acquisition_cost' => number_format($acquisition_cost, 2),
+            $marriages = Marriages::where('userid', Auth::id())->take(2)->get();
+            for ($i = 0; $i < count($marriages); $i++) {
+                $marriages_array[$i] = [
+                    'name' => $marriages[$i]['spouse']
                 ];
-
-                $real_properties_subtotal += (double)$acquisition_cost;
             }
 
-            $extended_count = 0;
-            $personal_properties_subtotal = 0;
-            $personal_properties_extended_subtotal = 0;
-            $personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
-            for ($i = 0; $i < count($personal_properties); $i++) {
-                $personal_properties_cost = str_replace(',', '', $personal_properties[$i]['acquisition_cost']);
-                if ($i > 6) {
-                    $personal_properties_extended[$extended_count++] = [
-                        'gadget' => $personal_properties[$i]['gadget'],
-                        'various_years' => $personal_properties[$i]['various_years'],
-                        'acquisition_cost' => number_format($personal_properties_cost, 2)
-                    ];
+            $real_properties_subtotal_a = 0;
+            $real_properties_subtotal_b = 0;
+            $all_real_properties = RealProperties::where('user_id', Auth::id())->get();
 
-                    $personal_properties_extended_subtotal += (double)$personal_properties_cost;
+            $real_properties_array = [];
+            $real_properties_b_array = [];
 
+            foreach ($all_real_properties as $i => $prop) {
+                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $entry = [
+                    'description' => $prop->description,
+                    'kind' => $prop->kind,
+                    'exact_location' => $prop->exact_location,
+                    'assessed_value' => $prop->assessed_value,
+                    'current_fair' => $prop->current_fair,
+                    'acquisition_year' => $prop->acquisition_year,
+                    'acquisition_mode' => $prop->acquisition_mode,
+                    'acquisition_cost' => number_format($cost, 2),
+                ];
+
+                if ($i < 4) {
+                    $real_properties_array[$i] = $entry;
+                    $real_properties_subtotal_a += $cost;
                 } else {
-                    $personal_properties_array[$i] = [
-                        'gadget' => $personal_properties[$i]['gadget'],
-                        'various_years' => $personal_properties[$i]['various_years'],
-                        'acquisition_cost' => number_format($personal_properties_cost, 2)
-                    ];
-                    $personal_properties_subtotal += (double)$personal_properties_cost;
+                    $real_properties_b_array[] = $entry;
+                    $real_properties_subtotal_b += $cost;
                 }
             }
 
-            $liabilities_total = 0;
-            $liabilities = Liabilities::where('user_id', Auth::id())->get();
-            for ($i = 0; $i < count($liabilities); $i++) {
-                $liabilities_balance = str_replace(',', '', $liabilities[$i]['outstanding_balance']);
-
-                $liabilities_array[$i] = [
-                    'nature' => $liabilities[$i]['nature'],
-                    'creditors_name' => $liabilities[$i]['creditors_name'],
-                    'outstanding_balance' => number_format($liabilities_balance, 2)
-                ];
-
-                $liabilities_total += (double)$liabilities_balance;
-            }
-
-            $business = BusinessInterest::where('user_id', Auth::id())->get();
-            for ($i = 0; $i < count($business); $i++) {
-                $business_array[$i] = [
-                    'enterprise' => $business[$i]['enterprise'],
-                    'address' => $business[$i]['address'],
-                    'nature' => $business[$i]['nature'],
-                    'date_acquisition' => date('m/d/Y', strtotime($business[$i]['date_acquisition']))
+            // Pad Annex A with N/A if empty, then empty strings
+            for ($i = count($real_properties_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($all_real_properties) === 0) ? 'N/A' : '';
+                $real_properties_array[$i] = [
+                    'description' => $content, 'kind' => '', 'exact_location' => '',
+                    'assessed_value' => '', 'current_fair' => '', 'acquisition_year' => '',
+                    'acquisition_mode' => '', 'acquisition_cost' => ''
                 ];
             }
 
-            $relatives = GovernmentRelative::where('user_id', Auth::id())->get();
-            for ($i = 0; $i < count($relatives); $i++) {
-                $relatives_array[$i] = [
-                    'name' => $relatives[$i]['name'],
-                    'relationship' => $relatives[$i]['relationship'],
-                    'position' => $relatives[$i]['position'],
-                    'agency' => $relatives[$i]['agency']
+            // Pad Annex B with N/A if empty, then empty strings (Min 4 rows)
+            for ($i = count($real_properties_b_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($all_real_properties) <= 4) ? 'N/A' : '';
+                $real_properties_b_array[] = [
+                    'description' => $content, 'kind' => '', 'exact_location' => '',
+                    'assessed_value' => '', 'current_fair' => '', 'acquisition_year' => '',
+                    'acquisition_mode' => '', 'acquisition_cost' => ''
                 ];
             }
+
+            $spouse_real_properties_subtotal = 0;
+            $spouse_real_properties_db = SpouseRealProperties::where('user_id', Auth::id())->get();
+            $spouse_real_properties_array = [];
+
+            foreach ($spouse_real_properties_db as $i => $prop) {
+                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $spouse_real_properties_array[] = [
+                    'description' => $prop->description,
+                    'kind' => $prop->kind,
+                    'exact_location' => $prop->exact_location,
+                    'assessed_value' => $prop->assessed_value,
+                    'current_fair' => $prop->current_fair,
+                    'acquisition_year' => $prop->acquisition_year,
+                    'acquisition_mode' => $prop->acquisition_mode,
+                    'acquisition_cost' => number_format($cost, 2),
+                ];
+                $spouse_real_properties_subtotal += $cost;
+            }
+
+            // Pad Spouse Real Properties (Annex C) with N/A if empty, then empty strings (Min 4 rows)
+            for ($i = count($spouse_real_properties_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($spouse_real_properties_db) === 0) ? 'N/A' : '';
+                $spouse_real_properties_array[] = [
+                    'description' => $content, 'kind' => '', 'exact_location' => '',
+                    'assessed_value' => '', 'current_fair' => '', 'acquisition_year' => '',
+                    'acquisition_mode' => '', 'acquisition_cost' => ''
+                ];
+            }
+
+
+            $personal_properties_subtotal_a = 0;
+            $personal_properties_subtotal_b = 0;
+            $all_personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
+
+            $personal_properties_array = [];
+            $personal_properties_b_array = [];
+
+            foreach ($all_personal_properties as $i => $prop) {
+                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $entry = [
+                    'gadget' => $prop->gadget,
+                    'various_years' => $prop->various_years,
+                    'acquisition_cost' => number_format($cost, 2)
+                ];
+
+                if ($i < 6) {
+                    $personal_properties_array[$i] = $entry;
+                    $personal_properties_subtotal_a += $cost;
+                } else {
+                    $personal_properties_b_array[] = $entry;
+                    $personal_properties_subtotal_b += $cost;
+                }
+            }
+
+            for ($i = count($personal_properties_array); $i < 6; $i++) {
+                $content = ($i === 0 && count($all_personal_properties) === 0) ? 'N/A' : '';
+                $personal_properties_array[$i] = ['gadget' => $content, 'various_years' => '', 'acquisition_cost' => ''];
+            }
+
+            // Pad Annex B with N/A if empty, then empty strings (Min 4 rows)
+            for ($i = count($personal_properties_b_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($all_personal_properties) <= 6) ? 'N/A' : '';
+                $personal_properties_b_array[] = ['gadget' => $content, 'various_years' => '', 'acquisition_cost' => ''];
+            }
+
+            $spouse_personal_properties_subtotal = 0;
+            $spouse_personal_properties_db = SpousePersonalProperties::where('user_id', Auth::id())->get();
+            $spouse_personal_properties_array = [];
+
+            foreach ($spouse_personal_properties_db as $prop) {
+                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $spouse_personal_properties_array[] = [
+                    'gadget' => $prop->gadget,
+                    'various_years' => $prop->various_years,
+                    'acquisition_cost' => number_format($cost, 2)
+                ];
+                $spouse_personal_properties_subtotal += $cost;
+            }
+
+            // Pad Spouse Personal Properties (Annex C) with N/A if empty, then empty strings (Min 4 rows)
+            for ($i = count($spouse_personal_properties_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($spouse_personal_properties_db) === 0) ? 'N/A' : '';
+                $spouse_personal_properties_array[] = ['gadget' => $content, 'various_years' => '', 'acquisition_cost' => ''];
+            }
+
+            $liabilities_total_a = 0;
+            $liabilities_total_b = 0;
+            $all_liabilities = Liabilities::where('user_id', Auth::id())->get();
+
+            $liabilities_array = [];
+            $liabilities_b_array = [];
+
+            foreach ($all_liabilities as $i => $lib) {
+                $bal = (double)str_replace(',', '', $lib->outstanding_balance);
+                $entry = [
+                    'nature' => $lib->nature,
+                    'creditors_name' => $lib->creditors_name,
+                    'outstanding_balance' => number_format($bal, 2)
+                ];
+
+                if ($i < 4) {
+                    $liabilities_array[$i] = $entry;
+                    $liabilities_total_a += $bal;
+                } else {
+                    $liabilities_b_array[] = $entry;
+                    $liabilities_total_b += $bal;
+                }
+            }
+
+            for ($i = count($liabilities_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($all_liabilities) === 0) ? 'N/A' : '';
+                $liabilities_array[$i] = ['nature' => $content, 'creditors_name' => '', 'outstanding_balance' => ''];
+            }
+
+            // Pad Annex B with N/A if empty, then empty strings (Min 4 rows)
+            for ($i = count($liabilities_b_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($all_liabilities) <= 4) ? 'N/A' : '';
+                $liabilities_b_array[] = ['nature' => $content, 'creditors_name' => '', 'outstanding_balance' => ''];
+            }
+
+            $spouse_liabilities_total = 0;
+            $spouse_liabilities_db = SpouseLiabilities::where('user_id', Auth::id())->get();
+            $spouse_liabilities_array = [];
+
+            foreach ($spouse_liabilities_db as $lib) {
+                $bal = (double)str_replace(',', '', $lib->outstanding_balance);
+                $spouse_liabilities_array[] = [
+                    'nature' => $lib->nature,
+                    'creditors_name' => $lib->creditors_name,
+                    'outstanding_balance' => number_format($bal, 2)
+                ];
+                $spouse_liabilities_total += $bal;
+            }
+
+            // Pad Spouse Liabilities (Annex C) with N/A if empty, then empty strings (Min 4 rows)
+            for ($i = count($spouse_liabilities_array); $i < 4; $i++) {
+                $content = ($i === 0 && count($spouse_liabilities_db) === 0) ? 'N/A' : '';
+                $spouse_liabilities_array[] = ['nature' => $content, 'creditors_name' => '', 'outstanding_balance' => ''];
+            }
+
+            $all_business = BusinessInterest::where('user_id', Auth::id())->get();
+            $business_array = [];
+            $business_b_array = [];
+
+            foreach ($all_business as $i => $bus) {
+                $entry = [
+                    'enterprise' => $bus->enterprise,
+                    'address' => $bus->address,
+                    'nature' => $bus->nature,
+                    'date_acquisition' => date('m/d/Y', strtotime($bus->date_acquisition))
+                ];
+
+                if ($i < 3) {
+                    $business_array[$i] = $entry;
+                } else {
+                    $business_b_array[] = $entry;
+                }
+            }
+
+            for ($i = count($business_array); $i < 3; $i++) {
+                $content = ($i === 0 && count($all_business) === 0) ? 'N/A' : '';
+                $business_array[$i] = ['enterprise' => $content, 'address' => '', 'nature' => '', 'date_acquisition' => ''];
+            }
+
+            // Pad Annex B with N/A if empty, then empty strings (Min 3 rows)
+            for ($i = count($business_b_array); $i < 3; $i++) {
+                $content = ($i === 0 && count($all_business) <= 3) ? 'N/A' : '';
+                $business_b_array[] = ['enterprise' => $content, 'address' => '', 'nature' => '', 'date_acquisition' => ''];
+            }
+
+            $spouse_business_db = SpouseBusinessInterest::where('user_id', Auth::id())->get();
+            $spouse_business_array = [];
+            foreach ($spouse_business_db as $bus) {
+                $spouse_business_array[] = [
+                    'enterprise' => $bus->enterprise,
+                    'address' => $bus->address,
+                    'nature' => $bus->nature,
+                    'date_acquisition' => date('m/d/Y', strtotime($bus->date_acquisition))
+                ];
+            }
+
+            // Pad Spouse Business Interests (Annex C) with N/A if empty, then empty strings (Min 3 rows)
+            for ($i = count($spouse_business_array); $i < 3; $i++) {
+                $content = ($i === 0 && count($spouse_business_db) === 0) ? 'N/A' : '';
+                $spouse_business_array[] = ['enterprise' => $content, 'address' => '', 'nature' => '', 'date_acquisition' => ''];
+            }
+
+
+            $all_relatives = GovernmentRelative::where('user_id', Auth::id())->get();
+            $relatives_array = [];
+            foreach ($all_relatives as $i => $rel) {
+                if ($i < 5) {
+                    $relatives_array[$i] = [
+                        'name' => $rel->name,
+                        'relationship' => $rel->relationship,
+                        'position' => $rel->position,
+                        'agency' => $rel->agency
+                    ];
+                }
+            }
+
+            for ($i = count($relatives_array); $i < 5; $i++) {
+                $content = ($i === 0 && count($all_relatives) === 0) ? 'N/A' : '';
+                $relatives_array[$i] = ['name' => $content, 'relationship' => '', 'position' => '', 'agency' => ''];
+            }
+
+            // Grand Totals for Summary
+            $grand_real_subtotal = $real_properties_subtotal_a + $real_properties_subtotal_b;
+            $grand_personal_subtotal = $personal_properties_subtotal_a + $personal_properties_subtotal_b;
+            $grand_liabilities_total = $liabilities_total_a + $liabilities_total_b;
+            $grand_assets_total = $grand_real_subtotal + $grand_personal_subtotal;
+            $grand_net_worth = $grand_assets_total - $grand_liabilities_total;
 
             $addressParts = collect([
                 $declarant->house_no ?? '', // Ensure default values are strings
@@ -548,7 +817,18 @@ class PrintController extends Controller
 
             $formattedAddress = $addressParts->join(', ');
 
-            $pdf = Pdf::loadView('pdf.saln', [
+            // Determine if Annex B is needed
+            $show_annex_b = (count($all_real_properties) > 4 || count($all_personal_properties) > 6 || count($all_liabilities) > 4 || count($all_business) > 3);
+
+            // Determine if Annex C is needed
+            $show_annex_c = (count($spouse_real_properties_db) > 0 || count($spouse_personal_properties_db) > 0 || count($spouse_liabilities_db) > 0 || count($spouse_business_db) > 0);
+
+            $total_pages = 2 + ($show_annex_b ? 1 : 0) + ($show_annex_c ? 1 : 0);
+
+            ini_set('memory_limit', '512M');
+            set_time_limit(300);
+
+            $pdf = Pdf::loadView('pdf.new.saln', [
                 'as_of_month' => $request->as_of_month,
                 'as_of_day' => $request->as_of_day,
                 'as_of_year' => $request->as_of_year,
@@ -556,23 +836,54 @@ class PrintController extends Controller
                 'address' => $formattedAddress,
                 'spouse' => $spouse,
                 'children' => $children_array,
+                'marriages' => $marriages_array,
                 'real_properties' => $real_properties_array,
-                'real_properties_subtotal' => $real_properties_subtotal,
+                'real_properties_ext' => $real_properties_b_array,
+                'real_properties_subtotal' => $real_properties_subtotal_a,
+                'real_properties_ext_subtotal' => $real_properties_subtotal_b,
+
+                'spouse_real_properties' => $spouse_real_properties_array,
+                'spouse_real_properties_subtotal' => $spouse_real_properties_subtotal,
+
                 'personal_properties' => $personal_properties_array,
-                'personal_properties_extended' => $personal_properties_extended,
-                'personal_properties_subtotal' => $personal_properties_subtotal,
-                'personal_properties_extended_subtotal' => $personal_properties_extended_subtotal,
+                'personal_properties_ext' => $personal_properties_b_array,
+                'personal_properties_subtotal' => $personal_properties_subtotal_a,
+                'personal_properties_ext_subtotal' => $personal_properties_subtotal_b,
+
+                'spouse_personal_properties' => $spouse_personal_properties_array,
+                'spouse_personal_properties_subtotal' => $spouse_personal_properties_subtotal,
+
                 'liabilities' => $liabilities_array,
-                'liabilities_total' => $liabilities_total,
+                'liabilities_ext' => $liabilities_b_array,
+                'liabilities_total' => $liabilities_total_a,
+                'liabilities_ext_total' => $liabilities_total_b,
+
+                'spouse_liabilities' => $spouse_liabilities_array,
+                'spouse_liabilities_total' => $spouse_liabilities_total,
+
                 'business' => $business_array,
+                'business_ext' => $business_b_array,
+                'spouse_business' => $spouse_business_array,
                 'relatives' => $relatives_array,
+
+                'grand_real_subtotal' => $grand_real_subtotal,
+                'grand_personal_subtotal' => $grand_personal_subtotal,
+                'grand_liabilities_total' => $grand_liabilities_total,
+                'grand_assets_total' => $grand_assets_total,
+                'grand_net_worth' => $grand_net_worth,
                 'print_date' => $request->print_date,
                 'filing_type' => $request->filing_type,
+                'compliance_for' => $request->compliance_for,
                 'business_interest' => $request->business_interest,
                 'government_relatives' => $request->government_relatives,
                 'before_me' => $request->before_me,
                 'day_of' => $request->day_of,
-                'spouse_signature' => $request->spouse_signature
+                'spouse_signature' => $request->spouse_signature,
+                'compliance_for' => $request->compliance_for,
+                'multiple_marriages' => $request->multiple_marriages,
+                'show_annex_b' => $show_annex_b,
+                'show_annex_c' => $show_annex_c,
+                'total_pages' => $total_pages
             ]);
 
             $pdf->set_paper('A4', 'landscape');
@@ -582,6 +893,7 @@ class PrintController extends Controller
             return $exception->getMessage();
         }
     }
+
 
     public function printServiceRecord(Request $request)
     {
