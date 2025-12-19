@@ -1,4 +1,4 @@
-<table style="width:100%; font-size:9.33px;">
+<table style="width:100%; font-size:9px;">
     <tr>
         <td style="width:70%">
             <h1 class="fw-bold">ANNEX A</h1>
@@ -13,10 +13,10 @@
 
 <!-- TITLE -->
 <div style="text-align:center; margin-top:20px;">
-    <div style="font-size:14.66px; font-weight:bold;">
+    <div style="font-size:14px; font-weight:bold;">
         SWORN STATEMENT OF ASSETS, LIABILITIES, AND NET WORTH
     </div>
-    <div style="font-size:10.66px; margin-top:2px;">
+    <div style="font-size:13px; margin-top:2px;">
         (As required by R.A. No. 6713)
     </div>
 
@@ -233,7 +233,7 @@
         <div>SPOUSES, WHO ARE BOTH PUBLIC OFFICIALS OR EMPLOYEES, MAY FILE THE SALN JOINTLY OR SEPARATELY.</div>
         <div>THE DECLARANT SHALL CHECK THE APPROPRIATE BOX</div>
     </div>
-    <div style="font-size:13.33px;margin-top:5px">
+    <div style="font-size:13px;margin-top:5px">
         <div style="display: inline-block;width: 32%">
             @if($filing_type == 'Joint Filing')
                 <input type="checkbox" style="display: inline" checked/>
@@ -260,10 +260,10 @@
         </div>
     </div>
 
-    <div style="margin-top: 10px;font-size: 12px;text-align: left" class="title fw-bold">
+    <div style="margin-top: 10px;font-size: 13px;text-align: left" class="title fw-bold">
         IF WITH MULTIPLE MARRIAGES, INDICATE NAME(S) OF SPOUSES, OTHERWISE CHECK THE "NOT APPLICABLE" BOX.
     </div>
-    <table style="font-size: 14px;text-align: center;margin-top: 5px;padding-left: 25px">
+    <table style="font-size: 13px;text-align: center;margin-top: 5px;padding-left: 25px">
         <tr>
             <td>
                 <div style="border-bottom: 1px solid black"> {{ $marriages[0]["name"] }}</div>
@@ -293,7 +293,7 @@
     <div style="margin-top: 10px;text-decoration: underline" class="title fw-bold">
         UNMARRIED CHILDREN BELOW EIGHTEEN (18) YEARS OF AGE LIVING IN DECLARANT'S HOUESHOLD
     </div>
-    <table style="font-size: 14px;text-align: center;margin-top: 20px">
+    <table style="font-size: 13px;text-align: center;margin-top: 20px">
         <tr class="fw-bold" style="font-size: 10px">
             <td></td>
             <td>NAME OF CHILD</td>
@@ -302,15 +302,23 @@
             <td></td>
         </tr>
 
-        @foreach($children as $key)
+        @forelse($children as $key)
             <tr style="font-size: 13.33px">
                 <td style="width: 8%"></td>
-                <td class="border-bottom">{{ strtoupper($key['name']) }}</td>
+                <td class="border-bottom">{{ strtoupper($key['name'] ?? '') }}</td>
                 <td style="width: 2%"></td>
-                <td class="border-bottom" style="width: 15%">{{ strtoupper($key['age']) }}</td>
+                <td class="border-bottom" style="width: 15%">{{ strtoupper($key['age'] ?? '') }}</td>
                 <td style="width: 8%"></td>
             </tr>
-        @endforeach
+        @empty
+            <tr style="font-size: 13.33px">
+                <td style="width: 8%"></td>
+                <td class="border-bottom" style="text-align: center">N/A</td>
+                <td style="width: 2%"></td>
+                <td class="border-bottom" style="width: 15%; text-align: center">N/A</td>
+                <td style="width: 8%"></td>
+            </tr>
+        @endforelse
     </table>
     <div class="border-bottom" style="margin-top: 20px"></div>
     <div class="border-bottom" style="margin-top: 2px"></div>
@@ -322,13 +330,13 @@
         household)
     </div>
 </div>
-<div class="fw-bold" style="margin-top: 10px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 10px;font-size: 13px">
     1. ASSETS
 </div>
-<div class="fw-bold" style="margin-top: 10px;margin-left: 30px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 10px;margin-left: 30px;font-size: 13px">
     a. Real Properties
 </div>
-<table id="assets" style="text-align: center;margin-top: 10px;font-size: 12px">
+<table id="assets" style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left border-right">
         <td rowspan="2" class="border-right">
             <div class="fw-bold" style="font-size: 10px">DESCRIPTION</div>
@@ -362,20 +370,31 @@
         <td class="fw-bold border-top border-right" style="font-size: 10px">YEAR</td>
         <td class="fw-bold border-top border-right" style="font-size: 10px">MODE</td>
     </tr>
-    @foreach($real_properties as $key)
-        <tr class="border-bottom border-left border-right assets" style="font-size: 11px">
-            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description']) }}</td>
-            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind']) }}</td>
-            <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%;">{{ strtoupper($key['assessed_value']) }}</td>
-            <td class="fw-bold border-right" style="width: 14%;">{{ strtoupper($key['current_fair']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_year']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_mode']) }}</td>
-            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
+    @forelse($real_properties as $key)
+        <tr class="border-bottom border-left border-right assets" style="font-size: 13px">
+            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%;">{{ strtoupper($key['assessed_value'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 14%;">{{ strtoupper($key['current_fair'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_year'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_mode'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-bottom border-left border-right assets" style="font-size: 13px">
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="text-align: center">N/A</td>
+            <td class="fw-bold" style="text-align: center">N/A</td>
+        </tr>
+    @endforelse
 
-    <tr class="border-top" style="font-size: 13.33px;">
+    <tr class="border-top" style="font-size: 13px;">
         <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -384,24 +403,30 @@
         </td>
     </tr>
 </table>
-<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
     b. Personal Properties
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 12px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left">
         <td class="border-right">DESCRIPTION</td>
         <td class="border-right border-top">ACQUISITION YEAR</td>
         <td class="border-top border-right">AQUISITION<br/>COST/AMOUNT</td>
     </tr>
-    @foreach($personal_properties as $key)
-        <tr class="border-top border-bottom border-right border-left" style="font-size: 11px;">
-            <td class="fw-bold border-right" style="width: 50%;">{{ strtoupper($key['gadget']) }}</td>
-            <td class="fw-bold border-right" style="width: 36%;">{{ strtoupper($key['various_years']) }}</td>
-            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
+    @forelse($personal_properties as $key)
+        <tr class="border-top border-bottom border-right border-left" style="font-size: 13px;">
+            <td class="fw-bold border-right" style="width: 50%;">{{ strtoupper($key['gadget'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 36%;">{{ strtoupper($key['various_years'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-top border-bottom border-right border-left" style="font-size: 13px;">
+            <td class="fw-bold border-right" style="width: 50%; text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="width: 36%; text-align: center">N/A</td>
+            <td class="fw-bold" style="width: 14%; text-align: center">N/A</td>
+        </tr>
+    @endforelse
 
-    <tr class="border-top" style="font-size: 13.33px;">
+    <tr class="border-top" style="font-size: 13px;">
         <td colspan="2" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -409,7 +434,7 @@
             </div>
         </td>
     </tr>
-    <tr style="font-size: 14px">
+    <tr style="font-size: 13px">
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
@@ -418,9 +443,14 @@
         </td>
     </tr>
 </table>
+
 <div
-    style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; font-family: 'Times New Roman'; width: 100%;">
+    style="position: absolute; bottom: 10px; text-align: center; font-size: 13px; font-family: 'Times New Roman'; width: 100%;">
     Page 1 of {{ $total_pages }}
+</div>
+<div
+    style="width:200px;border-top: solid 3px black;padding-left:15px;padding-right:15px;position: absolute; bottom: 10px; right: 0; text-align: center; font-size: 13px; font-family: 'Times New Roman';margin-right:20px">
+    <small>Signature/Initial of Declarant</small>
 </div>
 
 @if(count($real_properties_ext) > 0 || count($personal_properties_ext) > 0)
@@ -428,23 +458,29 @@
 @endif
 
 <div style="page-break-before: always !important;"></div>
-<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
     2. LIABILITIES
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 12px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left" style="font-size: 10px">
         <td class="border-right">NATURE</td>
         <td class="border-right border-top">NAME OF CREDITORS</td>
         <td class="border-top border-right">OUTSTANDING BALANCE</td>
     </tr>
-    @foreach($liabilities as $key)
+    @forelse($liabilities as $key)
         <tr class="border-top border-right border-left" style="font-size: 13.33px">
-            <td class="fw-bold border-right" style="width: 35%">{{ strtoupper($key['nature']) }}</td>
-            <td class="fw-bold border-right" style="width: 30%">{{ strtoupper($key['creditors_name']) }}</td>
-            <td class="fw-bold" style="width: 14%">{{ strtoupper($key['outstanding_balance']) }}</td>
+            <td class="fw-bold border-right" style="width: 35%">{{ strtoupper($key['nature'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 30%">{{ strtoupper($key['creditors_name'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%">{{ strtoupper($key['outstanding_balance'] ?? '') }}</td>
         </tr>
-    @endforeach
-    <tr class="border-top" style="font-size: 13.33px">
+    @empty
+        <tr class="border-top border-right border-left" style="font-size: 13.33px">
+            <td class="fw-bold border-right" style="width: 35%; text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="width: 30%; text-align: center">N/A</td>
+            <td class="fw-bold" style="width: 14%; text-align: center">N/A</td>
+        </tr>
+    @endforelse
+    <tr class="border-top" style="font-size: 13px">
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL LIABILITIES:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -463,7 +499,7 @@
         </td>
     </tr>
 </table>
-<div style="margin-top: 20px;font-size: 13.33px;text-decoration: underline;text-align: center" class="fw-bold">
+<div style="margin-top: 20px;font-size: 13px;text-decoration: underline;text-align: center" class="fw-bold">
     BUSINESS INTERESTS AND FINANCIAL CONNECTIONS
 </div>
 <div style="text-align: center;font-size: 10.66px;font-style: italic">
@@ -475,28 +511,35 @@
         @else
             <input type="checkbox" style="display: inline"/>
         @endif
-        <div style="display: inline;font-size: 13.33px">I/We do not have any business interest or financial
+        <div style="display: inline;font-size: 13px">I/We do not have any business interest or financial
             connection.
         </div>
     </div>
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 12px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-bottom border-top border-left" style="font-size: 10.66px">
         <td class="border-right">NAME OF ENTITY/BUSINESS<br/>ENTERPRISE</td>
         <td class="border-right border-top">BUSINESS ADDRESS</td>
         <td class="border-right border-top">NATURE OF BUSINESS<br/>INTEREST &/OR FINANCIAL<br/>CONNECTION</td>
         <td class="border-top border-right">DATE OF ACQUISITION OF <br/>INTEREST OR CONNECTION</td>
     </tr>
-    @foreach($business as $key)
-        <tr class="border-bottom border-right border-left" style="font-size: 13.33px">
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['enterprise']) }}</td>
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['address']) }}</td>
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['nature']) }}</td>
-            <td class="fw-bold" style="width: 25%">{{ strtoupper($key['date_acquisition']) }}</td>
+    @forelse($business as $key)
+        <tr class="border-bottom border-right border-left" style="font-size: 13px">
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['enterprise'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['address'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['nature'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 25%">{{ strtoupper($key['date_acquisition'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-bottom border-right border-left" style="font-size: 13px">
+            <td class="fw-bold border-right" style="width: 25%; text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="width: 25%; text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="width: 25%; text-align: center">N/A</td>
+            <td class="fw-bold" style="width: 25%; text-align: center">N/A</td>
+        </tr>
+    @endforelse
 </table>
-<div style="margin-top: 20px;font-size: 14px;text-decoration: underline;text-align: center" class="fw-bold">
+<div style="margin-top: 20px;font-size: 13px;text-decoration: underline;text-align: center" class="fw-bold">
     RELATIVES IN THE GOVERNMENT SERVICE
 </div>
 <div style="text-align: center;font-size: 10.66px;font-style: italic">
@@ -512,32 +555,39 @@
         </div>
     </div>
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 10.66px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-bottom border-top border-left">
         <td class="border-right">NAME OF RELATIVE</td>
         <td class="border-right border-top">RELATIONSHIP</td>
         <td class="border-right border-top">POSITION</td>
         <td class="border-top border-right">NAME OF AGENCY/OFFICE AND ADDRESS</td>
     </tr>
-    @foreach($relatives as $key)
+    @forelse($relatives as $key)
         <tr class="border-bottom border-right border-left">
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['name']) }}</td>
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['relationship']) }}</td>
-            <td class="fw-bold border-right" style="width: 15%">{{ strtoupper($key['position']) }}</td>
-            <td class="fw-bold" style="width: 35%">{{ strtoupper($key['agency']) }}</td>
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['name'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['relationship'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 15%">{{ strtoupper($key['position'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 35%">{{ strtoupper($key['agency'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-bottom border-right border-left">
+            <td class="fw-bold border-right" style="width: 25%; text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="width: 25%; text-align: center">N/A</td>
+            <td class="fw-bold border-right" style="width: 15%; text-align: center">N/A</td>
+            <td class="fw-bold" style="width: 35%; text-align: center">N/A</td>
+        </tr>
+    @endforelse
 </table>
 
-<div style="margin-top: 30px;font-size: 13.33px">
-    <div><span style="margin-left: 50px">I</span> hereby certify that these are true and correct statements of my
+<div style="margin-top: 30px;font-size: 13px;text-align: justify;text-justify:inter-word" id="herby">
+    <div style="text-indent: 50px;">I hereby certify that these are true and correct statements of my
         assets, liabilities, net worth,business interests and financial connections, including those of my spouse and
         unmarried
         children below eighteen (18) years of age living in my household, and that to the best of my knowledge, the
         above-enumerated
         are names of my relatives in the government within the fourth civil degree of consanguinity or affinity.
     </div>
-    <div style="margin-top: 20px"><span style="margin-left: 50px">I</span> hereby authorize the Ombudsman or his/her
+    <div style="margin-top: 20px; text-indent: 50px;">I hereby authorize the Ombudsman or his/her
         duly authorized
         representative to obtain and secure from all appropriate government agencies, including the Bureau of Internal
         Revenue such documents that may show
@@ -547,7 +597,7 @@
     </div>
 </div>
 
-<table style="font-size: 13.33px;margin-top: 20px">
+<table style="font-size: 13px;margin-top: 20px">
     <tr>
         <td style="width: 5%">Date:</td>
         <td style="width: 20%" class="border-bottom">
@@ -558,7 +608,7 @@
         <td></td>
     </tr>
 </table>
-<table style="margin-top:30px;font-size: 10.66px">
+<table style="margin-top:30px;font-size: 13px">
     <tr>
         <td colspan="2" class="border-bottom"></td>
         <td></td>
@@ -574,57 +624,61 @@
         <td colspan="2" style="text-align: center">Signature of Declarant</td>
     </tr>
 </table>
-<table style="margin-top:20px;font-size: 10.66px">
+<table style="margin-top:20px;font-size: 13px">
     <tr>
         <td>Government Issued ID:</td>
         <td class="border-bottom">
             @if($declarant)
                 {{strtoupper($declarant->government_id_issued)}}
-            @else
-
             @endif
         </td>
         <td></td>
         <td>Government Issued ID:</td>
         <td class="border-bottom">
-            @if($spouse)
-                {{strtoupper($declarant->government_id_issued)}}
+            @if($filing_type == 'Separate Filing')
+                N/A
+            @elseif($filing_type == 'Joint Filing' && $spouse)
+                {{strtoupper($spouse->government_id_issued)}}
             @else
-
+                
             @endif
         </td>
     </tr>
     <tr>
         <td>ID No.:</td>
         <td class="border-bottom">
-            {{strtoupper($declarant->government_id_no)}}
-        </td>
-        <td></td>
-        <td>ID No.:</td>
-        <td class="border-bottom">
-            @if($spouse)
+            @if($declarant)
                 {{strtoupper($declarant->government_id_no)}}
+            @endif
+        </td>
+        <td></td>
+        <td>ID No.:</td>
+        <td class="border-bottom">
+            @if($filing_type == 'Separate Filing')
+                N/A
+            @elseif($filing_type == 'Joint Filing' && $spouse)
+                {{strtoupper($spouse->government_id_no)}}
             @else
-
+                
             @endif
         </td>
     </tr>
     <tr>
-        <td>Date Issued:</td>
-        <td class="border-bottom" style="text-transform: uppercase">
-            @if($declarant)
-                {{ date('F j, Y', strtotime($declarant->date_issued)) }}
-            @else
-
-            @endif
-        </td>
-        <td></td>
         <td>Date Issued:</td>
         <td class="border-bottom" style="text-transform: uppercase">
             @if(isset($declarant->date_issued))
                 {{ date('F j, Y', strtotime($declarant->date_issued)) }}
+            @endif
+        </td>
+        <td></td>
+        <td>Date Issued:</td>
+        <td class="border-bottom" style="text-transform: uppercase">
+            @if($filing_type == 'Separate Filing')
+                N/A
+            @elseif($filing_type == 'Joint Filing' && isset($spouse->date_issued))
+                {{ date('F j, Y', strtotime($spouse->date_issued)) }}
             @else
-
+                
             @endif
         </td>
     </tr>
@@ -645,8 +699,7 @@
 </div>
 
 
-<div
-    style="display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; font-size: 14px;margin-top:30px">
+<div style="text-align: center; font-size: 13px;margin-top:30px">
     <div>
         <div style="font-size: 11.7px; font-weight: bold; padding-bottom: 5px;">
             <span style="text-decoration: underline;">
@@ -682,6 +735,6 @@
 
 
 <div
-    style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; font-family: 'Times New Roman'; width: 100%;">
+    style="position: absolute; bottom: 10px; text-align: center; font-size: 13px; font-family: 'Times New Roman'; width: 100%;">
     Page 2 of {{ $total_pages }}
 </div>

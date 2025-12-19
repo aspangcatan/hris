@@ -1,4 +1,4 @@
-<table style="width:100%; font-size:9.33px;">
+<table style="width:100%; font-size:9px;">
     <tr>
         <td style="width:70%">
             <h1 class="fw-bold">ANNEX B</h1>
@@ -13,7 +13,7 @@
 
 <!-- TITLE -->
 <div style="text-align:center; margin-top:20px;">
-    <div style="font-size:14.66px; font-weight:bold;">
+    <div style="font-size:14px; font-weight:bold;">
         SWORN STATEMENT OF ASSETS, LIABILITIES, AND NET WORTH
     </div>
     <div style="font-size: 13px">As of
@@ -80,13 +80,13 @@
         ASSETS, LIABILITIES AND NETWORTH
     </div>
 </div>
-<div class="fw-bold" style="margin-top: 10px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 10px;font-size: 13px">
     1. ASSETS
 </div>
-<div class="fw-bold" style="margin-top: 10px;margin-left: 30px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 10px;margin-left: 30px;font-size: 13px">
     a. Real Properties
 </div>
-<table id="assets" style="text-align: center;margin-top: 10px;font-size: 12px">
+<table id="assets" style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left border-right">
         <td rowspan="2" class="border-right">
             <div class="fw-bold" style="font-size: 10px">DESCRIPTION</div>
@@ -120,20 +120,24 @@
         <td class="fw-bold border-top border-right" style="font-size: 10px">YEAR</td>
         <td class="fw-bold border-top border-right" style="font-size: 10px">MODE</td>
     </tr>
-    @foreach($real_properties_ext as $key)
-        <tr class="border-bottom border-left border-right assets" style="font-size: 11px">
-            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description']) }}</td>
-            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind']) }}</td>
-            <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%;">{{ strtoupper($key['assessed_value']) }}</td>
-            <td class="fw-bold border-right" style="width: 14%;">{{ strtoupper($key['current_fair']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_year']) }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_mode']) }}</td>
-            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
+    @forelse($real_properties_ext as $key)
+        <tr class="border-bottom border-left border-right assets" style="font-size: 13px">
+            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%;">{{ strtoupper($key['assessed_value'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 14%;">{{ strtoupper($key['current_fair'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_year'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_mode'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-bottom border-left border-right assets" style="font-size: 13px">
+            <td colspan="8" class="fw-bold" style="text-align: center">N/A</td>
+        </tr>
+    @endforelse
 
-    <tr class="border-top" style="font-size: 13.33px;">
+    <tr class="border-top" style="font-size: 13px;">
         <td colspan="7" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -142,24 +146,28 @@
         </td>
     </tr>
 </table>
-<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
     b. Personal Properties
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 12px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left">
         <td class="border-right">DESCRIPTION</td>
         <td class="border-right border-top">YEAR ACQUIRED</td>
         <td class="border-top border-right">AQUISITION<br/>COST/AMOUNT</td>
     </tr>
-    @foreach($personal_properties_ext as $key)
-        <tr class="border-top border-bottom border-right border-left" style="font-size: 11px;">
-            <td class="fw-bold border-right" style="width: 50%;">{{ strtoupper($key['gadget']) }}</td>
-            <td class="fw-bold border-right" style="width: 36%;">{{ strtoupper($key['various_years']) }}</td>
-            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost']) }}</td>
+    @forelse($personal_properties_ext as $key)
+        <tr class="border-top border-bottom border-right border-left" style="font-size: 13px;">
+            <td class="fw-bold border-right" style="width: 50%;">{{ strtoupper($key['gadget'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 36%;">{{ strtoupper($key['various_years'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-top border-bottom border-right border-left" style="font-size: 13px;">
+            <td colspan="3" class="fw-bold" style="text-align: center">N/A</td>
+        </tr>
+    @endforelse
 
-    <tr class="border-top" style="font-size: 13.33px;">
+    <tr class="border-top" style="font-size: 13px;">
         <td colspan="2" style="text-align: right;" class="fw-bold">Subtotal:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -171,7 +179,7 @@
         <td colspan="3" style="color: white">&nbsp;</td>
     </tr>
     @if(count($personal_properties_ext) > 0)
-        <tr style="font-size: 14px">
+        <tr style="font-size: 13px">
             <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
             <td style="text-align: left">
                 <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
@@ -182,23 +190,27 @@
     @endif
 </table>
 
-<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 14px">
+<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
     2. LIABILITIES
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 12px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left" style="font-size: 10px">
         <td class="border-right">NATURE</td>
         <td class="border-right border-top">NAME OF CREDITORS</td>
         <td class="border-top border-right">OUTSTANDING BALANCE</td>
     </tr>
-    @foreach($liabilities_ext as $key)
+    @forelse($liabilities_ext as $key)
         <tr class="border-top border-right border-left" style="font-size: 13.33px">
-            <td class="fw-bold border-right" style="width: 35%">{{ strtoupper($key['nature']) }}</td>
-            <td class="fw-bold border-right" style="width: 30%">{{ strtoupper($key['creditors_name']) }}</td>
-            <td class="fw-bold" style="width: 14%">{{ strtoupper($key['outstanding_balance']) }}</td>
+            <td class="fw-bold border-right" style="width: 35%">{{ strtoupper($key['nature'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 30%">{{ strtoupper($key['creditors_name'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%">{{ strtoupper($key['outstanding_balance'] ?? '') }}</td>
         </tr>
-    @endforeach
-    <tr class="border-top" style="font-size: 13.33px">
+    @empty
+        <tr class="border-top border-right border-left" style="font-size: 13.33px">
+            <td colspan="3" class="fw-bold" style="text-align: center">N/A</td>
+        </tr>
+    @endforelse
+    <tr class="border-top" style="font-size: 13px">
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL LIABILITIES:</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;">
@@ -219,27 +231,35 @@
 </table>
 <div class="border-bottom" style="margin-top: 20px"></div>
 <div class="border-bottom" style="margin-top: 2px"></div>
-<div style="margin-top: 20px;font-size: 13.33px;text-decoration: underline;text-align: center" class="fw-bold">
+<div style="margin-top: 20px;font-size: 13px;text-decoration: underline;text-align: center" class="fw-bold">
     BUSINESS INTERESTS AND FINANCIAL CONNECTIONS
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 12px">
+<table style="text-align: center;margin-top: 10px;font-size: 13px">
     <tr class="fw-bold gray border-bottom border-top border-left" style="font-size: 10.66px">
         <td class="border-right">NAME OF ENTITY/BUSINESS<br/>ENTERPRISE</td>
         <td class="border-right border-top">BUSINESS ADDRESS</td>
         <td class="border-right border-top">NATURE OF BUSINESS<br/>INTEREST &/OR FINANCIAL<br/>CONNECTION</td>
         <td class="border-top border-right">DATE OF ACQUISITION OF <br/>INTEREST OR CONNECTION</td>
     </tr>
-    @foreach($business_ext as $key)
-        <tr class="border-bottom border-right border-left" style="font-size: 13.33px">
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['enterprise']) }}</td>
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['address']) }}</td>
-            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['nature']) }}</td>
-            <td class="fw-bold" style="width: 25%">{{ strtoupper($key['date_acquisition']) }}</td>
+    @forelse($business_ext as $key)
+        <tr class="border-bottom border-right border-left" style="font-size: 13px">
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['enterprise'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['address'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 25%">{{ strtoupper($key['nature'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 25%">{{ strtoupper($key['date_acquisition'] ?? '') }}</td>
         </tr>
-    @endforeach
+    @empty
+        <tr class="border-bottom border-right border-left" style="font-size: 13px">
+            <td colspan="4" class="fw-bold" style="text-align: center">N/A</td>
+        </tr>
+    @endforelse
 </table>
 
 <div
-    style="position: absolute; bottom: 10px; text-align: center; font-size: 16px; font-family: 'Times New Roman'; width: 100%;">
+    style="position: absolute; bottom: 10px; text-align: center; font-size: 13px; font-family: 'Times New Roman'; width: 100%;">
     Page 3 of {{ $total_pages }}
+</div>
+<div
+    style="width:200px;border-top: solid 3px black;padding-left:15px;padding-right:15px;position: absolute; bottom: 10px; right: 0; text-align: center; font-size: 13px; font-family: 'Times New Roman';margin-right:20px">
+    <small>Signature/Initial of Declarant</small>
 </div>
