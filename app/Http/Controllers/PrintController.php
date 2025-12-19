@@ -725,7 +725,7 @@ class PrintController extends Controller
 
 
 
-            // Grand Totals for Summary
+            // Grand Totals for Summary (Family-wide)
             $grand_real_subtotal = $real_properties_subtotal_a + $real_properties_subtotal_b;
             $grand_personal_subtotal = $personal_properties_subtotal_a + $personal_properties_subtotal_b;
             $grand_liabilities_total = $liabilities_total_a + $liabilities_total_b;
@@ -745,10 +745,10 @@ class PrintController extends Controller
 
             $formattedAddress = $addressParts->join(', ');
 
-            // Determine if Annex B is needed
+            // Determine if Annex B is needed (Declarant Overflow)
             $show_annex_b = (count($all_real_properties) > 4 || count($all_personal_properties) > 6 || count($all_liabilities) > 4 || count($all_business) > 3);
 
-            // Determine if Annex C is needed
+            // Determine if Annex C is needed (Spouse Proof Presence)
             $show_annex_c = (count($spouse_real_properties_db) > 0 || count($spouse_personal_properties_db) > 0 || count($spouse_liabilities_db) > 0 || count($spouse_business_db) > 0);
 
             $total_pages = 2 + ($show_annex_b ? 1 : 0) + ($show_annex_c ? 1 : 0);

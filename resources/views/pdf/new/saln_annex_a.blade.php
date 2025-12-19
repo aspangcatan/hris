@@ -438,7 +438,7 @@
         <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
         <td style="text-align: left">
             <div class="fw-bold border-bottom" style="padding-left:10px;border-bottom: solid 3px black">
-                {{ number_format($real_properties_subtotal + $personal_properties_subtotal, 2) }}
+                {{ number_format($grand_assets_total, 2) }}
             </div>
         </td>
     </tr>
