@@ -41,11 +41,11 @@
                         <input type="date" class="form-control" id="work_to" placeholder="">
                         <label>To</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-3 d-none">
                         <input type="number" class="form-control" id="work_salary" placeholder="">
                         <label>Salary</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-3 d-none">
                         <input type="text" class="form-control" id="work_salary_grade" placeholder="">
                         <label>Salary Grade (e.g. Step-Increment format (00-0))</label>
                     </div>

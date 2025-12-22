@@ -732,10 +732,10 @@
                 $(".error_list").append("<li>Working To is required</li>");
             }
 
-            if (monthly_salary == "") {
-                is_valid = false;
-                $(".error_list").append("<li>Monthly salary is required</li>");
-            }
+            // if (monthly_salary == "") {
+            //     is_valid = false;
+            //     $(".error_list").append("<li>Monthly salary is required</li>");
+            // }
 
             if (appointment_status == "") {
                 is_valid = false;
