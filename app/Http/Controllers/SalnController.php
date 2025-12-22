@@ -160,7 +160,12 @@ class SalnController extends Controller
     public function insertRealProperties(Request $request)
     {
         try {
-            $real_properties = RealProperties::find($request->id);
+            $id = $request->id;
+            $real_properties = RealProperties::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+
             if (!$real_properties) {
                 $real_properties = new RealProperties;
                 $real_properties->user_id = Auth::id();
@@ -208,7 +213,12 @@ class SalnController extends Controller
     public function insertPersonalProperties(Request $request)
     {
         try {
-            $personal_properties = PersonalProperties::find($request->id);
+            $id = $request->id;
+            $personal_properties = PersonalProperties::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+
             if (!$personal_properties) {
                 $personal_properties = new PersonalProperties;
                 $personal_properties->user_id = Auth::id();
@@ -437,11 +447,17 @@ class SalnController extends Controller
     public function insertSpouseRealProperties(Request $request)
     {
         try {
-            $real_properties = SpouseRealProperties::find($request->id);
+            $id = $request->id;
+            $real_properties = SpouseRealProperties::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+
             if (!$real_properties) {
                 $real_properties = new SpouseRealProperties;
                 $real_properties->user_id = Auth::id();
             }
+            
             $real_properties->description = $request->description;
             $real_properties->kind = $request->kind;
             $real_properties->exact_location = $request->exact_location;
@@ -486,7 +502,12 @@ class SalnController extends Controller
     public function insertSpousePersonalProperties(Request $request)
     {
         try {
-            $personal_properties = SpousePersonalProperties::find($request->id);
+            $id = $request->id;
+            $personal_properties = SpousePersonalProperties::where(function ($query) use ($id) {
+                $query->where('id', '=', $id);
+                $query->where('user_id', '=', Auth::id());
+            })->first();
+
             if (!$personal_properties) {
                 $personal_properties = new SpousePersonalProperties;
                 $personal_properties->user_id = Auth::id();

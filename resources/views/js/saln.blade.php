@@ -1,30 +1,32 @@
 <script>
     const children_modal = new bootstrap.Modal(document.getElementById('children_modal'));
     const real_properties_modal = new bootstrap.Modal(document.getElementById('real_properties_modal'));
+    const spouse_real_properties_modal = new bootstrap.Modal(document.getElementById('spouse_real_properties_modal'));
     const personal_properties_modal = new bootstrap.Modal(document.getElementById('personal_properties_modal'));
+    const spouse_personal_properties_modal = new bootstrap.Modal(document.getElementById('spouse_personal_properties_modal'));
     const liabilities_modal = new bootstrap.Modal(document.getElementById('liabilities_modal'));
+    const spouse_liabilities_modal = new bootstrap.Modal(document.getElementById('spouse_liabilities_modal'));
     const business_interest_modal = new bootstrap.Modal(document.getElementById('business_interest_modal'));
+    const spouse_business_interest_modal = new bootstrap.Modal(document.getElementById('spouse_business_interest_modal'));
     const government_relative_modal = new bootstrap.Modal(document.getElementById('government_relative_modal'));
     const marriages_modal = new bootstrap.Modal(document.getElementById('marriages_modal'));
     const saln_modal = new bootstrap.Modal(document.getElementById('saln_modal'));
 
     let children_id = 0;
-    let real_properties_id = 0;
-    let personal_properties_id = 0;
-    let liabilities_id = 0;
-    let business_interest_id = 0;
-    let government_relative_id = 0;
     let marriages_id = 0;
+    let government_relative_id = 0;
 
+    let real_properties_id = 0;
     let spouse_real_properties_id = 0;
-    let spouse_personal_properties_id = 0;
-    let spouse_liabilities_id = 0;
-    let spouse_business_interest_id = 0;
 
-    let is_spouse_real_properties = false;
-    let is_spouse_personal_properties = false;
-    let is_spouse_liabilities = false;
-    let is_spouse_business_interest = false;
+    let personal_properties_id = 0;
+    let spouse_personal_properties_id = 0;
+
+    let liabilities_id = 0;
+    let spouse_liabilities_id = 0;
+
+    let business_interest_id = 0;
+    let spouse_business_interest_id = 0;
 
 
     $(document).ready(function () {
@@ -90,7 +92,6 @@
         });
 
         $("#btn_add_real_properties").click(function () {
-            is_spouse_real_properties = false;
             real_properties_id = 0;
             $("#real_description").val("");
             $("#real_kind").val("")
@@ -104,21 +105,19 @@
         });
 
         $("#spouse_btn_add_real_properties").click(function () {
-            is_spouse_real_properties = true;
             spouse_real_properties_id = 0;
-            $("#real_description").val("");
-            $("#real_kind").val("")
-            $("#real_location").val("");
-            $('#real_assessed_value').val("");
-            $("#real_current_fair").val("");
-            $("#real_acquisition_year").val("");
-            $("#real_acquisition_mode").val("");
-            $("#real_acquisition_cost").val("");
-            real_properties_modal.toggle();
+            $("#spouse_real_description").val("");
+            $("#spouse_real_kind").val("")
+            $("#spouse_real_location").val("");
+            $('#spouse_real_assessed_value').val("");
+            $("#spouse_real_current_fair").val("");
+            $("#spouse_real_acquisition_year").val("");
+            $("#spouse_real_acquisition_mode").val("");
+            $("#spouse_real_acquisition_cost").val("");
+            spouse_real_properties_modal.toggle();
         });
 
         $("#btn_add_personal_properties").click(function () {
-            is_spouse_personal_properties = false;
             personal_properties_id = 0;
             $("#personal_gadget").val("");
             $("#personal_various_years").val("");
@@ -127,16 +126,14 @@
         });
 
         $("#spouse_btn_add_personal_properties").click(function () {
-            is_spouse_personal_properties = true;
             spouse_personal_properties_id = 0;
-            $("#personal_gadget").val("");
-            $("#personal_various_years").val("");
-            $("#personal_acquisition_cost").val("");
-            personal_properties_modal.toggle();
+            $("#spouse_personal_gadget").val("");
+            $("#spouse_personal_various_years").val("");
+            $("#spouse_personal_acquisition_cost").val("");
+            spouse_personal_properties_modal.toggle();
         });
 
         $("#btn_add_liabilities").click(function () {
-            is_spouse_liabilities = false;
             liabilities_id = 0;
             $("#liabilities_nature").val("");
             $("#liabilities_creditors_name").val("");
@@ -145,16 +142,14 @@
         });
 
         $("#spouse_btn_add_liabilities").click(function () {
-            is_spouse_liabilities = true;
             spouse_liabilities_id = 0;
-            $("#liabilities_nature").val("");
-            $("#liabilities_creditors_name").val("");
-            $("#liabilities_outstanding_balance").val("");
-            liabilities_modal.toggle();
+            $("#spouse_liabilities_nature").val("");
+            $("#spouse_liabilities_creditors_name").val("");
+            $("#spouse_liabilities_outstanding_balance").val("");
+            spouse_liabilities_modal.toggle();
         });
 
         $("#btn_add_business_interest").click(function () {
-            is_spouse_business_interest = false;
             business_interest_id = 0;
             $("#business_enterprise").val("");
             $("#business_address").val("");
@@ -164,13 +159,12 @@
         });
 
         $("#spouse_btn_add_business_interest").click(function () {
-            is_spouse_business_interest = true;
             spouse_business_interest_id = 0;
-            $("#business_enterprise").val("");
-            $("#business_address").val("");
-            $("#business_nature").val("");
-            $("#business_date_acquisition").val("");
-            business_interest_modal.toggle();
+            $("#spouse_business_enterprise").val("");
+            $("#spouse_business_address").val("");
+            $("#spouse_business_nature").val("");
+            $("#spouse_business_date_acquisition").val("");
+            spouse_business_interest_modal.toggle();
         });
 
         $("#btn_add_government_relative").click(function () {
@@ -348,16 +342,14 @@
             const date_acquisition = $("#business_date_acquisition").val().trim().toUpperCase();
 
             const params = {
-                id: (is_spouse_business_interest) ? spouse_business_interest_id : business_interest_id,
+                id: business_interest_id,
                 enterprise: business_enterprise,
                 address: business_address,
                 nature: nature,
                 date_acquisition: date_acquisition
             }
 
-            const route = (is_spouse_business_interest) ? '{{ route('insertSpouseBusinessInterest') }}' : '{{ route('insertBusinessInterest') }}';
-
-            fetch(route, {
+            fetch('{{ route('insertBusinessInterest') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -374,11 +366,45 @@
 
                     business_interest_modal.toggle();
                     toastr.success(data.message, "Information");
-                    if(is_spouse_business_interest){
-                        getSpouseBusinessInterest();
-                    }else{
-                        getBusinessInterest();
+                    getBusinessInterest();
+                }).catch(err => {
+                console.log(err);
+                toastr.error(err, 'Something went wrong');
+            });
+        });
+
+        $("#btn_save_spouse_business_interest").click(function () {
+            const business_enterprise = $("#spouse_business_enterprise").val().trim().toUpperCase();
+            const business_address = $("#spouse_business_address").val().trim().toUpperCase();
+            const nature = $("#spouse_business_nature").val().trim().toUpperCase();
+            const date_acquisition = $("#spouse_business_date_acquisition").val().trim().toUpperCase();
+
+            const params = {
+                id: spouse_business_interest_id,
+                enterprise: business_enterprise,
+                address: business_address,
+                nature: nature,
+                date_acquisition: date_acquisition
+            }
+
+            fetch('{{ route('insertSpouseBusinessInterest') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
                     }
+
+                    spouse_business_interest_modal.toggle();
+                    toastr.success(data.message, "Information");
+                    getSpouseBusinessInterest();
                 }).catch(err => {
                 console.log(err);
                 toastr.error(err, 'Something went wrong');
@@ -478,7 +504,7 @@
             }
 
             const params = {
-                id: (is_spouse_real_properties) ? spouse_real_properties_id : real_properties_id,
+                id: real_properties_id,
                 description: description,
                 kind: kind,
                 exact_location: exact_location,
@@ -489,9 +515,7 @@
                 acquisition_cost: acquisition_cost
             }
 
-            const route = (is_spouse_real_properties) ? '{{ route('insertSpouseRealProperties') }}' : '{{ route('insertRealProperties') }}';
-
-            fetch(route, {
+            fetch('{{ route('insertRealProperties') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -508,11 +532,93 @@
 
                     real_properties_modal.toggle();
                     toastr.success(data.message, "Information");
-                    if(is_spouse_real_properties){
-                        getSpouseRealProperties();
-                    }else{
-                        getRealProperties();
+                    getRealProperties();
+                }).catch(err => {
+                console.log(err);
+            })
+
+        });
+
+        $("#btn_save_spouse_real").click(function () {
+            const description = $("#spouse_real_description").val().toUpperCase().trim();
+            const kind = $("#spouse_real_kind").val().toUpperCase().trim();
+            const exact_location = $("#spouse_real_location").val().toUpperCase().trim();
+            const assessed_value = $('#spouse_real_assessed_value').val().toUpperCase().trim();
+            const current_fair = $("#spouse_real_current_fair").val().toUpperCase().trim();
+            const acquisition_year = $("#spouse_real_acquisition_year").val().toUpperCase().trim();
+            const acquisition_mode = $("#spouse_real_acquisition_mode").val().toUpperCase().trim();
+            const acquisition_cost = $("#spouse_real_acquisition_cost").val().toUpperCase().trim();
+
+            if (description == "") {
+                alert("Description is required");
+                return;
+            }
+
+            if (kind == "") {
+                alert("Kind is required");
+                return;
+            }
+
+            if (exact_location == "") {
+                alert("Exact location is required");
+                return;
+            }
+
+            if (assessed_value == "") {
+                alert("Assessed value is required");
+                return;
+            }
+
+            if (current_fair == "") {
+                alert("Current fair is required");
+                return;
+            }
+
+            if (acquisition_year == "") {
+                alert("Acquisition year is required");
+                return;
+            }
+
+            if (acquisition_mode == "") {
+                alert("Acquisition mode is required");
+                return;
+            }
+
+            if (acquisition_cost == "") {
+                alert("Acquisition cost is required");
+                return;
+            }
+
+            const params = {
+                id: spouse_real_properties_id,
+                description: description,
+                kind: kind,
+                exact_location: exact_location,
+                assessed_value: assessed_value,
+                current_fair: current_fair,
+                acquisition_year: acquisition_year,
+                acquisition_mode: acquisition_mode,
+                acquisition_cost: acquisition_cost
+            }
+
+            fetch('{{ route('insertSpouseRealProperties') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
                     }
+
+                    spouse_real_properties_modal.toggle();
+                    toastr.success(data.message, "Information");
+                    getSpouseRealProperties();
                 }).catch(err => {
                 console.log(err);
             })
@@ -540,15 +646,13 @@
             }
 
             const params = {
-                id: (is_spouse_personal_properties) ? spouse_personal_properties_id : personal_properties_id,
+                id: personal_properties_id,
                 gadget: gadget,
                 various_years: various_years,
                 acquisition_cost: acquisition_cost
             }
 
-            const route = (is_spouse_personal_properties) ? '{{ route('insertSpousePersonalProperties') }}' : '{{ route('insertPersonalProperties') }}';
-
-            fetch(route, {
+            fetch('{{ route('insertPersonalProperties') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -565,11 +669,57 @@
 
                     personal_properties_modal.toggle();
                     toastr.success(data.message, "Information");
-                    if(is_spouse_personal_properties){
-                        getSpousePersonalProperties();
-                    }else{
-                        getPersonalProperties();
+                    getPersonalProperties();
+                }).catch(err => {
+                console.log(err);
+            });
+        });
+
+        $("#btn_save_spouse_personal").click(function () {
+            const gadget = $("#spouse_personal_gadget").val().trim().toUpperCase();
+            const various_years = $("#spouse_personal_various_years").val().trim().toUpperCase();
+            const acquisition_cost = $("#spouse_personal_acquisition_cost").val();
+
+            if (gadget == "") {
+                alert("Gadget/Appliances is required");
+                return;
+            }
+
+            if (various_years == "") {
+                alert("Various years is required");
+                return;
+            }
+
+            if (acquisition_cost == "") {
+                alert("Acquisition cost is required");
+                return;
+            }
+
+            const params = {
+                id: spouse_personal_properties_id,
+                gadget: gadget,
+                various_years: various_years,
+                acquisition_cost: acquisition_cost
+            }
+
+            fetch('{{ route('insertSpousePersonalProperties') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
                     }
+
+                    spouse_personal_properties_modal.toggle();
+                    toastr.success(data.message, "Information");
+                    getSpousePersonalProperties();
                 }).catch(err => {
                 console.log(err);
             });
@@ -596,15 +746,13 @@
             }
 
             const params = {
-                id: (is_spouse_liabilities) ? spouse_liabilities_id : liabilities_id,
+                id: liabilities_id,
                 nature: nature,
                 creditors_name: creditors_name,
                 outstanding_balance: outstanding_balance
             }
 
-            const route = (is_spouse_liabilities) ? '{{ route('insertSpouseLiabilities') }}' : '{{ route('insertLiabilities') }}';
-
-            fetch(route, {
+            fetch('{{ route('insertLiabilities') }}', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -621,11 +769,57 @@
 
                     liabilities_modal.toggle();
                     toastr.success(data.message, "Information");
-                    if(is_spouse_liabilities){
-                        getSpouseLiabilities();
-                    }else{
-                        getLiabilities();
+                    getLiabilities();
+                }).catch(err => {
+                console.log(err);
+            });
+        });
+
+        $("#btn_save_spouse_liabilities").click(function () {
+            const nature = $("#spouse_liabilities_nature").val().trim().toUpperCase();
+            const creditors_name = $("#spouse_liabilities_creditors_name").val().trim().toUpperCase();
+            const outstanding_balance = $("#spouse_liabilities_outstanding_balance").val();
+
+            if (nature == "") {
+                alert("Nature is required");
+                return;
+            }
+
+            if (creditors_name == "") {
+                alert("Creditors name is required");
+                return;
+            }
+
+            if (outstanding_balance == "") {
+                alert("Outstanding balance is required");
+                return;
+            }
+
+            const params = {
+                id: spouse_liabilities_id,
+                nature: nature,
+                creditors_name: creditors_name,
+                outstanding_balance: outstanding_balance
+            }
+
+            fetch('{{ route('insertSpouseLiabilities') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify(params)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.code == 500) {
+                        toastr.error(data.message, "Ooops");
+                        return;
                     }
+
+                    spouse_liabilities_modal.toggle();
+                    toastr.success(data.message, "Information");
+                    getSpouseLiabilities();
                 }).catch(err => {
                 console.log(err);
             });
@@ -1486,7 +1680,6 @@
     }
 
     function editSpouseRealProperties(id) {
-        is_spouse_real_properties = true;
         const description = $("#spouse_real_properties_" + id + " td:eq(0)").text();
         const kind = $("#spouse_real_properties_" + id + " td:eq(1)").text();
         const exact_location = $("#spouse_real_properties_" + id + " td:eq(2)").text();
@@ -1497,55 +1690,52 @@
         const acquisition_cost = $("#spouse_real_properties_" + id + " td:eq(7)").text();
 
         spouse_real_properties_id = id;
-        $("#real_description").val(description);
-        $("#real_kind").val(kind);
-        $("#real_location").val(exact_location);
-        $("#real_assessed_value").val(assessed_value);
-        $("#real_current_fair").val(current_fair);
-        $("#real_acquisition_year").val(acquisition_year);
-        $("#real_acquisition_mode").val(acquisition_mode);
-        $("#real_acquisition_cost").val(acquisition_cost);
-        real_properties_modal.toggle();
+        $("#spouse_real_description").val(description);
+        $("#spouse_real_kind").val(kind);
+        $("#spouse_real_location").val(exact_location);
+        $("#spouse_real_assessed_value").val(assessed_value);
+        $("#spouse_real_current_fair").val(current_fair);
+        $("#spouse_real_acquisition_year").val(acquisition_year);
+        $("#spouse_real_acquisition_mode").val(acquisition_mode);
+        $("#spouse_real_acquisition_cost").val(acquisition_cost);
+        spouse_real_properties_modal.toggle();
     }
 
     function editSpousePersonalProperties(id) {
-        is_spouse_personal_properties = true;
         const gadget = $("#spouse_personal_properties_" + id + " td:eq(0)").text();
         const various_years = $("#spouse_personal_properties_" + id + " td:eq(1)").text();
         const acquisition_cost = $("#spouse_personal_properties_" + id + " td:eq(2)").text();
 
         spouse_personal_properties_id = id;
-        $("#personal_gadget").val(gadget);
-        $("#personal_various_years").val(various_years);
-        $("#personal_acquisition_cost").val(acquisition_cost);
-        personal_properties_modal.toggle();
+        $("#spouse_personal_gadget").val(gadget);
+        $("#spouse_personal_various_years").val(various_years);
+        $("#spouse_personal_acquisition_cost").val(acquisition_cost);
+        spouse_personal_properties_modal.toggle();
     }
 
     function editSpouseLiabilities(id) {
-        is_spouse_liabilities = true;
         const nature = $("#spouse_liabilities_" + id + " td:eq(0)").text();
         const creditors_name = $("#spouse_liabilities_" + id + " td:eq(1)").text();
         const oustanding_balance = $("#spouse_liabilities_" + id + " td:eq(2)").text();
 
         spouse_liabilities_id = id;
-        $("#liabilities_nature").val(nature);
-        $("#liabilities_creditors_name").val(creditors_name);
-        $("#liabilities_outstanding_balance").val(oustanding_balance);
-        liabilities_modal.toggle();
+        $("#spouse_liabilities_nature").val(nature);
+        $("#spouse_liabilities_creditors_name").val(creditors_name);
+        $("#spouse_liabilities_outstanding_balance").val(oustanding_balance);
+        spouse_liabilities_modal.toggle();
     }
 
     function editSpouseBusinessInterest(id) {
-        is_spouse_business_interest = true;
         const enterprise = $("#spouse_business_interest_" + id + " td:eq(0)").text();
         const address = $("#spouse_business_interest_" + id + " td:eq(1)").text();
         const nature = $("#spouse_business_interest_" + id + " td:eq(2)").text();
         const date_acquisition = $("#spouse_business_interest_" + id + " td:eq(3)").text();
 
         spouse_business_interest_id = id;
-        $("#business_enterprise").val(enterprise);
-        $("#business_address").val(address);
-        $("#business_nature").val(nature);
-        $("#business_date_acquisition").val(moment(date_acquisition).format("YYYY-MM-DD"));
-        business_interest_modal.toggle();
+        $("#spouse_business_enterprise").val(enterprise);
+        $("#spouse_business_address").val(address);
+        $("#spouse_business_nature").val(nature);
+        $("#spouse_business_date_acquisition").val(moment(date_acquisition).format("YYYY-MM-DD"));
+        spouse_business_interest_modal.toggle();
     }
 </script>
