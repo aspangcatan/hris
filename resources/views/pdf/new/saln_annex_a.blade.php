@@ -65,13 +65,13 @@
 <div class="border-bottom" style="margin-top: 10px"></div>
 <div class="border-bottom" style="margin-top: 2px"></div>
 <div style="text-align: center;">
-    <table id="declarant" style="text-align: center;">
+    <table id="declarant" style="text-align: center;font-size: 13px">
         <tr>
             <td class="fw-bold" style="width: 11%">DECLARANT:</td>
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td style="font-size: 13px">
+                        <td>
                             {{ strtoupper($declarant->lname) }}
                         </td>
                         <td>
@@ -160,7 +160,7 @@
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td style="font-size: 13px">
+                        <td>
                             @if(isset($spouse->spouse_lname) && strtoupper($spouse->spouse_lname) !== 'N/A' && strtoupper($spouse->spouse_lname) !== 'NA')
                                 {{ strtoupper($spouse->spouse_lname) }}
                             @else
@@ -640,7 +640,7 @@
             @elseif($filing_type == 'Joint Filing' && $spouse)
                 {{strtoupper($spouse->government_id_issued)}}
             @else
-                
+
             @endif
         </td>
     </tr>
@@ -659,7 +659,7 @@
             @elseif($filing_type == 'Joint Filing' && $spouse)
                 {{strtoupper($spouse->government_id_no)}}
             @else
-                
+
             @endif
         </td>
     </tr>
@@ -678,7 +678,7 @@
             @elseif($filing_type == 'Joint Filing' && isset($spouse->date_issued))
                 {{ date('F j, Y', strtotime($spouse->date_issued)) }}
             @else
-                
+
             @endif
         </td>
     </tr>
