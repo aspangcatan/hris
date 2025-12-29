@@ -23,13 +23,13 @@
     <div>(Additional sheet/s for the exclusive properties of the declarant's spouse and unmarried children <br />below eighteen (18) years of age living in declarant's household)</div>
 </div>
 <div style="text-align: center;">
-    <table id="declarant" style="text-align: center;">
+    <table id="declarant" style="text-align: center;font-size: 13px">
         <tr>
             <td class="fw-bold" style="width: 11%">NAME:</td>
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td style="font-size: 13px">
+                        <td>
                             {{ isset($declarant->lname) ? strtoupper($declarant->lname) : '' }}
                         </td>
                         <td>
@@ -50,7 +50,7 @@
                             @if(isset($declarant->mname) && !empty($declarant->mname[0]))
                                 {{ strtoupper($declarant->mname[0]) }}.
                             @else
-                                
+
                             @endif
                         </td>
                     </tr>

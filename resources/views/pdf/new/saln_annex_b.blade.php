@@ -22,13 +22,13 @@
     <div>(Additional sheet/s for the declarant)</div>
 </div>
 <div style="text-align: center;">
-    <table id="declarant" style="text-align: center;">
+    <table id="declarant" style="text-align: center;font-size: 13px">
         <tr>
             <td class="fw-bold" style="width: 11%">NAME:</td>
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td style="font-size: 13px">
+                        <td>
                             {{ strtoupper($declarant->lname) }}
                         </td>
                         <td>
@@ -174,7 +174,7 @@
                 {{ number_format($personal_properties_ext_subtotal,2) }}
             </div>
         </td>
-    </tr> 
+    </tr>
         <tr style="font-size: 13px">
             <td colspan="2" style="text-align: right;" class="fw-bold">TOTAL ASSETS</td>
             <td style="text-align: left">
