@@ -123,7 +123,7 @@
 
                             <!-- AM Arrival -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timein_am']))
+                                @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -132,7 +132,7 @@
 
                             <!-- AM Departure -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timeout_am']))
+                                @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -141,7 +141,7 @@
 
                             <!-- PM Arrival -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timein_pm']))
+                                @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -150,7 +150,7 @@
 
                             <!-- PM Departure -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timeout_pm']))
+                                @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -254,7 +254,7 @@
 
                             <!-- AM Arrival -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timein_am']))
+                                @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -263,7 +263,7 @@
 
                             <!-- AM Departure -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timeout_am']))
+                                @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -272,7 +272,7 @@
 
                             <!-- PM Arrival -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timein_pm']))
+                                @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
@@ -281,7 +281,7 @@
 
                             <!-- PM Departure -->
                             <td style="font-size: 11px">
-                                @if(!empty($dtr['date_timeout_pm']))
+                                @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
                                     {{ $dtr['day_name'] }}
