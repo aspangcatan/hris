@@ -390,7 +390,7 @@
             <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['assessed_value'] ?? '') }}">{{ strtoupper($key['assessed_value'] ?? '') }}</td>
             <td class="fw-bold border-right" style="width: 14%; padding: 0 4px; {{ adjustFontSize($key['current_fair'] ?? '') }}">{{ strtoupper($key['current_fair'] ?? '') }}</td>
             <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['acquisition_year'] ?? '') }}">{{ strtoupper($key['acquisition_year'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['acquisition_mode'] ?? '') }}">{{ strtoupper($key['acquisition_mode'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['acquisition_mode'] ?? '', 11) }}">{{ strtoupper($key['acquisition_mode'] ?? '') }}</td>
             <td class="fw-bold" style="width: 14%; padding: 0 4px; {{ adjustFontSize($key['acquisition_cost'] ?? '') }}">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
     @empty
