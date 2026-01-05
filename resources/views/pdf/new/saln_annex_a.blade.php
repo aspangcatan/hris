@@ -625,7 +625,7 @@
         <td colspan="2" class="border-bottom"></td>
         <td></td>
         <td colspan="2" class="border-bottom">
-            @if(($filing_type == 'Separate Filing' || $filing_type == 'Not Applicable') && $spouse_signature == 0)
+            @if($filing_type == 'Separate Filing' || $filing_type == 'Not Applicable' || $spouse_signature == 0)
                 <div style="text-align: center">N/A</div>
             @endif
         </td>
