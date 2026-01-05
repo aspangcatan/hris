@@ -134,6 +134,18 @@
                 }
             }
 
+            if (!function_exists('adjustFontSize')) {
+                function adjustFontSize($text, $baseSize = 13) {
+                    $length = strlen($text);
+                    if ($length > 60) return 'font-size: 7px;';
+                    if ($length > 45) return 'font-size: 8px;';
+                    if ($length > 35) return 'font-size: 9px;';
+                    if ($length > 20) return 'font-size: 10px;';
+                    if ($length > 15) return 'font-size: 11px;';
+                    return "font-size: {$baseSize}px;";
+                }
+            }
+
             [$addressLine1, $addressLine2] = splitAddressByWords($address, 45); // Adjust 40 to your desired max length
         @endphp
 
@@ -372,14 +384,14 @@
     </tr>
     @forelse($real_properties as $key)
         <tr class="border-bottom border-left border-right assets" style="font-size: 13px">
-            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['description'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 10%">{{ strtoupper($key['kind'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 18%">{{ strtoupper($key['exact_location'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 8%;">{{ strtoupper($key['assessed_value'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 14%;">{{ strtoupper($key['current_fair'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_year'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 8%">{{ strtoupper($key['acquisition_mode'] ?? '') }}</td>
-            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 10%; padding: 0 4px; {{ adjustFontSize($key['description'] ?? '') }}">{{ strtoupper($key['description'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 10%; padding: 0 4px; {{ adjustFontSize($key['kind'] ?? '', 11) }}">{{ strtoupper($key['kind'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 18%; padding: 0 4px; {{ adjustFontSize($key['exact_location'] ?? '') }}">{{ strtoupper($key['exact_location'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['assessed_value'] ?? '') }}">{{ strtoupper($key['assessed_value'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 14%; padding: 0 4px; {{ adjustFontSize($key['current_fair'] ?? '') }}">{{ strtoupper($key['current_fair'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['acquisition_year'] ?? '') }}">{{ strtoupper($key['acquisition_year'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 8%; padding: 0 4px; {{ adjustFontSize($key['acquisition_mode'] ?? '') }}">{{ strtoupper($key['acquisition_mode'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%; padding: 0 4px; {{ adjustFontSize($key['acquisition_cost'] ?? '') }}">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
     @empty
         <tr class="border-bottom border-left border-right assets" style="font-size: 13px">
@@ -414,9 +426,9 @@
     </tr>
     @forelse($personal_properties as $key)
         <tr class="border-top border-bottom border-right border-left" style="font-size: 13px;">
-            <td class="fw-bold border-right" style="width: 50%;">{{ strtoupper($key['gadget'] ?? '') }}</td>
-            <td class="fw-bold border-right" style="width: 36%;">{{ strtoupper($key['various_years'] ?? '') }}</td>
-            <td class="fw-bold" style="width: 14%;">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 50%; padding: 0 4px; {{ adjustFontSize($key['gadget'] ?? '') }}">{{ strtoupper($key['gadget'] ?? '') }}</td>
+            <td class="fw-bold border-right" style="width: 36%; padding: 0 4px; {{ adjustFontSize($key['various_years'] ?? '') }}">{{ strtoupper($key['various_years'] ?? '') }}</td>
+            <td class="fw-bold" style="width: 14%; padding: 0 4px; {{ adjustFontSize($key['acquisition_cost'] ?? '') }}">{{ strtoupper($key['acquisition_cost'] ?? '') }}</td>
         </tr>
     @empty
         <tr class="border-top border-bottom border-right border-left" style="font-size: 13px;">
