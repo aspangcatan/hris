@@ -635,7 +635,7 @@
         <td></td>
         <td>Government Issued ID:</td>
         <td class="border-bottom">
-            @if($filing_type == 'Separate Filing')
+            @if($filing_type == 'Separate Filing' || $filing_type == 'Not Applicable')
                 N/A
             @elseif($filing_type == 'Joint Filing' && $spouse)
                 {{strtoupper($spouse->government_id_issued)}}
@@ -654,7 +654,7 @@
         <td></td>
         <td>ID No.:</td>
         <td class="border-bottom">
-            @if($filing_type == 'Separate Filing')
+            @if($filing_type == 'Separate Filing' || $filing_type == 'Not Applicable')
                 N/A
             @elseif($filing_type == 'Joint Filing' && $spouse)
                 {{strtoupper($spouse->government_id_no)}}
@@ -673,7 +673,7 @@
         <td></td>
         <td>Date Issued:</td>
         <td class="border-bottom" style="text-transform: uppercase">
-            @if($filing_type == 'Separate Filing')
+            @if($filing_type == 'Separate Filing' || $filing_type == 'Not Applicable')
                 N/A
             @elseif($filing_type == 'Joint Filing' && isset($spouse->date_issued))
                 {{ date('F j, Y', strtotime($spouse->date_issued)) }}
