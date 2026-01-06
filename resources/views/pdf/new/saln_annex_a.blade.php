@@ -161,7 +161,6 @@
         <tr>
             <td></td>
             <td class="border-bottom">
-                {{ strtoupper($addressLine2) }}
             </td>
             <td></td>
             <td></td>
