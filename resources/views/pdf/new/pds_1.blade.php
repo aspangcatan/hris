@@ -1,3 +1,16 @@
+@php
+    if (!function_exists('adjustFontSize')) {
+        function adjustFontSize($text, $baseSize = 13) {
+            $length = strlen($text);
+            if ($length > 60) return 'font-size: 7px;';
+            if ($length > 45) return 'font-size: 8px;';
+            if ($length > 35) return 'font-size: 9px;';
+            if ($length > 20) return 'font-size: 10px;';
+            if ($length > 15) return 'font-size: 11px;';
+            return "font-size: {$baseSize}px;";
+        }
+    }
+@endphp
 <div id="page_1" style="border:1px solid black">
     <div>
         <div style="font-weight: bold;font-size:14.66px;font-family: 'Calibri';padding-left:2.5px">CS Form No. 212</div>
@@ -694,10 +707,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black">
-                <div class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[0]['name'] ?? '', 12) }}" class="center-value">
                     {{ strtoupper($childrens[0]['name']) }}
-                </div>
             </td>
             <td style="width: 13%">
                 <div class="center-value">
@@ -722,7 +733,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[1]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[1]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -746,7 +757,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[2]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[2]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -770,7 +781,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[3]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[3]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -794,7 +805,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[5]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[5]['name']) }}
             </td>
             <td style="width: 13%">
@@ -816,7 +827,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[6]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[6]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -854,7 +865,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[7]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[7]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -878,7 +889,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[8]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[8]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -888,7 +899,7 @@
         <tr style="border-top:solid 1px black">
             <td style="border-right: solid 1px black" class="gray">25. MOTHER'S MAIDEN NAME</td>
             <td style="border-right: solid 1px black" colspan="2"></td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[9]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[9]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -912,7 +923,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[10]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[10]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -936,7 +947,7 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[11]['name'] ?? '', 12) }}" class="center-value">
                 {{ strtoupper($childrens[11]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
