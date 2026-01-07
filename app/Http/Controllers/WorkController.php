@@ -29,14 +29,14 @@ class WorkController extends Controller
     {
         try {
             // Check if another work entry already has is_current_work = 1 for this user
-            $existingCurrentWork = Work::where('user_id', Auth::id())
-                ->where('is_current_work', 1)
-                ->where('id', '!=', $request->id) // Exclude the same record if updating
-                ->first();
+//            $existingCurrentWork = Work::where('user_id', Auth::id())
+//                ->where('is_current_work', 1)
+//                ->where('id', '!=', $request->id) // Exclude the same record if updating
+//                ->first();
 
-            if ($request->is_current_work == 1 && $existingCurrentWork) {
-                return response()->json(['code' => 500, 'message' => 'There is already a current work status.']);
-            }
+//            if ($request->is_current_work == 1 && $existingCurrentWork) {
+//                return response()->json(['code' => 500, 'message' => 'There is already a current work status.']);
+//            }
 
             $work = Work::find($request->id);
             if (!$work) {
