@@ -1,4 +1,3 @@
-
 <table style="width:100%; font-size:9px;">
     <tr>
         <td style="width:70%">
@@ -20,7 +19,9 @@
     <div style="font-size: 13px">As of
         <u style="margin-left: 5px">{{ $as_of_month }}{{ $as_of_day }}, {{ $as_of_year }}</u>
     </div>
-    <div>(Additional sheet/s for the exclusive properties of the declarant's spouse and unmarried children <br />below eighteen (18) years of age living in declarant's household)</div>
+    <div>(Additional sheet/s for the exclusive properties of the declarant's spouse and unmarried children <br/>below
+        eighteen (18) years of age living in declarant's household)
+    </div>
 </div>
 <div style="text-align: center;">
     <table id="declarant" style="text-align: center;font-size: 13px">
@@ -50,7 +51,7 @@
                             @if(isset($declarant->mname) && !empty($declarant->mname[0]))
                                 {{ strtoupper($declarant->mname[0]) }}.
                             @else
-
+                                N/A
                             @endif
                         </td>
                     </tr>
@@ -58,7 +59,8 @@
             </td>
             <td style="width: 5%"></td>
             <td class="fw-bold" style="width: 15%">POSITION:</td>
-            <td style="width: 30%" class="border-bottom">{{ isset($declarant->position) ? strtoupper($declarant->position) : '' }}</td>
+            <td style="width: 30%"
+                class="border-bottom">{{ isset($declarant->position) ? strtoupper($declarant->position) : '' }}</td>
         </tr>
         <tr>
             <td></td>
