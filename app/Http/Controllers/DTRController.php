@@ -646,19 +646,14 @@ class DTRController extends Controller
             ->value('division');
     }
 
-    public
-    function getEmployeeDtr(Request $request)
+     public
+    function getEmployeeDtrV2(Request $request)
     {
         try {
             $search_division = $request->search_division;
             $search_section = $request->search_section;
             $search_fname = $request->search_fname;
             $search_lname = $request->search_lname;
-
-            // Default to logged-in user's section if search_section = 0
-            if ($search_section == 0) {
-                $search_section = Auth::user()->section;
-            }
 
             $employee = DB::table('tdh_user.users as u')
                 ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
@@ -678,7 +673,79 @@ class DTRController extends Controller
                         ->orWhereNull('e.employee_type');
                 });
 
-            // Apply filters
+            // Default to logged-in user's section if search_section = 0
+            if ($search_section == 0) {
+                // Fetch sections where the current user is the head
+                $managed_sections = DB::table('tdh_user.section')
+                    ->where('head', Auth::id())
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($managed_sections)) {
+                    // If the user is a head of one or more sections, fetch all employees in those sections
+                    $employee->whereIn('u.section', $managed_sections);
+                } else {
+                    // Fallback to the current user's own section if they are not a head
+                    $employee->where('u.section', '=', Auth::user()->section);
+                }
+            } else {
+                $employee->where('u.section', '=', $search_section);
+            }
+
+
+
+            if (!empty($search_division)) {
+                $employee->where('u.division', '=', $search_division);
+            }
+
+            if (!empty($search_fname)) {
+                $employee->where('u.fname', 'LIKE', "%$search_fname%");
+            }
+
+            if (!empty($search_lname)) {
+                $employee->where('u.lname', 'LIKE', "%$search_lname%");
+            }
+
+            $result = $employee->orderBy('u.lname')->get();
+
+            return response()->json($result);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public
+    function getEmployeeDtr(Request $request)
+    {
+        try {
+            $search_division = $request->search_division;
+            $search_section = $request->search_section;
+            $search_fname = $request->search_fname;
+            $search_lname = $request->search_lname;
+
+            $employee = DB::table('tdh_user.users as u')
+                ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
+                ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
+                ->select(
+                    'u.id',
+                    'u.fname',
+                    'u.mname',
+                    'u.lname',
+                    'd1.description as designation',
+                    'u.picture',
+                    'u.section',
+                    'u.division'
+                )
+                ->where(function ($query) {
+                    $query->where('e.employee_type', '!=', 'Resigned')
+                        ->orWhereNull('e.employee_type');
+                });
+
+            // Default to logged-in user's section if search_section = 0
+            if ($search_section == 0) {
+                $search_section = Auth::user()->section;
+            }
+
             if (!empty($search_section)) {
                 $employee->where('u.section', '=', $search_section);
             }

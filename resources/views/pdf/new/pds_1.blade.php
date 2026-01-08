@@ -25,7 +25,8 @@
             Data Sheet and the Work Experience Sheet shall cause the filling of administrative/criminal case/s
             against the person concerned.
         </div>
-        <div style="font-size:10px;font-weight: bold;font-family: 'Arial';margin-top:10px">READ THE ATTACHED GUIDE TO FILLING OUT THE
+        <div style="font-size:10px;font-weight: bold;font-family: 'Arial';margin-top:10px">READ THE ATTACHED GUIDE TO
+            FILLING OUT THE
             PERSONAL DATA SHEET
             (PDS)
             BEFORE ACCOMPLISHING THE PDS FORM.
@@ -79,7 +80,11 @@
                 <div style="margin-left: 10px;">MIDDLENAME</div>
             </td>
             <td style="border-left: solid 1px black;" colspan="2">
-                <div class="value">{{ strtoupper($user->mname) }}</div>
+                @if(trim($user->mname))
+                    <div class="value">{{ strtoupper($user->mname) }}</div>
+                @else
+                    <div class="value">N/A</div>
+                @endif
             </td>
         </tr>
     </table>
@@ -635,7 +640,9 @@
                     @endif
                 </div>
             </td>
-            <td style="font-size: 10px;border-right: solid 1px black;font-size:9px" class="gray">21. E-MAIL ADDRESS (if any)</td>
+            <td style="font-size: 10px;border-right: solid 1px black;font-size:9px" class="gray">21. E-MAIL ADDRESS (if
+                any)
+            </td>
             <td colspan="2">
                 <div class="value">
                     @if($employee->email_address)
@@ -707,8 +714,9 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[0]['name'] ?? '', 12) }}" class="center-value">
-                    {{ strtoupper($childrens[0]['name']) }}
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[0]['name'] ?? '', 12) }}"
+                class="center-value">
+                {{ strtoupper($childrens[0]['name']) }}
             </td>
             <td style="width: 13%">
                 <div class="center-value">
@@ -733,7 +741,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[1]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[1]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[1]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -757,7 +766,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[2]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[2]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[2]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -781,7 +791,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[3]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[3]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[3]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -805,7 +816,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[5]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[5]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[5]['name']) }}
             </td>
             <td style="width: 13%">
@@ -827,7 +839,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[6]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[6]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[6]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -865,7 +878,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[7]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[7]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[7]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -889,7 +903,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[8]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[8]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[8]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -899,7 +914,8 @@
         <tr style="border-top:solid 1px black">
             <td style="border-right: solid 1px black" class="gray">25. MOTHER'S MAIDEN NAME</td>
             <td style="border-right: solid 1px black" colspan="2"></td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[9]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[9]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[9]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -923,7 +939,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[10]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[10]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[10]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -947,7 +964,8 @@
                     @endif
                 </div>
             </td>
-            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[11]['name'] ?? '', 12) }}" class="center-value">
+            <td style="width: 25%;border-right: solid 1px black; {{ adjustFontSize($childrens[11]['name'] ?? '', 12) }}"
+                class="center-value">
                 {{ strtoupper($childrens[11]['name']) }}
             </td>
             <td style="width: 13%" class="center-value">
@@ -1047,7 +1065,8 @@
                     <td style="text-align: center;font-weight: bold;border-right: solid 1px black" class="gray">
                         SIGNATURE
                     </td>
-                    <td colspan="2"  style="border-top: solid 1px black;text-align: center;color:red;font-weight: bold;height: unset !important;">
+                    <td colspan="2"
+                        style="border-top: solid 1px black;text-align: center;color:red;font-weight: bold;height: unset !important;">
 
                     </td>
                     <td colspan="2" style="text-align: center;font-weight: bold;border-right: solid 1px black"
