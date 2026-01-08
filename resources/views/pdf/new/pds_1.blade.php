@@ -2,11 +2,11 @@
     if (!function_exists('adjustFontSize')) {
         function adjustFontSize($text, $baseSize = 13) {
             $length = strlen($text);
-            if ($length > 60) return 'font-size: 7px;';
-            if ($length > 45) return 'font-size: 8px;';
-            if ($length > 35) return 'font-size: 9px;';
-            if ($length > 20) return 'font-size: 10px;';
-            if ($length > 15) return 'font-size: 11px;';
+            if ($length > 60) return 'font-size: 7.5px;';
+            if ($length > 45) return 'font-size: 8.5px;';
+            if ($length > 35) return 'font-size: 9.5px;';
+            if ($length > 20) return 'font-size: 10.5px;';
+            if ($length > 15) return 'font-size: 11.5px;';
             return "font-size: {$baseSize}px;";
         }
     }
@@ -803,8 +803,8 @@
             <td style="width: 20%;border-right: solid 1px black" class="gray">
                 <div style="margin-left: 15px">BUSINESS ADDRESS</div>
             </td>
-            <td colspan="2" style="border-right: solid 1px black;">
-                <div class="value">
+            <td colspan="2" class="value" style="border-right: solid 1px black;">
+                <div class="value" style="{{ adjustFontSize(strtoupper($family->spouse_business_address) ?? '', 12) }}">
                     @if($family)
                         @if($family->spouse_business_address)
                             {{ strtoupper($family->spouse_business_address) }}
@@ -1034,12 +1034,16 @@
                         @endif
                         <td style="width: 25%;border-right: solid 1px black;text-align: unset !important"
                             class="center-value education">
-                            <div style="padding-left: 3px">
+                            <div
+                                style="padding-left: 3px;{{ adjustFontSize(strtoupper($education[$i]['school_name'])  ?? '', 12) }}">
                                 {{ strtoupper($education[$i]['school_name']) }}
                             </div>
                         </td>
-                        <td style="width: 21%;border-right: solid 1px black"
-                            class="center-value education">{{ strtoupper($education[$i]['education_degree']) }}</td>
+                        <td style="width: 21%;border-right: solid 1px black" class="center-value education">
+                            <div style="padding-left: 3px;{{ adjustFontSize(strtoupper($education[$i]['education_degree'])  ?? '', 12) }}">
+                                {{ strtoupper($education[$i]['education_degree']) }}
+                            </div>
+
                         <td style="width: 6%;border-right: solid 1px black"
                             class="center-value education">{{ $education[$i]['attendance_from'] }}</td>
                         <td style="width: 6%;border-right: solid 1px black"
