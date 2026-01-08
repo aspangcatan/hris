@@ -46,13 +46,11 @@
                             @endif
                         </td>
                         <td>
-                        <td>
                             @if($declarant->mname)
                                 {{ strtoupper($declarant->mname[0]) }}.
                             @else
                                 N/A
                             @endif
-                        </td>
                         </td>
                     </tr>
                 </table>

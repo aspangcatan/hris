@@ -64,6 +64,40 @@
 </div>
 <div class="border-bottom" style="margin-top: 10px"></div>
 <div class="border-bottom" style="margin-top: 2px"></div>
+@php
+    if (!function_exists('splitAddressByWords')) {
+        function splitAddressByWords($address, $maxLength) {
+            $words = explode(' ', $address); // Split address into words
+            $line1 = '';
+            $line2 = '';
+
+            foreach ($words as $line_word) {
+                if (strlen($line1) + strlen($line_word) + 1 <= $maxLength) { // +1 for space
+                    $line1 .= ($line1 === '' ? '' : ' ') . $line_word;
+                } else {
+                    $line2 .= ($line2 === '' ? '' : ' ') . $line_word;
+                }
+            }
+
+            return [$line1, $line2];
+        }
+    }
+
+    if (!function_exists('adjustFontSize')) {
+        function adjustFontSize($text, $baseSize = 13) {
+            $length = strlen($text);
+            if ($length > 60) return 'font-size: 7px;';
+            if ($length > 45) return 'font-size: 8px;';
+            if ($length > 35) return 'font-size: 9px;';
+            if ($length > 20) return 'font-size: 10px;';
+            if ($length > 15) return 'font-size: 11px;';
+            return "font-size: {$baseSize}px;";
+        }
+    }
+
+    [$addressLine1, $addressLine2] = splitAddressByWords($address, 45); // Adjust 40 to your desired max length
+@endphp
+
 <div style="text-align: center;">
     <table id="declarant" style="text-align: center;font-size: 13px">
         <tr>
@@ -117,39 +151,6 @@
             <td class="fw-bold">AGENCY/OFFICE:</td>
             <td class="border-bottom">{{ strtoupper($declarant->agency) }}</td>
         </tr>
-        @php
-            if (!function_exists('splitAddressByWords')) {
-                function splitAddressByWords($address, $maxLength) {
-                    $words = explode(' ', $address); // Split address into words
-                    $line1 = '';
-                    $line2 = '';
-
-                    foreach ($words as $word) {
-                        if (strlen($line1) + strlen($word) + 1 <= $maxLength) { // +1 for space
-                            $line1 .= ($line1 === '' ? '' : ' ') . $word;
-                        } else {
-                            $line2 .= ($line2 === '' ? '' : ' ') . $word;
-                        }
-                    }
-
-                    return [$line1, $line2];
-                }
-            }
-
-            if (!function_exists('adjustFontSize')) {
-                function adjustFontSize($text, $baseSize = 13) {
-                    $length = strlen($text);
-                    if ($length > 60) return 'font-size: 7px;';
-                    if ($length > 45) return 'font-size: 8px;';
-                    if ($length > 35) return 'font-size: 9px;';
-                    if ($length > 20) return 'font-size: 10px;';
-                    if ($length > 15) return 'font-size: 11px;';
-                    return "font-size: {$baseSize}px;";
-                }
-            }
-
-            [$addressLine1, $addressLine2] = splitAddressByWords($address, 45); // Adjust 40 to your desired max length
-        @endphp
 
         <tr>
             <td class="fw-bold"></td>
