@@ -370,7 +370,30 @@ class PrintController extends Controller
                 ->first();
 
 
-            $children_array = array_fill(0, 4, [
+            $children = SalnChildren::where('user_id', Auth::id())->get();
+            $children_count = count($children);
+            $effective_children_count = max(4, $children_count);
+
+            // Base limits for Page 1 - Added 1 extra row to each as requested (original was 4 and 6)
+            $real_properties_limit = 5;
+            $personal_properties_limit = 7;
+
+            // If children count is more than 5, we need to reduce the rows for properties to fit them in Page 1.
+            // Each child row takes about the same space as a property row.
+            if ($effective_children_count > 5) {
+                $extra_children = $effective_children_count - 5;
+                // Reduce personal properties first, then real properties
+                for ($i = 0; $i < $extra_children; $i++) {
+                    if ($personal_properties_limit > 2) {
+                        $personal_properties_limit--;
+                    } elseif ($real_properties_limit > 2) {
+                        $real_properties_limit--;
+                    }
+                }
+            }
+
+
+            $children_array = array_fill(0, $effective_children_count, [
                 'name' => 'N/A',
                 'birthdate' => 'N/A',
                 'age' => 'N/A'
@@ -382,7 +405,7 @@ class PrintController extends Controller
             ];
 
 
-            $real_properties_array = array_fill(0, 4, [
+            $real_properties_array = array_fill(0, $real_properties_limit, [
                 'description' => 'N/A',
                 'kind' => 'N/A',
                 'exact_location' => 'N/A',
@@ -415,7 +438,7 @@ class PrintController extends Controller
                 'acquisition_cost' => 'N/A',
             ]);
 
-            $personal_properties_array = array_fill(0, 6, [
+            $personal_properties_array = array_fill(0, $personal_properties_limit, [
                 'gadget' => 'N/A',
                 'various_years' => 'N/A',
                 'acquisition_cost' => 'N/A'
@@ -483,11 +506,10 @@ class PrintController extends Controller
                 'agency' => 'N/A'
             ]);
 
-            $children = SalnChildren::where('user_id', Auth::id())->get();
-            for ($i = 0; $i < count($children); $i++) {
-                $birthdate = new DateTime($children[$i]['birthdate']);
+            for ($i = 0; $i < $children_count; $i++) {
+                $birthdate_val = new DateTime($children[$i]['birthdate']);
                 $today = new DateTime();
-                $age = $today->diff($birthdate)->y;
+                $age = $today->diff($birthdate_val)->y;
                 $children_array[$i] = [
                     'name' => $children[$i]['name'],
                     'birthdate' => date('m/d/Y', strtotime($children[$i]['birthdate'])),
@@ -519,11 +541,11 @@ class PrintController extends Controller
                     'acquisition_cost' => number_format($cost, 2),
                 ];
 
-                if ($i < 4) {
+                if ($i < $real_properties_limit) {
                     $real_properties_array[$i] = $entry;
                     $real_properties_subtotal_a += $cost;
                 } else {
-                    $b_idx = $i - 4;
+                    $b_idx = $i - $real_properties_limit;
                     if ($b_idx < 4) {
                         $real_properties_b_array[$b_idx] = $entry;
                     } else {
@@ -575,11 +597,11 @@ class PrintController extends Controller
                     'acquisition_cost' => number_format($cost, 2)
                 ];
 
-                if ($i < 6) {
+                if ($i < $personal_properties_limit) {
                     $personal_properties_array[$i] = $entry;
                     $personal_properties_subtotal_a += $cost;
                 } else {
-                    $b_idx = $i - 6;
+                    $b_idx = $i - $personal_properties_limit;
                     if ($b_idx < 4) {
                         $personal_properties_b_array[$b_idx] = $entry;
                     } else {
@@ -746,7 +768,7 @@ class PrintController extends Controller
             $formattedAddress = $addressParts->join(', ');
 
             // Determine if Annex B is needed (Declarant Overflow)
-            $show_annex_b = (count($all_real_properties) > 4 || count($all_personal_properties) > 6 || count($all_liabilities) > 4 || count($all_business) > 3);
+            $show_annex_b = (count($all_real_properties) > $real_properties_limit || count($all_personal_properties) > $personal_properties_limit || count($all_liabilities) > 4 || count($all_business) > 3);
 
             // Determine if Annex C is needed (Spouse Proof Presence)
             $show_annex_c = (count($spouse_real_properties_db) > 0 || count($spouse_personal_properties_db) > 0 || count($spouse_liabilities_db) > 0 || count($spouse_business_db) > 0);

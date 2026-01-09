@@ -714,8 +714,7 @@ class DTRController extends Controller
         }
     }
 
-    public
-    function getEmployeeDtr(Request $request)
+    public function getEmployeeDtr(Request $request)
     {
         try {
             $search_division = $request->search_division;

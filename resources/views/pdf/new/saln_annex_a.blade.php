@@ -20,7 +20,7 @@
         (As required by R.A. No. 6713)
     </div>
 
-    <div style="font-size:12px;text-align: center;margin-top:20px">
+    <div style="font-size:12px;text-align: center;margin-top:10px">
         <div class="fw-bold">COMPLIANCE FOR:</div>
         <div style="display: inline-block;width: 33%">
             @if($compliance_for == 'Assumption of office')
@@ -105,10 +105,10 @@
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td>
+                        <td style="padding: 2px 0;">
                             {{ strtoupper($declarant->lname) }}
                         </td>
-                        <td>
+                        <td style="padding: 2px 0;">
                             {{ strtoupper($declarant->fname) }}
                             @if($declarant->suffix)
                                 @php
@@ -122,7 +122,7 @@
                                 @endif
                             @endif
                         </td>
-                        <td>
+                        <td style="padding: 2px 0;">
                             @if($declarant->mname)
                                 {{ strtoupper($declarant->mname[0]) }}.
                             @else
@@ -174,21 +174,21 @@
             <td style="width: 39%">
                 <table style="text-align: center" class="box">
                     <tr>
-                        <td>
+                        <td style="padding: 2px 0;">
                             @if(isset($spouse->spouse_lname) && strtoupper($spouse->spouse_lname) !== 'N/A' && strtoupper($spouse->spouse_lname) !== 'NA')
                                 {{ strtoupper($spouse->spouse_lname) }}
                             @else
                                 N/A
                             @endif
                         </td>
-                        <td>
+                        <td style="padding: 2px 0;">
                             @if(isset($spouse->spouse_fname) && strtoupper($spouse->spouse_fname) !== 'N/A' && strtoupper($spouse->spouse_fname) !== 'NA')
                                 {{ strtoupper($spouse->spouse_fname) }}
                             @else
                                 N/A
                             @endif
                         </td>
-                        <td>
+                        <td style="padding: 2px 0;">
                             @if(isset($spouse->spouse_mname) && strtoupper($spouse->spouse_mname) !== 'N/A' && strtoupper($spouse->spouse_mname) !== 'NA' && !empty($spouse->spouse_mname[0]))
                                 {{ strtoupper($spouse->spouse_mname[0]) }}.
                             @else
@@ -243,7 +243,7 @@
             </td>
         </tr>
     </table>
-    <div style="text-align: left;margin-top: 20px;" class="fw-bold">
+    <div style="text-align: left;margin-top: 10px;" class="fw-bold">
         <div>SPOUSES, WHO ARE BOTH PUBLIC OFFICIALS OR EMPLOYEES, MAY FILE THE SALN JOINTLY OR SEPARATELY.</div>
         <div>THE DECLARANT SHALL CHECK THE APPROPRIATE BOX</div>
     </div>
@@ -307,7 +307,7 @@
     <div style="margin-top: 10px;text-decoration: underline" class="title fw-bold">
         UNMARRIED CHILDREN BELOW EIGHTEEN (18) YEARS OF AGE LIVING IN DECLARANT'S HOUESHOLD
     </div>
-    <table style="font-size: 13px;text-align: center;margin-top: 20px">
+    <table style="font-size: 13px;text-align: center;margin-top: 5px">
         <tr class="fw-bold" style="font-size: 10px">
             <td></td>
             <td>NAME OF CHILD</td>
@@ -319,9 +319,9 @@
         @forelse($children as $key)
             <tr style="font-size: 13.33px">
                 <td style="width: 8%"></td>
-                <td class="border-bottom">{{ strtoupper($key['name'] ?? '') }}</td>
+                <td class="border-bottom" style="padding: 1px 0;">{{ strtoupper($key['name'] ?? '') }}</td>
                 <td style="width: 2%"></td>
-                <td class="border-bottom" style="width: 15%">{{ strtoupper($key['age'] ?? '') }}</td>
+                <td class="border-bottom" style="width: 15%; padding: 1px 0;">{{ strtoupper($key['age'] ?? '') }}</td>
                 <td style="width: 8%"></td>
             </tr>
         @empty
@@ -344,7 +344,7 @@
         household)
     </div>
 </div>
-<div class="fw-bold" style="margin-top: 10px;font-size: 13px">
+    <div class="fw-bold" style="margin-top: 5px;font-size: 13px">
     1. ASSETS
 </div>
 <div class="fw-bold" style="margin-top: 10px;margin-left: 30px;font-size: 13px">
@@ -425,10 +425,10 @@
         </td>
     </tr>
 </table>
-<div class="fw-bold" style="margin-top: 20px;margin-left: 30px;font-size: 13px">
+<div class="fw-bold" style="margin-top: 5px;margin-left: 30px;font-size: 13px">
     b. Personal Properties
 </div>
-<table style="text-align: center;margin-top: 10px;font-size: 13px">
+<table style="text-align: center;margin-top: 5px;font-size: 13px">
     <tr class="fw-bold gray border-top border-left">
         <td class="border-right">DESCRIPTION</td>
         <td class="border-right border-top">ACQUISITION YEAR</td>
