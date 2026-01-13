@@ -153,6 +153,7 @@
             $("#civil_service_career_service").val("");
             $("#civil_service_rating").val("");
             $("#civil_service_examination_date").val("");
+            $("#civil_service_examination_end_date").val("");
             $("#civil_service_examination_place").val("");
             $("#civil_service_license_no").val("");
             $("#civil_service_license_expiry").val("");
