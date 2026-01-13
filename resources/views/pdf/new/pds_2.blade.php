@@ -20,7 +20,7 @@
             <td rowspan="2" style="border-right: solid 1px black">
                 DATE OF<br/>EXAMINATION/<br/>CONFERMENT
             </td>
-            <td rowspan="2" style=";border-right: solid 1px black">PLACE OF EXAMINATION/<br />CONFERMENT
+            <td rowspan="2" style=";border-right: solid 1px black">PLACE OF EXAMINATION/<br/>CONFERMENT
             </td>
             <td colspan="2">LICENSE (If applicable)</td>
         </tr>
@@ -39,7 +39,9 @@
                 <td style="width: 8%;border-right: solid 1px black"
                     class="center-value">{{ strtoupper($key['rating']) }}</td>
                 <td style="width: 12%;border-right: solid 1px black"
-                    class="center-value">{{ strtoupper($key['examination_date']) }}</td>
+                    class="center-value">
+                    {{ strtoupper($key['examination_date']) }}
+                </td>
                 <td style="width: 25%;border-right: solid 1px black"
                     class="center-value">{{ strtoupper($key['examination_place']) }}</td>
                 <td style="width: 10%;border-right: solid 1px black"
@@ -79,7 +81,8 @@
             </td>
             <td rowspan="2" class="hide" style=";border-right: solid 1px black">MONTHLY<br/>SALARY
             </td>
-            <td rowspan="2" class="hide" style="border-right: solid 1px black;font-size: 9px !important;">SALARY/JOB/<br/>PAY
+            <td rowspan="2" class="hide" style="border-right: solid 1px black;font-size: 9px !important;">
+                SALARY/JOB/<br/>PAY
                 GRADE(if<br/>applicable)&<br/>STEP
                 (Format<br/>"00-0")/<br/>INCREMENT
             </td>
@@ -100,7 +103,7 @@
                     class="center-value">{{ strtoupper($key['position']) }}</td>
                 <td style="width: 44%;border-right: solid 1px black;font-size: 10px"
                     class="center-value">{{ strtoupper($key['agency']) }}</td>
-                <td  style="width: 7%;border-right: solid 1px black;font-size: 11px"
+                <td style="width: 7%;border-right: solid 1px black;font-size: 11px"
                     class="center-value hide">{{ strtoupper($key['monthly_salary']) }}</td>
                 <td style="width: 8%;border-right: solid 1px black;font-size: 11px"
                     class="center-value hide">{{ strtoupper($key['salary_grade']) }}</td>

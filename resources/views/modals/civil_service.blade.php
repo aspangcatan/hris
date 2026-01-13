@@ -27,7 +27,11 @@
                     </div>
                     <div class="form-floating mb-3">
                         <input type="date" class="form-control" id="civil_service_examination_date" placeholder="">
-                        <label>Date of Examination</label>
+                        <label>Date of Examination (From)</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="date" class="form-control" id="civil_service_examination_end_date" placeholder="">
+                        <label>Date of Examination (To)</label>
                     </div>
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="civil_service_examination_place" placeholder="">

@@ -1054,7 +1054,13 @@ class PrintController extends Controller
                 if ($i < count($eligiblity)) {
                     $eligibility_column_1 = $eligiblity[$i]->career_service;
                     $eligibility_column_2 = $eligiblity[$i]->rating;
-                    $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date));
+
+                    if($eligiblity[$i]->examination_end_date){
+                        $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date))."-".date('m/d/Y', strtotime($eligiblity[$i]->examination_end_date));
+                    }else{
+                        $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date));
+                    }
+
                     $eligibility_column_4 = $eligiblity[$i]->examination_place;
                     $eligibility_column_5 = "N/A";
                     if ($eligiblity[$i]->license_no)

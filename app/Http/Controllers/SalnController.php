@@ -440,8 +440,18 @@ class SalnController extends Controller
         }
     }
 
+    public function deleteMarriage(Request $request)
+    {
+        try {
+            $marriages = Marriages::where('id',$request->id)->first();
+            $marriages->forceDelete();
+            return response(['code' => 200, 'message' => 'Item deleted']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
 
-    // ... existing methods ...
+
 
     // SPOUSE REAL PROPERTIES
     public function insertSpouseRealProperties(Request $request)
@@ -457,7 +467,7 @@ class SalnController extends Controller
                 $real_properties = new SpouseRealProperties;
                 $real_properties->user_id = Auth::id();
             }
-            
+
             $real_properties->description = $request->description;
             $real_properties->kind = $request->kind;
             $real_properties->exact_location = $request->exact_location;

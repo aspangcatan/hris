@@ -18,10 +18,11 @@
                     const examination_place = (it.examination_place) ? it.examination_place : "";
                     const license_expiry = (it.license_expiry) ? moment(it.license_expiry).format("MM/DD/YYYY") : "";
                     const examination_date = (it.examination_date) ? moment(it.examination_date).format("MM/DD/YYYY") : "";
+                    const examination_end_date = (it.examination_end_date) ? "-" + moment(it.examination_end_date).format("MM/DD/YYYY") : "";
                     let tr = `<tr id='civil_service_` + it.id + `'>`;
                     tr += `<td>` + it.career_service + `</td>`;
                     tr += `<td>` + rating + `</td>`
-                    tr += `<td>` + examination_date + `</td>`;
+                    tr += `<td>` + examination_date + `` + examination_end_date + `</td>`;
                     tr += `<td>` + examination_place + `</td>`;
                     tr += `<td>` + license_no + `</td>`;
                     tr += `<td>` + license_expiry + `</td>`;
@@ -74,7 +75,7 @@
                     <tr id='civil_service_` + data.id + `'>
                     <td>` + params.career_service + `</td>
                     <td>` + params.rating + `</td>
-                    <td>` + moment(params.examination_date).format("MM/DD/YYYY") + `</td>
+                    <td>` + moment(params.examination_date).format("MM/DD/YYYY") + `-` + moment(params.examination_end_date).format("MM/DD/YYYY") + `</td>
                     <td>` + params.examination_place + `</td>
                     <td>` + license_no + `</td>
                     <td>` + license_expiry + `</td>
@@ -94,7 +95,7 @@
                 } else {
                     $("#civil_service_" + params.id + " td:eq(0)").text(params.career_service);
                     $("#civil_service_" + params.id + " td:eq(1)").text(params.rating);
-                    $("#civil_service_" + params.id + " td:eq(2)").text(moment(params.examination_date).format("MM/DD/YYYY"));
+                    $("#civil_service_" + params.id + " td:eq(2)").text(moment(params.examination_date).format("MM/DD/YYYY") + "-" + moment(params.examination_end_date).format("MM/DD/YYYY"));
                     $("#civil_service_" + params.id + " td:eq(3)").text(params.examination_place);
                     $("#civil_service_" + params.id + " td:eq(4)").text(license_no);
                     $("#civil_service_" + params.id + " td:eq(5)").text(license_expiry);

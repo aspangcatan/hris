@@ -123,7 +123,7 @@
             date = moment(date).format("DD/MM/YYYY");
             sworn_date = moment(sworn_date).format("DD/MM/YYYY");
             window.open(
-                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows+"&sworn_date="+sworn_date,
+                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows + "&sworn_date=" + sworn_date,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
@@ -512,7 +512,6 @@
             }
 
 
-
             if (!is_valid) {
                 $("#education_error").removeClass("d-none");
                 return;
@@ -617,7 +616,6 @@
             }
 
 
-
             if (year_graduated == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Year graduated is required</li>");
@@ -651,6 +649,7 @@
             const career_service = $("#civil_service_career_service").val().trim();
             const rating = $("#civil_service_rating").val();
             const examination_date = $("#civil_service_examination_date").val();
+            const examination_end_date = $("#civil_service_examination_end_date").val();
             const examination_place = $("#civil_service_examination_place").val();
             const license_no = $("#civil_service_license_no").val();
             const license_expiry = $("#civil_service_license_expiry").val();
@@ -666,10 +665,10 @@
             //     $(".error_list").append("<li>Rating is required</li>");
             // }
             //
-            // if (examination_date == "") {
-            //     is_valid = false;
-            //     $(".error_list").append("<li>Date of examination is required</li>");
-            // }
+            if (examination_date != "" && examination_end_date == "")  {
+                is_valid = false;
+                $(".error_list").append("<li>Date of examination (To) is required</li>");
+            }
 
             // if (examination_place == "") {
             //     is_valid = false;
@@ -687,6 +686,7 @@
                 career_service: career_service,
                 rating: rating,
                 examination_date: examination_date,
+                examination_end_date: examination_end_date,
                 examination_place: examination_place,
                 license_no: license_no,
                 license_expiry: license_expiry
@@ -1073,16 +1073,25 @@
         const career_service = $("#civil_service_" + id + " td:eq(0)").text().trim();
         const rating = $("#civil_service_" + id + " td:eq(1)").text().trim();
         let examination_date = $("#civil_service_" + id + " td:eq(2)").text().trim();
+        let examination_end_date = "";
         const examination_place = $("#civil_service_" + id + " td:eq(3)").text().trim();
         const license_no = $("#civil_service_" + id + " td:eq(4)").text().trim();
         let license_expiry = $("#civil_service_" + id + " td:eq(5)").text().trim();
 
-        examination_date = (examination_date) ? moment(examination_date, "MM/DD/YYYY").format("YYYY-MM-DD") : "";
+        // examination_date = (examination_date) ? moment(examination_date, "MM/DD/YYYY").format("YYYY-MM-DD") : "";
+        if (examination_date) {
+            examination_end_date = moment(examination_date.split("-")[1], "MM/DD/YYYY").format("YYYY-MM-DD");
+            examination_date = moment(examination_date.split("-")[0], "MM/DD/YYYY").format("YYYY-MM-DD")
+        } else {
+            examination_date = "";
+        }
+
         license_expiry = (license_expiry) ? moment(license_expiry, "MM/DD/YYYY").format("YYYY-MM-DD") : "";
 
         $("#civil_service_career_service").val(career_service);
         $("#civil_service_rating").val(rating);
         $("#civil_service_examination_date").val(examination_date);
+        $("#civil_service_examination_end_date").val(examination_end_date);
         $("#civil_service_examination_place").val(examination_place);
         $("#civil_service_license_no").val(license_no);
         $("#civil_service_license_expiry").val(license_expiry);

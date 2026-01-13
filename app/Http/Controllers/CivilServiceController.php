@@ -32,6 +32,7 @@ class CivilServiceController extends Controller
             $civil_service->career_service = $request->career_service;
             $civil_service->rating = $request->rating;
             $civil_service->examination_date = $request->examination_date;
+            $civil_service->examination_end_date = $request->examination_end_date;
             $civil_service->examination_place = $request->examination_place;
             $civil_service->license_no = $request->license_no;
             $civil_service->license_expiry = $request->license_expiry;
