@@ -12,12 +12,17 @@
                 }
                 is_voluntary_loaded = true;
                 data.results.forEach(it => {
+                    let working_to = moment(it.working_to).format("MM/DD/YYYY");
+                    if (it.is_current == 1) {
+                        working_to = "Present";
+                    }
+
                     const tr = `
                             <tr id='voluntary_` + it.id + `'>
                                 <td>` + it.organization_address + `</td>
                                 <td>` + it.position + `</td>
                                 <td>` + moment(it.working_from).format("MM/DD/YYYY") + `</td>
-                                <td>` + moment(it.working_to).format("MM/DD/YYYY") + `</td>
+                                <td>` + working_to + `</td>
                                 <td>` + it.number_hours + `</td>
                                 <td>
                                     <button type='button' class="btn btn-sm" style="background: transparent" onClick="editVoluntary(` + it.id + `)">

@@ -1169,7 +1169,11 @@ class PrintController extends Controller
                 if ($i < count($voluntary_work)) {
                     $voluntary_column_1 = $voluntary_work[$i]->organization_address;
                     $voluntary_column_2 = date('d/m/Y', strtotime($voluntary_work[$i]->working_from));
-                    $voluntary_column_3 = date('d/m/Y', strtotime($voluntary_work[$i]->working_to));
+                    if($voluntary_work[$i]->is_current == 1){
+                        $voluntary_column_3 = "Present";
+                    }else{
+                        $voluntary_column_3 = date('d/m/Y', strtotime($voluntary_work[$i]->working_to));
+                    }
                     $voluntary_column_4 = $voluntary_work[$i]->number_hours;
                     $voluntary_column_5 = $voluntary_work[$i]->position;
                 }

@@ -22,7 +22,7 @@
                         <label>Career Service</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="civil_service_rating" placeholder="">
+                        <input type="text" class="form-control" id="civil_service_rating" placeholder="">
                         <label>Rating</label>
                     </div>
                     <div class="form-floating mb-3">

@@ -34,6 +34,7 @@ class VoluntaryController extends Controller
             $voluntary->working_to = $request->working_to;
             $voluntary->number_hours = $request->number_hours;
             $voluntary->position = $request->position;
+            $voluntary->is_current = $request->is_current;
             $voluntary->save();
             return response(['code' => 200, 'message' => 'Voluntary work updated','id'=>$voluntary->id]);
         } catch (\Exception $exception) {

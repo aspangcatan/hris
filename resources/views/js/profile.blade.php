@@ -181,6 +181,7 @@
             $("#voluntary_working_from").val("");
             $("#voluntary_working_to").val("");
             $("#voluntary_number_hours").val("");
+            $("#voluntary_currently_working").attr("checked",false);
             voluntary_modal.toggle();
         });
 
@@ -666,7 +667,7 @@
             //     $(".error_list").append("<li>Rating is required</li>");
             // }
             //
-            if (examination_date != "" && examination_end_date == "")  {
+            if (examination_date != "" && examination_end_date == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Date of examination (To) is required</li>");
             }
@@ -785,8 +786,10 @@
             const organization_address = $("#voluntary_organization_address").val().trim();
             const working_from = $("#voluntary_working_from").val().trim();
             const working_to = $("#voluntary_working_to").val().trim();
+            const voluntary_currently_working = $("#voluntary_currently_working").is(":checked");
             const number_hours = $("#voluntary_number_hours").val().trim();
             const position = $("#voluntary_position").val().trim();
+
 
             if (organization_address == "") {
                 is_valid = false;
@@ -798,7 +801,7 @@
                 $(".error_list").append("<li>Working from is required</li>");
             }
 
-            if (working_to == "") {
+            if (working_to == "" && !voluntary_currently_working) {
                 is_valid = false;
                 $(".error_list").append("<li>Working to is required</li>");
             }
@@ -825,7 +828,8 @@
                 working_from: working_from,
                 working_to: working_to,
                 number_hours: number_hours,
-                position: position
+                position: position,
+                is_current: (voluntary_currently_working) ? 1 : 0,
             };
 
             insertUpdateVoluntary(params);
@@ -1134,13 +1138,22 @@
         const organization_address = $("#voluntary_" + id + " td:eq(0)").text();
         const position = $("#voluntary_" + id + " td:eq(1)").text();
         const working_from = moment($("#voluntary_" + id + " td:eq(2)").text(), "MM/DD/YYYY").format("YYYY-MM-DD")
-        const working_to = moment($("#voluntary_" + id + " td:eq(3)").text(), "MM/DD/YYYY").format("YYYY-MM-DD");
+        let working_to = $("#voluntary_" + id + " td:eq(3)").text();
+
+        if (working_to != "Present") {
+            working_to = moment(working_to, "MM/DD/YYYY").format("YYYY-MM-DD");
+            $("#voluntary_working_to").val(working_to);
+            $("#voluntary_currently_working").attr("checked", false);
+        } else {
+            $("#voluntary_working_to").val("");
+            $("#voluntary_currently_working").attr("checked", true);
+        }
         const number_hours = $("#voluntary_" + id + " td:eq(4)").text();
 
         $("#voluntary_organization_address").val(organization_address);
         $("#voluntary_position").val(position);
         $("#voluntary_working_from").val(working_from);
-        $("#voluntary_working_to").val(working_to);
+
         $("#voluntary_number_hours").val(number_hours);
         voluntary_modal.toggle()
     }

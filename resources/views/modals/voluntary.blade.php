@@ -33,6 +33,13 @@
                         <input type="date" class="form-control" id="voluntary_working_to" placeholder="">
                         <label>To</label>
                     </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="voluntary_currently_working">
+                        <label class="form-check-label" for="voluntary_currently_working">
+                            Check if currently working
+                        </label>
+                    </div>
                     <div class="form-floating mb-3">
                         <input type="number" class="form-control" id="voluntary_number_hours" placeholder="">
                         <label>Number hours</label>
