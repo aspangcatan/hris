@@ -171,12 +171,15 @@ class DTRController extends Controller
                 : Carbon::now(); // fallback if not provided
 
             // Insert into database
+            $isOnline = $request->input('is_online') ?? 0;
             DB::table('dtr_logs')->insert([
                 'userid' => $request->input('userid'),
                 'status' => $request->input('status'),
                 'type' => 1, // 1 for mobile DTR app
+                'device' => $request->input('device') ?? 'Unknown',
+                'is_online' => $isOnline,
                 'photo_path' => $filePath,
-                'created_at' => $eventTime,
+                'created_at' => ($isOnline == 1) ? Carbon::now() : $eventTime,
             ]);
 
             return response()->json(['message' => 'Successfully Timed ' . $request->input('status')]);
