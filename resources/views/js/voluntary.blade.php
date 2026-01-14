@@ -59,6 +59,10 @@
                     return;
                 }
 
+                let working_to = moment(params.working_to).format("MM/DD/YYYY");
+                if (params.is_current == "1") {
+                    working_to = "Present";
+                }
                 if (params.id == 0) {
                     //APPEND NEW ROW
                     const tr = `
@@ -66,7 +70,7 @@
                                 <td>` + params.organization_address + `</td>
                                 <td>` + params.position + `</td>
                                 <td>` + moment(params.working_from).format("MM/DD/YYYY") + `</td>
-                                <td>` + moment(params.working_to).format("MM/DD/YYYY") + `</td>
+                                <td>` + working_to + `</td>
                                 <td>` + params.number_hours + `</td>
                                 <td>
                                     <button type='button' class="btn btn-sm" style="background: transparent" onClick="editVoluntary(` + data.id + `)">
@@ -82,10 +86,11 @@
 
                     $("#voluntary_list").append(tr);
                 } else {
+
                     $("#voluntary_" + params.id + " td:eq(0)").text(params.organization_address);
                     $("#voluntary_" + params.id + " td:eq(1)").text(params.position);
                     $("#voluntary_" + params.id + " td:eq(2)").text(moment(params.working_from).format("MM/DD/YYYY"));
-                    $("#voluntary_" + params.id + " td:eq(3)").text(moment(params.working_to).format("MM/DD/YYYY"));
+                    $("#voluntary_" + params.id + " td:eq(3)").text(working_to);
                     $("#voluntary_" + params.id + " td:eq(4)").text(params.number_hours);
                 }
 
