@@ -332,6 +332,11 @@ class PrintController extends Controller
     public function printSaln(Request $request)
     {
         try {
+            $user_id = Auth::id();
+            if ($request->has("admin")) {
+                $user_id = $request->id;
+            }
+
             $declarant = DB::table('tdh_user.users as u')
                 ->leftJoin('hris.saln_declarant as d', 'u.id', '=', 'd.user_id')
                 ->leftJoin('hris.addresses as a', function ($join) {
@@ -341,7 +346,7 @@ class PrintController extends Controller
                                 ->orWhere('a.address_type', 'Permanent');
                         });
                 })
-                ->where('u.id', Auth::id())
+                ->where('u.id', $user_id)
                 ->get([
                     'u.fname',
                     'u.mname',
@@ -370,7 +375,7 @@ class PrintController extends Controller
                 ->first();
 
 
-            $children = SalnChildren::where('user_id', Auth::id())->get();
+            $children = SalnChildren::where('user_id', $user_id)->get();
             $children_count = count($children);
             $effective_children_count = max(4, $children_count);
 
@@ -517,7 +522,7 @@ class PrintController extends Controller
                 ];
             }
 
-            $marriages = Marriages::where('userid', Auth::id())->take(2)->get();
+            $marriages = Marriages::where('userid', $user_id)->take(2)->get();
             for ($i = 0; $i < count($marriages); $i++) {
                 $marriages_array[$i] = [
                     'name' => $marriages[$i]['spouse']
@@ -526,7 +531,7 @@ class PrintController extends Controller
 
             $real_properties_subtotal_a = 0;
             $real_properties_subtotal_b = 0;
-            $all_real_properties = RealProperties::where('user_id', Auth::id())->get();
+            $all_real_properties = RealProperties::where('user_id', $user_id)->get();
 
             foreach ($all_real_properties as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -556,10 +561,8 @@ class PrintController extends Controller
             }
 
 
-
-
             $spouse_real_properties_subtotal = 0;
-            $spouse_real_properties_db = SpouseRealProperties::where('user_id', Auth::id())->get();
+            $spouse_real_properties_db = SpouseRealProperties::where('user_id', $user_id)->get();
 
             foreach ($spouse_real_properties_db as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -583,11 +586,9 @@ class PrintController extends Controller
             }
 
 
-
-
             $personal_properties_subtotal_a = 0;
             $personal_properties_subtotal_b = 0;
-            $all_personal_properties = PersonalProperties::where('user_id', Auth::id())->get();
+            $all_personal_properties = PersonalProperties::where('user_id', $user_id)->get();
 
             foreach ($all_personal_properties as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -612,10 +613,8 @@ class PrintController extends Controller
             }
 
 
-
-
             $spouse_personal_properties_subtotal = 0;
-            $spouse_personal_properties_db = SpousePersonalProperties::where('user_id', Auth::id())->get();
+            $spouse_personal_properties_db = SpousePersonalProperties::where('user_id', $user_id)->get();
 
             foreach ($spouse_personal_properties_db as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -634,10 +633,9 @@ class PrintController extends Controller
             }
 
 
-
             $liabilities_total_a = 0;
             $liabilities_total_b = 0;
-            $all_liabilities = Liabilities::where('user_id', Auth::id())->get();
+            $all_liabilities = Liabilities::where('user_id', $user_id)->get();
 
             foreach ($all_liabilities as $i => $lib) {
                 $bal = (double)str_replace(',', '', $lib->outstanding_balance);
@@ -662,10 +660,8 @@ class PrintController extends Controller
             }
 
 
-
-
             $spouse_liabilities_total = 0;
-            $spouse_liabilities_db = SpouseLiabilities::where('user_id', Auth::id())->get();
+            $spouse_liabilities_db = SpouseLiabilities::where('user_id', $user_id)->get();
 
             foreach ($spouse_liabilities_db as $i => $lib) {
                 $bal = (double)str_replace(',', '', $lib->outstanding_balance);
@@ -684,8 +680,7 @@ class PrintController extends Controller
             }
 
 
-
-            $all_business = BusinessInterest::where('user_id', Auth::id())->get();
+            $all_business = BusinessInterest::where('user_id', $user_id)->get();
 
             foreach ($all_business as $i => $bus) {
                 $entry = [
@@ -708,9 +703,7 @@ class PrintController extends Controller
             }
 
 
-
-
-            $spouse_business_db = SpouseBusinessInterest::where('user_id', Auth::id())->get();
+            $spouse_business_db = SpouseBusinessInterest::where('user_id', $user_id)->get();
             foreach ($spouse_business_db as $i => $bus) {
                 $entry = [
                     'enterprise' => $bus->enterprise,
@@ -727,9 +720,7 @@ class PrintController extends Controller
             }
 
 
-
-
-            $all_relatives = GovernmentRelative::where('user_id', Auth::id())->get();
+            $all_relatives = GovernmentRelative::where('user_id', $user_id)->get();
             foreach ($all_relatives as $i => $rel) {
                 $entry = [
                     'name' => $rel->name,
@@ -744,7 +735,6 @@ class PrintController extends Controller
                     $relatives_array[] = $entry;
                 }
             }
-
 
 
             // Grand Totals for Summary (Family-wide)
@@ -896,6 +886,10 @@ class PrintController extends Controller
             }
 
             $user_id = Auth::id();
+            if ($request->has("admin")) {
+                $user_id = $request->id;
+            }
+
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];
             $SURVEYS = [''];
@@ -1055,9 +1049,9 @@ class PrintController extends Controller
                     $eligibility_column_1 = $eligiblity[$i]->career_service;
                     $eligibility_column_2 = $eligiblity[$i]->rating;
 
-                    if($eligiblity[$i]->examination_end_date){
-                        $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date))."-".date('m/d/Y', strtotime($eligiblity[$i]->examination_end_date));
-                    }else{
+                    if ($eligiblity[$i]->examination_end_date) {
+                        $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date)) . "-" . date('m/d/Y', strtotime($eligiblity[$i]->examination_end_date));
+                    } else {
                         $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date));
                     }
 
@@ -1169,9 +1163,9 @@ class PrintController extends Controller
                 if ($i < count($voluntary_work)) {
                     $voluntary_column_1 = $voluntary_work[$i]->organization_address;
                     $voluntary_column_2 = date('d/m/Y', strtotime($voluntary_work[$i]->working_from));
-                    if($voluntary_work[$i]->is_current == 1){
+                    if ($voluntary_work[$i]->is_current == 1) {
                         $voluntary_column_3 = "Present";
-                    }else{
+                    } else {
                         $voluntary_column_3 = date('d/m/Y', strtotime($voluntary_work[$i]->working_to));
                     }
                     $voluntary_column_4 = $voluntary_work[$i]->number_hours;
