@@ -147,6 +147,38 @@
 </head>
 <body>
 @include('pdf.new.pds_1')
+@php
+    // Count total education rows and check if continuation is needed
+    $totalEducationRows = 0;
+    foreach($educations as $education) {
+        $totalEducationRows += count($education);
+    }
+    
+    $maxRowsPage1 = 8;
+    $needsContinuation = $totalEducationRows > $maxRowsPage1;
+    
+    // Split educations into page 1 and continuation page
+    $educationsContinuation = [];
+    $currentRowCount = 0;
+    
+    foreach($educations as $levelKey => $education) {
+        $levelRowCount = count($education);
+        
+        if ($currentRowCount + $levelRowCount <= $maxRowsPage1) {
+            $currentRowCount += $levelRowCount;
+        } else if ($currentRowCount < $maxRowsPage1) {
+            $remainingSpace = $maxRowsPage1 - $currentRowCount;
+            $educationsContinuation[$levelKey] = array_slice($education, $remainingSpace);
+            $currentRowCount = $maxRowsPage1;
+        } else {
+            $educationsContinuation[$levelKey] = $education;
+        }
+    }
+@endphp
+@if($needsContinuation && !empty($educationsContinuation))
+<div style="page-break-before: always !important;"></div>
+@include('pdf.new.pds_1_educational_continuation', ['educations' => $educationsContinuation])
+@endif
 <div style="page-break-before: always !important;"></div>
 @include('pdf.new.pds_2')
 <div style="page-break-before: always !important;"></div>

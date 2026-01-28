@@ -10,6 +10,26 @@
             return "font-size: {$baseSize}px;";
         }
     }
+
+  if (!function_exists('schoolAdjustFontSize')) {
+        function schoolAdjustFontSize($text, $baseSize = 10) {
+            $length = strlen($text);
+            if ($length > 45) return 'font-size: 8px;';
+            if ($length > 35) return 'font-size: 8.5px;';
+            if ($length > 20) return 'font-size: 9px;';
+            if ($length > 13) return 'font-size: 9.5px;';
+            return "font-size: {$baseSize}px;";
+        }
+    }
+
+if (!function_exists('honorsAdjustFontSize')) {
+        function honorsAdjustFontSize($text, $baseSize = 13) {
+            $length = strlen($text);
+            if ($length > 15) return 'font-size: 7px;';
+            if ($length > 10) return 'font-size: 8px;';
+            return "font-size: {$baseSize}px;";
+        }
+    }
 @endphp
 <div id="page_1" style="border:1px solid black">
     <div>
@@ -995,6 +1015,42 @@
             </td>
         </tr>
     </table>
+    @php
+        // Count total education rows and determine split point
+        $totalEducationRows = 0;
+        foreach($educations as $education) {
+            $totalEducationRows += count($education);
+        }
+        
+        // Maximum rows that can fit on page 1 (adjust this based on your page layout)
+        $maxRowsPage1 = 8;
+        $needsContinuation = $totalEducationRows > $maxRowsPage1;
+        
+        // Split educations into page 1 and continuation page
+        $educationsPage1 = [];
+        $educationsContinuation = [];
+        $currentRowCount = 0;
+        
+        foreach($educations as $levelKey => $education) {
+            $levelRowCount = count($education);
+            
+            if ($currentRowCount + $levelRowCount <= $maxRowsPage1) {
+                // All entries for this level fit on page 1
+                $educationsPage1[$levelKey] = $education;
+                $currentRowCount += $levelRowCount;
+            } else if ($currentRowCount < $maxRowsPage1) {
+                // Partial entries fit on page 1
+                $remainingSpace = $maxRowsPage1 - $currentRowCount;
+                $educationsPage1[$levelKey] = array_slice($education, 0, $remainingSpace);
+                $educationsContinuation[$levelKey] = array_slice($education, $remainingSpace);
+                $currentRowCount = $maxRowsPage1;
+            } else {
+                // All entries go to continuation page
+                $educationsContinuation[$levelKey] = $education;
+            }
+        }
+    @endphp
+
     <table style="border-top: solid 1px black">
         <tr style="background: gray">
             <td colspan="8" class="title">III. EDUCATIONAL BACKGROUND</td>
@@ -1024,7 +1080,7 @@
             <td style="border-right: solid 1px black">FROM</td>
             <td style="border-right: solid 1px black">TO</td>
         </tr>
-        @foreach($educations as $education)
+        @foreach($educationsPage1 as $levelKey => $education)
             <tr style="border-top: solid 1px  black">
                 <td rowspan="{{ count($education) }}" style="width: 20%;border-right: solid 1px black"
                     class="gray">{{ $education[0]['level'] }}</td>
@@ -1035,14 +1091,16 @@
                         <td style="width: 25%;border-right: solid 1px black;text-align: unset !important"
                             class="center-value education">
                             <div
-                                style="padding-left: 3px;{{ adjustFontSize(strtoupper($education[$i]['school_name'])  ?? '', 12) }}">
+                                style="padding-left: 3px;{{ schoolAdjustFontSize(strtoupper($education[$i]['school_name'])  ?? '', 12) }}">
                                 {{ strtoupper($education[$i]['school_name']) }}
                             </div>
                         </td>
                         <td style="width: 21%;border-right: solid 1px black" class="center-value education">
-                            <div style="padding-left: 3px;{{ adjustFontSize(strtoupper($education[$i]['education_degree'])  ?? '', 12) }}">
+                            <div
+                                style="padding-left: 3px;{{ schoolAdjustFontSize(strtoupper($education[$i]['education_degree'])  ?? '', 12) }}">
                                 {{ strtoupper($education[$i]['education_degree']) }}
                             </div>
+                        </td>
 
                         <td style="width: 6%;border-right: solid 1px black"
                             class="center-value education">{{ $education[$i]['attendance_from'] }}</td>
@@ -1052,7 +1110,12 @@
                             class="center-value education">{{ strtoupper($education[$i]['highest_level']) }}</td>
                         <td style="width: 6%;border-right: solid 1px black"
                             class="center-value education">{{ $education[$i]['year_graduated'] }}</td>
-                        <td style="width: 7%;" class="center-value education">{{ $education[$i]['scholarship'] }}</td>
+                        <td style="width: 7%;" class="center-value education">
+                            <div
+                                style="{{ honorsAdjustFontSize(strtoupper($education[$i]['scholarship'])  ?? '', 12) }}">
+                                {{ $education[$i]['scholarship'] }}
+                            </div>
+                        </td>
 
                         @if(count($education) > 1) </tr> @endif
                     @endfor
