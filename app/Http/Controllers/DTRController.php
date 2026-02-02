@@ -447,13 +447,18 @@ class DTRController extends Controller
             $in_charged = strtoupper(trim("$fname $mname $lname$suffix$title"));
 
             // Get holidays
-            $holidays = DB::table('calendar_holidays')
+            $holidaysRaw = DB::table('calendar_holidays')
                 ->whereMonth('date', $month)
                 ->whereYear('date', $year)
-                ->get()
-                ->pluck('date')
-                ->map(fn($d) => Carbon::parse($d)->toDateString())
-                ->toArray();
+                ->get();
+
+            $holidays = [];
+            foreach ($holidaysRaw as $h) {
+                $holidays[Carbon::parse($h->date)->toDateString()] = [
+                    'type' => $h->type,
+                    'description' => $h->description
+                ];
+            }
 
             foreach ($employees as $employee) {
 
@@ -506,7 +511,7 @@ class DTRController extends Controller
 
                     $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
-                    $isHoliday = in_array($currentDay, $holidays);
+                    $isHoliday = array_key_exists($currentDay, $holidays);
 
                     $data = [
                         'day' => $day,
@@ -579,7 +584,8 @@ class DTRController extends Controller
                         } elseif (!empty($hospitalOrders[$currentDay])) {
                             $code = $hospitalOrders[$currentDay];
                         } elseif ($isHoliday) {
-                            $code = 'HOLIDAY';
+                            $holiday = $holidays[$currentDay];
+                            $code = $holiday['type'] != 'Regular' ? strtoupper($holiday['description']) : 'HOLIDAY';
                         } else {
                             $code = null;
                         }
