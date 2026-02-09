@@ -27,6 +27,22 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
+                    <label for="cutoff" class="form-label">Reg. days (AM)</label>
+                    <input type="text" class="form-control" id="reg_days_am" name="reg_days_am" required>
+                </div>
+                <div class="mb-3">
+                    <label for="cutoff" class="form-label">Reg. days (PM)</label>
+                    <input type="text" class="form-control" id="reg_days_pm" name="reg_days_pm" required>
+                </div>
+                 <div class="mb-3">
+                    <label for="cutoff" class="form-label">Saturday (AM)</label>
+                    <input type="text" class="form-control" id="sat_days_am" name="sat_days_am" >
+                </div>
+                <div class="mb-3">
+                    <label for="cutoff" class="form-label">Saturday (PM)</label>
+                    <input type="text" class="form-control" id="sat_days_pm" name="sat_days_pm">
+                </div>
+                <div class="mb-3">
                     <label for="cutoff" class="form-label">Cutoff Period</label>
                     <select class="form-select" id="cutoff" name="cutoff" required>
                         <option value="full" selected>Whole Month</option>

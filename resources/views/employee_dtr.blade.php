@@ -49,8 +49,13 @@
                 const month = $("#month").val();
                 const year = $("#year").val();
                 const cutoff = $("#cutoff").val();
+                const reg_days_am = $("#reg_days_am").val();
+                const reg_days_pm = $("#reg_days_pm").val();
+                const sat_days_am = $("#sat_days_am").val();
+                const sat_days_pm = $("#sat_days_pm").val();
+
                 window.open(
-                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&userid=" + userid,
+                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&userid=" + userid + "&reg_days_am=" + reg_days_am + "&reg_days_pm=" + reg_days_pm + "&sat_days_am=" + sat_days_am + "&sat_days_pm=" + sat_days_pm,
                     '_blank' // <- This is what makes  t open in a new window.
                 );
             });

@@ -110,8 +110,13 @@
                 const month = $("#month").val();
                 const year = $("#year").val();
                 const cutoff = $("#cutoff").val();
+                const reg_days_am = $("#reg_days_am").val();
+                const reg_days_pm = $("#reg_days_pm").val();
+                const sat_days_am = $("#sat_days_am").val();
+                const sat_days_pm = $("#sat_days_pm").val();
+
                 window.open(
-                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff,
+                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&reg_days_am=" + reg_days_am + "&reg_days_pm=" + reg_days_pm + "&sat_days_am=" + sat_days_am + "&sat_days_pm=" + sat_days_pm,
                     '_blank' // <- This is what makes it open in a new window.
                 );
             });

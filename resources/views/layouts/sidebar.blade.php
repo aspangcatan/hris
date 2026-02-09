@@ -50,7 +50,7 @@
         @endif
 
         {{-- SCHEDULE MANAGEMENT (only HRH + admin) --}}
-        @if(in_array(session('access_rights'), ['admin','HRH']))
+        @if(in_array(session('access_rights'), ['admin','schedule']))
             <li class="nav-heading">Schedule Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('schedule') ? '' : 'collapsed' }}"

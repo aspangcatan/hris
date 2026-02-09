@@ -95,8 +95,28 @@
                     <div style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
                     <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
-                            style="margin-left: 25px">Reg. days _____ AM _____ PM</span></div>
-                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays _______________</span>
+                            style="margin-left: 25px">Reg. days
+                            @if(!empty($employee['reg_days_am']))
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_am'] }}</span>
+                            @else
+                                _____
+                            @endif
+                            AM
+                            @if(!empty($employee['reg_days_pm']))
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_pm'] }}</span>
+                            @else
+                                _____
+                            @endif
+                            PM</span></div>
+                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays
+                            @if(!empty($employee['sat_days_am']) || !empty($employee['sat_days_pm']))
+                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">
+                                    {{ $employee['sat_days_am'] . (!empty($employee['sat_days_am']) && !empty($employee['sat_days_pm']) ? ' - ' : '') . $employee['sat_days_pm'] }}
+                                </span>
+                            @else
+                                _______________
+                            @endif
+                            </span>
                     </div>
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
@@ -165,8 +185,8 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                                <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
+                                <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
+                                <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
                             @endif
                         </tr>
                     @endforeach
@@ -178,7 +198,11 @@
                         <td></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
+                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
+                    <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
+                        <div>U - {{ $employee['undertime_count'] }}</div>
+                        <div>L - {{ $employee['late_count'] }}</div>
+                    </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>
@@ -226,8 +250,28 @@
                     <div style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
                     <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
-                            style="margin-left: 25px">Reg. days _____ AM _____ PM</span></div>
-                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays _______________</span>
+                            style="margin-left: 25px">Reg. days
+                            @if(!empty($employee['reg_days_am']))
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_am'] }}</span>
+                            @else
+                                _____
+                            @endif
+                            AM
+                            @if(!empty($employee['reg_days_pm']))
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_pm'] }}</span>
+                            @else
+                                _____
+                            @endif
+                            PM</span></div>
+                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays
+                            @if(!empty($employee['sat_days_am']) || !empty($employee['sat_days_pm']))
+                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">
+                                    {{ $employee['sat_days_am'] . (!empty($employee['sat_days_am']) && !empty($employee['sat_days_pm']) ? ' - ' : '') . $employee['sat_days_pm'] }}
+                                </span>
+                            @else
+                                _______________
+                            @endif
+                            </span>
                     </div>
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
@@ -296,8 +340,8 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                                <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
+                                <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
+                                <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
                             @endif
                         </tr>
                     @endforeach
@@ -309,7 +353,11 @@
                         <td></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
+                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
+                    <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
+                        <div>U - {{ $employee['undertime_count'] }}</div>
+                        <div>L - {{ $employee['late_count'] }}</div>
+                    </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>

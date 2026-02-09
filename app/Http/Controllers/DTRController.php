@@ -421,6 +421,11 @@ class DTRController extends Controller
             $cutoff = $request->cutoff ?? 'full';
             $userid = $request->userid ?? Auth::id();
 
+            $reg_days_am = $request->reg_days_am;
+            $reg_days_pm = $request->reg_days_pm;
+            $sat_days_am = $request->sat_days_am;
+            $sat_days_pm = $request->sat_days_pm;
+
             $startDay = 1;
             $endDay = Carbon::createFromDate($year, $month, 1)->daysInMonth;
             if ($cutoff === 'first') $endDay = 15;
@@ -476,12 +481,15 @@ class DTRController extends Controller
                     ->where('la.user_id', $employee->id)
                     ->whereMonth('lda.date_applied', $month)
                     ->whereYear('lda.date_applied', $year)
-                    ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code')
+                    ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code', 'lda.hours')
                     ->get();
 
                 $leaves = [];
                 foreach ($leavesRaw as $l) {
-                    $leaves[Carbon::parse($l->date_applied)->toDateString()] = $l->code;
+                    $leaves[Carbon::parse($l->date_applied)->toDateString()] = [
+                        'code' => $l->code,
+                        'hours' => $l->hours
+                    ];
                 }
 
                 // H.O
@@ -505,13 +513,31 @@ class DTRController extends Controller
                     }
                 }
 
+                // Fetch schedules for the employee for the month
+                $schedulesRaw = DB::table('hris.schedules as s')
+                    ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
+                    ->where('s.employee_id', $employee->id)
+                    ->whereMonth('s.schedule_date', $month)
+                    ->whereYear('s.schedule_date', $year)
+                    ->select('s.schedule_date', 'sml.time_in', 'sml.time_in_latest', 'sml.time_out', 'sml.time_out_latest', 'sml.type')
+                    ->get();
+
+                $schedules = [];
+                foreach ($schedulesRaw as $s) {
+                    $schedules[$s->schedule_date] = $s;
+                }
+
                 // Build daily DTR
                 $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders) {
+                $lateCount = 0;
+                $undertimeCount = 0;
+                
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $schedules, &$lateCount, &$undertimeCount) {
 
                     $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                     $isHoliday = array_key_exists($currentDay, $holidays);
+                    $hasLeave = array_key_exists($currentDay, $leaves);
 
                     $data = [
                         'day' => $day,
@@ -523,6 +549,8 @@ class DTRController extends Controller
                         'date_timeout_am' => '',
                         'date_timein_pm' => '',
                         'date_timeout_pm' => '',
+                        'undertime_hours' => '',
+                        'undertime_minutes' => '',
                     ];
 
                     if (!$data['isInsideCutoff']) return $data;
@@ -575,12 +603,108 @@ class DTRController extends Controller
                         if (!empty($amIns) || !empty($pmIns) || !empty($amOuts) || !empty($pmOuts)) {
                             $data['isEmpty'] = false;
                         }
+
+                        // Calculate Late and Undertime
+                        $rawSched = $schedules[$currentDay] ?? null;
+                        
+                        // 1. Determine if logs exist in each period
+                        $hasAm = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
+                        $hasPm = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
+
+                        // 2. Identify Half-Day: Work in one half but NOT the other
+                        $isHalfDay = ($hasAm xor $hasPm);
+
+                        // 3. Define the calculation schedule
+                        $calcSched = null;
+                        if ($isHalfDay) {
+                            // Strictly 08:00 AM - 12:00 NN (Morning) or 01:00 PM - 05:00 PM (Afternoon)
+                            $calcSched = new \stdClass();
+                            $calcSched->type = 'FIXED'; // Half-day override is always fixed duration
+                            if ($hasAm) { // Morning shift
+                                $calcSched->time_in = '08:00:00';
+                                $calcSched->time_in_latest = '08:00:00';
+                                $calcSched->time_out = '12:00:00';
+                            } else { // Afternoon shift
+                                $calcSched->time_in = '13:00:00';
+                                $calcSched->time_in_latest = '13:00:00';
+                                $calcSched->time_out = '17:00:00';
+                            }
+                        } else if ($rawSched) {
+                            // Only use plotted schedule if it's a full day
+                            $calcSched = $rawSched;
+                        }
+
+                        if ($calcSched) {
+                            $lateMinutes = 0;
+                            // Static rule for Half-Day: 4 hours (240 mins) base undertime
+                            $undertimeMinutes = $isHalfDay ? 240 : 0;
+
+                            $firstIn = $dayLogs->where('status', 'IN')->min('created_at');
+                            $lastOut = $dayLogs->where('status', 'OUT')->max('created_at');
+
+                            if ($firstIn) {
+                                $firstInTime = Carbon::parse($firstIn);
+                                if ($firstInTime->format('H:i:s') > $calcSched->time_in_latest) {
+                                    $lateMinutes = $firstInTime->diffInMinutes(Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest));
+                                }
+                            }
+
+                            if ($lastOut) {
+                                $lastOutTime = Carbon::parse($lastOut);
+                                
+                                if ($isHalfDay) {
+                                    // Morning Half-Day: Check for early clock out BEFORE 12NN
+                                    if ($hasAm && $lastOutTime->format('H:i:s') < '12:00:00') {
+                                        $undertimeMinutes += $lastOutTime->diffInMinutes(Carbon::parse($currentDay . ' 12:00:00'));
+                                    }
+                                    // Afternoon Half-Day: Check for early clock out BEFORE 5PM
+                                    if ($hasPm && $lastOutTime->format('H:i:s') < '17:00:00') {
+                                        $undertimeMinutes += $lastOutTime->diffInMinutes(Carbon::parse($currentDay . ' 17:00:00'));
+                                    }
+                                } else {
+                                    // Normal Full Day Schedule Logic
+                                    $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
+                                    $schedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
+                                    $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
+                                    
+                                    $shiftDurationMinutes = $schedIn->diffInMinutes($schedOut);
+                                    
+                                    if ($isGliding) {
+                                        // Gliding: Effective IN is Actual IN (allows early arrival to count)
+                                        // But we assume they can't start ridiculously early? Usually gliding has bands, but per user request "IN 7:47" counts.
+                                        $effectiveIn = Carbon::parse($firstIn);
+                                        
+                                        // NOTE: Should we validte $effectiveIn vs $schedIn? 
+                                        // If they arrive at 5AM for an 8AM shift, do they leave at 2PM? 
+                                        // User implies strict "8hrs duty" fulfillment. Assuming standard logic.
+                                    } else {
+                                        // Fixed: Effective IN is clamped to Schedule IN (Early arrival doesn't help)
+                                        $effectiveIn = (Carbon::parse($firstIn)->gt($schedIn)) ? Carbon::parse($firstIn) : $schedIn;
+                                    }
+                                    
+                                    $requiredOut = $effectiveIn->copy()->addMinutes($shiftDurationMinutes);
+
+                                    if ($lastOutTime->lt($requiredOut)) {
+                                        $undertimeMinutes = $lastOutTime->diffInMinutes($requiredOut);
+                                    }
+                                }
+                            }
+
+                            if ($lateMinutes > 0) $lateCount++;
+                            if ($undertimeMinutes > 0) $undertimeCount++;
+
+                            $totalMinutes = $lateMinutes + $undertimeMinutes;
+                            if ($totalMinutes > 0) {
+                                $data['undertime_hours'] = floor($totalMinutes / 60) ?: '';
+                                $data['undertime_minutes'] = ($totalMinutes % 60) ?: '';
+                            }
+                        }
                     }
 
                     // LEAVE / HOLIDAY / H.O
                     if ($data['isEmpty']) {
-                        if (!empty($leaves[$currentDay])) {
-                            $code = $leaves[$currentDay];
+                        if ($hasLeave) {
+                            $code = $leaves[$currentDay]['code'];
                         } elseif (!empty($hospitalOrders[$currentDay])) {
                             $code = $hospitalOrders[$currentDay];
                         } elseif ($isHoliday) {
@@ -606,8 +730,14 @@ class DTRController extends Controller
                     'in_charged' => $in_charged,
                     'date' => $formattedDate,
                     'dtrs' => $days,
+                    'late_count' => $lateCount,
+                    'undertime_count' => $undertimeCount,
                     'start_day' => $startDay,
-                    'end_day' => $endDay
+                    'end_day' => $endDay,
+                    'reg_days_am' => $reg_days_am,
+                    'reg_days_pm' => $reg_days_pm,
+                    'sat_days_am' => $sat_days_am,
+                    'sat_days_pm' => $sat_days_pm
                 ];
             }
 
