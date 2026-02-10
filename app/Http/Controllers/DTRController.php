@@ -544,6 +544,7 @@ class DTRController extends Controller
                         'day_name' => $dayName,
                         'isInsideCutoff' => ($day >= $startDay && $day <= $endDay),
                         'isEmpty' => true,
+                        'planned_schedule' => '',
 
                         'date_timein_am' => '',
                         'date_timeout_am' => '',
@@ -552,6 +553,22 @@ class DTRController extends Controller
                         'undertime_hours' => '',
                         'undertime_minutes' => '',
                     ];
+
+                    // Populate planned schedule
+                    $sched = $schedules[$currentDay] ?? null;
+                    if ($sched) {
+                        $in = Carbon::parse($sched->time_in)->format('g A');
+                        if ($sched->time_in !== $sched->time_in_latest && !empty($sched->time_in_latest)) {
+                            $in = Carbon::parse($sched->time_in)->format('g') . '-' . Carbon::parse($sched->time_in_latest)->format('g A');
+                        }
+
+                        $out = Carbon::parse($sched->time_out)->format('g A');
+                        if ($sched->time_out !== $sched->time_out_latest && !empty($sched->time_out_latest)) {
+                            $out = Carbon::parse($sched->time_out)->format('g') . '-' . Carbon::parse($sched->time_out_latest)->format('g A');
+                        }
+                        // $data['planned_schedule'] = $in . "\n" . $out;
+                        $data['planned_schedule'] = '';
+                    }
 
                     if (!$data['isInsideCutoff']) return $data;
 
