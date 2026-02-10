@@ -559,7 +559,8 @@ class DTRController extends Controller
                     if ($sched) {
                         $in = Carbon::parse($sched->time_in)->format('gA');
                         $out = Carbon::parse($sched->time_out)->format('gA');
-                        $data['planned_schedule'] = $in . "\n" . $out;
+                        // $data['planned_schedule'] = $in . "\n" . $out;
+                        $data['planned_schedule'] = '';
                     }
 
                     if (!$data['isInsideCutoff']) return $data;
