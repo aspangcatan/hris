@@ -109,19 +109,19 @@
                             @endif
                             PM</span></div>
                     <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays
-                            @if(!empty($employee['sat_days_am']) || !empty($employee['sat_days_pm']))
-                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">
-                                    {{ $employee['sat_days_am'] . (!empty($employee['sat_days_am']) && !empty($employee['sat_days_pm']) ? ' - ' : '') . $employee['sat_days_pm'] }}
-                                </span>
+                            @if(!empty($employee['sat_days_am']))
+                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['sat_days_am'] }}</span>
                             @else
                                 _______________
+                            @endif
+                            @if(!empty($employee['sat_days_pm']))
+                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['sat_days_pm'] }}</span>
                             @endif
                             </span>
                     </div>
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
-                        <td style="border: none; width: 6%;" rowspan="2"></td>
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
                         <td colspan="2">A.M</td>
                         <td colspan="2">P.M</td>
@@ -137,10 +137,6 @@
                     </tr>
                     @foreach($employee['dtrs'] as $dtr)
                         <tr>
-                            <!-- Schedule -->
-                            <td style="border: none; font-size: 8px; line-height: 1; text-align: center; vertical-align: middle;">
-                                {!! nl2br(e($dtr['planned_schedule'])) !!}
-                            </td>
                             <!-- Day # -->
                             <td style="font-weight: bold">
                                 {{ $dtr['day'] }}
@@ -190,10 +186,10 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                                 @if(true)
+                            @if(true)
+                            <td style="font-size: 11px"></td>
                                 <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
-                                @else
+                            @else
                                 <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
                                 <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
                                 @endif
@@ -202,7 +198,7 @@
                     @endforeach
 
                     <tr>
-                        <td style="border: none" colspan="5"></td>
+                        <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
                         <td></td>
                         <td></td>
@@ -210,11 +206,8 @@
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
                     <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
-                        @if(false)
-                        <div>U - {{ $employee['undertime_count'] }}</div>
-                        <div>L - {{ $employee['late_count'] }}</div>
-                        @endif
-                        
+                        <!-- <div>U - {{ $employee['undertime_count'] }}</div>
+                        <div>L - {{ $employee['late_count'] }}</div> -->
                     </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
@@ -277,19 +270,19 @@
                             @endif
                             PM</span></div>
                     <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays
-                            @if(!empty($employee['sat_days_am']) || !empty($employee['sat_days_pm']))
-                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">
-                                    {{ $employee['sat_days_am'] . (!empty($employee['sat_days_am']) && !empty($employee['sat_days_pm']) ? ' - ' : '') . $employee['sat_days_pm'] }}
-                                </span>
+                            @if(!empty($employee['sat_days_am']))
+                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['sat_days_am'] }}</span>
                             @else
                                 _______________
+                            @endif
+                            @if(!empty($employee['sat_days_pm']))
+                                <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['sat_days_pm'] }}</span>
                             @endif
                             </span>
                     </div>
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
-                        <td style="border: none; width: 6%;" rowspan="2"></td>
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
                         <td colspan="2">A.M</td>
                         <td colspan="2">P.M</td>
@@ -305,10 +298,6 @@
                     </tr>
                     @foreach($employee['dtrs'] as $dtr)
                         <tr>
-                            <!-- Schedule -->
-                            <td style="border: none; font-size: 8px; line-height: 1; text-align: center; vertical-align: middle;">
-                                {!! nl2br(e($dtr['planned_schedule'])) !!}
-                            </td>
                             <!-- Day # -->
                             <td style="font-weight: bold">
                                 {{ $dtr['day'] }}
@@ -359,9 +348,9 @@
                                 </td>
                             @else
                                 @if(true)
+                            <td style="font-size: 11px"></td>
                                 <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
-                                @else
+                            @else
                                 <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
                                 <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
                                 @endif
@@ -370,7 +359,7 @@
                     @endforeach
 
                     <tr>
-                        <td style="border: none" colspan="5"></td>
+                        <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
                         <td></td>
                         <td></td>
@@ -378,10 +367,8 @@
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
                     <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
-                        @if(false)
-                        <div>U - {{ $employee['undertime_count'] }}</div>
-                        <div>L - {{ $employee['late_count'] }}</div>
-                        @endif
+                        <!-- <div>U - {{ $employee['undertime_count'] }}</div>
+                        <div>L - {{ $employee['late_count'] }}</div> -->
                     </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
