@@ -186,12 +186,12 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                            @if(true)
-                            <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
-                            @else
+                                 @if($employee['division'] == '2')
                                 <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
                                 <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
+                                @else
+                                <td style="font-size: 11px"></td>
+                                <td style="font-size: 11px"></td>
                                 @endif
                             @endif
                         </tr>
@@ -206,8 +206,10 @@
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
                     <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
-                        <!-- <div>U - {{ $employee['undertime_count'] }}</div>
-                        <div>L - {{ $employee['late_count'] }}</div> -->
+                          @if($employee['division'] == '2')
+                                <div>U - {{ $employee['undertime_count'] }}</div>
+                                <div>L - {{ $employee['late_count'] }}</div>
+                          @endif
                     </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
@@ -347,12 +349,12 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                                @if(true)
-                            <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
-                            @else
+                                @if($employee['division'] == '2')
                                 <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
                                 <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
+                                @else
+                                <td style="font-size: 11px"></td>
+                                <td style="font-size: 11px"></td>
                                 @endif
                             @endif
                         </tr>
@@ -367,8 +369,10 @@
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
                     <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
-                        <!-- <div>U - {{ $employee['undertime_count'] }}</div>
-                        <div>L - {{ $employee['late_count'] }}</div> -->
+                         @if($employee['division'] == '2')
+                        <div>U - {{ $employee['undertime_count'] }}</div>
+                        <div>L - {{ $employee['late_count'] }}</div>
+                        @endif
                     </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>

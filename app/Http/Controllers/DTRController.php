@@ -747,7 +747,8 @@ class DTRController extends Controller
                     'reg_days_am' => $reg_days_am,
                     'reg_days_pm' => $reg_days_pm,
                     'sat_days_am' => $sat_days_am,
-                    'sat_days_pm' => $sat_days_pm
+                    'sat_days_pm' => $sat_days_pm,
+                    'division'=>$employee->division
                 ];
             }
 

@@ -45,7 +45,7 @@
                         <label for="year">Year</label>
                     </div>
                 </div>
-                @if(in_array(session('access_rights'), ['admin']))
+                @if(in_array(session('access_rights'), ['admin', 'schedule']))
                     <div class="col-md-4">
                         <div class="form-floating">
                             <select class="form-select form-control-sm" id="division">
@@ -91,9 +91,6 @@
 @stop
 
 @section('js')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         $(document).ready(function () {
             // Initial Load
@@ -253,13 +250,26 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    $("#division").empty(); // clear first to avoid duplicates
-                    $("#division").append(`<option value="0">-- Select Division --</option>`);
+                    const userDivisionId = "{{ Auth::user()->division }}";
+                    const isAdmin = {{ session('access_rights') == 'admin' ? 'true' : 'false' }};
+                    $("#division").empty(); 
 
-                    data.forEach(it => {
-                        const option = `<option value="${it.id}">${it.description}</option>`;
-                        $("#division").append(option);
-                    });
+                    if (isAdmin) {
+                        $("#division").append(`<option value="0">-- Select Division --</option>`);
+                        data.forEach(it => {
+                            const option = `<option value="${it.id}">${it.description}</option>`;
+                            $("#division").append(option);
+                        });
+                    } else {
+                        data.forEach(it => {
+                            if (it.id == userDivisionId) {
+                                const option = `<option value="${it.id}" selected>${it.description}</option>`;
+                                $("#division").append(option);
+                            }
+                        });
+                        // Trigger change to automatically load sections for the user's division
+                        $("#division").trigger('change');
+                    }
                 })
                 .catch(err => {
                     Swal.fire({
