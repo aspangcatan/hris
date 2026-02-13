@@ -332,13 +332,15 @@ class PrintController extends Controller
     public function printSaln(Request $request)
     {
         try {
-            $user_id = Auth::id();
-            if ($request->has("admin")) {
-                $user_id = $request->id;
-            }
+            $user_id = $request->userid ?? Auth::id();
 
             $declarant = DB::table('tdh_user.users as u')
-                ->leftJoin('hris.saln_declarant as d', 'u.id', '=', 'd.user_id')
+                ->leftJoin('hris.saln_declarant as d', function($join) use ($request) {
+                    $join->on('u.id', '=', 'd.user_id');
+                    if ($request->has('compliance_for')) {
+                        $join->where('d.compliance_for', '=', $request->compliance_for);
+                    }
+                })
                 ->leftJoin('hris.addresses as a', function ($join) {
                     $join->on('u.id', '=', 'a.user_id')
                         ->where(function ($query) {
@@ -358,6 +360,8 @@ class PrintController extends Controller
                     'd.government_id_issued',
                     'd.government_id_no',
                     'd.date_issued',
+                    'd.compliance_type',
+                    'd.filing_type',
                     'a.house_no',
                     'a.street',
                     'a.subdivision_village',
@@ -368,14 +372,23 @@ class PrintController extends Controller
                 ->first();
 
             $spouse = DB::table('hris.family_backgrounds as f')
-                ->leftJoin('hris.saln_spouse as d', 'f.user_id', '=', 'd.user_id')
-                ->where('f.user_id', '=', Auth::id())
+                ->leftJoin('hris.saln_spouse as d', function($join) use ($request) {
+                    $join->on('f.user_id', '=', 'd.user_id');
+                    if ($request->has('compliance_for')) {
+                        $join->where('d.compliance_for', '=', $request->compliance_for);
+                    }
+                })
+                ->where('f.user_id', '=', $user_id)
                 ->get(['f.spouse_fname', 'f.spouse_mname', 'f.spouse_lname', 'f.spouse_ext_name', 'd.position', 'd.agency',
                     'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued'])
                 ->first();
 
 
-            $children = SalnChildren::where('user_id', $user_id)->get();
+            $childrenQuery = SalnChildren::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $childrenQuery->where('compliance_for', $request->compliance_for);
+            }
+            $children = $childrenQuery->get();
             $children_count = count($children);
             $effective_children_count = max(4, $children_count);
 
@@ -522,7 +535,11 @@ class PrintController extends Controller
                 ];
             }
 
-            $marriages = Marriages::where('userid', $user_id)->take(2)->get();
+            $marriagesQuery = Marriages::where('userid', $user_id);
+            if ($request->has('compliance_for')) {
+                $marriagesQuery->where('compliance_for', $request->compliance_for);
+            }
+            $marriages = $marriagesQuery->take(2)->get();
             for ($i = 0; $i < count($marriages); $i++) {
                 $marriages_array[$i] = [
                     'name' => $marriages[$i]['spouse']
@@ -531,7 +548,11 @@ class PrintController extends Controller
 
             $real_properties_subtotal_a = 0;
             $real_properties_subtotal_b = 0;
-            $all_real_properties = RealProperties::where('user_id', $user_id)->get();
+            $realPropQuery = RealProperties::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $realPropQuery->where('compliance_for', $request->compliance_for);
+            }
+            $all_real_properties = $realPropQuery->get();
 
             foreach ($all_real_properties as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -562,7 +583,11 @@ class PrintController extends Controller
 
 
             $spouse_real_properties_subtotal = 0;
-            $spouse_real_properties_db = SpouseRealProperties::where('user_id', $user_id)->get();
+            $spouseRealPropQuery = SpouseRealProperties::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $spouseRealPropQuery->where('compliance_for', $request->compliance_for);
+            }
+            $spouse_real_properties_db = $spouseRealPropQuery->get();
 
             foreach ($spouse_real_properties_db as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -588,7 +613,11 @@ class PrintController extends Controller
 
             $personal_properties_subtotal_a = 0;
             $personal_properties_subtotal_b = 0;
-            $all_personal_properties = PersonalProperties::where('user_id', $user_id)->get();
+            $personalPropQuery = PersonalProperties::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $personalPropQuery->where('compliance_for', $request->compliance_for);
+            }
+            $all_personal_properties = $personalPropQuery->get();
 
             foreach ($all_personal_properties as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -614,7 +643,11 @@ class PrintController extends Controller
 
 
             $spouse_personal_properties_subtotal = 0;
-            $spouse_personal_properties_db = SpousePersonalProperties::where('user_id', $user_id)->get();
+            $spousePersonalPropQuery = SpousePersonalProperties::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $spousePersonalPropQuery->where('compliance_for', $request->compliance_for);
+            }
+            $spouse_personal_properties_db = $spousePersonalPropQuery->get();
 
             foreach ($spouse_personal_properties_db as $i => $prop) {
                 $cost = (double)str_replace(',', '', $prop->acquisition_cost);
@@ -635,7 +668,11 @@ class PrintController extends Controller
 
             $liabilities_total_a = 0;
             $liabilities_total_b = 0;
-            $all_liabilities = Liabilities::where('user_id', $user_id)->get();
+            $liabilitiesQuery = Liabilities::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $liabilitiesQuery->where('compliance_for', $request->compliance_for);
+            }
+            $all_liabilities = $liabilitiesQuery->get();
 
             foreach ($all_liabilities as $i => $lib) {
                 $bal = (double)str_replace(',', '', $lib->outstanding_balance);
@@ -661,7 +698,11 @@ class PrintController extends Controller
 
 
             $spouse_liabilities_total = 0;
-            $spouse_liabilities_db = SpouseLiabilities::where('user_id', $user_id)->get();
+            $spouseLiabilitiesQuery = SpouseLiabilities::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $spouseLiabilitiesQuery->where('compliance_for', $request->compliance_for);
+            }
+            $spouse_liabilities_db = $spouseLiabilitiesQuery->get();
 
             foreach ($spouse_liabilities_db as $i => $lib) {
                 $bal = (double)str_replace(',', '', $lib->outstanding_balance);
@@ -680,7 +721,11 @@ class PrintController extends Controller
             }
 
 
-            $all_business = BusinessInterest::where('user_id', $user_id)->get();
+            $businessQuery = BusinessInterest::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $businessQuery->where('compliance_for', $request->compliance_for);
+            }
+            $all_business = $businessQuery->get();
 
             foreach ($all_business as $i => $bus) {
                 $entry = [
@@ -703,7 +748,11 @@ class PrintController extends Controller
             }
 
 
-            $spouse_business_db = SpouseBusinessInterest::where('user_id', $user_id)->get();
+            $spouseBusinessQuery = SpouseBusinessInterest::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $spouseBusinessQuery->where('compliance_for', $request->compliance_for);
+            }
+            $spouse_business_db = $spouseBusinessQuery->get();
             foreach ($spouse_business_db as $i => $bus) {
                 $entry = [
                     'enterprise' => $bus->enterprise,
@@ -720,7 +769,11 @@ class PrintController extends Controller
             }
 
 
-            $all_relatives = GovernmentRelative::where('user_id', $user_id)->get();
+            $relativesQuery = GovernmentRelative::where('user_id', $user_id);
+            if ($request->has('compliance_for')) {
+                $relativesQuery->where('compliance_for', $request->compliance_for);
+            }
+            $all_relatives = $relativesQuery->get();
             foreach ($all_relatives as $i => $rel) {
                 $entry = [
                     'name' => $rel->name,
@@ -812,8 +865,11 @@ class PrintController extends Controller
                 'grand_assets_total' => $grand_assets_total,
                 'grand_net_worth' => $grand_net_worth,
                 'print_date' => $request->print_date,
-                'filing_type' => $request->filing_type,
-                'compliance_for' => $request->compliance_for,
+                'filing_type' => $request->filing_type ?? $declarant->filing_type ?? 'Not Applicable',
+                'compliance_type' => (preg_match('/^\d{4}-\d{2}-\d{2}$/', $request->compliance_for) || empty($request->compliance_for)) 
+                    ? ($declarant->compliance_type ?? 'Annual Filing') 
+                    : $request->compliance_for,
+                'compliance_for' => $declarant->compliance_for ?? $request->compliance_for,
                 'business_interest' => $request->business_interest,
                 'government_relatives' => $request->government_relatives,
                 'before_me' => $request->before_me,

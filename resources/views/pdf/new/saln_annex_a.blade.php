@@ -23,7 +23,7 @@
     <div style="font-size:12px;text-align: center;margin-top:10px">
         <div class="fw-bold">COMPLIANCE FOR:</div>
         <div style="display: inline-block;width: 33%">
-            @if($compliance_for == 'Assumption of office')
+            @if($compliance_type == 'Assumption of office')
                 <input type="checkbox" style="display: inline" checked/>
                 <div style="display: inline;font-style: italic;">Assumption of office as of <span
                         style="text-decoration: underline">{{ $as_of_month }} {{$as_of_day  }}, {{ $as_of_year }}</span>
@@ -36,7 +36,7 @@
 
         </div>
         <div style="display: inline-block;width: 33%">
-            @if($compliance_for == 'Annual Filing')
+            @if($compliance_type == 'Annual Filing')
                 <input type="checkbox" style="display: inline" checked/>
                 <div style="display: inline;font-style: italic;">Annual filing as of December 31,<span
                         style="border-bottom: 1px solid black;padding-left: 10px;padding-right: 10px">{{ $as_of_year }}</span>
@@ -48,7 +48,7 @@
             @endif
         </div>
         <div style="display: inline-block;width: 33%">
-            @if($compliance_for == 'Exit')
+            @if($compliance_type == 'Exit')
                 <input type="checkbox" style="display: inline" checked/>
                 <div style="display: inline;font-style: italic;">Exit as of
                     <span

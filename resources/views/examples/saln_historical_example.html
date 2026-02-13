@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SALN Historical Records - Frontend Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .saln-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .year-selector {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .filing-type-selector {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .history-table th,
+        .history-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .history-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .history-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .net-worth {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .badge-joint {
+            background-color: #007bff;
+            color: white;
+        }
+        .badge-separate {
+            background-color: #ffc107;
+            color: #333;
+        }
+        .badge-na {
+            background-color: #6c757d;
+            color: white;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        .alert-info {
+            color: #004085;
+            background-color: #cce5ff;
+            border-color: #b8daff;
+        }
+    </style>
+</head>
+<body>
+    <h1>SALN Historical Records Management</h1>
+    
+    <div class="alert alert-info">
+        <strong>Note:</strong> Select a compliance year and filing type to manage SALN records. 
+        For <strong>Joint Filing</strong>, the net worth will include both declarant and spouse net worth.
+    </div>
+
+    <div class="saln-header">
+        <div>
+            <label for="complianceYear">Compliance Year:</label>
+            <select id="complianceYear" class="year-selector">
+                <option value="">Select Year</option>
+            </select>
+            
+            <label for="filingType" style="margin-left: 20px;">Filing Type:</label>
+            <select id="filingType" class="filing-type-selector">
+                <option value="">Select Type</option>
+                <option value="Joint Filing">Joint Filing</option>
+                <option value="Separate Filing">Separate Filing</option>
+                <option value="Not Applicable">Not Applicable</option>
+            </select>
+        </div>
+        <div>
+            <button class="btn" onclick="loadCurrentYear()">Load SALN</button>
+            <button class="btn btn-success" onclick="saveCurrentSALN()">Save SALN</button>
+        </div>
+    </div>
+
+    <h2>SALN History</h2>
+    <table class="history-table" id="historyTable">
+        <thead>
+            <tr>
+                <th>Year</th>
+                <th>Filing Type</th>
+                <th>Net Worth</th>
+                <th>Filed On</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="historyTableBody">
+            <!-- Data will be loaded here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Initialize year selector
+        function initializeYearSelector() {
+            const yearSelect = document.getElementById('complianceYear');
+            const currentYear = new Date().getFullYear();
+            
+            // Add years from 2020 to current year + 1
+            for (let year = currentYear + 1; year >= 2020; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            // Set current year as default
+            yearSelect.value = currentYear;
+        }
+
+        // Load SALN history
+        async function loadSALNHistory() {
+            try {
+                const response = await fetch('/get_saln_years');
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    displayHistory(data.results);
+                }
+            } catch (error) {
+                console.error('Error loading SALN history:', error);
+                alert('Failed to load SALN history');
+            }
+        }
+
+        // Display history in table
+        function displayHistory(records) {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No SALN records found</td></tr>';
+                return;
+            }
+            
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                
+                const badgeClass = 
+                    record.filing_type === 'Joint Filing' ? 'badge-joint' :
+                    record.filing_type === 'Separate Filing' ? 'badge-separate' : 'badge-na';
+                
+                row.innerHTML = `
+                    <td>${record.compliance_for}</td>
+                    <td><span class="badge ${badgeClass}">${record.filing_type}</span></td>
+                    <td class="net-worth">₱ ${parseFloat(record.net_worth).toLocaleString('en-PH', {minimumFractionDigits: 2})}</td>
+                    <td>${new Date(record.created_at).toLocaleDateString('en-PH')}</td>
+                    <td>
+                        <button class="btn" style="padding: 5px 10px; font-size: 12px;" onclick="viewSALN(${record.compliance_for})">View</button>
+                        <button class="btn btn-success" style="padding: 5px 10px; font-size: 12px;" onclick="generateReport(${record.compliance_for})">PDF</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load SALN for current selected year
+        async function loadCurrentYear() {
+            const year = document.getElementById('complianceYear').value;
+            
+            if (!year) {
+                alert('Please select a compliance year');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/get_saln_by_year?compliance_for=${year}`);
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    // Populate form fields with retrieved data
+                    console.log('SALN data loaded:', data.results);
+                    populateFormWithData(data.results);
+                    
+                    // Set filing type
+                    if (data.results.declarant) {
+                        document.getElementById('filingType').value = data.results.declarant.filing_type;
+                    }
+                } else if (data.code === 404) {
+                    alert('No SALN record found for ' + year);
+                } else {
+                    alert('Error loading SALN: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error loading SALN:', error);
+                alert('Failed to load SALN for ' + year);
+            }
+        }
+
+        // View SALN for specific year
+        async function viewSALN(year) {
+            document.getElementById('complianceYear').value = year;
+            await loadCurrentYear();
+        }
+
+        // Generate PDF report for specific year
+        async function generateReport(year) {
+            window.location.href = `/generate_yearly_saln_report?compliance_for=${year}`;
+        }
+
+        // Save current SALN
+        async function saveCurrentSALN() {
+            const year = document.getElementById('complianceYear').value;
+            const filingType = document.getElementById('filingType').value;
+            
+            if (!year) {
+                alert('Please select a compliance year');
+                return;
+            }
+            
+            if (!filingType) {
+                alert('Please select a filing type');
+                return;
+            }
+            
+            // Collect all SALN data from your form
+            // This is a simplified example - adjust based on your actual form structure
+            const salnData = {
+                compliance_for: year,
+                filing_type: filingType,
+                // Add all other declarant and spouse fields
+                // declarant_position: document.getElementById('declarant_position').value,
+                // declarant_agency: document.getElementById('declarant_agency').value,
+                // ... etc
+            };
+            
+            try {
+                const response = await fetch('/update_saln_compliance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(salnData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.code === 200) {
+                    alert('SALN saved successfully!\n\nNet Worth Summary:\n' +
+                          `Total Assets: ₱${parseFloat(data.net_worth.total_assets).toLocaleString()}\n` +
+                          `Total Liabilities: ₱${parseFloat(data.net_worth.total_liabilities).toLocaleString()}\n` +
+                          `Net Worth: ₱${parseFloat(data.net_worth.net_worth).toLocaleString()}`);
+                    
+                    // Reload history
+                    loadSALNHistory();
+                } else {
+                    alert('Error saving SALN: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error saving SALN:', error);
+                alert('Failed to save SALN');
+            }
+        }
+
+        // Populate form with loaded data
+        function populateFormWithData(data) {
+            // This is where you would populate all your form fields
+            // Example:
+            // if (data.declarant) {
+            //     document.getElementById('declarant_position').value = data.declarant.position || '';
+            //     document.getElementById('declarant_agency').value = data.declarant.agency || '';
+            //     // ... etc
+            // }
+            
+            console.log('Data to populate:', data);
+            
+            // For demonstration, just show an alert
+            alert('SALN data loaded. Implement form population based on your form structure.');
+        }
+
+        // When adding properties, liabilities, etc., include compliance_for
+        async function addRealProperty() {
+            const year = document.getElementById('complianceYear').value;
+            
+            if (!year) {
+                alert('Please select a compliance year first');
+                return;
+            }
+            
+            const propertyData = {
+                compliance_for: year,
+                description: 'Sample House and Lot',
+                kind: 'Residential',
+                // ... other fields
+            };
+            
+            try {
+                const response = await fetch('/insert_real_properties', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(propertyData)
+                });
+                
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeYearSelector();
+            loadSALNHistory();
+        });
+    </script>
+</body>
+</html>

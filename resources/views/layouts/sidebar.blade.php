@@ -14,6 +14,17 @@
             </a>
         </li>
 
+        {{-- SALN ADMIN (HR + admin) --}}
+        @if(in_array(session('access_rights'), ['hr','HRH','admin']))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('saln.admin.*') ? '' : 'collapsed' }}"
+                   href="{{ route('saln.admin.index') }}">
+                    <i class="bi bi-file-earmark-lock"></i>
+                    <span>SALN Admin</span>
+                </a>
+            </li>
+        @endif
+
         <li class="nav-heading">DTR Management</li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('dtr') ? '' : 'collapsed' }}" href="{{ route('dtr') }}">

@@ -412,5 +412,25 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/reject/{id}', [PassSlipApproverController::class, 'reject'])->name('pass-slip.approver.reject');
     });
 
+    // SALN Historical Tracking Routes
+    Route::post('/update_saln_compliance', [\App\Http\Controllers\SalnController::class, 'updateSalnCompliance'])->name('updateSalnCompliance');
+    Route::get('/get_saln_years', [\App\Http\Controllers\SalnController::class, 'getSalnYears'])->name('getSalnYears');
+    Route::get('/get_saln_by_year', [\App\Http\Controllers\SalnController::class, 'getSalnByYear'])->name('getSalnByYear');
+    Route::get('/generate_yearly_saln_report', [\App\Http\Controllers\SalnController::class, 'generateYearlySalnReport'])->name('generateYearlySalnReport');
+    Route::delete('/delete_saln_record', [\App\Http\Controllers\SalnController::class, 'deleteSalnRecord'])->name('deleteSalnRecord');
+    Route::post('/clone_latest_saln', [\App\Http\Controllers\SalnController::class, 'cloneLatestSalnData'])->name('cloneLatestSaln');
 
+    // SALN Admin Routes
+    Route::prefix('saln-admin')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SalnAdminController::class, 'index'])->name('saln.admin.index');
+        Route::get('/employees', [\App\Http\Controllers\SalnAdminController::class, 'getEmployees'])->name('saln.admin.employees');
+        Route::get('/history/{user_id}', [\App\Http\Controllers\SalnAdminController::class, 'getEmployeeSalnHistory'])->name('saln.admin.history');
+        Route::post('/update-filing-type', [\App\Http\Controllers\SalnAdminController::class, 'updateFilingType'])->name('saln.admin.updateFilingType');
+        Route::get('/summary-report', [\App\Http\Controllers\SalnAdminController::class, 'generateSummaryReport'])->name('saln.admin.summaryReport');
+    });
 });
+
+    // SALN List View Example
+    Route::get('/saln-list-example', function () {
+        return view('examples.saln_list_modal_example');
+    })->name('salnListExample');
