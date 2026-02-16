@@ -92,7 +92,18 @@
 
 @section('js')
     <script>
+        let currentEmployees = [];
+        let advanceEmployeeSelect;
+
         $(document).ready(function () {
+            // Initial Selectize
+            advanceEmployeeSelect = $('#advance_employee_select').selectize({
+                plugins: ['remove_button'],
+                valueField: 'value',
+                labelField: 'text',
+                searchField: 'text'
+            })[0].selectize;
+
             // Initial Load
             loadScheduleMasterList();
 
@@ -136,6 +147,14 @@
                         $(this).append(options);
                     }
                 });
+
+                // Populate employee selectize
+                advanceEmployeeSelect.clearOptions();
+                currentEmployees.forEach(emp => {
+                    advanceEmployeeSelect.addOption({value: emp.id, text: emp.name});
+                    advanceEmployeeSelect.addItem(emp.id); // Default to all selected, user can remove
+                });
+
                 $('#advanceScheduleModal').modal('show');
             });
 
@@ -149,14 +168,10 @@
                     return;
                 }
 
-                let employeeIds = [];
-                $('#employee_list tr').each(function () {
-                    const id = $(this).find('td:first').text().trim();
-                    if (id) employeeIds.push(id);
-                });
+                const employeeIds = advanceEmployeeSelect.getValue();
 
                 if (employeeIds.length === 0) {
-                    toastr.warning("No employees to schedule", "Warning");
+                    toastr.warning("Please select at least one employee", "Warning");
                     return;
                 }
 
@@ -316,6 +331,7 @@
                     $('#schedule_header').html(headerHTML);
 
                     $('#employee_list').empty();
+                    currentEmployees = data.schedules; // Store for modal
                     data.schedules.forEach(emp => {
                         let row = `<tr><td class="d-none">${emp.id}</td><td>${emp.name}</td><td>${emp.designation}</td>`;
                         emp.schedule.forEach((sched, i) => {

@@ -29,6 +29,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div class="mb-3">
+                    <label for="advance_employee_select" class="form-label">Select Employees:</label>
+                    <select id="advance_employee_select" class="form-select" multiple placeholder="Search employees..."></select>
+                </div>
+
                 <table class="table table-bordered">
                     <thead>
                     <tr>
