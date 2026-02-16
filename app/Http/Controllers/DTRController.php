@@ -660,8 +660,18 @@ class DTRController extends Controller
 
                         if ($calcSched) {
                             $lateMinutes = 0;
-                            // Static rule for Half-Day: 4 hours (240 mins) base undertime
-                            $undertimeMinutes = $isHalfDay ? 240 : 0;
+                            $undertimeMinutes = 0;
+
+                            // Half-day classification:
+                            // AM only  -> undertime base 4 hours
+                            // PM only  -> late base 4 hours
+                            if ($isHalfDay) {
+                                if ($hasAm && !$hasPm) {
+                                    $undertimeMinutes = 240;
+                                } elseif ($hasPm && !$hasAm) {
+                                    $lateMinutes = 240;
+                                }
+                            }
 
                             $firstIn = $dayLogs->where('status', 'IN')->min('created_at');
                             $lastOut = $dayLogs->where('status', 'OUT')->max('created_at');
@@ -669,7 +679,7 @@ class DTRController extends Controller
                             if ($firstIn) {
                                 $firstInTime = Carbon::parse($firstIn);
                                 if ($firstInTime->format('H:i:s') > $calcSched->time_in_latest) {
-                                    $lateMinutes = $firstInTime->diffInMinutes(Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest));
+                                    $lateMinutes += $firstInTime->diffInMinutes(Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest));
                                 }
                             }
 
@@ -683,7 +693,8 @@ class DTRController extends Controller
                                     }
                                     // Afternoon Half-Day: Check for early clock out BEFORE 5PM
                                     if ($hasPm && $lastOutTime->format('H:i:s') < '17:00:00') {
-                                        $undertimeMinutes += $lastOutTime->diffInMinutes(Carbon::parse($currentDay . ' 17:00:00'));
+                                        // PM half-day is counted under "late" bucket per business rule
+                                        $lateMinutes += $lastOutTime->diffInMinutes(Carbon::parse($currentDay . ' 17:00:00'));
                                     }
                                 } else {
                                     // Normal Full Day Schedule Logic
