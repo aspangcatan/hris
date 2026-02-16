@@ -9,7 +9,7 @@
                 <div class="card w-100">
                     <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
                         <img
-                            src="{{ (Auth::user()->picture) ? url('/avatar/'.Auth::user()->picture) : "images/ic_user.png"}}?v={{ date('Ymdhis') }}"
+                            src="{{ (Auth::user()->picture) ? "https://dohcsmc.com/id/storage/crop/".Auth::user()->picture : "images/ic_user.png"}}"
                             alt="Profile" class="rounded-circle">
                         <h2>{{ \Illuminate\Support\Facades\Auth::user()->fname." ".\Illuminate\Support\Facades\Auth::user()->lname }}</h2>
                         <h3>{{ session('designation') }}</h3>

@@ -122,7 +122,7 @@
                     const path = '{{ url('/avatar/')}}';
 
                     data.forEach(it => {
-                        const image = (it.picture) ? (path + "/" + it.picture) : "assets/img/logo.png";
+                        const image = (it.picture) ? "https://dohcsmc.com/id/storage/crop/"+it.picture : "assets/img/logo.png";
                         const timeIn = it.time_in ? new Date(it.time_in).toLocaleTimeString([], {
                             hour: '2-digit',
                             minute: '2-digit'

@@ -149,7 +149,7 @@
                 $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
                 for (let i = 0; i < max_visible; i++) {
                     const it = data.results[i];
-                    const path = '{{ url('/avatar/')}}';
+                    const path = 'https://dohcsmc.com/id/storage/crop';
                     const suffix = (it.suffix) ? it.suffix : "";
                     const mname = (it.mname) ? it.mname : "";
                     const image = (it.picture) ? (path + "/" + it.picture) : "assets/img/logo.png";
