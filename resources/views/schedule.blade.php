@@ -378,11 +378,13 @@
 
             // Save Individual Schedule
             $('#btn_save_schedule').on('click', function () {
+                const $btn = $(this);
                 const employeeId = $('#selectedEmployeeId').val();
                 const day = $('#selectedDay').val();
                 const schedule_id = $('#scheduleSelect').val();
                 const schedule_code = $('#scheduleSelect option:selected').data("code");
                 const schedule_date = `${$('#filter_year').val()}-${$('#filter_month').val()}-${String(day).padStart(2, '0')}`;
+                $btn.prop('disabled', true);
 
                 fetch('{{ route('setEmployeeSchedule') }}', {
                     method: "POST",
@@ -402,7 +404,16 @@
                         $(`.schedule-cell[data-employee-id="${employeeId}"][data-day="${day}"]`).text(schedule_code);
                         $('#scheduleModal').modal('hide');
                     })
-                    .catch(console.error);
+                    .then(() => {
+                        loadEmployeeSchedule();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        toastr.error("Failed to update schedule.", "Error");
+                    })
+                    .finally(() => {
+                        $btn.prop('disabled', false);
+                    });
             });
 
             @if(in_array(session('access_rights'), ['admin']))
@@ -482,6 +493,7 @@
             fetch('{{ route('getScheduleMasterList') }}')
                 .then(res => res.json())
                 .then(data => {
+                        $('#scheduleSelect').append(`<option value="""></option>`);
                     data.forEach(it => {
                         $('#legend_list').append(`<div class="col-md-6"><div>${it.code} - ${it.label}</div></div>`);
                         $('#scheduleSelect').append(`<option value="${it.id}" data-code="${it.code}">${it.label}</option>`);

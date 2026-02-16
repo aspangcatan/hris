@@ -1,36 +1,191 @@
 @extends('master')
 
 @section('content')
-    <div class="card">
-        <div class="card-body p-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2>Hospital Order Management</h2>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#hospitalOrderModal">
-                    + Create Hospital Order
-                </button>
-            </div>
+    <style>
+        .ho-page {
+            --ho-surface: #ffffff;
+            --ho-surface-soft: #f7fafc;
+            --ho-line: #e4eaf2;
+            --ho-text: #10233d;
+            --ho-muted: #58708f;
+            --ho-brand-1: #0f5fa8;
+            --ho-brand-2: #0fa8b6;
+            --ho-success-1: #0f8e5e;
+            --ho-success-2: #18a36b;
+        }
 
-            <!-- Hospital Orders Table -->
-            <div class="table-responsive">
-                <table class="table table-bordered">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Hospital Order #</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th style="width:2%"></th>
-                    </tr>
-                    </thead>
-                    <tbody id="order_list"></tbody>
-                </table>
+        .ho-page .ho-shell {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 16px 35px rgba(16, 24, 40, 0.08);
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        }
+
+        .ho-page .ho-header {
+            border-radius: 14px;
+            padding: 1rem 1.1rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--ho-brand-1), var(--ho-brand-2));
+        }
+
+        .ho-page .ho-title {
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .ho-page .ho-subtitle {
+            margin: 0.2rem 0 0;
+            opacity: 0.95;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .ho-page .btn-create {
+            border: none;
+            border-radius: 10px;
+            padding: 0.55rem 1rem;
+            color: #fff;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--ho-success-1), var(--ho-success-2));
+            box-shadow: 0 10px 18px rgba(24, 163, 107, 0.25);
+        }
+
+        .ho-page .table-wrap {
+            margin-top: 1rem;
+            border: 1px solid var(--ho-line);
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--ho-surface);
+        }
+
+        .ho-page .ho-table {
+            margin-bottom: 0;
+        }
+
+        .ho-page .ho-table thead th {
+            background: var(--ho-surface-soft);
+            color: var(--ho-muted);
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            vertical-align: middle;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+
+        .ho-page .ho-table tbody td {
+            color: #1d304b;
+            font-size: 0.93rem;
+            vertical-align: middle;
+        }
+
+        .ho-page .ho-table tbody tr:hover {
+            background: #f8fbff;
+        }
+
+        .ho-page .order-no {
+            font-weight: 700;
+            color: var(--ho-text);
+        }
+
+        .ho-page .date-chip {
+            display: inline-block;
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
+            background: #eef4fb;
+            color: #3e5878;
+            font-weight: 600;
+            font-size: 0.82rem;
+        }
+
+        .ho-page .btn-assign {
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .ho-modal .modal-content {
+            border: 0;
+            border-radius: 14px;
+            box-shadow: 0 20px 40px rgba(16, 24, 40, 0.14);
+        }
+
+        .ho-modal .modal-header {
+            border-bottom: 1px solid #edf1f6;
+            background: #f8fafd;
+        }
+
+        .ho-modal .modal-title {
+            font-weight: 700;
+            color: #18324f;
+        }
+
+        .ho-modal .form-label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #4c6584;
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.45px;
+        }
+
+        .ho-modal .form-control,
+        .ho-modal .selectize-input {
+            border-radius: 10px;
+            border-color: #d6dfeb;
+            min-height: 40px;
+        }
+
+        .ho-modal .form-control:focus {
+            border-color: #1b85c9;
+            box-shadow: 0 0 0 0.2rem rgba(27, 133, 201, 0.12);
+        }
+
+        .ho-empty {
+            text-align: center;
+            color: #6d819a;
+            padding: 1.3rem 0.5rem !important;
+        }
+    </style>
+
+    <div class="ho-page">
+        <div class="card ho-shell">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3 ho-header">
+                    <div>
+                        <h2 class="ho-title">Hospital Order Management</h2>
+                        <p class="ho-subtitle">Create, track, and assign employees to hospital orders</p>
+                    </div>
+                    <button class="btn btn-success btn-create" data-bs-toggle="modal" data-bs-target="#hospitalOrderModal">
+                        <i class="bi bi-plus-circle me-1"></i>Create Hospital Order
+                    </button>
+                </div>
+
+                <div class="table-responsive table-wrap">
+                    <table class="table table-bordered ho-table">
+                        <thead>
+                        <tr>
+                            <th>Hospital Order #</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th style="width: 1%;">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="order_list">
+                        <tr>
+                            <td colspan="4" class="ho-empty">Loading hospital orders...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Create Hospital Order Modal -->
     <div class="modal fade" id="hospitalOrderModal" tabindex="-1" aria-labelledby="hospitalOrderModalLabel"
          aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog ho-modal">
             <form id="hospitalOrderForm">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -39,15 +194,15 @@
                     </div>
                     <div class="modal-body row g-3">
                         <div class="col-md-12">
-                            <label>Hospital Order #</label>
+                            <label class="form-label">Hospital Order #</label>
                             <input type="number" class="form-control" name="order_number" required>
                         </div>
                         <div class="col-md-12">
-                            <label>Start Date</label>
+                            <label class="form-label">Start Date</label>
                             <input type="date" class="form-control" name="start_date" required>
                         </div>
                         <div class="col-md-12">
-                            <label>End Date</label>
+                            <label class="form-label">End Date</label>
                             <input type="date" class="form-control" name="end_date" required>
                         </div>
                     </div>
@@ -60,16 +215,16 @@
         </div>
     </div>
 
-    <!-- Assign Employee Modal -->
     <div class="modal fade" id="assignEmployeeModal" tabindex="-1" aria-labelledby="assignEmployeeModalLabel"
          aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog ho-modal">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Assign Employees</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <label class="form-label">Employee List</label>
                     <select name="employee_ids[]" id="employeeSelect" multiple required></select>
                 </div>
                 <div class="modal-footer">
@@ -121,14 +276,14 @@
                     return;
                 }
 
-                const selectedEmployeeIds = $select.getValue(); // gets array of selected employee IDs
+                const selectedEmployeeIds = $select.getValue();
 
                 if (!selectedEmployeeIds || selectedEmployeeIds.length === 0) {
                     toastr.warning("Please select at least one employee.");
                     return;
                 }
 
-                fetch('{{ route("hospital-orders.assign") }}', { // update with your route
+                fetch('{{ route("hospital-orders.assign") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -136,7 +291,7 @@
                     },
                     body: JSON.stringify({
                         ho_id: ho_id,
-                        userid: selectedEmployeeIds // send array of IDs
+                        userid: selectedEmployeeIds
                     })
                 })
                     .then(res => res.json())
@@ -146,7 +301,7 @@
                         } else {
                             toastr.success(data.message, "Success");
                             $('#assignEmployeeModal').modal('hide');
-                            getHospitalOrders(); // refresh list or update UI
+                            getHospitalOrders();
                         }
                     })
                     .catch(err => {
@@ -162,22 +317,41 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    data.forEach(it => {
+                    $('#order_list').empty();
+
+                    if (!data || data.length === 0) {
                         $('#order_list').append(`
-                <tr>
-                    <td>${it.order_number}</td>
-                    <td>${it.start_date}</td>
-                    <td>${it.end_date}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="assignEmployee(${it.id})">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </td>
-                </tr>`);
+                            <tr>
+                                <td colspan="4" class="ho-empty">No hospital orders found.</td>
+                            </tr>
+                        `);
+                        return;
+                    }
+
+                    data.forEach(it => {
+                        const start = it.start_date ? new Date(it.start_date).toLocaleDateString() : '-';
+                        const end = it.end_date ? new Date(it.end_date).toLocaleDateString() : '-';
+
+                        $('#order_list').append(`
+                            <tr>
+                                <td class="order-no">#${it.order_number}</td>
+                                <td><span class="date-chip">${start}</span></td>
+                                <td><span class="date-chip">${end}</span></td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm btn-assign" onclick="assignEmployee(${it.id})">
+                                        <i class="bi bi-people me-1"></i>Assign
+                                    </button>
+                                </td>
+                            </tr>
+                        `);
                     });
                 })
                 .catch(err => {
-                    alert("Ooops, something went wrong. Please reload");
+                    $('#order_list').html(`
+                        <tr>
+                            <td colspan="4" class="ho-empty">Failed to load hospital orders.</td>
+                        </tr>
+                    `);
                 });
         }
 
@@ -185,15 +359,13 @@
             ho_id = id;
             const $select = $('#employeeSelect')[0].selectize;
             if ($select) {
-                $select.clear(); // Clear previous selections
+                $select.clear();
             }
 
-            // Fetch assigned employees for this ho_id
             fetch("{{ route('hospital-orders.assigned') }}?ho_id=" + ho_id)
                 .then(res => res.json())
                 .then(data => {
                     if ($select) {
-                        // data should be an array of assigned user IDs
                         $select.setValue(data.assignedUserIds || []);
                     }
                     $('#assignEmployeeModal').modal('show');
@@ -208,12 +380,11 @@
         function loadEmployees() {
             const $select = $('#employeeSelect');
 
-            // Clear and destroy existing Selectize if needed
             if ($select[0].selectize) {
                 $select[0].selectize.destroy();
             }
 
-            $select.empty(); // Clear existing options
+            $select.empty();
 
             fetch("{{ route('employee.selectize') }}")
                 .then(res => res.json())
