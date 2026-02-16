@@ -679,7 +679,11 @@ class DTRController extends Controller
                             if ($firstIn) {
                                 $firstInTime = Carbon::parse($firstIn);
                                 if ($firstInTime->format('H:i:s') > $calcSched->time_in_latest) {
-                                    $lateMinutes += $firstInTime->diffInMinutes(Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest));
+                                    // Keep half-day buckets exclusive for monthly counters:
+                                    // AM-only => undertime bucket, PM-only => late bucket.
+                                    if (!$isHalfDay || ($hasPm && !$hasAm)) {
+                                        $lateMinutes += $firstInTime->diffInMinutes(Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest));
+                                    }
                                 }
                             }
 
