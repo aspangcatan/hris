@@ -21,43 +21,169 @@
     </div>
 </div>
 
+<style>
+    #advanceScheduleModal .modal-content {
+        border: 0;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 25px 50px rgba(16, 24, 40, 0.2);
+        background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+    }
+
+    #advanceScheduleModal .modal-header {
+        border-bottom: 0;
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #0f5fa8 0%, #0d7bbd 60%, #0f9ec7 100%);
+        color: #fff;
+    }
+
+    #advanceScheduleModal .modal-title {
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    #advanceScheduleModal .btn-close {
+        filter: brightness(0) invert(1);
+        opacity: 0.9;
+    }
+
+    #advanceScheduleModal .premium-panel {
+        background: #fff;
+        border: 1px solid #e6ebf2;
+        border-radius: 14px;
+        padding: 1rem;
+        box-shadow: 0 8px 20px rgba(16, 24, 40, 0.05);
+    }
+
+    #advanceScheduleModal .panel-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #344054;
+        margin-bottom: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+    }
+
+    #advanceScheduleModal #advance_employee_search {
+        border-radius: 10px;
+        border: 1px solid #d5deea;
+        padding: 0.6rem 0.75rem;
+    }
+
+    #advanceScheduleModal #advance_employee_search:focus {
+        border-color: #2283c7;
+        box-shadow: 0 0 0 0.2rem rgba(34, 131, 199, 0.12);
+    }
+
+    #advanceScheduleModal .employee-table thead th,
+    #advanceScheduleModal .weekly-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f2f6fb;
+        color: #475467;
+        font-weight: 700;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.35px;
+    }
+
+    #advanceScheduleModal .employee-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    #advanceScheduleModal .weekly-table select {
+        min-width: 110px;
+        border-radius: 8px;
+        border-color: #d5deea;
+    }
+
+    #advanceScheduleModal .modal-footer {
+        border-top: 1px solid #e9eef5;
+        background: #f8fafc;
+    }
+
+    #advanceScheduleModal #save_advance_schedule {
+        border-radius: 10px;
+        padding: 0.52rem 1.1rem;
+        font-weight: 600;
+        background: linear-gradient(135deg, #0f8e5e 0%, #18a36b 100%);
+        border: none;
+        box-shadow: 0 10px 18px rgba(24, 163, 107, 0.25);
+    }
+</style>
+
 <div class="modal fade" id="advanceScheduleModal" tabindex="-1" aria-labelledby="advanceScheduleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Advance Set Schedule</h5>
+                <h5 class="modal-title">Advance Schedule Builder</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label for="advance_employee_select" class="form-label">Select Employees:</label>
-                    <select id="advance_employee_select" class="form-select" multiple placeholder="Search employees..."></select>
-                </div>
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="premium-panel h-100">
+                            <div class="panel-title">Employee Selection</div>
+                            <label for="advance_employee_search" class="form-label mb-1">Search Employee</label>
+                            <input type="text" id="advance_employee_search" class="form-control" placeholder="Type name or designation...">
 
-                <table class="table table-bordered">
-                    <thead>
-                    <tr>
-                        <th>Day</th>
-                        <th>Schedule</th>
-                    </tr>
-                    </thead>
-                    <tbody id="advance_schedule_table_body">
-                    @php
-                        $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-                    @endphp
-                    @foreach($days as $day)
-                        <tr>
-                            <td>{{ $day }}</td>
-                            <td>
-                                <select class="form-control advance-schedule-select" data-day="{{ $day }}">
-                                    <option value="">-- Select --</option>
-                                </select>
-                            </td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-                <button class="btn btn-success" id="save_advance_schedule">Save</button>
+                            <div class="table-responsive mt-3" style="max-height: 360px;">
+                                <table class="table table-bordered table-sm align-middle employee-table mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th style="width: 50px;">
+                                            <input type="checkbox" id="advance_select_all_employees">
+                                        </th>
+                                        <th>Employee</th>
+                                        <th>Designation</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="advance_employee_table_body">
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No employees loaded yet.</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="premium-panel h-100">
+                            <div class="panel-title">Weekly Template</div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm align-middle weekly-table mb-0">
+                                    <thead>
+                                    <tr>
+                                        @php
+                                            $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                                        @endphp
+                                        @foreach($days as $day)
+                                            <th>{{ $day }}</th>
+                                        @endforeach
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        @foreach($days as $day)
+                                            <td>
+                                                <select class="form-select form-select-sm advance-schedule-select" data-day="{{ $day }}">
+                                                    <option value="">-- Select --</option>
+                                                </select>
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success" id="save_advance_schedule">Apply Schedule</button>
             </div>
         </div>
     </div>

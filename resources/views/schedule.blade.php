@@ -1,18 +1,154 @@
 @extends('master')
 
 @section('content')
+    <style>
+        .schedule-page {
+            --surface: #ffffff;
+            --surface-soft: #f7fafc;
+            --line: #e5eaf1;
+            --text-strong: #12263f;
+            --text-muted: #526581;
+            --brand-1: #0f5fa8;
+            --brand-2: #0aa3b5;
+            --accent: #0f8e5e;
+            --font-ui: "Manrope", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .schedule-page .premium-shell {
+            border: 0;
+            border-radius: 18px;
+            box-shadow: 0 16px 35px rgba(16, 24, 40, 0.08);
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        }
+
+        .schedule-page .page-head {
+            border-radius: 14px;
+            padding: 1rem 1.1rem;
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+            color: #fff;
+        }
+
+        .schedule-page .page-head h2 {
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 0.2px;
+        }
+
+        .schedule-page .legend-box {
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            padding: 0.75rem 0.85rem;
+        }
+
+        .schedule-page .filter-panel {
+            margin-top: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--surface);
+            padding: 1rem;
+        }
+
+        .schedule-page .filter-panel .form-control,
+        .schedule-page .filter-panel .form-select {
+            border-radius: 10px;
+            border-color: #d7dfea;
+        }
+
+        .schedule-page .filter-panel .form-control:focus,
+        .schedule-page .filter-panel .form-select:focus {
+            border-color: #1882c5;
+            box-shadow: 0 0 0 0.2rem rgba(24, 130, 197, 0.12);
+        }
+
+        .schedule-page .btn-advance {
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0f8e5e 0%, #17a86c 100%);
+            box-shadow: 0 10px 18px rgba(23, 168, 108, 0.23);
+            font-weight: 600;
+        }
+
+        .schedule-page .table-wrap {
+            margin-top: 1rem;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden;
+            background: var(--surface);
+        }
+
+        .schedule-page .schedule-table {
+            margin-bottom: 0;
+            font-family: var(--font-ui);
+        }
+
+        .schedule-page .schedule-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--surface-soft);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            line-height: 1.1;
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+
+        .schedule-page .schedule-table tbody tr:hover {
+            background: #f8fbff;
+        }
+
+        .schedule-page .schedule-table tbody td {
+            font-size: 0.94rem;
+            color: #27364b;
+            letter-spacing: 0.1px;
+            line-height: 1.35;
+            vertical-align: top;
+        }
+
+        .schedule-page .schedule-table tbody td:nth-child(2) {
+            font-weight: 700;
+            color: #11243c;
+            font-size: 0.96rem;
+            letter-spacing: 0.15px;
+        }
+
+        .schedule-page .schedule-table tbody td:nth-child(3) {
+            font-weight: 600;
+            color: #4d5f78;
+            font-size: 0.89rem;
+            line-height: 1.4;
+        }
+
+        .schedule-page .schedule-table .schedule-cell {
+            font-family: var(--font-ui);
+            font-size: 0.84rem;
+            font-weight: 700 !important;
+            color: #0f68d8 !important;
+            letter-spacing: 0.45px;
+            text-transform: uppercase;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+
+    <div class="schedule-page">
     <div class="card">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                <h2 class="mb-0">Schedule Management</h2>
-                <div style="border: 1px solid #c1c1c1;" class="p-3 rounded bg-light">
+        <div class="card-body p-4 premium-shell">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 page-head">
+                <h2>Schedule Management</h2>
+                <div class="legend-box">
                     <strong>Legend:</strong>
                     <div class="row" id="legend_list"></div>
                 </div>
             </div>
 
             <!-- Filters -->
-            <div class="row g-3 align-items-end mb-4 mt-3">
+            <div class="row g-3 align-items-end filter-panel">
                 <div class="col-md-2">
                     <div class="form-floating">
                         <select class="form-select form-control-sm" id="filter_month">
@@ -46,7 +182,7 @@
                     </div>
                 </div>
                 @if(in_array(session('access_rights'), ['admin', 'schedule']))
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <div class="form-floating">
                             <select class="form-select form-control-sm" id="division">
 
@@ -64,16 +200,22 @@
                         </div>
                     </div>
                 @endif
+                <div class="col-md-2">
+                    <div class="form-floating">
+                        <input type="text" class="form-control form-control-sm" id="employee_search_filter" placeholder="Search employee">
+                        <label for="employee_search_filter">Search Employee</label>
+                    </div>
+                </div>
                 <div class="col-md-2 d-flex align-items-end gap-2">
-                    <button id="btn_advance_schedule" class="btn btn-success btn-lg w-100">Advance Settings</button>
+                    <button id="btn_advance_schedule" class="btn btn-success btn-lg w-100 btn-advance">Advance</button>
                 </div>
 
 
             </div>
 
             <!-- Schedule Table -->
-            <div class="table-responsive mt-4">
-                <table class="table table-bordered table-hover">
+            <div class="table-responsive mt-4 table-wrap">
+                <table class="table table-bordered table-hover schedule-table">
                     <thead>
                     <tr id="schedule_header">
                         <th>Name</th>
@@ -85,6 +227,7 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- Modals -->
     @include('modals.schedule')
@@ -93,17 +236,8 @@
 @section('js')
     <script>
         let currentEmployees = [];
-        let advanceEmployeeSelect;
 
         $(document).ready(function () {
-            // Initial Selectize
-            advanceEmployeeSelect = $('#advance_employee_select').selectize({
-                plugins: ['remove_button'],
-                valueField: 'value',
-                labelField: 'text',
-                searchField: 'text'
-            })[0].selectize;
-
             // Initial Load
             loadScheduleMasterList();
 
@@ -138,6 +272,9 @@
 
             // Re-fetch on filter change
             $('#filter_month, #filter_year,#division,#section').on('change', loadEmployeeSchedule);
+            $('#employee_search_filter').on('input', function () {
+                filterScheduleRows($(this).val());
+            });
 
             // Advance Set Schedule Button
             $('#btn_advance_schedule').on('click', function () {
@@ -148,12 +285,10 @@
                     }
                 });
 
-                // Populate employee selectize
-                advanceEmployeeSelect.clearOptions();
-                currentEmployees.forEach(emp => {
-                    advanceEmployeeSelect.addOption({value: emp.id, text: emp.name});
-                    advanceEmployeeSelect.addItem(emp.id); // Default to all selected, user can remove
-                });
+                renderAdvanceEmployeeTable();
+                $("#advance_employee_search").val("");
+                filterAdvanceEmployees("");
+                $("#advance_select_all_employees").prop("checked", true);
 
                 $('#advanceScheduleModal').modal('show');
             });
@@ -168,7 +303,9 @@
                     return;
                 }
 
-                const employeeIds = advanceEmployeeSelect.getValue();
+                const employeeIds = $('.advance-employee-check:checked').map(function () {
+                    return $(this).val();
+                }).get();
 
                 if (employeeIds.length === 0) {
                     toastr.warning("Please select at least one employee", "Warning");
@@ -213,6 +350,20 @@
                         console.error(err);
                         toastr.error("Failed to save schedule", "Error");
                     });
+            });
+
+            $('#advance_employee_search').on('input', function () {
+                filterAdvanceEmployees($(this).val());
+            });
+
+            $('#advance_select_all_employees').on('change', function () {
+                $('.advance-employee-check').prop('checked', $(this).is(':checked'));
+            });
+
+            $("body").on("change", ".advance-employee-check", function () {
+                const total = $(".advance-employee-check").length;
+                const checked = $(".advance-employee-check:checked").length;
+                $("#advance_select_all_employees").prop("checked", total > 0 && total === checked);
             });
 
             // Open Schedule Modal
@@ -295,6 +446,36 @@
                 });
         }
 
+        function renderAdvanceEmployeeTable() {
+            const tbody = $("#advance_employee_table_body");
+            tbody.empty();
+
+            if (!currentEmployees.length) {
+                tbody.append(`<tr><td colspan="3" class="text-center text-muted">No employees found for selected filters.</td></tr>`);
+                return;
+            }
+
+            currentEmployees.forEach(emp => {
+                tbody.append(`
+                    <tr class="advance-employee-row" data-search="${(emp.name + ' ' + emp.designation).toLowerCase()}">
+                        <td class="text-center">
+                            <input type="checkbox" class="form-check-input advance-employee-check" value="${emp.id}" checked>
+                        </td>
+                        <td>${emp.name}</td>
+                        <td>${emp.designation}</td>
+                    </tr>
+                `);
+            });
+        }
+
+        function filterAdvanceEmployees(keyword) {
+            const q = (keyword || "").toLowerCase().trim();
+            $(".advance-employee-row").each(function () {
+                const text = String($(this).data("search") || "");
+                $(this).toggle(q === "" || text.includes(q));
+            });
+        }
+
 
         // Load Schedule Master List (Legend & Options)
         function loadScheduleMasterList() {
@@ -333,7 +514,7 @@
                     $('#employee_list').empty();
                     currentEmployees = data.schedules; // Store for modal
                     data.schedules.forEach(emp => {
-                        let row = `<tr><td class="d-none">${emp.id}</td><td>${emp.name}</td><td>${emp.designation}</td>`;
+                        let row = `<tr class="schedule-employee-row" data-search="${(emp.name + ' ' + emp.designation).toLowerCase()}"><td class="d-none">${emp.id}</td><td>${emp.name}</td><td>${emp.designation}</td>`;
                         emp.schedule.forEach((sched, i) => {
                             row += `<td class="fw-bold text-primary schedule-cell" style="cursor:pointer"
                                  data-employee-id="${emp.id}" data-day="${i + 1}">${sched}</td>`;
@@ -341,8 +522,17 @@
                         row += `</tr>`;
                         $('#employee_list').append(row);
                     });
+                    filterScheduleRows($('#employee_search_filter').val());
                 })
                 .catch(console.error);
+        }
+
+        function filterScheduleRows(keyword) {
+            const q = (keyword || "").toLowerCase().trim();
+            $(".schedule-employee-row").each(function () {
+                const text = String($(this).data("search") || "");
+                $(this).toggle(q === "" || text.includes(q));
+            });
         }
 
         // Get Dates for Day of Week
