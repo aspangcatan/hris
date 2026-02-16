@@ -3,7 +3,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <style> html, body {
             font-family: Arial, sans-serif;
-            font-size: 11px !important;
+            font-size: 9.5px !important;
             margin: 0;
             padding: 0;
             width: 100%;
@@ -23,25 +23,25 @@
         .form-title {
             text-align: right;
             margin: 0;
-            font-size: 12.5px;
+            font-size: 11px;
         }
 
         .form-header {
             text-align: center;
-            font-size: 15px;
+            font-size: 13.5px;
             font-weight: bold;
         }
 
         .employee-name {
             font-weight: bold;
-            font-size: 12px;
+            font-size: 10.5px;
             border-bottom: 1px solid black;
             text-align: center;
             margin-top: 10px;
         }
 
         table.logs td {
-            font-size: 10px;
+            font-size: 8.5px;
             text-align: center;
             vertical-align: middle;
             border: 1px solid black;
@@ -77,7 +77,8 @@
 @foreach($employees as $employee)
     <table>
         <tr> <!-- First Column -->
-            <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
+            <td style="width: 7%;"></td>
+            <td style="width: 41%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
@@ -87,14 +88,14 @@
                             <td style="vertical-align: top;width: 50%">
                                 <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
                                 <div class="employee-name">{{ $employee['name'] }}</div>
-                                <div style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
+                                <div style="text-align: center;font-weight: bold;font-size: 11.5px">(Name)</div>
                             </td>
                             <td></td>
                         </tr>
                     </table>
-                    <div style="margin-top: 15px;font-size: 14px">For the month of:
+                    <div style="margin-top: 15px;font-size: 12.5px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
-                    <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
+                    <div style="margin-top: 5px;font-size: 12.5px"><span>Official hours of arrival and</span> <span
                             style="margin-left: 25px">Reg. days
                             @if(!empty($employee['reg_days_am']))
                                 <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_am'] }}</span>
@@ -108,7 +109,7 @@
                                 _____
                             @endif
                             PM</span></div>
-                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays
+                    <div style="font-size: 12.5px"><span>departure</span> <span style="margin-left: 121px">Saturdays
                             @if(!empty($employee['sat_days_am']))
                                 <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['sat_days_am'] }}</span>
                             @else
@@ -122,28 +123,35 @@
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
-                        <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
+                        <td style="width: 8%;border-left: none;font-size: 10.5px" rowspan="2">DAY</td>
                         <td colspan="2">A.M</td>
                         <td colspan="2">P.M</td>
                         <td colspan="2">UNDERTIME</td>
                     </tr>
                     <tr class="header">
-                        <td style="font-size: 12px">Arrival</td>
-                        <td style="font-size: 12px">Departure</td>
-                        <td style="font-size: 12px">Arrival</td>
-                        <td style="font-size: 12px">Departure</td>
-                        <td style="width: 12%;font-size: 12px">Hours</td>
-                        <td style="width: 12%;font-size: 12px">Minutes</td>
+                        <td style="font-size: 10.5px">Arrival</td>
+                        <td style="font-size: 10.5px">Departure</td>
+                        <td style="font-size: 10.5px">Arrival</td>
+                        <td style="font-size: 10.5px">Departure</td>
+                        <td style="width: 12%;font-size: 10.5px">Hours</td>
+                        <td style="width: 12%;font-size: 10.5px">Minutes</td>
                     </tr>
                     @foreach($employee['dtrs'] as $dtr)
                         <tr>
                             <!-- Day # -->
-                            <td style="font-weight: bold">
-                                {{ $dtr['day'] }}
+                            <td style="font-weight: bold;">
+                                <div style="position: relative;">
+                                    @if(!empty($dtr['planned_schedule']))
+                                        <div style="position: absolute; left: -52px; top: -1px; width: 50px; font-size: 8.5px; font-weight: bold; line-height: 1; text-align: right; color: #333; white-space: nowrap;">
+                                            {!! nl2br(e($dtr['planned_schedule'])) !!}
+                                        </div>
+                                    @endif
+                                    {{ $dtr['day'] }}
+                                </div>
                             </td>
 
                             <!-- AM Arrival -->
-                            <td style="font-size: 11px">
+                            <td style="font-size: 9.5px">
                                 @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
@@ -152,7 +160,7 @@
                             </td>
 
                             <!-- AM Departure -->
-                            <td style="font-size: 11px">
+                            <td style="font-size: 9.5px">
                                 @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
@@ -161,7 +169,7 @@
                             </td>
 
                             <!-- PM Arrival -->
-                            <td style="font-size: 11px">
+                            <td style="font-size: 9.5px">
                                 @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
@@ -170,7 +178,7 @@
                             </td>
 
                             <!-- PM Departure -->
-                            <td style="font-size: 11px">
+                            <td style="font-size: 9.5px">
                                 @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
@@ -182,16 +190,16 @@
                             @if(
                                 !empty($dtr['date_timein_am']) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am'])
                             )
-                                <td style="font-size: 11px;font-weight: bold" colspan="2">
+                                <td style="font-size: 9.5px;font-weight: bold" colspan="2">
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
                                  @if($employee['division'] == '2')
-                                <td style="font-size: 11px">{{ $dtr['undertime_hours'] }}</td>
-                                <td style="font-size: 11px">{{ $dtr['undertime_minutes'] }}</td>
+                                <td style="font-size: 9.5px">{{ $dtr['undertime_hours'] }}</td>
+                                <td style="font-size: 9.5px">{{ $dtr['undertime_minutes'] }}</td>
                                 @else
-                                <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
+                                <td style="font-size: 9.5px"></td>
+                                <td style="font-size: 9.5px"></td>
                                 @endif
                             @endif
                         </tr>
@@ -204,8 +212,8 @@
                         <td></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
-                    <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
+                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
+                    <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 12.5px; text-align: right;">
                           @if($employee['division'] == '2')
                                 <div>U - {{ $employee['undertime_count'] }}</div>
                                 <div>L - {{ $employee['late_count'] }}</div>
@@ -222,7 +230,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            <td style="text-align: center;font-size: 12.5px">Verified as to the prescribed office hours
                             </td>
                             <td></td>
                         </tr>
@@ -233,14 +241,15 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">In Charge</td>
+                            <td style="text-align: center;font-size: 12.5px">In Charge</td>
                             <td></td>
                         </tr>
                     </table>
                 </div>
             </td>
-            <td style="width: 8%;"></td>
-            <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
+            <td style="width: 2%;"></td>
+            <td style="width: 7%;"></td>
+            <td style="width: 41%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
@@ -250,14 +259,14 @@
                             <td style="vertical-align: top;width: 50%">
                                 <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
                                 <div class="employee-name">{{ $employee['name'] }}</div>
-                                <div style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
+                                <div style="text-align: center;font-weight: bold;font-size: 11.5px">(Name)</div>
                             </td>
                             <td></td>
                         </tr>
                     </table>
-                    <div style="margin-top: 15px;font-size: 14px">For the month of:
+                    <div style="margin-top: 15px;font-size: 12.5px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
-                    <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
+                    <div style="margin-top: 5px;font-size: 12.5px"><span>Official hours of arrival and</span> <span
                             style="margin-left: 25px">Reg. days
                             @if(!empty($employee['reg_days_am']))
                                 <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_am'] }}</span>
@@ -271,7 +280,7 @@
                                 _____
                             @endif
                             PM</span></div>
-                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays
+                    <div style="font-size: 12.5px"><span>departure</span> <span style="margin-left: 121">Saturdays
                             @if(!empty($employee['sat_days_am']))
                                 <span style="display:inline-block; min-width: 120px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['sat_days_am'] }}</span>
                             @else
@@ -285,24 +294,31 @@
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
-                        <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
+                        <td style="width: 8%;border-left: none;font-size: 10.5px" rowspan="2">DAY</td>
                         <td colspan="2">A.M</td>
                         <td colspan="2">P.M</td>
                         <td colspan="2">UNDERTIME</td>
                     </tr>
                     <tr class="header">
-                        <td style="font-size: 12px">Arrival</td>
-                        <td style="font-size: 12px">Departure</td>
-                        <td style="font-size: 12px">Arrival</td>
-                        <td style="font-size: 12px">Departure</td>
-                        <td style="width: 12%;font-size: 12px">Hours</td>
-                        <td style="width: 12%;font-size: 12px">Minutes</td>
+                        <td style="font-size: 10.5px">Arrival</td>
+                        <td style="font-size: 10.5px">Departure</td>
+                        <td style="font-size: 10.5px">Arrival</td>
+                        <td style="font-size: 10.5px">Departure</td>
+                        <td style="width: 12%;font-size: 10.5px">Hours</td>
+                        <td style="width: 12%;font-size: 10.5px">Minutes</td>
                     </tr>
                     @foreach($employee['dtrs'] as $dtr)
                         <tr>
                             <!-- Day # -->
-                            <td style="font-weight: bold">
-                                {{ $dtr['day'] }}
+                            <td style="font-weight: bold;">
+                                <div style="position: relative;">
+                                    @if(!empty($dtr['planned_schedule']))
+                                        <div style="position: absolute; left: -52px; top: -1px; width: 50px; font-size: 8.5px; font-weight: bold; line-height: 1; text-align: right; color: #333; white-space: nowrap;">
+                                            {!! nl2br(e($dtr['planned_schedule'])) !!}
+                                        </div>
+                                    @endif
+                                    {{ $dtr['day'] }}
+                                </div>
                             </td>
 
                             <!-- AM Arrival -->
@@ -402,6 +418,7 @@
                     </table>
                 </div>
             </td>
+            <td style="width: 2%;"></td>
         </tr>
     </table> @endforeach </body>
 </html>

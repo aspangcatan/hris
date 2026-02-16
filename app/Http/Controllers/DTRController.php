@@ -557,10 +557,24 @@ class DTRController extends Controller
                     // Populate planned schedule
                     $sched = $schedules[$currentDay] ?? null;
                     if ($sched) {
-                        $in = Carbon::parse($sched->time_in)->format('gA');
-                        $out = Carbon::parse($sched->time_out)->format('gA');
-                        // $data['planned_schedule'] = $in . "\n" . $out;
-                        $data['planned_schedule'] = '';
+                        $formatTime = function($time, $showAmpm = true) {
+                            $c = Carbon::parse($time);
+                            $format = ($c->format('i') === '00') ? 'g' : 'g:i';
+                            if ($showAmpm) $format .= 'A';
+                            return $c->format($format);
+                        };
+
+                        $in = $formatTime($sched->time_in, $sched->time_in == $sched->time_in_latest);
+                        if ($sched->time_in != $sched->time_in_latest) {
+                            $in .= '-' . $formatTime($sched->time_in_latest, true);
+                        }
+
+                        $out = $formatTime($sched->time_out, $sched->time_out == $sched->time_out_latest);
+                        if ($sched->time_out != $sched->time_out_latest) {
+                            $out .= '-' . $formatTime($sched->time_out_latest, true);
+                        }
+
+                        $data['planned_schedule'] = $in . "\n" . $out;
                     }
 
                     if (!$data['isInsideCutoff']) return $data;
@@ -754,10 +768,10 @@ class DTRController extends Controller
 
             $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 ->setPaper('A4', 'portrait')
-                ->setOption('margin-top', 5)
-                ->setOption('margin-bottom', 5)
-                ->setOption('margin-left', 5)
-                ->setOption('margin-right', 5)
+                ->setOption('margin-top', 0)
+                ->setOption('margin-bottom', 0)
+                ->setOption('margin-left', 0)
+                ->setOption('margin-right', 0)
                 ->setOption('enable-smart-shrinking', true)
                 ->setOption('no-images', false)
                 ->setOption('disable-javascript', true)
