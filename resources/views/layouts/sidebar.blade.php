@@ -50,7 +50,7 @@
             </li>
         @endif
 
-        @if(in_array(session('access_rights'), ['SH', 'DH', 'admin']))
+        @if(in_array(session('access_rights'), ['admin']) || session('is_section_head') || session('is_division_head'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee_dtr') ? '' : 'collapsed' }}"
                    href="{{ route('employee_dtr') }}">
@@ -93,6 +93,7 @@
             </li>
         @endif
 
+        @if(false)
         {{-- LEAVE MANAGEMENT --}}
         <li class="nav-heading">Leave Management</li>
         <li class="nav-item">
@@ -111,7 +112,7 @@
                 </a>
             </li>
         @endif
-
+@endif
         {{-- HR MANAGEMENT (hr + HRH + admin) --}}
         @if(in_array(session('access_rights'), ['hr','HRH','admin']))
             <li class="nav-heading">HR Management</li>

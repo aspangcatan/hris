@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserPrivelege;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -40,6 +41,10 @@ class UserController extends Controller
                 session(['designation' => $designation->description]);
 
             session(['access_rights' => $user_priv->level]);
+            session([
+                'is_section_head' => DB::table('tdh_user.section')->where('head', Auth::id())->exists(),
+                'is_division_head' => DB::table('tdh_user.division')->where('head', Auth::id())->exists(),
+            ]);
 
             return redirect()->intended('/profile');
         }
