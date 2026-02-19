@@ -465,8 +465,9 @@ class DTRController extends Controller
                 ];
             }
 
+            $division_id = 2;
             foreach ($employees as $employee) {
-
+                $division_id = $employee->division;
                 $logs = DB::table('dtr_logs')
                     ->whereMonth('created_at', $month)
                     ->whereYear('created_at', $year)
@@ -531,8 +532,10 @@ class DTRController extends Controller
                 $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
                 $lateCount = 0;
                 $undertimeCount = 0;
+                $lateTotalMinutes = 0;
+                $undertimeTotalMinutes = 0;
                 
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $schedules, &$lateCount, &$undertimeCount) {
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $schedules, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
 
                     $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
@@ -731,6 +734,8 @@ class DTRController extends Controller
 
                             if ($lateMinutes > 0) $lateCount++;
                             if ($undertimeMinutes > 0) $undertimeCount++;
+                            $lateTotalMinutes += $lateMinutes;
+                            $undertimeTotalMinutes += $undertimeMinutes;
 
                             $totalMinutes = $lateMinutes + $undertimeMinutes;
                             if ($totalMinutes > 0) {
@@ -771,6 +776,8 @@ class DTRController extends Controller
                     'dtrs' => $days,
                     'late_count' => $lateCount,
                     'undertime_count' => $undertimeCount,
+                    'late_total_minutes' => $lateTotalMinutes,
+                    'undertime_total_minutes' => $undertimeTotalMinutes,
                     'start_day' => $startDay,
                     'end_day' => $endDay,
                     'reg_days_am' => $reg_days_am,
@@ -781,7 +788,8 @@ class DTRController extends Controller
                 ];
             }
 
-            $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
+            if($division_id == "2"){
+$pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 ->setPaper('A4', 'portrait')
                 ->setOption('margin-top', 0)
                 ->setOption('margin-bottom', 0)
@@ -792,6 +800,21 @@ class DTRController extends Controller
                 ->setOption('disable-javascript', true)
                 ->setOption('load-error-handling', 'ignore')
                 ->setOption('dpi', 96);
+            }
+            else{
+                $pdf = SnappyPdf::loadView('pdf.old_dtr', ['employees' => $dtrData])
+                ->setPaper('A4', 'portrait')
+                ->setOption('margin-top', 5)
+                ->setOption('margin-bottom', 5)
+                ->setOption('margin-left', 5)
+                ->setOption('margin-right', 5)
+                ->setOption('enable-smart-shrinking', true)
+                ->setOption('no-images', false)
+                ->setOption('disable-javascript', true)
+                ->setOption('load-error-handling', 'ignore')
+                ->setOption('dpi', 96);
+            }
+            
 
             return $pdf->inline('DTR.pdf');
 

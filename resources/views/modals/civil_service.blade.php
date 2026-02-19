@@ -1,10 +1,10 @@
-<div class="modal fade" id="civil_service_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="civil_service_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-award-fill text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-award-fill text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,40 +15,40 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Civil Service Information</div>
-                <div class="mt-3 text-secondary fs-5">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="civil_service_career_service" placeholder="">
-                        <label>Career Service</label>
+                <div class="modal-title-text">Civil Service Information</div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Career Service</label>
+                        <input type="text" class="form-control premium-input" id="civil_service_career_service" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="civil_service_rating" placeholder="">
-                        <label>Rating</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Rating</label>
+                        <input type="text" class="form-control premium-input" id="civil_service_rating" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="civil_service_examination_date" placeholder="">
-                        <label>Date of Examination (From)</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Date of Examination (From)</label>
+                        <input type="date" class="form-control premium-input" id="civil_service_examination_date" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="civil_service_examination_end_date" placeholder="">
-                        <label>Date of Examination (To)</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Date of Examination (To)</label>
+                        <input type="date" class="form-control premium-input" id="civil_service_examination_end_date" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="civil_service_examination_place" placeholder="">
-                        <label>Place of Examination</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Place of Examination</label>
+                        <input type="text" class="form-control premium-input" id="civil_service_examination_place" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="civil_service_license_no" placeholder="">
-                        <label>License No.</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">License No.</label>
+                        <input type="text" class="form-control premium-input" id="civil_service_license_no" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="civil_service_license_expiry" placeholder="">
-                        <label>Date of Validity</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Date of Validity</label>
+                        <input type="date" class="form-control premium-input" id="civil_service_license_expiry" placeholder="">
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_civil_service">SAVE</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_save_civil_service">Save</button>
                 </div>
             </div>
         </div>

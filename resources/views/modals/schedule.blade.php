@@ -27,13 +27,13 @@
         border-radius: 18px;
         overflow: hidden;
         box-shadow: 0 25px 50px rgba(16, 24, 40, 0.2);
-        background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     }
 
     #advanceScheduleModal .modal-header {
         border-bottom: 0;
         padding: 1rem 1.25rem;
-        background: linear-gradient(135deg, #0f5fa8 0%, #0d7bbd 60%, #0f9ec7 100%);
+        background: linear-gradient(135deg, #0f766e 0%, #0f766e 50%, #0ea5a4 100%);
         color: #fff;
     }
 
@@ -71,8 +71,8 @@
     }
 
     #advanceScheduleModal #advance_employee_search:focus {
-        border-color: #2283c7;
-        box-shadow: 0 0 0 0.2rem rgba(34, 131, 199, 0.12);
+        border-color: #0ea5a4;
+        box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
     }
 
     #advanceScheduleModal .employee-table thead th,
@@ -107,9 +107,9 @@
         border-radius: 10px;
         padding: 0.52rem 1.1rem;
         font-weight: 600;
-        background: linear-gradient(135deg, #0f8e5e 0%, #18a36b 100%);
+        background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 100%);
         border: none;
-        box-shadow: 0 10px 18px rgba(24, 163, 107, 0.25);
+        box-shadow: 0 10px 18px rgba(15, 118, 110, 0.24);
     }
 </style>
 

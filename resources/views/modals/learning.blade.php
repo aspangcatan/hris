@@ -1,10 +1,10 @@
-<div class="modal fade" id="learning_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="learning_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-postcard-fill text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-postcard-fill text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,36 +15,36 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Learning & Development Information</div>
-                <div class="mt-3 text-secondary fs-5">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="learning_title" placeholder="">
-                        <label>Title</label>
+                <div class="modal-title-text">Learning & Development Information</div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Title</label>
+                        <input type="text" class="form-control premium-input" id="learning_title" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="learning_attendance_from" placeholder="">
-                        <label>From</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">From</label>
+                        <input type="date" class="form-control premium-input" id="learning_attendance_from" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="learning_attendance_to" placeholder="">
-                        <label>To</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">To</label>
+                        <input type="date" class="form-control premium-input" id="learning_attendance_to" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="learning_number_hours" placeholder="">
-                        <label>Number hours</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Number Hours</label>
+                        <input type="number" class="form-control premium-input" id="learning_number_hours" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="learning_type" placeholder="">
-                        <label>Type</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Type</label>
+                        <input type="text" class="form-control premium-input" id="learning_type" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="learning_conducted_by" placeholder="">
-                        <label>Conducted/Sponsored by</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Conducted / Sponsored By</label>
+                        <input type="text" class="form-control premium-input" id="learning_conducted_by" placeholder="">
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_learning">SAVE</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_save_learning">Save</button>
                 </div>
             </div>
         </div>

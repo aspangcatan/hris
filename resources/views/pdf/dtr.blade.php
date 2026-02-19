@@ -75,6 +75,19 @@
 <body>
 <div class="page-divider"></div>
 @foreach($employees as $employee)
+    @php
+        $formatDuration = function ($minutes) {
+            $minutes = (int)($minutes ?? 0);
+            if ($minutes <= 0) return '0mins';
+
+            $hours = intdiv($minutes, 60);
+            $mins = $minutes % 60;
+
+            if ($hours > 0 && $mins > 0) return $hours . 'hr ' . $mins . 'mins';
+            if ($hours > 0) return $hours . 'hr';
+            return $mins . 'mins';
+        };
+    @endphp
     <table>
         <tr> <!-- First Column -->
             <td style="width: 7%;"></td>
@@ -213,10 +226,10 @@
                     </tr>
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
-                    <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 12.5px; text-align: right;">
+                    <div style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
                           @if($employee['division'] == '2')
-                                <div>U - {{ $employee['undertime_count'] }}</div>
-                                <div>L - {{ $employee['late_count'] }}</div>
+                                <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
+                                <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
                           @endif
                     </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
@@ -383,11 +396,11 @@
                         <td></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px; position: relative;">
-                    <div style="position: absolute; right: 20px; top: 80px; font-weight: bold; font-size: 14px; text-align: right;">
+                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
+                    <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: right;">
                          @if($employee['division'] == '2')
-                        <div>U - {{ $employee['undertime_count'] }}</div>
-                        <div>L - {{ $employee['late_count'] }}</div>
+                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
+                        <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
                         @endif
                     </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>

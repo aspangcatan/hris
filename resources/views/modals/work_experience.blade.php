@@ -1,10 +1,10 @@
-<div class="modal fade" id="work_experience_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="work_experience_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-postcard-fill text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-postcard-fill text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,56 +15,56 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Work Experience Information</div>
-                <div class="mt-3 text-secondary fs-5">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="work_position" placeholder="">
-                        <label>Job Title</label>
+                <div class="modal-title-text">Work Experience Information</div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Job Title</label>
+                        <input type="text" class="form-control premium-input" id="work_position" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="work_agency" placeholder="">
-                        <label>Company</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Company</label>
+                        <input type="text" class="form-control premium-input" id="work_agency" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <select class="form-control" id="work_current_work">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Is this your current work? (Y/N)</label>
+                        <select class="form-control premium-select" id="work_current_work">
                             <option value="" selected></option>
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
-                        <label>Is this your current work? (Y/N)</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="work_from" placeholder="">
-                        <label>From</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">From</label>
+                        <input type="date" class="form-control premium-input" id="work_from" placeholder="">
                     </div>
-                    <div class="form-floating mb-3" id="to_container">
-                        <input type="date" class="form-control" id="work_to" placeholder="">
-                        <label>To</label>
+                    <div id="to_container">
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">To</label>
+                        <input type="date" class="form-control premium-input" id="work_to" placeholder="">
                     </div>
-                    <div class="form-floating mb-3 d-none">
-                        <input type="number" class="form-control" id="work_salary" placeholder="">
-                        <label>Salary</label>
+                    <div class="d-none">
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Salary</label>
+                        <input type="number" class="form-control premium-input" id="work_salary" placeholder="">
                     </div>
-                    <div class="form-floating mb-3 d-none">
-                        <input type="text" class="form-control" id="work_salary_grade" placeholder="">
-                        <label>Salary Grade (e.g. Step-Increment format (00-0))</label>
+                    <div class="d-none">
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Salary Grade (e.g. 00-0)</label>
+                        <input type="text" class="form-control premium-input" id="work_salary_grade" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="work_appointment_status" placeholder="">
-                        <label>Appointment Status</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Appointment Status</label>
+                        <input type="text" class="form-control premium-input" id="work_appointment_status" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <select class="form-control" id="work_government">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Is this government service (Y/N)</label>
+                        <select class="form-control premium-select" id="work_government">
                             <option value="" selected></option>
                             <option value="1">Yes</option>
                             <option value="0">No</option>
                         </select>
-                        <label>Is this government service (Y/N)</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_work">SAVE</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_save_work">Save</button>
                 </div>
             </div>
         </div>

@@ -1,10 +1,10 @@
-<div class="modal fade" id="other_information_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="other_information_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-award-fill text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-award-fill text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,16 +15,14 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center" id="other_information_title"></div>
-                <div class="mt-3 text-secondary fs-5">
-                    <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="other_information_description" placeholder="">
-                        <label>Description</label>
-                    </div>
+                <div class="modal-title-text" id="other_information_title"></div>
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">Description</label>
+                    <input type="text" class="form-control premium-input" id="other_information_description" placeholder="">
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_other_information">SAVE</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_save_other_information">Save</button>
                 </div>
             </div>
         </div>

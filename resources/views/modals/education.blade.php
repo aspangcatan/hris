@@ -1,10 +1,10 @@
-<div class="modal fade" id="education_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="education_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-postcard-fill text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-postcard-fill text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,84 +15,67 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Educational Background</div>
-                <div class="mt-3">
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Level</label>
-                        <div class="col-md-8 col-lg-9">
-                            <select class="form-control" id="education_level">
-                                <option value="">Select level</option>
-                                <option value="Elementary">Elementary</option>
-                                <option value="Secondary">Secondary</option>
-                                <option value="Vocational/Trade Course">Vocational/Trade Course</option>
-                                <option value="College">College</option>
-                                <option value="Graduate Studies">Graduate Studies</option>
-                            </select>
-                        </div>
+                <div class="modal-title-text">Educational Background</div>
+                <div class="grid gap-3 md:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Level</label>
+                        <select class="form-control premium-select" id="education_level">
+                            <option value="">Select level</option>
+                            <option value="Elementary">Elementary</option>
+                            <option value="Secondary">Secondary</option>
+                            <option value="Vocational/Trade Course">Vocational/Trade Course</option>
+                            <option value="College">College</option>
+                            <option value="Graduate Studies">Graduate Studies</option>
+                        </select>
                     </div>
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">School name</label>
-                        <div class="col-md-8 col-lg-9">
-                            <input type="text" class="form-control" id="school_name"/>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">School Name</label>
+                        <input type="text" class="form-control premium-input" id="school_name"/>
                     </div>
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Basic Education/Degree/Course</label>
-                        <div class="col-md-8 col-lg-9">
-                            <input type="text" class="form-control" id="education_degree"/>
-                        </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Basic Education / Degree / Course</label>
+                        <input type="text" class="form-control premium-input" id="education_degree"/>
                     </div>
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Period of attendance</label>
-                        <div class="col-md-8 col-lg-9">
-                            <div class="row">
-                                <div class="col-md-6 col-lg-6">
-                                    <select class="form-control" id="attendance_from">
-                                        <option value="" selected>From</option>
-                                        @for($year=1950; $year<=date("Y"); $year++)
-                                            <option>{{ $year }}</option>
-                                        @endfor
-                                    </select>
-                                </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Attendance From</label>
+                        <select class="form-control premium-select" id="attendance_from">
+                            <option value="" selected>From</option>
+                            @for($year=1950; $year<=date("Y"); $year++)
+                                <option>{{ $year }}</option>
+                            @endfor
+                        </select>
+                    </div>
 
-                                <div class="col-md-6 col-lg-6">
-                                    <select class="form-control" id="attendance_to">
-                                        <option value="" selected>To</option>
-                                        @for($year=1950; $year<=date("Y"); $year++)
-                                            <option>{{ $year }}</option>
-                                        @endfor
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Attendance To</label>
+                        <select class="form-control premium-select" id="attendance_to">
+                            <option value="" selected>To</option>
+                            @for($year=1950; $year<=date("Y"); $year++)
+                                <option>{{ $year }}</option>
+                            @endfor
+                        </select>
                     </div>
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Highest Level/Units Earned (if not graduated)</label>
-                        <div class="col-md-8 col-lg-9">
-                            <input type="text" class="form-control" id="highest_level"/>
-                        </div>
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Highest Level / Units Earned (if not graduated)</label>
+                        <input type="text" class="form-control premium-input" id="highest_level"/>
                     </div>
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Year graduated</label>
-                        <div class="col-md-8 col-lg-9">
-                            <select class="form-control" id="year_graduated">
-                                <option value="" selected>Select year</option>
-                                @for($year=1950; $year<=date("Y"); $year++)
-                                    <option>{{ $year }}</option>
-                                @endfor
-                            </select>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Year Graduated</label>
+                        <select class="form-control premium-select" id="year_graduated">
+                            <option value="" selected>Select year</option>
+                            @for($year=1950; $year<=date("Y"); $year++)
+                                <option>{{ $year }}</option>
+                            @endfor
+                        </select>
                     </div>
-                    <div class="row mb-3">
-                        <label for="fullName" class="col-md-4 col-lg-3 col-form-label">Scholarship/Academic honors received</label>
-                        <div class="col-md-8 col-lg-9">
-                            <input type="text" class="form-control" id="scholarship"/>
-                        </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Scholarship / Academic Honors</label>
+                        <input type="text" class="form-control premium-input" id="scholarship"/>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_education">SAVE</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_save_education">Save</button>
                 </div>
             </div>
         </div>

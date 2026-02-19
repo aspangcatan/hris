@@ -32,6 +32,7 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
+        @if(false)
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('pass_slip') ? '' : 'collapsed' }}" href="{{ route('pass_slip') }}">
                 <i class="bi bi-calendar-check"></i>
@@ -49,7 +50,7 @@
                 </a>
             </li>
         @endif
-
+            @endif
         @if(in_array(session('access_rights'), ['admin']) || session('is_section_head') || session('is_division_head'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee_dtr') ? '' : 'collapsed' }}"

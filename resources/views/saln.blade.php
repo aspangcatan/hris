@@ -9,7 +9,7 @@
             <h1><i class="bi bi-file-earmark-text me-2"></i>SALN Historical Records</h1>
             <p>Sworn Statement of Assets, Liabilities and Net Worth — Manage your annual filings</p>
         </div>
-        <button class="btn btn-light text-success fw-bold" id="btn_open_create_saln">
+        <button class="btn btn-light fw-bold" id="btn_open_create_saln">
             <i class="bi bi-plus-circle me-2"></i>CREATE NEW SALN
         </button>
     </div>

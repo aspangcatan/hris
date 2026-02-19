@@ -8,10 +8,10 @@
             --ho-line: #e4eaf2;
             --ho-text: #10233d;
             --ho-muted: #58708f;
-            --ho-brand-1: #0f5fa8;
-            --ho-brand-2: #0fa8b6;
-            --ho-success-1: #0f8e5e;
-            --ho-success-2: #18a36b;
+            --ho-brand-1: #0f766e;
+            --ho-brand-2: #0ea5a4;
+            --ho-success-1: #0f766e;
+            --ho-success-2: #0ea5a4;
         }
 
         .ho-page .ho-shell {
@@ -48,7 +48,7 @@
             color: #fff;
             font-weight: 600;
             background: linear-gradient(135deg, var(--ho-success-1), var(--ho-success-2));
-            box-shadow: 0 10px 18px rgba(24, 163, 107, 0.25);
+            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.24);
         }
 
         .ho-page .table-wrap {
@@ -138,8 +138,8 @@
         }
 
         .ho-modal .form-control:focus {
-            border-color: #1b85c9;
-            box-shadow: 0 0 0 0.2rem rgba(27, 133, 201, 0.12);
+            border-color: #0ea5a4;
+            box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
         }
 
         .ho-empty {

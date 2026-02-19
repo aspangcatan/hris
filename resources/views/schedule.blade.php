@@ -8,9 +8,9 @@
             --line: #e5eaf1;
             --text-strong: #12263f;
             --text-muted: #526581;
-            --brand-1: #0f5fa8;
-            --brand-2: #0aa3b5;
-            --accent: #0f8e5e;
+            --brand-1: #0f766e;
+            --brand-2: #0ea5a4;
+            --accent: #0f766e;
             --font-ui: "Manrope", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -58,15 +58,15 @@
 
         .schedule-page .filter-panel .form-control:focus,
         .schedule-page .filter-panel .form-select:focus {
-            border-color: #1882c5;
-            box-shadow: 0 0 0 0.2rem rgba(24, 130, 197, 0.12);
+            border-color: #0ea5a4;
+            box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
         }
 
         .schedule-page .btn-advance {
             border: none;
             border-radius: 10px;
-            background: linear-gradient(135deg, #0f8e5e 0%, #17a86c 100%);
-            box-shadow: 0 10px 18px rgba(23, 168, 108, 0.23);
+            background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 100%);
+            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.24);
             font-weight: 600;
         }
 
@@ -128,7 +128,7 @@
             font-family: var(--font-ui);
             font-size: 0.84rem;
             font-weight: 700 !important;
-            color: #0f68d8 !important;
+            color: #0f766e !important;
             letter-spacing: 0.45px;
             text-transform: uppercase;
             text-align: center;

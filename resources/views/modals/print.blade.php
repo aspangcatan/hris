@@ -1,43 +1,40 @@
-<div class="modal fade" id="print_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="print_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-printer text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-printer text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="text-secondary font-weight-bold fs-4 text-center">PRINT DTS</div>
-                <div class="card p-3">
-                    <div class="card-body">
-                        <p>Note:</p>
-                        <p>Use the following steps when printing PDS</p>
-                        <ol>
-                            <li>Set Date then hit <strong class="text-success">PRINT BUTTON</strong></li>
-                            <li>On the print preview, Go to <strong>More Settings</strong></li>
-                            <li>Set <strong>Paper size</strong> to <strong>8.5 x 13 in</strong></li>
-                            <li>Set <strong>Scale</strong> to <strong>Fit to printable area</strong></li>
-                            <li>Then hit <strong>Print</strong></li>
-                        </ol>
-                    </div>
+                <div class="modal-title-text">Print PDS</div>
+                <div class="mb-3 rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    <p class="mb-2 font-semibold">Note:</p>
+                    <p class="mb-2">Use the following steps when printing PDS</p>
+                    <ol class="list-decimal space-y-1 pl-5">
+                        <li>Set date then hit <strong class="text-emerald-700">Print</strong></li>
+                        <li>On print preview, go to <strong>More Settings</strong></li>
+                        <li>Set <strong>Paper size</strong> to <strong>8.5 x 13 in</strong></li>
+                        <li>Set <strong>Scale</strong> to <strong>Fit to printable area</strong></li>
+                        <li>Then hit <strong>Print</strong></li>
+                    </ol>
                 </div>
-                <div class="card p-3">
-                    <div class="card-body">
-                        <p>Common concerns inig print:</p>
-                        <ul>
-                            <li>If molapas ang work experience, i.adjust lang ang Number of rows (Work Experience) (e.g. From 23 to 21 or adjust accordingly)</li>
-                            <li>If molapas ang other information, i.adjust lang ang Number of rows (Learning and Development) (e.g. From 24 to 22 or adjust accordingly)</li>
-                        </ul>
-                    </div>
+                <div class="mb-3 rounded-2xl border border-slate-200 bg-white p-3 text-sm text-slate-700">
+                    <p class="mb-2 font-semibold">Common concerns during printing:</p>
+                    <ul class="list-disc space-y-1 pl-5">
+                        <li>If work experience overflows, adjust Number of rows (Work Experience), e.g. 23 to 21.</li>
+                        <li>If other information overflows, adjust Number of rows (Learning and Development), e.g. 24 to 22.</li>
+                    </ul>
                 </div>
-                <div class="mt-3 text-secondary fs-5">
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="pds_date" placeholder="">
-                        <label>Date</label>
+                <div class="space-y-3">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Date</label>
+                        <input type="date" class="form-control premium-input" id="pds_date" placeholder="">
                     </div>
-                    <div class="form-floating mb-3">
-                        <select class="form-control" id="experience_rows">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Number of Rows (Work Experience)</label>
+                        <select class="form-control premium-select" id="experience_rows">
                             @for($i=15; $i<50; $i++)
                                 @if($i == 23)
                                     <option selected>{{ $i }}</option>
@@ -46,10 +43,10 @@
                                 @endif
                             @endfor
                         </select>
-                        <label>Number of rows (Work Experience)</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <select class="form-control" id="learning_rows">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Number of Rows (Learning and Development)</label>
+                        <select class="form-control premium-select" id="learning_rows">
                             @for($i=15; $i<50; $i++)
                                 @if($i == 24)
                                     <option selected>{{ $i }}</option>
@@ -58,42 +55,39 @@
                                 @endif
                             @endfor
                         </select>
-                        <label>Number of rows (Learning and Development)</label>
                     </div>
-                    <div class="form-floating mb-3">
-                        <input type="date" class="form-control" id="sworn_date" placeholder="">
-                        <label>Subscribe and Sworn Date</label>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Subscribe and Sworn Date</label>
+                        <input type="date" class="form-control premium-input" id="sworn_date" placeholder="">
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_confirm_print">PRINT</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_confirm_print">Print</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="print_service_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="print_service_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-printer text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-printer text-white text-5xl"></i>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="text-secondary font-weight-bold fs-4 text-center">PRINT SERVICE RECORD</div>
-                <div class="mt-3 text-secondary fs-5">
-                    <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="records_row" placeholder="">
-                        <label>Number of rows</label>
-                    </div>
+                <div class="modal-title-text">Print Service Record</div>
+                <div>
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">Number of Rows</label>
+                    <input type="number" class="form-control premium-input" id="records_row" placeholder="">
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_confirm_print_records">PRINT</button>
+                <div class="mt-5 flex items-center justify-end gap-2">
+                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_confirm_print_records">Print</button>
                 </div>
             </div>
         </div>

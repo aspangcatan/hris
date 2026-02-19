@@ -251,7 +251,7 @@
             inputValue: currentType || 'Not Applicable',
             showCancelButton: true,
             confirmButtonText: 'Update',
-            confirmButtonColor: '#198754',
+            confirmButtonColor: '#0f766e',
             showLoaderOnConfirm: true,
             preConfirm: (newFilingType) => {
                 return fetch(`{{ route('saln.admin.updateFilingType') }}`, {

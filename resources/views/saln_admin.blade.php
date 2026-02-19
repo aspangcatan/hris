@@ -4,12 +4,12 @@
     @include('layouts.saln_styles')
     <style>
         .admin-header {
-            background: linear-gradient(135deg, #0d6832 0%, #084d26 100%);
+            background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
             border-radius: 12px;
             padding: 28px 32px;
             color: #fff;
             margin-bottom: 24px;
-            box-shadow: 0 4px 16px rgba(13, 104, 50, 0.25);
+            box-shadow: 0 4px 16px rgba(15, 118, 110, 0.25);
         }
         .admin-header h1 {
             font-size: 1.5rem;
@@ -44,8 +44,8 @@
             transition: all 0.2s ease;
         }
         .employee-card:hover {
-            border-color: #198754;
-            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.08);
+            border-color: #0f766e;
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.1);
         }
         .employee-name {
             font-weight: 700;
@@ -57,7 +57,7 @@
             color: #6c757d;
         }
         .history-year-card {
-            border-left: 4px solid #198754;
+            border-left: 4px solid #0f766e;
             background: #f8f9fa;
             padding: 12px 15px;
             margin-bottom: 8px;

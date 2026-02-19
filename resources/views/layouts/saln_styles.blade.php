@@ -1,11 +1,11 @@
     <style>
         :root {
-            --saln-primary: #198754;
-            --saln-primary-dark: #146c43;
-            --saln-primary-light: #e8f5e9;
-            --saln-text-main: #2d3436;
-            --saln-text-muted: #636e72;
-            --saln-bg-soft: #f8f9fa;
+            --saln-primary: #0f766e;
+            --saln-primary-dark: #115e59;
+            --saln-primary-light: #ccfbf1;
+            --saln-text-main: #0f172a;
+            --saln-text-muted: #64748b;
+            --saln-bg-soft: #f8fafc;
         }
 
         .saln-header {
@@ -14,7 +14,7 @@
             padding: 32px;
             color: #fff;
             margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(25, 135, 84, 0.15);
+            box-shadow: 0 10px 30px rgba(15, 118, 110, 0.15);
             position: relative;
             overflow: hidden;
         }
@@ -82,7 +82,7 @@
             border-radius: 14px;
             font-size: 1.4rem;
             font-weight: 800;
-            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.1);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.12);
         }
 
         .saln-info-label {
@@ -315,7 +315,7 @@
 
         .form-control-premium:focus {
             border-color: var(--saln-primary);
-            box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.1);
+            box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
             background: #fff;
         }
 
@@ -391,13 +391,13 @@
             align-items: center;
             gap: 12px;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 8px 20px rgba(25, 135, 84, 0.25);
+            box-shadow: 0 8px 20px rgba(15, 118, 110, 0.25);
         }
 
         .btn-finalize:hover {
             background: var(--saln-primary-dark);
             transform: scale(1.02);
-            box-shadow: 0 12px 28px rgba(25, 135, 84, 0.35);
+            box-shadow: 0 12px 28px rgba(15, 118, 110, 0.35);
             color: #fff;
         }
 
