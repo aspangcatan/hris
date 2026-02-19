@@ -333,12 +333,27 @@ class PrintController extends Controller
     {
         try {
             $user_id = $request->userid ?? Auth::id();
+            $complianceForInput = trim((string) $request->input('compliance_for', ''));
+            $complianceType = $request->input('compliance_type');
+            $complianceFor = null;
+
+            if ($complianceForInput !== '') {
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $complianceForInput) || preg_match('/^\d{4}$/', $complianceForInput)) {
+                    $complianceFor = $complianceForInput;
+                } elseif (in_array($complianceForInput, ['Assumption of office', 'Annual Filing', 'Exit'], true) && empty($complianceType)) {
+                    $complianceType = $complianceForInput;
+                }
+            }
 
             $declarant = DB::table('tdh_user.users as u')
-                ->leftJoin('hris.saln_declarant as d', function($join) use ($request) {
+                ->leftJoin('hris.saln_declarant as d', function($join) use ($complianceFor) {
                     $join->on('u.id', '=', 'd.user_id');
-                    if ($request->has('compliance_for')) {
-                        $join->where('d.compliance_for', '=', $request->compliance_for);
+                    if (!empty($complianceFor)) {
+                        if (strlen($complianceFor) === 4) {
+                            $join->whereYear('d.compliance_for', '=', $complianceFor);
+                        } else {
+                            $join->where('d.compliance_for', '=', $complianceFor);
+                        }
                     }
                 })
                 ->leftJoin('hris.addresses as a', function ($join) {
@@ -372,10 +387,14 @@ class PrintController extends Controller
                 ->first();
 
             $spouse = DB::table('hris.family_backgrounds as f')
-                ->leftJoin('hris.saln_spouse as d', function($join) use ($request) {
+                ->leftJoin('hris.saln_spouse as d', function($join) use ($complianceFor) {
                     $join->on('f.user_id', '=', 'd.user_id');
-                    if ($request->has('compliance_for')) {
-                        $join->where('d.compliance_for', '=', $request->compliance_for);
+                    if (!empty($complianceFor)) {
+                        if (strlen($complianceFor) === 4) {
+                            $join->whereYear('d.compliance_for', '=', $complianceFor);
+                        } else {
+                            $join->where('d.compliance_for', '=', $complianceFor);
+                        }
                     }
                 })
                 ->where('f.user_id', '=', $user_id)
@@ -385,8 +404,12 @@ class PrintController extends Controller
 
 
             $childrenQuery = SalnChildren::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $childrenQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $childrenQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $childrenQuery->where('compliance_for', $complianceFor);
+                }
             }
             $children = $childrenQuery->get();
             $children_count = count($children);
@@ -536,8 +559,12 @@ class PrintController extends Controller
             }
 
             $marriagesQuery = Marriages::where('userid', $user_id);
-            if ($request->has('compliance_for')) {
-                $marriagesQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $marriagesQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $marriagesQuery->where('compliance_for', $complianceFor);
+                }
             }
             $marriages = $marriagesQuery->take(2)->get();
             for ($i = 0; $i < count($marriages); $i++) {
@@ -549,8 +576,12 @@ class PrintController extends Controller
             $real_properties_subtotal_a = 0;
             $real_properties_subtotal_b = 0;
             $realPropQuery = RealProperties::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $realPropQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $realPropQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $realPropQuery->where('compliance_for', $complianceFor);
+                }
             }
             $all_real_properties = $realPropQuery->get();
 
@@ -584,8 +615,12 @@ class PrintController extends Controller
 
             $spouse_real_properties_subtotal = 0;
             $spouseRealPropQuery = SpouseRealProperties::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $spouseRealPropQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $spouseRealPropQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $spouseRealPropQuery->where('compliance_for', $complianceFor);
+                }
             }
             $spouse_real_properties_db = $spouseRealPropQuery->get();
 
@@ -614,8 +649,12 @@ class PrintController extends Controller
             $personal_properties_subtotal_a = 0;
             $personal_properties_subtotal_b = 0;
             $personalPropQuery = PersonalProperties::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $personalPropQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $personalPropQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $personalPropQuery->where('compliance_for', $complianceFor);
+                }
             }
             $all_personal_properties = $personalPropQuery->get();
 
@@ -644,8 +683,12 @@ class PrintController extends Controller
 
             $spouse_personal_properties_subtotal = 0;
             $spousePersonalPropQuery = SpousePersonalProperties::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $spousePersonalPropQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $spousePersonalPropQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $spousePersonalPropQuery->where('compliance_for', $complianceFor);
+                }
             }
             $spouse_personal_properties_db = $spousePersonalPropQuery->get();
 
@@ -669,8 +712,12 @@ class PrintController extends Controller
             $liabilities_total_a = 0;
             $liabilities_total_b = 0;
             $liabilitiesQuery = Liabilities::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $liabilitiesQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $liabilitiesQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $liabilitiesQuery->where('compliance_for', $complianceFor);
+                }
             }
             $all_liabilities = $liabilitiesQuery->get();
 
@@ -699,8 +746,12 @@ class PrintController extends Controller
 
             $spouse_liabilities_total = 0;
             $spouseLiabilitiesQuery = SpouseLiabilities::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $spouseLiabilitiesQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $spouseLiabilitiesQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $spouseLiabilitiesQuery->where('compliance_for', $complianceFor);
+                }
             }
             $spouse_liabilities_db = $spouseLiabilitiesQuery->get();
 
@@ -722,8 +773,12 @@ class PrintController extends Controller
 
 
             $businessQuery = BusinessInterest::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $businessQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $businessQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $businessQuery->where('compliance_for', $complianceFor);
+                }
             }
             $all_business = $businessQuery->get();
 
@@ -749,8 +804,12 @@ class PrintController extends Controller
 
 
             $spouseBusinessQuery = SpouseBusinessInterest::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $spouseBusinessQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $spouseBusinessQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $spouseBusinessQuery->where('compliance_for', $complianceFor);
+                }
             }
             $spouse_business_db = $spouseBusinessQuery->get();
             foreach ($spouse_business_db as $i => $bus) {
@@ -770,8 +829,12 @@ class PrintController extends Controller
 
 
             $relativesQuery = GovernmentRelative::where('user_id', $user_id);
-            if ($request->has('compliance_for')) {
-                $relativesQuery->where('compliance_for', $request->compliance_for);
+            if (!empty($complianceFor)) {
+                if (strlen($complianceFor) === 4) {
+                    $relativesQuery->whereYear('compliance_for', $complianceFor);
+                } else {
+                    $relativesQuery->where('compliance_for', $complianceFor);
+                }
             }
             $all_relatives = $relativesQuery->get();
             foreach ($all_relatives as $i => $rel) {
@@ -866,16 +929,13 @@ class PrintController extends Controller
                 'grand_net_worth' => $grand_net_worth,
                 'print_date' => $request->print_date,
                 'filing_type' => $request->filing_type ?? $declarant->filing_type ?? 'Not Applicable',
-                'compliance_type' => (preg_match('/^\d{4}-\d{2}-\d{2}$/', $request->compliance_for) || empty($request->compliance_for)) 
-                    ? ($declarant->compliance_type ?? 'Annual Filing') 
-                    : $request->compliance_for,
-                'compliance_for' => $declarant->compliance_for ?? $request->compliance_for,
+                'compliance_type' => $complianceType ?? $declarant->compliance_type ?? 'Annual Filing',
+                'compliance_for' => $declarant->compliance_for ?? $complianceFor,
                 'business_interest' => $request->business_interest,
                 'government_relatives' => $request->government_relatives,
                 'before_me' => $request->before_me,
                 'day_of' => $request->day_of,
                 'spouse_signature' => $request->spouse_signature,
-                'compliance_for' => $request->compliance_for,
                 'multiple_marriages' => $request->multiple_marriages,
                 'show_annex_b' => $show_annex_b,
                 'show_annex_c' => $show_annex_c,

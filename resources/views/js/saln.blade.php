@@ -150,7 +150,8 @@
 
         $("#btn_confirm_print").click(function () {
             const filing_type = $("input[name='filing_type']:checked").val();
-            const compliance_for = $("input[name='compliance_for']:checked").val();
+            const compliance_type = $("input[name='compliance_for']:checked").val();
+            const compliance_for = getComplianceDate();
 
             const spouse_signature = $("#spouse_signature").val();
             const as_of_month = $("#as_of_month").val();
@@ -184,6 +185,7 @@
             window.open(
                 '{{ route('printSaln') }}?id=0&print_date=' + date + '&filing_type=' + filing_type +
                 '&compliance_for=' + compliance_for +
+                '&compliance_type=' + encodeURIComponent(compliance_type) +
                 '&business_interest=' + business_interest_checkbox +
                 '&government_relatives=' + government_relatives_checkbox +
                 '&as_of_month=' + as_of_month +
