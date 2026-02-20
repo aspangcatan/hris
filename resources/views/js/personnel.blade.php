@@ -118,7 +118,7 @@
     function getEmployee(params) {
         const no_employee_no = (typeof params.no_employee_no !== "undefined") ? params.no_employee_no : 0;
         $("#employee_list").empty();
-        $("#employee_list").append("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
+        $("#employee_list").append("<tr><td colspan='8'>Loading data, please wait...</td></tr>");
         $("#pagination_links").empty();
         $("#page_indicator").text("");
         fetch('{{ route('getEmployee') }}?fname=' + params.fname +
@@ -142,7 +142,7 @@
                 }
 
                 if (data.results.length < 1) {
-                    $("#employee_list").append("<tr><td colspan='6'>No record found</td></tr>");
+                    $("#employee_list").append("<tr><td colspan='8'>No record found</td></tr>");
                     return;
                 }
 
@@ -186,6 +186,9 @@
                             <button type='button' class="btn btn-sm" style="background: transparent" onClick="editEmployee(` + it.user_id + `)">
                                 <i class="bi bi-pencil-fill text-success"></i>
                             </button>
+                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteEmployee(` + it.user_id + `)">
+                                <i class="bi bi-trash-fill text-danger"></i>
+                            </button>
                         </td>
                     <tr>`;
                     $("#employee_list").append(tr);
@@ -193,6 +196,62 @@
             }).catch(err => {
             console.log(err);
         })
+    }
+
+    function deleteEmployee(userId) {
+        const row = $("#employee_" + userId);
+        const fullName = (row.find("td:eq(1)").text().trim() + " " + row.find("td:eq(3)").text().trim()).trim();
+
+        Swal.fire({
+            title: "Delete this user?",
+            html: "<div class='text-start'>You are about to permanently delete <strong>" + fullName + "</strong>.<br><br>" +
+                "This action cannot be undone.</div>",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Continue",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "#d33"
+        }).then((firstStep) => {
+            if (!firstStep.isConfirmed) return;
+
+            Swal.fire({
+                title: "Final warning",
+                html: "<div class='text-start'>If you proceed, this user account and employee profile will be deleted permanently.<br><br>" +
+                    "If this user has a DTR account, they can no longer log in and user-linked records can no longer be retrieved through this account.</div>",
+                icon: "error",
+                showCancelButton: true,
+                confirmButtonText: "Yes, delete permanently",
+                cancelButtonText: "Back",
+                confirmButtonColor: "#b91c1c"
+            }).then((finalStep) => {
+                if (!finalStep.isConfirmed) return;
+
+                fetch('{{ route('deleteEmployee') }}', {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    body: JSON.stringify({user_id: userId})
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.code !== 200) {
+                            toastr.error(data.message || "Failed to delete account", "Error");
+                            return;
+                        }
+
+                        toastr.success(data.message || "Account deleted", "Success");
+                        const fname = $("#search_fname").val().trim();
+                        const lname = $("#search_lname").val().trim();
+                        const no_employee_no = ($("#filter_no_employee_no").length && $("#filter_no_employee_no").is(":checked")) ? 1 : 0;
+                        getEmployee({fname: fname, lname: lname, page: page, no_employee_no: no_employee_no});
+                    }).catch(err => {
+                    console.log(err);
+                    toastr.error("Something went wrong while deleting the account", "Error");
+                });
+            });
+        });
     }
 
     function renderEmployeePaginationLinks(pagination) {
