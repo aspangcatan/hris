@@ -278,6 +278,11 @@
 
             // Advance Set Schedule Button
             $('#btn_advance_schedule').on('click', function () {
+                if (isLockedMonthSelection()) {
+                    toastr.warning("Schedules from last month and older can no longer be edited.", "Locked");
+                    return;
+                }
+
                 const options = $("#scheduleSelect").html();
                 $(".advance-schedule-select").each(function () {
                     if ($(this).children().length <= 1) {
@@ -340,7 +345,13 @@
                     },
                     body: JSON.stringify({schedules: scheduleData})
                 })
-                    .then(res => res.json())
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok) {
+                            throw new Error(data.message || "Failed to save schedule");
+                        }
+                        return data;
+                    })
                     .then(data => {
                         toastr.success(data.message, "Success");
                         $('#advanceScheduleModal').modal('hide');
@@ -348,7 +359,7 @@
                     })
                     .catch(err => {
                         console.error(err);
-                        toastr.error("Failed to save schedule", "Error");
+                        toastr.error(err.message || "Failed to save schedule", "Error");
                     });
             });
 
@@ -368,6 +379,11 @@
 
             // Open Schedule Modal
             $("body").on("click", ".schedule-cell", function () {
+                if (isLockedMonthSelection()) {
+                    toastr.warning("Schedules from last month and older can no longer be edited.", "Locked");
+                    return;
+                }
+
                 const employeeId = $(this).data('employee-id');
                 const day = $(this).data('day');
 
@@ -398,7 +414,13 @@
                         schedule_id: schedule_id
                     })
                 })
-                    .then(res => res.json())
+                    .then(async res => {
+                        const data = await res.json();
+                        if (!res.ok) {
+                            throw new Error(data.message || "Failed to update schedule.");
+                        }
+                        return data;
+                    })
                     .then(data => {
                         toastr.success(data.message, "Updated");
                         $(`.schedule-cell[data-employee-id="${employeeId}"][data-day="${day}"]`).text(schedule_code);
@@ -409,7 +431,7 @@
                     })
                     .catch(err => {
                         console.error(err);
-                        toastr.error("Failed to update schedule.", "Error");
+                        toastr.error(err.message || "Failed to update schedule.", "Error");
                     })
                     .finally(() => {
                         $btn.prop('disabled', false);
@@ -545,6 +567,23 @@
                 const text = String($(this).data("search") || "");
                 $(this).toggle(q === "" || text.includes(q));
             });
+        }
+
+        function isLockedMonthSelection() {
+            const month = Number($('#filter_month').val());
+            const year = Number($('#filter_year').val());
+
+            if (!month || !year) {
+                return false;
+            }
+
+            const selected = new Date(year, month - 1, 1);
+            const currentMonthStart = new Date();
+            currentMonthStart.setDate(1);
+            currentMonthStart.setHours(0, 0, 0, 0);
+
+            // Lock previous months (including last month).
+            return selected < currentMonthStart;
         }
 
         // Get Dates for Day of Week

@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\DB;
 
 class ScheduleController extends Controller
 {
+    private function isLockedScheduleDate(string $date): bool
+    {
+        $scheduleDate = Carbon::parse($date)->startOfDay();
+        $firstDayOfCurrentMonth = Carbon::now()->startOfMonth();
+
+        // Lock all dates before the current month (includes last month).
+        return $scheduleDate->lt($firstDayOfCurrentMonth);
+    }
+
     //
     public function getSchedules(Request $request)
     {
@@ -98,6 +107,12 @@ class ScheduleController extends Controller
     public function setEmployeeSchedule(Request $request)
     {
         try {
+            if ($this->isLockedScheduleDate($request->schedule_date)) {
+                return response()->json([
+                    'message' => 'Schedules from last month and older can no longer be edited.'
+                ], 422);
+            }
+
             if ($request->schedule_id == 0) {
 
                 $employee_id = $request->employee_id;
@@ -130,6 +145,14 @@ class ScheduleController extends Controller
     public function saveAdvanceSchedule(Request $request)
     {
         $schedules = $request->input('schedules');
+
+        foreach ($schedules as $sched) {
+            if ($this->isLockedScheduleDate($sched['schedule_date'])) {
+                return response()->json([
+                    'message' => 'Schedules from last month and older can no longer be edited.'
+                ], 422);
+            }
+        }
 
         foreach ($schedules as $sched) {
             DB::table('hris.schedules')->updateOrInsert(
