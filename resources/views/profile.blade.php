@@ -33,7 +33,7 @@
         }
     </style>
 
-    <section class="profile-shell relative rounded-[28px] px-4 pb-6 pt-5 shadow-sm sm:px-6 lg:px-8">
+    <section class="px-4 pb-6 pt-5 sm:px-6 lg:px-8">
         <div class="mb-6 flex flex-col gap-4 lg:flex-row">
             <div class="rounded-3xl border-0 bg-slate-900/95 p-5 text-white shadow-2xl lg:w-4/12">
                 <div class="flex flex-col items-center text-center">

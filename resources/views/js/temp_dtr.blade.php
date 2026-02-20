@@ -2,22 +2,16 @@
 
 <script>
 
-    let page = 0;
+    let page = 1;
+    let employee_last_page = 1;
     let employee_id = 0;
     $(document).ready(function () {
         $("#btn_search").click(function () {
             employee_id = 0;
+            page = 1;
             const fname = $("#search_fname").val().trim();
             const lname = $("#search_lname").val().trim();
             getEmployee({fname: fname, lname: lname, page: page});
-        });
-
-        $("#btn_next").click(function () {
-            page++;
-            const fname = $("#search_fname").val().trim();
-            const lname = $("#search_lname").val().trim();
-            getEmployee({fname: fname, lname: lname, page: page});
-            $("#btn_prev").removeClass("d-none");
         });
 
         $("#btn_cancel").click(function () {
@@ -25,18 +19,18 @@
             $("#btn_save").text("SAVE");
         });
 
-        $("#btn_prev").click(function () {
-            if (page == 0) return;
-            if (page == 1) {
-                $("#btn_prev").addClass("d-none");
-            }
-            page--;
+        $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+            e.preventDefault();
+            const targetPage = parseInt($(this).attr("data-page"), 10);
+            if (!targetPage || targetPage === page) return;
+            if (targetPage < 1 || targetPage > employee_last_page) return;
+            page = targetPage;
             const fname = $("#search_fname").val().trim();
             const lname = $("#search_lname").val().trim();
             getEmployee({fname: fname, lname: lname, page: page});
         });
 
-        getEmployee({fname: "", lname: "", page: 0});
+        getEmployee({fname: "", lname: "", page: page});
     });
 
     function editEmployee(id) {

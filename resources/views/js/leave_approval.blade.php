@@ -1,28 +1,27 @@
 <script>
-    let page = 1, leave_id = 0;
+    let page = 1, leave_id = 0, leave_approval_last_page = 1;
 
-    // Event bindings
     $(function () {
-        $("#btn_next").click(() => changePage(1));
-        $("#btn_prev").click(() => changePage(-1));
         $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
 
         $("#search_employee").on("keydown", function (e) {
             if (e.key === "Enter") {
-                e.preventDefault();   // prevent form submission (if inside a form)
-                page = 1;             // reset back to first page when searching
+                e.preventDefault();
+                page = 1;
                 getLeaves();
             }
         });
 
+        $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+            e.preventDefault();
+            const targetPage = parseInt($(this).attr("data-page"), 10);
+            if (!targetPage || targetPage === page || targetPage < 1 || targetPage > leave_approval_last_page) return;
+            page = targetPage;
+            getLeaves();
+        });
 
-        getLeaves(); // initial load
-    });
-
-    function changePage(step) {
-        page = Math.max(1, page + step);
         getLeaves();
-    }
+    });
 
     function getLeaves() {
         const search_employee = $("#search_employee").val().trim();
@@ -36,14 +35,16 @@
 
     function renderLeaves(data, pagination) {
         $("#leave_approval_list").empty();
+        $("#pagination_links").empty();
+        $("#page_indicator").text("");
 
         if (!data.length) {
             $("#leave_approval_list").html("<tr><td colspan='5'>No records</td></tr>");
-            $("#pagination_container").hide(); // 👈 hide pagination when empty
+            $("#pagination_container").hide();
             return;
         }
 
-        $("#pagination_container").show(); // show only when there’s data
+        $("#pagination_container").show();
 
         data.forEach(it => $("#leave_approval_list").append(`
         <tr>
@@ -54,11 +55,46 @@
         </tr>
     `));
 
-        $("#page_items_count").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
-        $("#btn_prev").toggleClass("d-none", pagination.current_page <= 1);
-        $("#btn_next").toggleClass("d-none", pagination.current_page >= pagination.last_page);
+        const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+        const to = from + data.length - 1;
+        leave_approval_last_page = pagination.last_page;
+        $("#page_items_count").text(`${from} - ${to} of ${pagination.total}`);
+        $("#page_indicator").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+        renderLeaveApprovalPaginationLinks(pagination);
     }
 
+    function renderLeaveApprovalPaginationLinks(pagination) {
+        const $links = $("#pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last = pagination.last_page;
+        const start = Math.max(1, current - 2);
+        const end = Math.min(last, current + 2);
+
+        $links.empty();
+        $links.append("<li class='page-item" + (current <= 1 ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current - 1) + "'>Prev</a></li>");
+
+        if (start > 1) {
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+            if (start > 2) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            $links.append("<li class='page-item" + (i === current ? " active" : "") + "'><a class='page-link' href='#' data-page='" + i + "'>" + i + "</a></li>");
+        }
+
+        if (end < last) {
+            if (end < last - 1) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+        }
+
+        $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
+    }
 
     function viewApplication(id) {
         leave_id = id;

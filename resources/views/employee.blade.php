@@ -7,6 +7,14 @@
         <div class="ms-2 me-1">
             <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
         </div>
+        <div class="ms-2 d-flex align-items-center">
+            <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" id="filter_no_employee_no">
+                <label class="form-check-label" for="filter_no_employee_no">
+                    No Employee No.
+                </label>
+            </div>
+        </div>
         <div class="ms-1">
             <button class="btn btn-success" id="btn_search">
                 <i class="bi bi-search"></i>
@@ -35,14 +43,11 @@
             </div>
         </div>
         <div class="card-footer text-dark" id="pagination_container">
-            <div class="d-flex align-items-center justify-content-center">
-                <button class="btn btn-sm d-none" style="background: transparent !important;" id="btn_prev">
-                    <i class="bi bi-caret-left"></i>
-                </button>
-                <div id="page_items_count"></div>
-                <button class="btn btn-sm" style="background: transparent !important;" id="btn_next">
-                    <i class="bi bi-caret-right"></i>
-                </button>
+            <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+                <nav aria-label="Employee list pagination">
+                    <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
+                </nav>
+                <div id="page_indicator" class="small text-muted"></div>
             </div>
         </div>
     </div>

@@ -117,6 +117,7 @@ class EmployeeController extends Controller
     {
         try {
             $search = [];
+            $no_employee_no = $request->boolean('no_employee_no');
             if ($request->fname != "")
                 $search[] = ["u.fname", "LIKE", "%" . $request->fname . "%"];
             if ($request->lname != "")
@@ -126,14 +127,30 @@ class EmployeeController extends Controller
                 ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
                 ->join('tdh_user.section as s', 'u.section', '=', 's.id')
-                ->where($search)
-                ->skip($request->page * 10)
-                ->take(11)
+                ->where($search);
+
+            if ($no_employee_no) {
+                $employees->whereRaw("TRIM(COALESCE(e.employee_no, '')) = ''");
+            }
+
+            $paginator = $employees
                 ->orderBy('u.fname', 'ASC')
                 ->orderBy('u.lname', 'ASC')
-                ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
+                ->paginate(10, ['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
 
-            return response(['code' => 200, 'results' => $employees]);
+            return response([
+                'code' => 200,
+                'results' => $paginator->items(),
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ]
+            ]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

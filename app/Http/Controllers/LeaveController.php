@@ -13,11 +13,22 @@ class LeaveController extends Controller
     public function getLeaves(Request $request)
     {
         try {
-            $leaves = LeaveFile::where('user_id', Auth::id())
-                ->skip($request->page * 10)
-                ->take(11)
-                ->get();
-            return response(['code' => 200, 'results' => $leaves]);
+            $paginator = LeaveFile::where('user_id', Auth::id())
+                ->orderBy('id', 'DESC')
+                ->paginate(10);
+            return response([
+                'code' => 200,
+                'results' => $paginator->items(),
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ]
+            ]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -157,9 +168,21 @@ class LeaveController extends Controller
     public function getLeaveTypes(Request $request)
     {
         try {
-            $leaves = DB::table('leave_types')
-                ->get();;
-            return response()->json($leaves);
+            $paginator = DB::table('leave_types')
+                ->orderBy('description', 'ASC')
+                ->paginate(10);
+            return response()->json([
+                'results' => $paginator->items(),
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ]
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }

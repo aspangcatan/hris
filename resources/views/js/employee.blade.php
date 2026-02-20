@@ -48,7 +48,8 @@
 
     let employee_id = 0;
     let service_id = 0;
-    let page = 0;
+    let page = 1;
+    let employee_last_page = 1;
     //FLAGS
     let is_personal_loaded = false;
     let is_address_loaded = false;
@@ -64,7 +65,6 @@
     let is_service_loaded = false;
 
     $(document).ready(function () {
-
         $("input[name='citizenship']").change(function () {
             if ($(this).next().text().trim() == "Filipino") {
                 $(".dual-citizenship-container").addClass("d-none");
@@ -140,29 +140,34 @@
         });
 
         $("#btn_search").click(function () {
+            page = 1;
             employee_id = 0;
             const fname = $("#search_fname").val().trim();
             const lname = $("#search_lname").val().trim();
-            getEmployee({fname: fname, lname: lname, page: page});
+            const no_employee_no = $("#filter_no_employee_no").is(":checked") ? 1 : 0;
+            getEmployee({fname: fname, lname: lname, page: page, no_employee_no: no_employee_no});
         });
 
-        $("#btn_next").click(function () {
-            page++;
+        $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+            e.preventDefault();
+            const targetPage = parseInt($(this).attr("data-page"), 10);
+            if (!targetPage || targetPage === page) return;
+            if (targetPage < 1 || targetPage > employee_last_page) return;
+
+            page = targetPage;
             const fname = $("#search_fname").val().trim();
             const lname = $("#search_lname").val().trim();
-            getEmployee({fname: fname, lname: lname, page: page});
-            $("#btn_prev").removeClass("d-none");
+            const no_employee_no = $("#filter_no_employee_no").is(":checked") ? 1 : 0;
+            getEmployee({fname: fname, lname: lname, page: page, no_employee_no: no_employee_no});
         });
 
-        $("#btn_prev").click(function () {
-            if (page == 0) return;
-            if (page == 1) {
-                $("#btn_prev").addClass("d-none");
-            }
-            page--;
+        $("#filter_no_employee_no").change(function () {
+            page = 1;
+            employee_id = 0;
             const fname = $("#search_fname").val().trim();
             const lname = $("#search_lname").val().trim();
-            getEmployee({fname: fname, lname: lname, page: page});
+            const no_employee_no = $("#filter_no_employee_no").is(":checked") ? 1 : 0;
+            getEmployee({fname: fname, lname: lname, page: page, no_employee_no: no_employee_no});
         });
 
         $("#btn_save_payroll").click(function () {
@@ -374,7 +379,8 @@
             }
         });
 
-        getEmployee({fname: "", lname: "", page: page});
+        const no_employee_no = $("#filter_no_employee_no").is(":checked") ? 1 : 0;
+        getEmployee({fname: "", lname: "", page: page, no_employee_no: no_employee_no});
     });
 
     function getCredits(id) {

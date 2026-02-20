@@ -62,8 +62,10 @@
                     </div>
                 </div>
                 <div class="mt-5 flex items-center justify-end gap-2">
-                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_confirm_print">Print</button>
+                    <button class="btn btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-modal-save" id="btn_confirm_print">
+                        <i class="bi bi-printer me-1"></i>Print
+                    </button>
                 </div>
             </div>
         </div>
@@ -86,8 +88,10 @@
                     <input type="number" class="form-control premium-input" id="records_row" placeholder="">
                 </div>
                 <div class="mt-5 flex items-center justify-end gap-2">
-                    <button class="btn btn-secondary rounded-xl border-0 px-4 py-2" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-success rounded-xl border-0 px-4 py-2 font-semibold" id="btn_confirm_print_records">Print</button>
+                    <button class="btn btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-modal-save" id="btn_confirm_print_records">
+                        <i class="bi bi-printer me-1"></i>Print
+                    </button>
                 </div>
             </div>
         </div>

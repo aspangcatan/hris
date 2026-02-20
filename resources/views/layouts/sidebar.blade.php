@@ -83,7 +83,7 @@
         @endif
 
         {{-- CREDITS MANAGEMENT (only HRH + admin) --}}
-        @if(in_array(session('access_rights'), ['HRH','admin']))
+        @if(in_array(session('access_rights'), ['admin']))
             <li class="nav-heading">Credits Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('credit_management') ? '' : 'collapsed' }}"
@@ -126,7 +126,8 @@
             </li>
 
             {{-- PAYROLL MANAGEMENT --}}
-            <li class="nav-heading">Payroll Management</li>
+            @if (false)
+                <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('payroll') ? '' : 'collapsed' }}"
                    href="{{ route('payroll') }}">
@@ -143,6 +144,8 @@
                     </span>
                 </a>
             </li>
+            @endif
+            
         @endif
 
         @if(in_array(session('access_rights'), ['admin', 'calendar']))

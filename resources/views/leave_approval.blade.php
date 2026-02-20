@@ -46,14 +46,12 @@
 
         <!-- Pagination -->
         <div class="card-footer bg-white border-top text-dark" id="pagination_container">
-            <div class="d-flex align-items-center justify-content-center">
-                <button class="btn btn-sm btn-outline-secondary d-none" id="btn_prev">
-                    <i class="bi bi-caret-left"></i>
-                </button>
-                <div id="page_items_count" class="mx-3 small text-muted"></div>
-                <button class="btn btn-sm btn-outline-secondary" id="btn_next">
-                    <i class="bi bi-caret-right"></i>
-                </button>
+            <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+                <div id="page_items_count" class="small text-muted"></div>
+                <nav aria-label="Leave approval pagination">
+                    <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
+                </nav>
+                <div id="page_indicator" class="small text-muted"></div>
             </div>
         </div>
     </div>

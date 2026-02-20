@@ -36,14 +36,12 @@
                     <tbody id="employee_list"></tbody>
                 </table>
                 <div id="pagination_container">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <button class="btn btn-sm d-none" style="background: transparent !important;" id="btn_prev">
-                            <i class="bi bi-caret-left"></i>
-                        </button>
+                    <div class="d-flex flex-column align-items-center justify-content-center gap-2">
                         <div id="page_items_count"></div>
-                        <button class="btn btn-sm" style="background: transparent !important;" id="btn_next">
-                            <i class="bi bi-caret-right"></i>
-                        </button>
+                        <nav aria-label="Payroll employee pagination">
+                            <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
+                        </nav>
+                        <div id="page_indicator" class="small text-muted"></div>
                     </div>
                 </div>
             </div>
@@ -54,16 +52,29 @@
 @stop
 @section('js')
     <script>
-        let page = 0;
+        let page = 1;
+        let payroll_last_page = 1;
         let employee_id = 0;
         $(document).ready(function () {
-            getEmployee({fname: "", lname: "", page: 0});
+            getEmployee({fname: "", lname: "", page: page});
 
             $("#btn_search").click(function () {
+                page = 1;
                 employee_id = 0;
                 const fname = $("#search_fname").val().trim();
                 const lname = $("#search_lname").val().trim();
-                getEmployee({fname: fname, lname: lname, page: 0});
+                getEmployee({fname: fname, lname: lname, page: page});
+            });
+
+            $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+                e.preventDefault();
+                const targetPage = parseInt($(this).attr("data-page"), 10);
+                if (!targetPage || targetPage === page) return;
+                if (targetPage < 1 || targetPage > payroll_last_page) return;
+                page = targetPage;
+                const fname = $("#search_fname").val().trim();
+                const lname = $("#search_lname").val().trim();
+                getEmployee({fname: fname, lname: lname, page: page});
             });
 
             $("#btn_save").click(function () {
@@ -143,10 +154,10 @@
 
 
         function getEmployee(params) {
-            $("#btn_next").prop("disabled", true);
-            $("#btn_prev").prop("disabled", true);
             $("#employee_list").empty();
             $("#employee_list").append("<tr><td colspan='8'>Loading data, please wait...</td></tr>");
+            $("#pagination_links").empty();
+            $("#page_indicator").text("");
             fetch('{{ route('getEmployee') }}?fname=' + params.fname +
                 "&lname=" + params.lname +
                 "&page=" + params.page, {
@@ -155,25 +166,32 @@
             )
                 .then(res => res.json())
                 .then(data => {
-                    $("#btn_next").prop("disabled", false);
-                    $("#btn_prev").prop("disabled", false);
-                    $("#pagination_container").addClass("d-none")
+                    $("#pagination_container").addClass("d-none");
                     $("#employee_list").empty();
-                    $("#btn_next").addClass("d-none");
-                    $("#employee_list").empty();
+                    $("#pagination_links").empty();
+                    $("#page_indicator").text("");
+
+                    const pagination = data.pagination || null;
+                    if (pagination && pagination.current_page) {
+                        page = pagination.current_page;
+                        payroll_last_page = pagination.last_page;
+                    }
+
                     if (data.results.length < 1) {
                         $("#employee_list").append("<tr><td colspan='8'>No record found</td></tr>");
                         return;
                     }
 
-                    $("#pagination_container").removeClass("d-none")
+                    $("#pagination_container").removeClass("d-none");
                     let max_visible = data.results.length;
-                    if (max_visible == 11) {
-                        max_visible = 10;
-                        $("#btn_next").removeClass("d-none");
+                    if (pagination) {
+                        $("#page_items_count").text(pagination.from + " - " + pagination.to + " of " + pagination.total);
+                        $("#page_indicator").text("Page " + pagination.current_page + " of " + pagination.last_page);
+                        renderPayrollPaginationLinks(pagination);
+                    } else {
+                        $("#page_items_count").text(((params.page - 1) * 10 + 1) + " - " + ((params.page - 1) * 10 + max_visible));
+                        $("#page_indicator").text("Page " + params.page);
                     }
-
-                    $("#page_items_count").text(((params.page * 10) + 1) + " - " + ((params.page * 10) + max_visible));
                     for (let i = 0; i < max_visible; i++) {
                         const it = data.results[i];
                         const path = '{{ url('/avatar/')}}';
@@ -202,6 +220,39 @@
                 }).catch(err => {
                 console.log(err);
             })
+        }
+
+        function renderPayrollPaginationLinks(pagination) {
+            const $links = $("#pagination_links");
+            if (!$links.length || !pagination || !pagination.last_page) return;
+
+            const current = pagination.current_page;
+            const last = pagination.last_page;
+            const start = Math.max(1, current - 2);
+            const end = Math.min(last, current + 2);
+
+            $links.empty();
+            $links.append("<li class='page-item" + (current <= 1 ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current - 1) + "'>Prev</a></li>");
+
+            if (start > 1) {
+                $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+                if (start > 2) {
+                    $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+                }
+            }
+
+            for (let i = start; i <= end; i++) {
+                $links.append("<li class='page-item" + (i === current ? " active" : "") + "'><a class='page-link' href='#' data-page='" + i + "'>" + i + "</a></li>");
+            }
+
+            if (end < last) {
+                if (end < last - 1) {
+                    $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+                }
+                $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+            }
+
+            $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
         }
     </script>
 @stop

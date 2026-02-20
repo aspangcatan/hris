@@ -104,8 +104,12 @@
         }
 
         #main.main {
-            padding-top: 84px;
+            padding-top: 50px !important;
             background: transparent;
+        }
+
+        #main.main.main-profile {
+            padding-top: 0 !important;
         }
 
         .pagetitle h1,
@@ -195,6 +199,48 @@
             background: #334155;
         }
 
+        .modal-action-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 1.5rem;
+        }
+
+        .btn-modal-close {
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            border-radius: 12px;
+            padding: 0.55rem 1rem;
+            font-weight: 600;
+            transition: all 0.18s ease;
+        }
+
+        .btn-modal-close:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #334155;
+        }
+
+        .btn-modal-save {
+            border: 0;
+            color: #fff;
+            border-radius: 12px;
+            padding: 0.55rem 1rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            background: linear-gradient(120deg, #0f766e, #0ea5a4);
+            box-shadow: 0 10px 24px rgba(15, 118, 110, 0.24);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        }
+
+        .btn-modal-save:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 30px rgba(15, 118, 110, 0.28);
+            filter: brightness(1.03);
+            color: #fff;
+        }
+
         /* Unify Bootstrap success semantics with the profile theme */
         .text-success {
             color: var(--brand-600) !important;
@@ -270,6 +316,12 @@
         .pagination .active > .page-link {
             background: var(--brand-500);
             border-color: var(--brand-500);
+        }
+
+        .empty-record-row td {
+            color: #64748b;
+            font-style: italic;
+            background: #f8fafc;
         }
 
         .fullscreen-modal {
@@ -373,13 +425,16 @@
 @include('layouts.sidebar')
 @include('modals.settings')
 
-<main id="main" class="main">
-    <div class="pagetitle">
-        <h1>@yield('Title')</h1>
-    </div>
-    <main id="main" class="main m-0 p-0">
+<main id="main" class="main {{ request()->routeIs('profile') ? 'main-profile' : '' }}">
+    @php($pageTitle = trim($__env->yieldContent('Title')))
+    @if($pageTitle !== '')
+        <div class="pagetitle">
+            <h1>{{ $pageTitle }}</h1>
+        </div>
+    @endif
+    <div class="m-0 p-0">
         @yield('content')
-    </main>
+    </div>
 </main>
 <!-- End #main -->
 <!-- ======= Footer ======= -->
@@ -503,6 +558,76 @@
             });
         });
     });
+
+    // Global list-table empty row handler:
+    // Any table tbody with an id will show a simple "No records found" row when empty.
+    (function setupGlobalEmptyTableRows() {
+        function getColspanForTbody(tbody) {
+            const table = tbody.closest("table");
+            if (!table) return 1;
+
+            const headerRow = table.querySelector("thead tr:last-child");
+            if (!headerRow) return 1;
+
+            let colspan = 0;
+            headerRow.querySelectorAll("th").forEach(function (th) {
+                const span = parseInt(th.getAttribute("colspan") || "1", 10);
+                colspan += isNaN(span) ? 1 : span;
+            });
+
+            return colspan > 0 ? colspan : 1;
+        }
+
+        function ensureEmptyRow(tbody) {
+            if (!tbody || !tbody.id) return;
+
+            const rows = Array.from(tbody.querySelectorAll(":scope > tr"));
+            const hasDataRows = rows.some(function (row) {
+                return !row.classList.contains("empty-record-row");
+            });
+
+            if (hasDataRows) {
+                rows.forEach(function (row) {
+                    if (row.classList.contains("empty-record-row")) {
+                        row.remove();
+                    }
+                });
+                return;
+            }
+
+            if (!tbody.querySelector(":scope > tr.empty-record-row")) {
+                const tr = document.createElement("tr");
+                tr.className = "empty-record-row";
+                const td = document.createElement("td");
+                td.className = "text-center py-3";
+                td.setAttribute("colspan", String(getColspanForTbody(tbody)));
+                td.textContent = "No records found";
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+            }
+        }
+
+        function bindObservers() {
+            const tbodies = document.querySelectorAll("table tbody[id]");
+            tbodies.forEach(function (tbody) {
+                if (tbody.dataset.emptyObserverBound === "1") {
+                    ensureEmptyRow(tbody);
+                    return;
+                }
+
+                const observer = new MutationObserver(function () {
+                    ensureEmptyRow(tbody);
+                });
+                observer.observe(tbody, {childList: true});
+                tbody.dataset.emptyObserverBound = "1";
+                ensureEmptyRow(tbody);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", bindObservers);
+        window.addEventListener("load", bindObservers);
+        setTimeout(bindObservers, 300);
+    })();
 </script>
 @yield('js')
 </body>

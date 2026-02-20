@@ -1,5 +1,6 @@
 <script>
-    let page = 0;
+    let page = 1;
+    let leave_application_last_page = 1;
     const file_leave_modal = new bootstrap.Modal(document.getElementById('file_leave_modal'));
     const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
     const LEAVE_TYPES = [];
@@ -15,18 +16,15 @@
         });
         $("#btn_reload").click(init_leave);
         $("#btn_search").click(() => {
-            page = 0;
+            page = 1;
             getLeaves();
         });
-        $("#btn_next").click(() => {
-            page++;
-            getLeaves();
-            $("#btn_prev").removeClass("d-none");
-        });
-        $("#btn_prev").click(() => {
-            if (page === 0) return;
-            if (page === 1) $("#btn_prev").addClass("d-none");
-            page--;
+        $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+            e.preventDefault();
+            const targetPage = parseInt($(this).attr("data-page"), 10);
+            if (!targetPage || targetPage === page) return;
+            if (targetPage < 1 || targetPage > leave_application_last_page) return;
+            page = targetPage;
             getLeaves();
         });
 
@@ -218,23 +216,35 @@
      * ------------------------ */
     async function getLeaves() {
         $("#leave_history_list").html("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
-        $("#btn_next, #btn_prev").prop("disabled", true);
+        $("#pagination_links").empty();
+        $("#page_indicator").text("");
 
         try {
-            const data = await fetchData(`{{ route('getLeaveApplications') }}?page=${page}`);
+            const payload = await fetchData(`{{ route('getLeaveApplications') }}?page=${page}`);
+            const data = payload.results || [];
+            const pagination = payload.pagination || null;
             $("#leave_history_list").empty();
-            $("#btn_next, #btn_prev").prop("disabled", false).addClass("d-none");
+            $("#pagination_links").empty();
+            $("#page_indicator").text("");
 
             if (!data.length) {
+                $("#pagination_container").addClass("d-none");
                 $("#leave_history_list").html("<tr><td colspan='6'>No record found</td></tr>");
                 return;
             }
 
             $("#pagination_container").removeClass("d-none");
-            let max_visible = data.length === 11 ? 10 : data.length;
-            if (data.length === 11) $("#btn_next").removeClass("d-none");
-
-            $("#page_items_count").text(`${(page * 10) + 1} - ${(page * 10) + max_visible}`);
+            let max_visible = data.length;
+            if (pagination) {
+                page = pagination.current_page;
+                leave_application_last_page = pagination.last_page;
+                $("#page_items_count").text(`${pagination.from} - ${pagination.to} of ${pagination.total}`);
+                $("#page_indicator").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+                renderLeaveApplicationPaginationLinks(pagination);
+            } else {
+                $("#page_items_count").text(`${((page - 1) * 10) + 1} - ${((page - 1) * 10) + max_visible}`);
+                $("#page_indicator").text(`Page ${page}`);
+            }
 
             data.slice(0, max_visible).forEach(it => {
                 const dates = Object.values(it.dates_applied).map(d => moment(d.date_applied).format("MM/DD/YYYY"));
@@ -275,6 +285,39 @@
         } catch {
             $("#leave_history_list").html("<tr><td colspan='6'>Error loading data</td></tr>");
         }
+    }
+
+    function renderLeaveApplicationPaginationLinks(pagination) {
+        const $links = $("#pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last = pagination.last_page;
+        const start = Math.max(1, current - 2);
+        const end = Math.min(last, current + 2);
+
+        $links.empty();
+        $links.append("<li class='page-item" + (current <= 1 ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current - 1) + "'>Prev</a></li>");
+
+        if (start > 1) {
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+            if (start > 2) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            $links.append("<li class='page-item" + (i === current ? " active" : "") + "'><a class='page-link' href='#' data-page='" + i + "'>" + i + "</a></li>");
+        }
+
+        if (end < last) {
+            if (end < last - 1) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+        }
+
+        $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
     }
 
     /** ------------------------

@@ -65,7 +65,7 @@ class LeaveApplicationController extends Controller
     {
         try {
             $type = $request->search_type;
-            $models = DB::table('leave_applications as l')
+            $paginator = DB::table('leave_applications as l')
                 ->join('leave_types as t', 'l.leave_id', '=', 't.id')
                 ->where(function ($query) use ($type) {
                     $query->where('user_id', '=', Auth::id());
@@ -73,18 +73,27 @@ class LeaveApplicationController extends Controller
                         $query->where('leave_type', 'LIKE', '%' . $type . '%');
                     }
                 })
-                ->skip($request->page * 10)
-                ->take(11)
                 ->orderBy('id', 'DESC')
-                ->get(['l.id', 't.description', 'l.detail', 'l.extra', 'l.status']);
+                ->paginate(10, ['l.id', 't.description', 'l.detail', 'l.extra', 'l.status']);
 
-
+            $models = collect($paginator->items());
             foreach ($models as $model) {
                 $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $model->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
                 $model->dates_applied = $dates_applied;
             }
 
-            return response()->json($models);
+            return response()->json([
+                'results' => $models->values(),
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ]
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }

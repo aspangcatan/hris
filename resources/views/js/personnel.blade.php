@@ -116,37 +116,55 @@
     }
 
     function getEmployee(params) {
-        $("#btn_next").prop("disabled", true);
-        $("#btn_prev").prop("disabled", true);
+        const no_employee_no = (typeof params.no_employee_no !== "undefined") ? params.no_employee_no : 0;
         $("#employee_list").empty();
         $("#employee_list").append("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
+        $("#pagination_links").empty();
+        $("#page_indicator").text("");
         fetch('{{ route('getEmployee') }}?fname=' + params.fname +
             "&lname=" + params.lname +
-            "&page=" + params.page, {
+            "&page=" + params.page +
+            "&no_employee_no=" + no_employee_no, {
                 method: "GET"
             }
         )
             .then(res => res.json())
             .then(data => {
-                $("#btn_next").prop("disabled", false);
-                $("#btn_prev").prop("disabled", false);
-                $("#pagination_container").addClass("d-none")
+                $("#pagination_container").addClass("d-none");
                 $("#employee_list").empty();
-                $("#btn_next").addClass("d-none");
-                $("#employee_list").empty();
+                $("#pagination_links").empty();
+                $("#page_indicator").text("");
+
+                const pagination = data.pagination || null;
+                if (pagination && pagination.current_page) {
+                    page = pagination.current_page;
+                    employee_last_page = pagination.last_page;
+                }
+
                 if (data.results.length < 1) {
                     $("#employee_list").append("<tr><td colspan='6'>No record found</td></tr>");
                     return;
                 }
 
-                $("#pagination_container").removeClass("d-none")
+                $("#pagination_container").removeClass("d-none");
                 let max_visible = data.results.length;
-                if (max_visible == 11) {
-                    max_visible = 10;
-                    $("#btn_next").removeClass("d-none");
+
+                if (pagination) {
+                    const from = (typeof pagination.from !== "undefined" && pagination.from !== null) ? pagination.from : 1;
+                    const to = (typeof pagination.to !== "undefined" && pagination.to !== null) ? pagination.to : max_visible;
+                    const total = (typeof pagination.total !== "undefined" && pagination.total !== null) ? pagination.total : max_visible;
+                    $("#page_items_count").text(from + " - " + to + " of " + total);
+                    $("#page_indicator").text("Page " + pagination.current_page + " of " + pagination.last_page);
+                    renderEmployeePaginationLinks(pagination);
+                } else {
+                    if (max_visible == 11) {
+                        max_visible = 10;
+                    }
+
+                    $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
+                    $("#page_indicator").text("Page " + page);
                 }
 
-                $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
                 for (let i = 0; i < max_visible; i++) {
                     const it = data.results[i];
                     const path = 'https://dohcsmc.com/id/storage/crop';
@@ -175,5 +193,56 @@
             }).catch(err => {
             console.log(err);
         })
+    }
+
+    function renderEmployeePaginationLinks(pagination) {
+        const $links = $("#pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last = pagination.last_page;
+        const start = Math.max(1, current - 2);
+        const end = Math.min(last, current + 2);
+
+        $links.empty();
+
+        const prevDisabled = current <= 1 ? " disabled" : "";
+        const prevPage = current - 1;
+        $links.append(
+            "<li class='page-item" + prevDisabled + "'>" +
+            "<a class='page-link' href='#' data-page='" + prevPage + "'>Prev</a>" +
+            "</li>"
+        );
+
+        if (start > 1) {
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+            if (start > 2) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            const active = i === current ? " active" : "";
+            $links.append(
+                "<li class='page-item" + active + "'>" +
+                "<a class='page-link' href='#' data-page='" + i + "'>" + i + "</a>" +
+                "</li>"
+            );
+        }
+
+        if (end < last) {
+            if (end < last - 1) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+        }
+
+        const nextDisabled = current >= last ? " disabled" : "";
+        const nextPage = current + 1;
+        $links.append(
+            "<li class='page-item" + nextDisabled + "'>" +
+            "<a class='page-link' href='#' data-page='" + nextPage + "'>Next</a>" +
+            "</li>"
+        );
     }
 </script>

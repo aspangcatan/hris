@@ -1,5 +1,6 @@
 <script>
-    let page = 0;
+    let page = 1;
+    let leave_last_page = 1;
     const file_leave_modal = new bootstrap.Modal(document.getElementById('file_leave_modal'));
     const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
     const LEAVE_TYPES = ["Vacation Leave", "Mandatory/Forced Leave", "Sick Leave", "Maternity Leave", "Paternity Leave", "Special Privilege",
@@ -17,21 +18,15 @@
 
         $("#btn_search").click(function () {
             employee_id = 0;
+            page = 1;
             getLeaves();
         });
-
-        $("#btn_next").click(function () {
-            page++;
-            getLeaves();
-            $("#btn_prev").removeClass("d-none");
-        });
-
-        $("#btn_prev").click(function () {
-            if (page == 0) return;
-            if (page == 1) {
-                $("#btn_prev").addClass("d-none");
-            }
-            page--;
+        $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+            e.preventDefault();
+            const targetPage = parseInt($(this).attr("data-page"), 10);
+            if (!targetPage || targetPage === page) return;
+            if (targetPage < 1 || targetPage > leave_last_page) return;
+            page = targetPage;
             getLeaves();
         });
 
@@ -200,35 +195,38 @@
     }
 
     function getLeaves() {
-        $("#btn_next").prop("disabled", true);
-        $("#btn_prev").prop("disabled", true);
         $("#leave_history_list").empty();
         $("#leave_history_list").append("<tr><td colspan='6'>Loading data, please wait...</td></tr>");
+        $("#pagination_links").empty();
+        $("#page_indicator").text("");
         fetch('{{ route('getLeaves') }}?page=' + page, {
                 method: "GET"
             }
         )
             .then(res => res.json())
             .then(data => {
-                $("#btn_next").prop("disabled", false);
-                $("#btn_prev").prop("disabled", false);
-                $("#pagination_container").addClass("d-none")
+                $("#pagination_container").addClass("d-none");
                 $("#leave_history_list").empty();
-                $("#btn_next").addClass("d-none");
-                $("#employee_list").empty();
+                $("#pagination_links").empty();
+                $("#page_indicator").text("");
                 if (data.results.length < 1) {
                     $("#leave_history_list").append("<tr><td colspan='6'>No record found</td></tr>");
                     return;
                 }
 
-                $("#pagination_container").removeClass("d-none")
-                let max_visible = data.results.length;
-                if (max_visible == 11) {
-                    max_visible = 10;
-                    $("#btn_next").removeClass("d-none");
+                const pagination = data.pagination || null;
+                if (pagination && pagination.current_page) {
+                    page = pagination.current_page;
+                    leave_last_page = pagination.last_page;
                 }
 
-                $("#page_items_count").text(((page * 10) + 1) + " - " + ((page * 10) + max_visible));
+                $("#pagination_container").removeClass("d-none");
+                let max_visible = data.results.length;
+                if (pagination) {
+                    $("#page_items_count").text(pagination.from + " - " + pagination.to + " of " + pagination.total);
+                    $("#page_indicator").text("Page " + pagination.current_page + " of " + pagination.last_page);
+                    renderLeavePaginationLinks(pagination);
+                }
                 for (let i = 0; i < max_visible; i++) {
                     const it = data.results[i];
                     const tr = `
@@ -248,6 +246,39 @@
             }).catch(err => {
             console.log(err);
         })
+    }
+
+    function renderLeavePaginationLinks(pagination) {
+        const $links = $("#pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last = pagination.last_page;
+        const start = Math.max(1, current - 2);
+        const end = Math.min(last, current + 2);
+
+        $links.empty();
+        $links.append("<li class='page-item" + (current <= 1 ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current - 1) + "'>Prev</a></li>");
+
+        if (start > 1) {
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+            if (start > 2) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            $links.append("<li class='page-item" + (i === current ? " active" : "") + "'><a class='page-link' href='#' data-page='" + i + "'>" + i + "</a></li>");
+        }
+
+        if (end < last) {
+            if (end < last - 1) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+        }
+
+        $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
     }
 
     function viewStatus(id) {

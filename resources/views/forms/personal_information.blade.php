@@ -262,7 +262,10 @@
         </div>
     </div>
 
-    <div class="text-end mt-5">
-        <button type="button" class="btn btn-success" id="btn_save_personal">SAVE CHANGES</button>
+    <div class="modal-action-row">
+        <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
+        <button type="button" class="btn btn-modal-save" id="btn_save_personal">
+            <i class="bi bi-check2-circle me-1"></i>Save Changes
+        </button>
     </div>
 </form>

@@ -50,9 +50,11 @@
                         <label>Separation</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_service">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
+                    <button class="btn btn-modal-save" id="btn_save_service">
+                        <i class="bi bi-check2-circle me-1"></i>Save
+                    </button>
                 </div>
             </div>
         </div>

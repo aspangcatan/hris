@@ -35,14 +35,12 @@
             </div>
         </div>
         <div class="card-footer text-dark" id="pagination_container">
-            <div class="d-flex align-items-center justify-content-center">
-                <button class="btn btn-sm d-none" style="background: transparent !important;" id="btn_prev">
-                    <i class="bi bi-caret-left"></i>
-                </button>
+            <div class="d-flex flex-column align-items-center justify-content-center gap-2">
                 <div id="page_items_count"></div>
-                <button class="btn btn-sm" style="background: transparent !important;" id="btn_next">
-                    <i class="bi bi-caret-right"></i>
-                </button>
+                <nav aria-label="Temp dtr personnel pagination">
+                    <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
+                </nav>
+                <div id="page_indicator" class="small text-muted"></div>
             </div>
         </div>
     </div>

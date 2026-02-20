@@ -1,24 +1,19 @@
 <script>
-    let page = 0;
+    let page = 1;
+    let leave_types_last_page = 1;
     let leave_id = 0;
     $(document).ready(function () {
-        $("#btn_next").click(function () {
-            page++;
-            getLeaveTypes();
-            $("#btn_prev").removeClass("d-none");
-        });
-
-        $("#btn_prev").click(function () {
-            if (page == 0) return;
-            if (page == 1) {
-                $("#btn_prev").addClass("d-none");
-            }
-            page--;
-            getLeaveTypes();
-        });
-
         $("#btn_search_employee").click(function () {
-            page = 0;
+            page = 1;
+            getLeaveTypes();
+        });
+
+        $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
+            e.preventDefault();
+            const targetPage = parseInt($(this).attr("data-page"), 10);
+            if (!targetPage || targetPage === page) return;
+            if (targetPage < 1 || targetPage > leave_types_last_page) return;
+            page = targetPage;
             getLeaveTypes();
         });
 
@@ -113,14 +108,35 @@
     }
 
     async function getLeaveTypes() {
-        const response = await fetch('{{ route('getLeaveTypes') }}', {
+        const response = await fetch('{{ route('getLeaveTypes') }}?page=' + page, {
             method: "GET"
         });
 
         try {
-            const data = await response.json();
+            const payload = await response.json();
             if (response.ok) {
                 $("#leave_list").empty();
+                $("#pagination_links").empty();
+                $("#page_indicator").text("");
+
+                const data = payload.results || [];
+                const pagination = payload.pagination || null;
+
+                if (!data.length) {
+                    $("#leave_list").append("<tr><td colspan='7'>No record found</td></tr>");
+                    $("#pagination_container").addClass("d-none");
+                    return;
+                }
+
+                $("#pagination_container").removeClass("d-none");
+                if (pagination) {
+                    page = pagination.current_page;
+                    leave_types_last_page = pagination.last_page;
+                    $("#page_items_count").text(pagination.from + " - " + pagination.to + " of " + pagination.total);
+                    $("#page_indicator").text("Page " + pagination.current_page + " of " + pagination.last_page);
+                    renderLeaveTypesPaginationLinks(pagination);
+                }
+
                 data.forEach(it => {
                     const tr = `
                     <tr id="leave_` + it.id + `">
@@ -150,5 +166,38 @@
         } catch (error) {
             toastr.error(error, "Ooops");
         }
+    }
+
+    function renderLeaveTypesPaginationLinks(pagination) {
+        const $links = $("#pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last = pagination.last_page;
+        const start = Math.max(1, current - 2);
+        const end = Math.min(last, current + 2);
+
+        $links.empty();
+        $links.append("<li class='page-item" + (current <= 1 ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current - 1) + "'>Prev</a></li>");
+
+        if (start > 1) {
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+            if (start > 2) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+        }
+
+        for (let i = start; i <= end; i++) {
+            $links.append("<li class='page-item" + (i === current ? " active" : "") + "'><a class='page-link' href='#' data-page='" + i + "'>" + i + "</a></li>");
+        }
+
+        if (end < last) {
+            if (end < last - 1) {
+                $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            }
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+        }
+
+        $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
     }
 </script>
