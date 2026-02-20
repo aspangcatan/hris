@@ -303,7 +303,6 @@
         .nav-tabs-bordered .nav-link.active {
             color: #0f766e;
             background: #ecfeff;
-            box-shadow: inset 0 -2px 0 #0f766e;
         }
 
         .pagination .page-link {

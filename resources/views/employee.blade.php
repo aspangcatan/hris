@@ -35,7 +35,7 @@
                             <th>Suffix</th>
                             <th>Designation</th>
                             <th>Section</th>
-                            <th style="width: 4%"></th>
+                            <th style="width: 16%">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="employee_list"></tbody>

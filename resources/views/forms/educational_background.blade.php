@@ -16,7 +16,7 @@
                 <th>Highest Level/Units</th>
                 <th>Year graduated</th>
                 <th>Scholarship/Academic honors</th>
-                <th colspan="2" style="width: 8%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="educational_list">

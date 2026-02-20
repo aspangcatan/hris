@@ -21,19 +21,13 @@
                     tr += `<td>` + it.conducted_by + `</td>`;
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                    onClick="editLearning(` + it.id + `)">
-                                      <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                               </td>
-                               <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                           onClick="deleteLearning(` + it.id + `)">
-                                    <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                               </td>`
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editLearning(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteLearning(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`
                     @else
-                        tr += `<td colspan="2" </td>`
+                        tr += `<td></td>`
                     @endif
                         tr += `</tr>`;
 
@@ -71,14 +65,10 @@
                 <td>` + params.learning_type + `</td>
                 <td>` + params.conducted_by + `</td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editLearning(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteLearning(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editLearning(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteLearning(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
 

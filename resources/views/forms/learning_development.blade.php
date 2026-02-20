@@ -14,7 +14,7 @@
                 <th style="width: 5%">No. hours</th>
                 <th style="width: 10%">Type</th>
                 <th style="width: 20%">Conducted/Sponsored by</th>
-                <th colspan="2" style="width: 8%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="learning_list"></tbody>

@@ -36,9 +36,17 @@ class EmployeeController extends Controller
     public function insertUpdateEmployee(Request $request)
     {
         try {
+            $target_user_id = $request->user_id ?: Auth::id();
+            $access_rights = strtolower((string) session('access_rights'));
+            $is_self_update = ((int) $target_user_id === (int) Auth::id());
+            $can_update_others = in_array($access_rights, ['admin', 'hr', 'hrh']);
 
-            $user = User::find(Auth::id());
-            if (!Auth::id()) {
+            if (!$is_self_update && !$can_update_others) {
+                return response(['code' => 500, 'message' => 'Unauthorized employee update request']);
+            }
+
+            $user = User::find($target_user_id);
+            if (!$user) {
                 return response(['code' => 500, 'message' => 'User ID dont exists']);
             }
 
@@ -48,10 +56,10 @@ class EmployeeController extends Controller
             $user->suffix = $request->suffix;
             $user->save();
 
-            $employee = Employee::where('user_id', Auth::id())->first();
+            $employee = Employee::where('user_id', $target_user_id)->first();
             if (!$employee) {
                 $employee = new Employee;
-                $employee->user_id = Auth::id();
+                $employee->user_id = $target_user_id;
             }
 
             $employee->birthdate = $request->birthdate;
@@ -69,6 +77,9 @@ class EmployeeController extends Controller
             $employee->philsys_no = $request->philsys_no;
             $employee->tin_no = $request->tin_no;
             $employee->employee_no = $request->employee_no;
+            $employee->employee_type = $request->employee_type;
+            $employee->date_hired = $request->date_hired;
+            $employee->date_resigned = $request->date_resigned;
             $employee->citizenship = $request->citizenship;
             $employee->citizenship_type = $request->citizenship_type;
             $employee->citizenship_country = $request->citizenship_country;

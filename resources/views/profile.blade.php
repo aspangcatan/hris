@@ -29,7 +29,6 @@
             border-color: #0f766e;
             background: linear-gradient(120deg, #0f766e, #0ea5a4);
             color: #fff;
-            box-shadow: 0 10px 24px rgba(15, 118, 110, .28);
         }
     </style>
 

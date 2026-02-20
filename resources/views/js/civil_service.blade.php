@@ -28,19 +28,13 @@
                     tr += `<td>` + license_expiry + `</td>`;
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td>
-                        <button type='button' class="btn btn-sm" style="background: transparent"
-                                onClick="editCivilService(` + it.id + `)">
-                            <i class="bi bi-pencil-fill text-success"></i>
-                        </button>
-                    </td>
-                    <td>
-                        <button type='button' class="btn btn-sm" style="background: transparent"
-                                onClick="deleteCivilService(` + it.id + `)">
-                            <i class="bi bi-trash text-danger"></i>
-                        </button>
-                    </td>`;
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editCivilService(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteCivilService(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`;
                     @else
-                        tr += `<td colspan="2"></td>`;
+                        tr += `<td></td>`;
                     @endif
                         tr += `</tr>`;
                     $("#civil_service_list").append(tr);
@@ -80,14 +74,10 @@
                     <td>` + license_no + `</td>
                     <td>` + license_expiry + `</td>
                     <td>
-                        <button type='button' class="btn btn-sm" style="background: transparent" onClick="editCivilService(` + data.id + `)">
-                            <i class="bi bi-pencil-fill text-success"></i>
-                        </button>
-                    </td>
-                    <td>
-                        <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteCivilService(` + data.id + `)">
-                            <i class="bi bi-trash text-danger"></i>
-                        </button>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editCivilService(` + data.id + `)">Edit</button>
+                            <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteCivilService(` + data.id + `)">Delete</button>
+                        </div>
                     </td>
                 </tr>`;
 

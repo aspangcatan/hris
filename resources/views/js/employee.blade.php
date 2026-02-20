@@ -219,20 +219,121 @@
         });
 
         $("#btn_save_personal").click(function () {
+            let is_valid = true;
+            $("#personal_information_error").addClass("d-none");
+            $(".is-invalid").removeClass("is-invalid");
+            $(".error_list").empty();
+
+            const fname = $("#fname").val().trim();
+            const mname = $("#mname").val().trim();
+            const lname = $("#lname").val().trim();
+            const suffix = $("#suffix").val().trim();
+            const birthdate = $("#birthdate").val();
+            const birthplace = $("#birthplace").val().trim();
+            const sex = $("#sex").val();
+            const civil_status = $("#civil_status").val();
+            const height = $("#height").val().trim();
+            const weight = $("#weight").val().trim();
+            const blood_type = $("#blood_type").val();
+            const gsis_id_no = $("#gsis_id_no").val().trim();
+            const umid_id_no = $("#umid_id_no").val().trim();
+            const pagibig_id_no = $("#pagibig_id_no").val().trim();
+            const philhealth_no = $("#philhealth_no").val().trim();
+            const sss_no = $("#sss_no").val().trim();
+            const philsys_no = $("#philsys_no").val().trim();
+            const tin_no = $("#tin_no").val().trim();
+            const employee_no = $("#employee_no").val().trim();
             const employee_type = $("#employee_type").val();
             const date_hired = $("#date_hired").val();
             const date_resigned = $("#date_resigned").val();
-            if (employee_type == "") {
-                alert("Please specify Employee status");
+            const citizenship = $("input[name='citizenship']:checked").next().text().trim();
+            let citizenship_type = null;
+            let citizenship_country = null;
+            if (citizenship == "Dual Citizenship") {
+                citizenship_type = $("input[name='citizenship_type']:checked").next().text().trim();
+                citizenship_country = $("#citizenship_country").val().trim();
+            }
+            const telephone_no = $("#telephone_no").val().trim();
+            const mobile_no = $("#mobile_no").val().trim();
+            const email_address = $("#email_address").val().trim();
+            const issued_id = $("#issued_id").val().trim();
+            const issued_id_no = $("#issued_id_no").val().trim();
+            const issued_date = $("#issued_date").val().trim();
+
+            if (fname == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Firstname is required</li>");
+                $("#fname").addClass("is-invalid");
+            }
+
+            if (lname == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Lastname is required</li>");
+                $("#lname").addClass("is-invalid");
+            }
+
+            if (!is_valid) {
+                $("#personal_information_error").removeClass("d-none");
+                $("#employee_modal").animate({scrollTop: $('#employee_modal #personal_information_error').offset().top}, 200);
                 return;
             }
 
-            updateEmployeeStatus({
+            const params = {
                 user_id: employee_id,
+                fname: fname,
+                mname: mname,
+                lname: lname,
+                suffix: suffix,
+                birthdate: birthdate,
+                birthplace: birthplace,
+                sex: sex,
+                civil_status: civil_status,
+                height: height,
+                weight: weight,
+                blood_type: blood_type,
+                gsis_id_no: gsis_id_no,
+                umid_id_no: umid_id_no,
+                pagibig_id_no: pagibig_id_no,
+                philhealth_no: philhealth_no,
+                sss_no: sss_no,
+                philsys_no: philsys_no,
+                tin_no: tin_no,
+                employee_no: employee_no,
                 employee_type: employee_type,
                 date_hired: date_hired,
-                date_resigned: date_resigned
-            })
+                date_resigned: date_resigned,
+                citizenship: citizenship,
+                citizenship_type: citizenship_type,
+                citizenship_country: citizenship_country,
+                telephone_no: telephone_no,
+                mobile_no: mobile_no,
+                email_address: email_address,
+                issued_id: issued_id,
+                issued_id_no: issued_id_no,
+                issued_date: issued_date
+            };
+
+            insertUpdateEmployee(params).then(data => {
+                if (!data || data.code != 200) {
+                    return;
+                }
+
+                const suffix_text = suffix ? (" " + suffix) : "";
+                $("#employee_name").text((fname + " " + lname + suffix_text).trim());
+
+                const current_row = $("#employee_" + employee_id);
+                if (current_row.length) {
+                    current_row.find("td:eq(1)").text(fname);
+                    current_row.find("td:eq(2)").text(mname);
+                    current_row.find("td:eq(3)").text(lname);
+                    current_row.find("td:eq(4)").text(suffix);
+                } else {
+                    const current_fname = $("#search_fname").val().trim();
+                    const current_lname = $("#search_lname").val().trim();
+                    const no_employee_no = $("#filter_no_employee_no").is(":checked") ? 1 : 0;
+                    getEmployee({fname: current_fname, lname: current_lname, page: page, no_employee_no: no_employee_no});
+                }
+            });
         });
 
         $("#btn_save_service").click(function () {

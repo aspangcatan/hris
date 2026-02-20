@@ -6,7 +6,7 @@
                 <thead>
                 <tr>
                     <th>Description</th>
-                    <th colspan="2">
+                    <th style="width: 16%">
                         @if(Route::currentRouteName() == "profile")
                             <button class="btn btn-sm btn-success btn-add-other-information" value="skill">
                                 <i class="bi bi-plus-lg"></i>
@@ -26,7 +26,7 @@
                 <thead>
                 <tr>
                     <th>Description</th>
-                    <th colspan="2">
+                    <th style="width: 16%">
                         @if(Route::currentRouteName() == "profile")
                             <button class="btn btn-sm btn-success btn-add-other-information" value="recognition">
                                 <i class="bi bi-plus-lg"></i>
@@ -46,7 +46,7 @@
                 <thead>
                 <tr>
                     <th>Description</th>
-                    <th colspan="2">
+                    <th style="width: 16%">
                         @if(Route::currentRouteName() == "profile")
                             <button class="btn btn-sm btn-success btn-add-other-information" value="membership">
                                 <i class="bi bi-plus-lg"></i>

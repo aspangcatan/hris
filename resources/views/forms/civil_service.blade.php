@@ -14,7 +14,7 @@
                 <th style="width: 30%">Place of <br/>examination</th>
                 <th style="width: 10%">License No.</th>
                 <th style="width: 10%">Date of<br/>validity</th>
-                <th colspan="3" style="width: 8%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="civil_service_list">

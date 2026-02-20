@@ -26,8 +26,14 @@
                     tr += "<td>" + year_graduated + "</td>"
                     tr += "<td>" + it.scholarship + "</td>"
                     @if(Route::currentRouteName() != "employee")
-                        tr += `<td><button class="btn btn-sm btn-success" onClick="viewEducation(` + it.id + `)"><i class="bi bi-eye-fill"></i></button></td>`;
-                        tr += `<td><button class="btn btn-sm btn-danger"  onClick="deleteEducation(` + it.id + `)"><i class="bi bi-trash-fill"></i></button></td>`;
+                        tr += `<td>
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-secondary" onClick="viewEducation(` + it.id + `)">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" onClick="deleteEducation(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`;
+                    @else
+                        tr += "<td></td>";
                     @endif
                         tr += "</tr>";
                     $("#educational_list").append(tr);

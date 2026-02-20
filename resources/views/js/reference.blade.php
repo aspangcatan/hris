@@ -18,19 +18,13 @@
                     tr += `<td>` + it.contact_no + `</td>`;
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                            onClick="editReference(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                            onClick="deleteReference(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>`
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editReference(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteReference(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`
                     @else
-                        tr += `<td colspan="2" </td>`
+                        tr += `<td></td>`
                     @endif
                         tr += `</tr>`;
                     $("#reference_list").append(tr);
@@ -64,14 +58,10 @@
                 <td>` + params.address + `</td>
                 <td>` + params.contact_no + `</td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editReference(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteReference(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editReference(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteReference(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
 

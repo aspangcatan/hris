@@ -13,7 +13,7 @@
                 <th>From</th>
                 <th>To</th>
                 <th style="width: 10%">No. hours</th>
-                <th colspan="2" style="width: 8%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="voluntary_list"></tbody>

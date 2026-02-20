@@ -24,14 +24,10 @@
                 <td>` + it.leave_absence + `</td>
                 <td>` + it.separation + `</td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editService(` + it.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteService(` + it.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editService(` + it.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteService(` + it.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
                     $("#service_records_list").append(tr);
@@ -69,14 +65,10 @@
                 <td>` + params.leave_absence + `</td>
                 <td>` + params.separation + `</td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editService(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteService(` + params.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editService(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteService(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
                     $("#service_records_list").append(tr);

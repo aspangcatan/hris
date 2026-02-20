@@ -16,7 +16,7 @@
                     <th class="d-none">Grade</th>
                     <th style="width: 10%">Status Appointment</th>
                     <th style="width: 10%">Gov't Service (Y/N)</th>
-                    <th colspan="2" style="width: 8%"></th>
+                    <th style="width: 16%">Actions</th>
                 </tr>
             </thead>
             <tbody id="work_list"></tbody>

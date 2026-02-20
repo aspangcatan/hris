@@ -17,7 +17,7 @@
                 <th style="width: 20%">Office of<br />Assisgnment</th>
                 <th style="width: 10%">Leave of<br />Absences W/O pay</th>
                 <th>Separation</th>
-                <th colspan="2" style="width: 8%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="service_records_list"></tbody>

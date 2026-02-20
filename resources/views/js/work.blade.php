@@ -26,19 +26,13 @@
                     tr += `<td class="d-none">` + it.is_current_work + `</td>`;
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td>
-                                <button type='button' class="btn btn-sm" style="background: transparent"
-                                        onClick="editWork(` + it.id + `)">
-                                    <i class="bi bi-pencil-fill text-success"></i>
-                                </button>
-                           </td>
-                           <td>
-                                <button type='button' class="btn btn-sm" style="background: transparent"
-                                        onClick="deleteWork(` + it.id + `)">
-                                    <i class="bi bi-trash text-danger"></i>
-                                </button>
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editWork(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteWork(` + it.id + `)">Delete</button>
+                                </div>
                            </td>`
                     @else
-                        tr += `<td colspan="2" </td>`
+                        tr += `<td></td>`
                     @endif
                         tr += `</tr>`;
                     $("#work_list").append(tr);
@@ -79,14 +73,10 @@
                 <td>` + is_government + `</td>
                 <td class="d-none">` + params.is_current_work + `</td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editWork(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteWork(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editWork(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteWork(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
                     $("#work_list").append(tr);

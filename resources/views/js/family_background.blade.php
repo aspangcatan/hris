@@ -36,20 +36,14 @@
                     tr += `<td>` + moment(it.birthdate).format("MM/DD/YYYY") + `</td>`;
 
                     @if(Route::currentRouteName() == "profile")
-                        tr += `<td>`;
-                    tr += `<button type='button' class="btn btn-sm" style="background: transparent"
-                                            onClick="editChildren(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                            onClick="deleteChildren(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>`;
-                    tr += `</td>`;
+                        tr += `<td>
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editChildren(` + it.id + `)">Edit</button>
+                                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteChildren(` + it.id + `)">Delete</button>
+                                    </div>
+                                </td>`;
                     @else
-                        tr += `<td colspan="2"></td>`;
+                        tr += `<td></td>`;
                     @endif
                         tr += `</tr>`;
                     $("#children_list").append(tr);
@@ -104,14 +98,10 @@
                 <td>` + params.name + `</td>
                 <td>` + moment(params.birthdate).format("MM/DD/YYYY") + `</td>
                 <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editChildren(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td>
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteChildren(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editChildren(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteChildren(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
 

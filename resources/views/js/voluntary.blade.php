@@ -25,14 +25,10 @@
                                 <td>` + working_to + `</td>
                                 <td>` + it.number_hours + `</td>
                                 <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editVoluntary(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteVoluntary(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editVoluntary(` + it.id + `)">Edit</button>
+                                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteVoluntary(` + it.id + `)">Delete</button>
+                                    </div>
                                 </td>
                             </tr>`;
 
@@ -73,14 +69,10 @@
                                 <td>` + working_to + `</td>
                                 <td>` + params.number_hours + `</td>
                                 <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="editVoluntary(` + data.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td>
-                                    <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteVoluntary(` + data.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
+                                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editVoluntary(` + data.id + `)">Edit</button>
+                                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteVoluntary(` + data.id + `)">Delete</button>
+                                    </div>
                                 </td>
                             </tr>`;
 

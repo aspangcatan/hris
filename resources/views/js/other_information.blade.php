@@ -20,20 +20,14 @@
                     let tr = `<tr id='skill_` + it.id + `'>`;
                     tr += `<td>` + it.skills + `</td>`;
                     @if(Route::currentRouteName() == "profile")
-                        tr += `<td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                            onClick="editSkill(` + it.id + `)">
-                                        <i class="bi bi-pencil-fill text-success"></i>
-                                    </button>
-                                </td>
-                                <td style="width: 4%">
-                                    <button type='button' class="btn btn-sm" style="background: transparent"
-                                            onClick="deleteSkill(` + it.id + `)">
-                                        <i class="bi bi-trash text-danger"></i>
-                                    </button>
-                                </td>`
+                        tr += `<td style="width: 16%">
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editSkill(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteSkill(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`
                     @else
-                        tr += `<td colspan="2" </td>`
+                        tr += `<td></td>`
                     @endif
                         tr += `</tr>`;
 
@@ -44,20 +38,14 @@
                     let tr = `<tr id='recognition_` + it.id + `'>`;
                     tr += `<td>` + it.recognition + `</td>`;
                     @if(Route::currentRouteName() == "profile")
-                        tr += ` <td style="width: 4%">
-                        <button type='button' class="btn btn-sm" style="background: transparent"
-                                onClick="editRecognition(` + it.id + `)">
-                            <i class="bi bi-pencil-fill text-success"></i>
-                        </button>
-                    </td>
-                    <td style="width: 4%">
-                        <button type='button' class="btn btn-sm" style="background: transparent"
-                                onClick="deleteRecognition(` + it.id + `)">
-                            <i class="bi bi-trash text-danger"></i>
-                        </button>
-                    </td>`
+                        tr += `<td style="width: 16%">
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editRecognition(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteRecognition(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`
                     @else
-                        tr += `<td colspan="2" </td>`
+                        tr += `<td></td>`
                     @endif
                         tr += `</tr>`;
 
@@ -68,20 +56,14 @@
                     let tr = `<tr id='membership_` + it.id + `'>`;
                     tr += `<td>` + it.association + `</td>`;
                     @if(Route::currentRouteName() == "profile")
-                        tr += `<td style="width: 4%">
-                        <button type='button' class="btn btn-sm" style="background: transparent"
-                                onClick="editMembership(` + it.id + `)">
-                            <i class="bi bi-pencil-fill text-success"></i>
-                        </button>
-                    </td>
-                    <td style="width: 4%">
-                        <button type='button' class="btn btn-sm" style="background: transparent"
-                                onClick="deleteMembership(` + it.id + `)">
-                            <i class="bi bi-trash text-danger"></i>
-                        </button>
-                    </td>`
+                        tr += `<td style="width: 16%">
+                                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editMembership(` + it.id + `)">Edit</button>
+                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteMembership(` + it.id + `)">Delete</button>
+                                </div>
+                            </td>`
                     @else
-                        tr += `<td colspan="2" </td>`
+                        tr += `<td></td>`
                     @endif
                         tr += `</tr>`;
                     $("#membership_list").append(tr);
@@ -113,15 +95,11 @@
                     const tr = `
                 <tr id='skill_` + data.id + `'>
                 <td>` + params.skills + `</td>
-                <td style="width: 4%">
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editSkill(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td style="width: 4%">
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteSkill(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                <td style="width: 16%">
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editSkill(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteSkill(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
 
@@ -159,15 +137,11 @@
                     const tr = `
                 <tr id='recognition_` + data.id + `'>
                 <td>` + params.recognition + `</td>
-                <td style="width: 4%">
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editRecognition(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td style="width: 4%">
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteRecognition(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                <td style="width: 16%">
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editRecognition(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteRecognition(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
 
@@ -205,15 +179,11 @@
                     const tr = `
                 <tr id='membership_` + data.id + `'>
                 <td>` + params.association + `</td>
-                <td style="width: 4%">
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="editMembership(` + data.id + `)">
-                <i class="bi bi-pencil-fill text-success"></i>
-                </button>
-                </td>
-                <td style="width: 4%">
-                <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteMembership(` + data.id + `)">
-                <i class="bi bi-trash text-danger"></i>
-                </button>
+                <td style="width: 16%">
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editMembership(` + data.id + `)">Edit</button>
+                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteMembership(` + data.id + `)">Delete</button>
+                    </div>
                 </td>
                 </tr>`;
 

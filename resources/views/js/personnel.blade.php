@@ -72,7 +72,7 @@
     }
 
     function insertUpdateEmployee(params) {
-        fetch('{{ route('insertUpdateEmployee') }}', {
+        return fetch('{{ route('insertUpdateEmployee') }}', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -88,6 +88,7 @@
                 }
 
                 toastr.success(data.message, "Success");
+                return data;
             }).catch(err => {
             console.log(err);
         });
@@ -183,12 +184,10 @@
                         <td>` + it.designation + `</td>
                         <td>` + it.section + `</td>
                         <td>
-                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="editEmployee(` + it.user_id + `)">
-                                <i class="bi bi-pencil-fill text-success"></i>
-                            </button>
-                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="deleteEmployee(` + it.user_id + `)">
-                                <i class="bi bi-trash-fill text-danger"></i>
-                            </button>
+                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editEmployee(` + it.user_id + `)">Edit</button>
+                                <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteEmployee(` + it.user_id + `)">Delete</button>
+                            </div>
                         </td>
                     <tr>`;
                     $("#employee_list").append(tr);

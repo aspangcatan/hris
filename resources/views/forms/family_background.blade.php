@@ -134,7 +134,7 @@
             <tr>
                 <th>Name of children (Write full name and list all)</th>
                 <th style="width: 20%">Date of birth</th>
-                <th colspan="2" style="width: 10%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="children_list"></tbody>

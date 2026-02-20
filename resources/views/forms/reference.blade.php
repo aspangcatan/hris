@@ -11,7 +11,7 @@
                 <th style="width: 40%">Name</th>
                 <th>Address</th>
                 <th>Contact No.</th>
-                <th colspan="2" style="width: 8%"></th>
+                <th style="width: 16%">Actions</th>
             </tr>
             </thead>
             <tbody id="reference_list"></tbody>
