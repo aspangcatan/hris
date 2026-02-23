@@ -9,6 +9,49 @@ use Illuminate\Support\Facades\DB;
 
 class ScheduleController extends Controller
 {
+    private function getCurrentAccessRights(): string
+    {
+        return strtolower((string) session('access_rights'));
+    }
+
+    private function getManagedSectionIdsForCurrentUser(bool $includeOwnSectionFallback = true): array
+    {
+        $managedSectionIds = DB::table('hris.schedule_user_sections')
+            ->where('user_id', Auth::id())
+            ->pluck('section_id')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($managedSectionIds) && $includeOwnSectionFallback && Auth::check() && Auth::user()->section) {
+            $managedSectionIds = [(int) Auth::user()->section];
+        }
+
+        return $managedSectionIds;
+    }
+
+    private function canManageEmployee(int $employeeId): bool
+    {
+        if ($this->getCurrentAccessRights() === 'admin') {
+            return true;
+        }
+
+        if ($this->getCurrentAccessRights() !== 'schedule') {
+            return false;
+        }
+
+        $managedSections = $this->getManagedSectionIdsForCurrentUser();
+        if (empty($managedSections)) {
+            return false;
+        }
+
+        return DB::table('tdh_user.users')
+            ->where('id', $employeeId)
+            ->whereIn('section', $managedSections)
+            ->exists();
+    }
+
     private function isLockedScheduleDate(string $date): bool
     {
         $scheduleDate = Carbon::parse($date)->startOfDay();
@@ -26,21 +69,15 @@ class ScheduleController extends Controller
                 return redirect()->route('login')->with('error', 'Unauthorized access');
             }
 
+            $accessRights = $this->getCurrentAccessRights();
+
             // Get the selected month & year (default: current)
             $month = $request->input('month', date('m'));
             $year = $request->input('year', date('Y'));
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 
-            // Determine section
-            $section = $request->input('section');
-            if (is_null($section) || $section === '' || $section === 'null') {
-                $section = Auth::user()->section;
-            }
-
-            // Get employees from the same section
             $employees = DB::table('tdh_user.users as u')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
-                ->where('u.section','=', $section)
                 ->selectRaw("
                 u.id as employee_id,
                 CONCAT(
@@ -51,7 +88,44 @@ class ScheduleController extends Controller
                 ) AS name,
                 COALESCE(d.description, 'No Designation') AS designation
             ")
-                ->get();
+                ->orderBy('u.lname', 'asc')
+                ->orderBy('u.fname', 'asc');
+
+            $requestedDivision = $request->input('division');
+            $requestedSection = $request->input('section');
+            $requestedDivision = (is_null($requestedDivision) || $requestedDivision === '' || $requestedDivision === '0' || $requestedDivision === 'null') ? null : (int) $requestedDivision;
+            $requestedSection = (is_null($requestedSection) || $requestedSection === '' || $requestedSection === '0' || $requestedSection === 'null') ? null : (int) $requestedSection;
+
+            if ($accessRights === 'admin') {
+                if (!is_null($requestedSection)) {
+                    $employees->where('u.section', $requestedSection);
+                } elseif (!is_null($requestedDivision)) {
+                    $employees->where('u.division', $requestedDivision);
+                } else {
+                    $employees->where('u.section', Auth::user()->section);
+                }
+            } elseif ($accessRights === 'schedule') {
+                $managedSections = $this->getManagedSectionIdsForCurrentUser();
+                if (empty($managedSections)) {
+                    return response()->json(['schedules' => [], 'days' => $daysInMonth]);
+                }
+
+                if (!is_null($requestedSection)) {
+                    if (!in_array($requestedSection, $managedSections, true)) {
+                        return response()->json(['schedules' => [], 'days' => $daysInMonth]);
+                    }
+                    $employees->where('u.section', $requestedSection);
+                } else {
+                    $employees->whereIn('u.section', $managedSections);
+                    if (!is_null($requestedDivision)) {
+                        $employees->where('u.division', $requestedDivision);
+                    }
+                }
+            } else {
+                $employees->where('u.section', Auth::user()->section);
+            }
+
+            $employees = $employees->get();
 
             // Get schedules for the selected month
             $schedules = DB::table('hris.schedules as s')
@@ -107,6 +181,10 @@ class ScheduleController extends Controller
     public function setEmployeeSchedule(Request $request)
     {
         try {
+            if (!$this->canManageEmployee((int) $request->employee_id)) {
+                return response()->json(['message' => 'You are not allowed to manage this employee schedule.'], 403);
+            }
+
             if ($this->isLockedScheduleDate($request->schedule_date)) {
                 return response()->json([
                     'message' => 'Schedules from last month and older can no longer be edited.'
@@ -147,6 +225,12 @@ class ScheduleController extends Controller
         $schedules = $request->input('schedules');
 
         foreach ($schedules as $sched) {
+            if (!$this->canManageEmployee((int) ($sched['employee_id'] ?? 0))) {
+                return response()->json(['message' => 'You are not allowed to manage one or more selected employees.'], 403);
+            }
+        }
+
+        foreach ($schedules as $sched) {
             if ($this->isLockedScheduleDate($sched['schedule_date'])) {
                 return response()->json([
                     'message' => 'Schedules from last month and older can no longer be edited.'
@@ -170,5 +254,160 @@ class ScheduleController extends Controller
         }
 
         return response()->json(['message' => 'Schedules saved successfully']);
+    }
+
+    public function getManagedSections()
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+
+            $accessRights = $this->getCurrentAccessRights();
+
+            $sectionQuery = DB::table('tdh_user.section as s')
+                ->join('tdh_user.division as d', 's.division', '=', 'd.id')
+                ->select(
+                    's.id',
+                    's.description',
+                    's.division',
+                    'd.description as division_description'
+                )
+                ->orderBy('d.description')
+                ->orderBy('s.description');
+
+            if ($accessRights === 'schedule') {
+                $managedSections = $this->getManagedSectionIdsForCurrentUser();
+                if (empty($managedSections)) {
+                    return response()->json(['sections' => []]);
+                }
+                $sectionQuery->whereIn('s.id', $managedSections);
+            } elseif ($accessRights !== 'admin') {
+                $sectionQuery->where('s.id', Auth::user()->section);
+            }
+
+            return response()->json(['sections' => $sectionQuery->get()]);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getScheduleManagerAssignments()
+    {
+        try {
+            if ($this->getCurrentAccessRights() !== 'admin') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $sections = DB::table('tdh_user.section as s')
+                ->join('tdh_user.division as d', 's.division', '=', 'd.id')
+                ->select(
+                    's.id',
+                    's.description',
+                    's.division',
+                    'd.description as division_description'
+                )
+                ->orderBy('d.description')
+                ->orderBy('s.description')
+                ->get();
+
+            $managers = DB::table('tdh_user.user_priv as up')
+                ->join('tdh_user.users as u', 'up.user_id', '=', 'u.id')
+                ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
+                ->where('up.syscode', 'hris')
+                ->where('up.level', 'schedule')
+                ->selectRaw("
+                    u.id,
+                    CONCAT(
+                        u.fname,
+                        CASE WHEN u.mname IS NOT NULL AND u.mname != '' THEN CONCAT(' ', u.mname) ELSE '' END,
+                        ' ', u.lname,
+                        CASE WHEN u.suffix IS NOT NULL AND u.suffix != '' THEN CONCAT(' ', u.suffix) ELSE '' END
+                    ) AS name,
+                    COALESCE(de.description, 'No Designation') AS designation
+                ")
+                ->orderBy('u.lname')
+                ->orderBy('u.fname')
+                ->get();
+
+            $assigned = DB::table('hris.schedule_user_sections')
+                ->select('user_id', 'section_id')
+                ->get()
+                ->groupBy('user_id')
+                ->map(function ($rows) {
+                    return $rows->pluck('section_id')->map(fn($id) => (int) $id)->values();
+                });
+
+            $managerList = $managers->map(function ($manager) use ($assigned) {
+                $manager->assigned_section_ids = $assigned->get($manager->id, collect([]));
+                return $manager;
+            });
+
+            return response()->json([
+                'managers' => $managerList,
+                'sections' => $sections
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function saveScheduleManagerSections(Request $request)
+    {
+        try {
+            if ($this->getCurrentAccessRights() !== 'admin') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $userId = (int) $request->input('manager_id');
+            $sectionIds = collect($request->input('section_ids', []))
+                ->map(fn($id) => (int) $id)
+                ->filter(fn($id) => $id > 0)
+                ->unique()
+                ->values();
+
+            $isScheduleManager = DB::table('tdh_user.user_priv')
+                ->where('user_id', $userId)
+                ->where('syscode', 'hris')
+                ->where('level', 'schedule')
+                ->exists();
+
+            if (!$isScheduleManager) {
+                return response()->json(['message' => 'Selected user is not a schedule manager.'], 422);
+            }
+
+            $validSectionIds = DB::table('tdh_user.section')
+                ->whereIn('id', $sectionIds->all())
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->values();
+
+            DB::beginTransaction();
+
+            DB::table('hris.schedule_user_sections')
+                ->where('user_id', $userId)
+                ->delete();
+
+            if ($validSectionIds->isNotEmpty()) {
+                $now = now();
+                $rows = $validSectionIds->map(function ($sectionId) use ($userId, $now) {
+                    return [
+                        'user_id' => $userId,
+                        'section_id' => $sectionId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })->all();
+
+                DB::table('hris.schedule_user_sections')->insert($rows);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Managed sections updated successfully.']);
+        } catch (\Exception $exception) {
+            DB::rollBack();
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
     }
 }

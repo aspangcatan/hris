@@ -181,7 +181,7 @@
                         <label for="year">Year</label>
                     </div>
                 </div>
-                @if(in_array(session('access_rights'), ['admin', 'schedule']))
+                @if(in_array(session('access_rights'), ['admin']))
                     <div class="col-md-2">
                         <div class="form-floating">
                             <select class="form-select form-control-sm" id="division">
@@ -190,7 +190,9 @@
                             <label for="month">Division</label>
                         </div>
                     </div>
+                @endif
 
+                @if(in_array(session('access_rights'), ['admin', 'schedule']))
                     <div class="col-md-2">
                         <div class="form-floating">
                             <select class="form-select form-control-sm" id="section">
@@ -236,47 +238,25 @@
 @section('js')
     <script>
         let currentEmployees = [];
+        let managedSectionsByDivision = {};
+        const accessRights = @json(strtolower((string) session('access_rights')));
 
         $(document).ready(function () {
-            // Initial Load
             loadScheduleMasterList();
 
-            $("#division").change(function () {
-                const division = $("#division").val();
-                fetch("{{ route('getSectionList') }}?division=" + division, {
-                    method: "GET"
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        $("#section").empty();
-                        if (division == 0) {
-                            $("#section").addClass("d-none");
-                        } else {
-                            $("#section").removeClass("d-none");
-                            $("#section").append(`<option value="0">-- Select Section --</option>`);
-
-                            data.forEach(it => {
-                                const option = `<option value="${it.id}">${it.description}</option>`;
-                                $("#section").append(option);
-                            });
-                        }
-                    })
-                    .catch(err => {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Oops...",
-                            text: "Something went wrong while loading sections. Please reload the page."
-                        });
-                    });
+            $("#division").on('change', function () {
+                if (accessRights === 'admin') {
+                    loadSectionsByDivision($(this).val());
+                }
             });
 
-            // Re-fetch on filter change
-            $('#filter_month, #filter_year,#division,#section').on('change', loadEmployeeSchedule);
+            $('#filter_month, #filter_year, #division, #section').on('change', function () {
+                loadEmployeeSchedule(true);
+            });
             $('#employee_search_filter').on('input', function () {
                 filterScheduleRows($(this).val());
             });
 
-            // Advance Set Schedule Button
             $('#btn_advance_schedule').on('click', function () {
                 if (isLockedMonthSelection()) {
                     toastr.warning("Schedules from last month and older can no longer be edited.", "Locked");
@@ -298,7 +278,6 @@
                 $('#advanceScheduleModal').modal('show');
             });
 
-            // Save Advance Schedule
             $('#save_advance_schedule').on('click', function () {
                 const year = $('#filter_year').val();
                 const month = $('#filter_month').val();
@@ -377,7 +356,6 @@
                 $("#advance_select_all_employees").prop("checked", total > 0 && total === checked);
             });
 
-            // Open Schedule Modal
             $("body").on("click", ".schedule-cell", function () {
                 if (isLockedMonthSelection()) {
                     toastr.warning("Schedules from last month and older can no longer be edited.", "Locked");
@@ -392,7 +370,6 @@
                 $('#scheduleModal').modal('show');
             });
 
-            // Save Individual Schedule
             $('#btn_save_schedule').on('click', function () {
                 const $btn = $(this);
                 const employeeId = $('#selectedEmployeeId').val();
@@ -438,9 +415,11 @@
                     });
             });
 
-            @if(in_array(session('access_rights'), ['admin']))
-            loadDivision();
-            @endif
+            if (accessRights === 'admin') {
+                loadDivision();
+            } else if (accessRights === 'schedule') {
+                loadManagedSections();
+            }
         });
 
         function loadDivision() {
@@ -449,26 +428,12 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    const userDivisionId = "{{ Auth::user()->division }}";
-                    const isAdmin = {{ session('access_rights') == 'admin' ? 'true' : 'false' }};
-                    $("#division").empty(); 
-
-                    if (isAdmin) {
-                        $("#division").append(`<option value="0">-- Select Division --</option>`);
-                        data.forEach(it => {
-                            const option = `<option value="${it.id}">${it.description}</option>`;
-                            $("#division").append(option);
-                        });
-                    } else {
-                        data.forEach(it => {
-                            if (it.id == userDivisionId) {
-                                const option = `<option value="${it.id}" selected>${it.description}</option>`;
-                                $("#division").append(option);
-                            }
-                        });
-                        // Trigger change to automatically load sections for the user's division
-                        $("#division").trigger('change');
-                    }
+                    $("#division").empty();
+                    $("#division").append(`<option value="0">-- Select Division --</option>`);
+                    data.forEach(it => {
+                        $("#division").append(`<option value="${it.id}">${it.description}</option>`);
+                    });
+                    $("#section").empty().append(`<option value="0">-- Select Section --</option>`);
                 })
                 .catch(err => {
                     Swal.fire({
@@ -476,6 +441,57 @@
                         title: "Oops...",
                         text: "Something went wrong while loading divisions. Please reload the page."
                     });
+                });
+        }
+
+        function loadSectionsByDivision(division) {
+            const selectedDivision = division || '0';
+            if (selectedDivision === '0') {
+                $("#section").empty();
+                $("#section").append(`<option value="0">-- Select Section --</option>`);
+                return;
+            }
+
+            fetch("{{ route('getSectionList') }}?division=" + selectedDivision, {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    $("#section").empty();
+                    $("#section").append(`<option value="0">-- Select Section --</option>`);
+                    data.forEach(it => {
+                        $("#section").append(`<option value="${it.id}">${it.description}</option>`);
+                    });
+                })
+                .catch(() => {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Oops...",
+                        text: "Something went wrong while loading sections. Please reload the page."
+                    });
+                });
+        }
+
+        function loadManagedSections() {
+            fetch("{{ route('getManagedSections') }}", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(payload => {
+                    const sections = payload.sections || [];
+                    managedSectionsByDivision = {};
+
+                    $("#section").empty();
+                    $("#section").append(`<option value="0">All Allowed Sections</option>`);
+
+                    sections.forEach(section => {
+                        const divisionLabel = section.division_description ? `${section.division_description} - ` : '';
+                        $("#section").append(`<option value="${section.id}">${divisionLabel}${section.description}</option>`);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    toastr.error("Failed to load assigned sections.", "Error");
                 });
         }
 
@@ -510,7 +526,6 @@
         }
 
 
-        // Load Schedule Master List (Legend & Options)
         function loadScheduleMasterList() {
             fetch('{{ route('getScheduleMasterList') }}')
                 .then(res => res.json())
@@ -524,15 +539,16 @@
                 .catch(console.error);
         }
 
-        // Load Employee Schedules
-        function loadEmployeeSchedule() {
+        function loadEmployeeSchedule(showValidation = true) {
             const month = $('#filter_month').val();
             const year = $('#filter_year').val();
             const division = $('#division').val() ?? '';
             const section = $('#section').val() ?? '';
 
             if (!month || !year) {
-                toastr.error("Please select both month and year.", "Missing Filter");
+                if (showValidation) {
+                    toastr.error("Please select both month and year.", "Missing Filter");
+                }
                 return;
             }
 

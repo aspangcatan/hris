@@ -189,6 +189,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/schedule', function () {
         return view('schedule');
     })->name('schedule');
+    Route::get('/schedule_access', function () {
+        return view('schedule_access');
+    })->name('schedule_access');
 
     Route::get('/review_leave', function () {
         return view('review_leave');
@@ -380,6 +383,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_employee_schedules', [\App\Http\Controllers\ScheduleController::class, 'getSchedules'])->name('getSchedules');
     Route::post('/insert_schedule', [\App\Http\Controllers\ScheduleController::class, 'setEmployeeSchedule'])->name('setEmployeeSchedule');
     Route::post('/save-advance-schedule', [\App\Http\Controllers\ScheduleController::class, 'saveAdvanceSchedule'])->name('saveAdvanceSchedule');
+    Route::get('/schedule/managed-sections', [\App\Http\Controllers\ScheduleController::class, 'getManagedSections'])->name('getManagedSections');
+    Route::get('/schedule/manager-assignments', [\App\Http\Controllers\ScheduleController::class, 'getScheduleManagerAssignments'])->name('getScheduleManagerAssignments');
+    Route::post('/schedule/manager-assignments', [\App\Http\Controllers\ScheduleController::class, 'saveScheduleManagerSections'])->name('saveScheduleManagerSections');
 
 #CREDIT EARNED POINTS
     Route::get('/get_credit_earned_logs', [\App\Http\Controllers\CreditController::class, 'getCreditEarned'])->name('getCreditEarned');

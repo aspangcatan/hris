@@ -71,6 +71,15 @@
                     <span>Manage Schedule</span>
                 </a>
             </li>
+            @if(in_array(session('access_rights'), ['admin']))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('schedule_access') ? '' : 'collapsed' }}"
+                       href="{{ route('schedule_access') }}">
+                        <i class="bi bi-sliders"></i>
+                        <span>Schedule Access</span>
+                    </a>
+                </li>
+            @endif
         @endif
 
         @if(in_array(session('access_rights'), ['admin']))
