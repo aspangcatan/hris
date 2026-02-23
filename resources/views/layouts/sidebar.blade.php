@@ -73,6 +73,15 @@
             </li>
             @if(in_array(session('access_rights'), ['admin']))
                 <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('schedule_master_list') ? '' : 'collapsed' }}"
+                       href="{{ route('schedule_master_list') }}">
+                        <i class="bi bi-list-task"></i>
+                        <span>Schedule Master List</span>
+                    </a>
+                </li>
+            @endif
+            @if(in_array(session('access_rights'), ['admin']))
+                <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_access') ? '' : 'collapsed' }}"
                        href="{{ route('schedule_access') }}">
                         <i class="bi bi-sliders"></i>

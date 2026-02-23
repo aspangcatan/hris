@@ -189,6 +189,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/schedule', function () {
         return view('schedule');
     })->name('schedule');
+    Route::get('/schedule_master_list', function () {
+        return view('schedule_master_list');
+    })->name('schedule_master_list');
     Route::get('/schedule_access', function () {
         return view('schedule_access');
     })->name('schedule_access');
@@ -379,6 +382,8 @@ Route::group(['middleware' => 'auth'], function () {
 
 #SCHEDULE MASTERLIST
     Route::get('/get_schedule_master_lists', [\App\Http\Controllers\ScheduleController::class, 'getScheduleMasterList'])->name('getScheduleMasterList');
+    Route::post('/save_schedule_master_list', [\App\Http\Controllers\ScheduleController::class, 'saveScheduleMasterList'])->name('saveScheduleMasterList');
+    Route::delete('/delete_schedule_master_list/{id}', [\App\Http\Controllers\ScheduleController::class, 'deleteScheduleMasterList'])->name('deleteScheduleMasterList');
 #SCHEDULE
     Route::get('/get_employee_schedules', [\App\Http\Controllers\ScheduleController::class, 'getSchedules'])->name('getSchedules');
     Route::post('/insert_schedule', [\App\Http\Controllers\ScheduleController::class, 'setEmployeeSchedule'])->name('setEmployeeSchedule');

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ScheduleController extends Controller
 {
@@ -172,7 +173,94 @@ class ScheduleController extends Controller
     public function getScheduleMasterList()
     {
         try {
-            return response()->json(DB::table('hris.schedule_master_lists')->get());
+            return response()->json(
+                DB::table('hris.schedule_master_lists')
+                    ->orderBy('label')
+                    ->get()
+            );
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function saveScheduleMasterList(Request $request)
+    {
+        try {
+            if ($this->getCurrentAccessRights() !== 'admin') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $entryId = (int) $request->input('id', 0);
+            $validated = $request->validate([
+                'label' => 'required|string|max:50',
+                'code' => [
+                    'required',
+                    'string',
+                    'max:10',
+                    Rule::unique('hris.schedule_master_lists', 'code')->ignore($entryId)
+                ],
+                'type' => ['required', Rule::in(['FIXED', 'GLIDING'])],
+                'time_in' => 'required|date_format:H:i',
+                'time_in_latest' => 'required|date_format:H:i',
+                'time_out' => 'required|date_format:H:i',
+                'time_out_latest' => 'required|date_format:H:i',
+            ]);
+
+            $payload = [
+                'label' => trim($validated['label']),
+                'code' => strtoupper(trim($validated['code'])),
+                'type' => strtoupper($validated['type']),
+                'time_in' => $validated['time_in'],
+                'time_in_latest' => $validated['time_in_latest'],
+                'time_out' => $validated['time_out'],
+                'time_out_latest' => $validated['time_out_latest'],
+                'updated_at' => now(),
+            ];
+
+            if ($entryId > 0) {
+                DB::table('hris.schedule_master_lists')
+                    ->where('id', $entryId)
+                    ->update($payload);
+
+                return response()->json(['message' => 'Schedule master list updated successfully.']);
+            }
+
+            $payload['created_at'] = now();
+            DB::table('hris.schedule_master_lists')->insert($payload);
+
+            return response()->json(['message' => 'Schedule master list created successfully.']);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return response()->json([
+                'message' => $exception->validator->errors()->first(),
+                'errors' => $exception->validator->errors(),
+            ], 422);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function deleteScheduleMasterList(int $id)
+    {
+        try {
+            if ($this->getCurrentAccessRights() !== 'admin') {
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $isInUse = DB::table('hris.schedules')
+                ->where('schedule_id', $id)
+                ->exists();
+
+            if ($isInUse) {
+                return response()->json([
+                    'message' => 'This schedule is already used in employee schedules and cannot be deleted.'
+                ], 422);
+            }
+
+            DB::table('hris.schedule_master_lists')
+                ->where('id', $id)
+                ->delete();
+
+            return response()->json(['message' => 'Schedule master list deleted successfully.']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
