@@ -468,9 +468,11 @@ class DTRController extends Controller
             $division_id = 2;
             foreach ($employees as $employee) {
                 $division_id = $employee->division;
+                $monthStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
+                $monthEndPlusOne = Carbon::createFromDate($year, $month, 1)->endOfMonth()->addDay()->endOfDay();
+
                 $logs = DB::table('dtr_logs')
-                    ->whereMonth('created_at', $month)
-                    ->whereYear('created_at', $year)
+                    ->whereBetween('created_at', [$monthStart, $monthEndPlusOne])
                     ->where('userid', '=', $employee->id)
                     ->orderBy('created_at', 'ASC')
                     ->get();
@@ -648,13 +650,20 @@ class DTRController extends Controller
 
                         // Calculate Late and Undertime
                         $rawSched = $schedules[$currentDay] ?? null;
+                        $isOvernightSchedule = false;
+                        if ($rawSched) {
+                            $rawSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
+                            $rawSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
+                            $isOvernightSchedule = $rawSchedOut->lte($rawSchedIn);
+                        }
                         
                         // 1. Determine if logs exist in each period
                         $hasAm = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
                         $hasPm = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
 
                         // 2. Identify Half-Day: Work in one half but NOT the other
-                        $isHalfDay = ($hasAm xor $hasPm);
+                        // Overnight schedules are always treated as full-day schedules for late/undertime.
+                        $isHalfDay = !$isOvernightSchedule && ($hasAm xor $hasPm);
 
                         // 3. Define the calculation schedule
                         $calcSched = null;
@@ -676,7 +685,11 @@ class DTRController extends Controller
                             $calcSched = $rawSched;
                         }
 
-                        if ($calcSched && !$hasOfficialPassSlip) {
+                        $firstIn = $dayLogs->where('status', 'IN')->min('created_at');
+
+                        // Do not compute late/undertime for days without an IN log.
+                        // This avoids false penalties when an AM OUT is just a spillover from a previous day.
+                        if ($calcSched && !$hasOfficialPassSlip && $firstIn) {
                             $lateMinutes = 0;
                             $undertimeMinutes = 0;
 
@@ -691,8 +704,20 @@ class DTRController extends Controller
                                 }
                             }
 
-                            $firstIn = $dayLogs->where('status', 'IN')->min('created_at');
-                            $lastOut = $dayLogs->where('status', 'OUT')->max('created_at');
+                            $lastOutCandidates = $dayLogs->where('status', 'OUT')->pluck('created_at');
+
+                            if ($isOvernightSchedule) {
+                                $nextDay = Carbon::parse($currentDay)->addDay()->toDateString();
+                                $nextDayOuts = $logs
+                                    ->filter(fn($log) =>
+                                        $log->status === 'OUT' &&
+                                        Carbon::parse($log->created_at)->toDateString() === $nextDay
+                                    )
+                                    ->pluck('created_at');
+                                $lastOutCandidates = $lastOutCandidates->merge($nextDayOuts);
+                            }
+
+                            $lastOut = $lastOutCandidates->max();
 
                             if ($firstIn) {
                                 $firstInTime = Carbon::parse($firstIn);
@@ -722,9 +747,13 @@ class DTRController extends Controller
                                     // Normal Full Day Schedule Logic
                                     $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
                                     $schedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
+                                    if ($schedOut->lte($schedIn)) {
+                                        // Night shift: schedule out is on the next day.
+                                        $schedOut->addDay();
+                                    }
                                     $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
                                     
-                                    if ($isGliding) {
+                                    if ($isGliding && $firstIn) {
                                         // Gliding: required out depends on actual first IN.
                                         $shiftDurationMinutes = $schedIn->diffInMinutes($schedOut);
                                         $effectiveIn = Carbon::parse($firstIn);
