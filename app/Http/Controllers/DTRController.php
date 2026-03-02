@@ -651,19 +651,30 @@ class DTRController extends Controller
                         // Calculate Late and Undertime
                         $rawSched = $schedules[$currentDay] ?? null;
                         $isOvernightSchedule = false;
+                        $rawSchedIn = null;
+                        $rawSchedOut = null;
                         if ($rawSched) {
                             $rawSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
                             $rawSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
                             $isOvernightSchedule = $rawSchedOut->lte($rawSchedIn);
+                            if ($isOvernightSchedule) {
+                                $rawSchedOut->addDay();
+                            }
                         }
-                        
+
                         // 1. Determine if logs exist in each period
                         $hasAm = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
                         $hasPm = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
 
-                        // 2. Identify Half-Day: Work in one half but NOT the other
-                        // Overnight schedules are always treated as full-day schedules for late/undertime.
-                        $isHalfDay = !$isOvernightSchedule && ($hasAm xor $hasPm);
+                        // 2. Identify Half-Day:
+                        // Only apply half-day logic when the plotted schedule actually spans AM and PM.
+                        // This avoids false half-day tagging for shifts like 2PM-10PM.
+                        $supportsHalfDay = false;
+                        if ($rawSched && !$isOvernightSchedule && $rawSchedIn && $rawSchedOut) {
+                            $noon = Carbon::parse($currentDay . ' 12:00:00');
+                            $supportsHalfDay = $rawSchedIn->lt($noon) && $rawSchedOut->gt($noon);
+                        }
+                        $isHalfDay = $supportsHalfDay && ($hasAm xor $hasPm);
 
                         // 3. Define the calculation schedule
                         $calcSched = null;
@@ -685,7 +696,36 @@ class DTRController extends Controller
                             $calcSched = $rawSched;
                         }
 
-                        $firstIn = $dayLogs->where('status', 'IN')->min('created_at');
+                        $firstIn = null;
+                        $lastOut = null;
+
+                        if ($calcSched) {
+                            $calcSchedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
+                            $calcSchedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
+                            if ($calcSchedOut->lte($calcSchedIn)) {
+                                $calcSchedOut->addDay();
+                            }
+
+                            // Keep matching logs near the schedule window so overnight next-day logs
+                            // are considered, but unrelated logs are ignored.
+                            $windowStart = $calcSchedIn->copy()->subHours(6);
+                            $windowEnd = $calcSchedOut->copy()->addHours(8);
+
+                            $relevantLogs = $logs->filter(function ($log) use ($windowStart, $windowEnd) {
+                                $logTime = Carbon::parse($log->created_at);
+                                return $logTime->gte($windowStart) && $logTime->lte($windowEnd);
+                            });
+
+                            $firstIn = $relevantLogs->where('status', 'IN')->min('created_at');
+                            if ($firstIn) {
+                                $firstInTime = Carbon::parse($firstIn);
+                                $lastOut = $relevantLogs
+                                    ->where('status', 'OUT')
+                                    ->pluck('created_at')
+                                    ->filter(fn($out) => Carbon::parse($out)->gte($firstInTime))
+                                    ->max();
+                            }
+                        }
 
                         // Do not compute late/undertime for days without an IN log.
                         // This avoids false penalties when an AM OUT is just a spillover from a previous day.
@@ -704,28 +744,19 @@ class DTRController extends Controller
                                 }
                             }
 
-                            $lastOutCandidates = $dayLogs->where('status', 'OUT')->pluck('created_at');
-
-                            if ($isOvernightSchedule) {
-                                $nextDay = Carbon::parse($currentDay)->addDay()->toDateString();
-                                $nextDayOuts = $logs
-                                    ->filter(fn($log) =>
-                                        $log->status === 'OUT' &&
-                                        Carbon::parse($log->created_at)->toDateString() === $nextDay
-                                    )
-                                    ->pluck('created_at');
-                                $lastOutCandidates = $lastOutCandidates->merge($nextDayOuts);
-                            }
-
-                            $lastOut = $lastOutCandidates->max();
-
                             if ($firstIn) {
                                 $firstInTime = Carbon::parse($firstIn);
-                                if ($firstInTime->format('H:i:s') > $calcSched->time_in_latest) {
+                                $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
+                                $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
+                                if ($schedInLatest->lt($schedIn)) {
+                                    $schedInLatest->addDay();
+                                }
+
+                                if ($firstInTime->gt($schedInLatest)) {
                                     // Keep half-day buckets exclusive for monthly counters:
                                     // AM-only => undertime bucket, PM-only => late bucket.
                                     if (!$isHalfDay || ($hasPm && !$hasAm)) {
-                                        $lateMinutes += $firstInTime->diffInMinutes(Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest));
+                                        $lateMinutes += $schedInLatest->diffInMinutes($firstInTime);
                                     }
                                 }
                             }
@@ -734,14 +765,19 @@ class DTRController extends Controller
                                 $lastOutTime = Carbon::parse($lastOut);
                                 
                                 if ($isHalfDay) {
-                                    // Morning Half-Day: Check for early clock out BEFORE 12NN
-                                    if ($hasAm && $lastOutTime->format('H:i:s') < '12:00:00') {
-                                        $undertimeMinutes += $lastOutTime->diffInMinutes(Carbon::parse($currentDay . ' 12:00:00'));
+                                    $halfDayRequiredOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
+                                    if ($halfDayRequiredOut->lte(Carbon::parse($currentDay . ' ' . $calcSched->time_in))) {
+                                        $halfDayRequiredOut->addDay();
                                     }
-                                    // Afternoon Half-Day: Check for early clock out BEFORE 5PM
-                                    if ($hasPm && $lastOutTime->format('H:i:s') < '17:00:00') {
-                                        // PM half-day is counted under "late" bucket per business rule
-                                        $lateMinutes += $lastOutTime->diffInMinutes(Carbon::parse($currentDay . ' 17:00:00'));
+
+                                    if ($lastOutTime->lt($halfDayRequiredOut)) {
+                                        $shortMinutes = $lastOutTime->diffInMinutes($halfDayRequiredOut);
+                                        if ($hasAm) {
+                                            $undertimeMinutes += $shortMinutes;
+                                        } elseif ($hasPm) {
+                                            // PM half-day is counted under "late" bucket per business rule
+                                            $lateMinutes += $shortMinutes;
+                                        }
                                     }
                                 } else {
                                     // Normal Full Day Schedule Logic
@@ -754,10 +790,31 @@ class DTRController extends Controller
                                     $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
                                     
                                     if ($isGliding && $firstIn) {
-                                        // Gliding: required out depends on actual first IN.
-                                        $shiftDurationMinutes = $schedIn->diffInMinutes($schedOut);
                                         $effectiveIn = Carbon::parse($firstIn);
-                                        $requiredOut = $effectiveIn->copy()->addMinutes($shiftDurationMinutes);
+                                        $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
+                                        $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
+                                        if ($schedInLatest->lt($schedIn)) {
+                                            $schedInLatest->addDay();
+                                        }
+                                        if ($schedOutLatest->lt($schedOut)) {
+                                            $schedOutLatest->addDay();
+                                        }
+
+                                        // Gliding rule:
+                                        // - IN within allowed window shifts required OUT within OUT window.
+                                        // - IN beyond latest IN is already "late"; cap required OUT to latest OUT
+                                        //   to avoid double-penalizing the same overage as both late and undertime.
+                                        if ($effectiveIn->lte($schedIn)) {
+                                            $requiredOut = $schedOut->copy();
+                                        } elseif ($effectiveIn->lte($schedInLatest)) {
+                                            $offsetMinutes = $schedIn->diffInMinutes($effectiveIn);
+                                            $requiredOut = $schedOut->copy()->addMinutes($offsetMinutes);
+                                            if ($requiredOut->gt($schedOutLatest)) {
+                                                $requiredOut = $schedOutLatest->copy();
+                                            }
+                                        } else {
+                                            $requiredOut = $schedOutLatest->copy();
+                                        }
                                     } else {
                                         // Fixed: undertime is based on plotted schedule out, not on late arrival.
                                         $requiredOut = $schedOut;
