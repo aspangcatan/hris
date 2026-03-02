@@ -882,7 +882,8 @@ class DTRController extends Controller
                 ];
             }
 
-            if($division_id == "2"){
+            // if($division_id == "2"){
+                if(false){
 $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 ->setPaper('A4', 'portrait')
                 ->setOption('margin-top', 0)
