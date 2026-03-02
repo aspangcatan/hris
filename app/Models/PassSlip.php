@@ -13,7 +13,7 @@ class PassSlip extends Model
     protected $table = 'pass_slips';
 
     protected $fillable = [
-        'userid',
+        'user_id',
         'slip_date',
         'time_out',
         'time_in',

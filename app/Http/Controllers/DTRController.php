@@ -528,6 +528,20 @@ class DTRController extends Controller
                     $schedules[$s->schedule_date] = $s;
                 }
 
+                // Official pass slips: waive late/undertime for the slip date (regardless of approval status)
+                $officialPassSlipsRaw = DB::table('hris.pass_slips')
+                    ->where('user_id', $employee->id)
+                    ->whereMonth('slip_date', $month)
+                    ->whereYear('slip_date', $year)
+                    ->whereRaw('UPPER(type) = ?', ['OFFICIAL'])
+                    ->select(DB::raw('DATE(slip_date) as slip_date'))
+                    ->get();
+
+                $officialPassSlips = [];
+                foreach ($officialPassSlipsRaw as $ps) {
+                    $officialPassSlips[$ps->slip_date] = true;
+                }
+
                 // Build daily DTR
                 $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
                 $lateCount = 0;
@@ -535,12 +549,13 @@ class DTRController extends Controller
                 $lateTotalMinutes = 0;
                 $undertimeTotalMinutes = 0;
                 
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $schedules, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $schedules, $officialPassSlips, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
 
                     $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                     $isHoliday = array_key_exists($currentDay, $holidays);
                     $hasLeave = array_key_exists($currentDay, $leaves);
+                    $hasOfficialPassSlip = !empty($officialPassSlips[$currentDay]);
 
                     $data = [
                         'day' => $day,
@@ -661,7 +676,7 @@ class DTRController extends Controller
                             $calcSched = $rawSched;
                         }
 
-                        if ($calcSched) {
+                        if ($calcSched && !$hasOfficialPassSlip) {
                             $lateMinutes = 0;
                             $undertimeMinutes = 0;
 

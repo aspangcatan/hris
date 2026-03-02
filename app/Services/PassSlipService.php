@@ -10,7 +10,7 @@ class PassSlipService
     public function store(array $data)
     {
         return PassSlip::create([
-            'userid' => Auth::id(),
+            'user_id' => Auth::id(),
             'slip_date' => $data['slip_date'],
             'time_out' => $data['time_out'],
             'time_in' => $data['time_in'] ?? null,
@@ -20,14 +20,14 @@ class PassSlipService
 
     public function getUserPassSlips()
     {
-        return PassSlip::where('userid', Auth::id())
+        return PassSlip::where('user_id', Auth::id())
             ->orderByDesc('slip_date')
             ->get();
     }
 
     public function destroy($id)
     {
-        $passSlip = PassSlip::where('userid', Auth::id())->find($id);
+        $passSlip = PassSlip::where('user_id', Auth::id())->find($id);
 
         if ($passSlip) {
             return $passSlip->delete();
