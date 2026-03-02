@@ -709,22 +709,15 @@ class DTRController extends Controller
                                     $schedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
                                     $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
                                     
-                                    $shiftDurationMinutes = $schedIn->diffInMinutes($schedOut);
-                                    
                                     if ($isGliding) {
-                                        // Gliding: Effective IN is Actual IN (allows early arrival to count)
-                                        // But we assume they can't start ridiculously early? Usually gliding has bands, but per user request "IN 7:47" counts.
+                                        // Gliding: required out depends on actual first IN.
+                                        $shiftDurationMinutes = $schedIn->diffInMinutes($schedOut);
                                         $effectiveIn = Carbon::parse($firstIn);
-                                        
-                                        // NOTE: Should we validte $effectiveIn vs $schedIn? 
-                                        // If they arrive at 5AM for an 8AM shift, do they leave at 2PM? 
-                                        // User implies strict "8hrs duty" fulfillment. Assuming standard logic.
+                                        $requiredOut = $effectiveIn->copy()->addMinutes($shiftDurationMinutes);
                                     } else {
-                                        // Fixed: Effective IN is clamped to Schedule IN (Early arrival doesn't help)
-                                        $effectiveIn = (Carbon::parse($firstIn)->gt($schedIn)) ? Carbon::parse($firstIn) : $schedIn;
+                                        // Fixed: undertime is based on plotted schedule out, not on late arrival.
+                                        $requiredOut = $schedOut;
                                     }
-                                    
-                                    $requiredOut = $effectiveIn->copy()->addMinutes($shiftDurationMinutes);
 
                                     if ($lastOutTime->lt($requiredOut)) {
                                         $undertimeMinutes = $lastOutTime->diffInMinutes($requiredOut);
