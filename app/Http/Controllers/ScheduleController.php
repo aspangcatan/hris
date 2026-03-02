@@ -55,6 +55,8 @@ class ScheduleController extends Controller
 
     private function isLockedScheduleDate(string $date): bool
     {
+        return false;        
+
         $scheduleDate = Carbon::parse($date)->startOfDay();
         $firstDayOfCurrentMonth = Carbon::now()->startOfMonth();
 

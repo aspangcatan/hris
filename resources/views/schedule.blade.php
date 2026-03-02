@@ -586,6 +586,9 @@
         }
 
         function isLockedMonthSelection() {
+
+            return false;
+
             const month = Number($('#filter_month').val());
             const year = Number($('#filter_year').val());
 
