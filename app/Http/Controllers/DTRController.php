@@ -718,11 +718,11 @@ class DTRController extends Controller
 
                             $firstIn = $relevantLogs->where('status', 'IN')->min('created_at');
                             if ($firstIn) {
-                                $firstInTime = Carbon::parse($firstIn);
+                                $firstInTime = Carbon::parse($firstIn)->startOfMinute();
                                 $lastOut = $relevantLogs
                                     ->where('status', 'OUT')
                                     ->pluck('created_at')
-                                    ->filter(fn($out) => Carbon::parse($out)->gte($firstInTime))
+                                    ->filter(fn($out) => Carbon::parse($out)->startOfMinute()->gte($firstInTime))
                                     ->max();
                             }
                         }
@@ -745,7 +745,7 @@ class DTRController extends Controller
                             }
 
                             if ($firstIn) {
-                                $firstInTime = Carbon::parse($firstIn);
+                                $firstInTime = Carbon::parse($firstIn)->startOfMinute();
                                 $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
                                 $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
                                 if ($schedInLatest->lt($schedIn)) {
@@ -762,7 +762,7 @@ class DTRController extends Controller
                             }
 
                             if ($lastOut) {
-                                $lastOutTime = Carbon::parse($lastOut);
+                                $lastOutTime = Carbon::parse($lastOut)->startOfMinute();
                                 
                                 if ($isHalfDay) {
                                     $halfDayRequiredOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
@@ -790,7 +790,7 @@ class DTRController extends Controller
                                     $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
                                     
                                     if ($isGliding && $firstIn) {
-                                        $effectiveIn = Carbon::parse($firstIn);
+                                        $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
                                         $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
                                         $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
                                         if ($schedInLatest->lt($schedIn)) {
