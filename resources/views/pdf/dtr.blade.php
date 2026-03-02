@@ -87,6 +87,12 @@
             if ($hours > 0) return $hours . 'hr';
             return $mins . 'mins';
         };
+
+        $formatRegDays = function ($value) {
+            $value = trim((string) ($value ?? ''));
+            if ($value === '') return '';
+            return preg_replace('/\s*,\s*/', "\n", $value);
+        };
     @endphp
     <table>
         <tr> <!-- First Column -->
@@ -111,13 +117,13 @@
                     <div style="margin-top: 5px;font-size: 12.5px"><span>Official hours of arrival and</span> <span
                             style="margin-left: 25px">Reg. days
                             @if(!empty($employee['reg_days_am']))
-                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_am'] }}</span>
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold; line-height: 1.1;">{!! nl2br(e($formatRegDays($employee['reg_days_am']))) !!}</span>
                             @else
                                 _____
                             @endif
                             AM
                             @if(!empty($employee['reg_days_pm']))
-                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_pm'] }}</span>
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold; line-height: 1.1;">{!! nl2br(e($formatRegDays($employee['reg_days_pm']))) !!}</span>
                             @else
                                 _____
                             @endif
@@ -282,13 +288,13 @@
                     <div style="margin-top: 5px;font-size: 12.5px"><span>Official hours of arrival and</span> <span
                             style="margin-left: 25px">Reg. days
                             @if(!empty($employee['reg_days_am']))
-                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_am'] }}</span>
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold; line-height: 1.1;">{!! nl2br(e($formatRegDays($employee['reg_days_am']))) !!}</span>
                             @else
                                 _____
                             @endif
                             AM
                             @if(!empty($employee['reg_days_pm']))
-                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold">{{ $employee['reg_days_pm'] }}</span>
+                                <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold; line-height: 1.1;">{!! nl2br(e($formatRegDays($employee['reg_days_pm']))) !!}</span>
                             @else
                                 _____
                             @endif
