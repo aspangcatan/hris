@@ -214,8 +214,8 @@
                         <td></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
-                     <div style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
+                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
+                    <div style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
                           @if($employee['division'] == '2')
                                 <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                                 <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
@@ -232,7 +232,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            <td style="text-align: center;font-size: 12.5px">Verified as to the prescribed office hours
                             </td>
                             <td></td>
                         </tr>
@@ -243,7 +243,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">In Charge</td>
+                            <td style="text-align: center;font-size: 12.5px">In Charge</td>
                             <td></td>
                         </tr>
                     </table>
@@ -368,8 +368,8 @@
                         <td></td>
                     </tr>
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
-                      <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: right;">
+                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
+                    <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: right;">
                          @if($employee['division'] == '2')
                         <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
