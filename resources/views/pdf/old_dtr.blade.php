@@ -76,6 +76,18 @@
 <div class="page-divider"></div>
 @foreach($employees as $employee)
     @php
+        $formatDuration = function ($minutes) {
+            $minutes = (int)($minutes ?? 0);
+            if ($minutes <= 0) return '0mins';
+
+            $hours = intdiv($minutes, 60);
+            $mins = $minutes % 60;
+
+            if ($hours > 0 && $mins > 0) return $hours . 'hr ' . $mins . 'mins';
+            if ($hours > 0) return $hours . 'hr';
+            return $mins . 'mins';
+        };
+
         $formatRegDays = function ($value) {
             $value = trim((string) ($value ?? ''));
             if ($value === '') return '';
@@ -184,8 +196,13 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                                <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
+                                 @if($employee['division'] == '2')
+                                <td style="font-size: 9.5px">{{ $dtr['undertime_hours'] }}</td>
+                                <td style="font-size: 9.5px">{{ $dtr['undertime_minutes'] }}</td>
+                                @else
+                                <td style="font-size: 9.5px"></td>
+                                <td style="font-size: 9.5px"></td>
+                                @endif
                             @endif
                         </tr>
                     @endforeach
@@ -198,6 +215,12 @@
                     </tr>
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
+                     <div style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
+                          @if($employee['division'] == '2')
+                                <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
+                                <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
+                          @endif
+                    </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>
@@ -327,8 +350,13 @@
                                     {{ $dtr['date_timein_am'] }}
                                 </td>
                             @else
-                                <td style="font-size: 11px"></td>
-                                <td style="font-size: 11px"></td>
+                                @if($employee['division'] == '2')
+                                <td style="font-size: 9.5px">{{ $dtr['undertime_hours'] }}</td>
+                                <td style="font-size: 9.5px">{{ $dtr['undertime_minutes'] }}</td>
+                                @else
+                                <td style="font-size: 9.5px"></td>
+                                <td style="font-size: 9.5px"></td>
+                                @endif
                             @endif
                         </tr>
                     @endforeach
@@ -341,6 +369,12 @@
                     </tr>
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 13px">
+                      <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: right;">
+                         @if($employee['division'] == '2')
+                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
+                        <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
+                        @endif
+                    </div>
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>
