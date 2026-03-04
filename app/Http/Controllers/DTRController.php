@@ -496,24 +496,18 @@ class DTRController extends Controller
                 }
 
                 // H.O
-                $hosRaw = DB::table('hris.hospital_orders as ho')
-                    ->join('hris.hospital_order_employees as hoe', 'ho.id', '=', 'hoe.ho_id')
+                $hosRaw = DB::table('hris.hospital_order_employees as hoe')
+                    ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
                     ->where('hoe.userid', $employee->id)
-                    ->where(function ($q) use ($month, $year) {
-                        $q->whereMonth('ho.start_date', $month)->whereYear('ho.start_date', $year)
-                            ->orWhereMonth('ho.end_date', $month)->whereYear('ho.end_date', $year);
-                    })
-                    ->select(DB::raw('DATE(ho.start_date) as start_date'), DB::raw('DATE(ho.end_date) as end_date'), 'ho.order_number')
+                    ->where('hoe.status', 'approved')
+                    ->whereMonth('hoe.filed_date', $month)
+                    ->whereYear('hoe.filed_date', $year)
+                    ->select(DB::raw('DATE(hoe.filed_date) as filed_date'), 'ho.order_number')
                     ->get();
 
                 $hospitalOrders = [];
                 foreach ($hosRaw as $ho) {
-                    $start = Carbon::parse($ho->start_date);
-                    $end = Carbon::parse($ho->end_date);
-                    while ($start->lte($end)) {
-                        $hospitalOrders[$start->toDateString()] = 'H.O #' . $ho->order_number;
-                        $start->addDay();
-                    }
+                    $hospitalOrders[Carbon::parse($ho->filed_date)->toDateString()] = 'H.O #' . $ho->order_number;
                 }
 
                 // Fetch schedules for the employee for the month
@@ -753,10 +747,14 @@ class DTRController extends Controller
                                 }
 
                                 if ($firstInTime->gt($schedInLatest)) {
+                                    $lateDiffMinutes = $schedInLatest->diffInMinutes($firstInTime);
+
                                     // Keep half-day buckets exclusive for monthly counters:
                                     // AM-only => undertime bucket, PM-only => late bucket.
-                                    if (!$isHalfDay || ($hasPm && !$hasAm)) {
-                                        $lateMinutes += $schedInLatest->diffInMinutes($firstInTime);
+                                    if ($isHalfDay && $hasAm && !$hasPm) {
+                                        $undertimeMinutes += $lateDiffMinutes;
+                                    } elseif (!$isHalfDay || ($hasPm && !$hasAm)) {
+                                        $lateMinutes += $lateDiffMinutes;
                                     }
                                 }
                             }

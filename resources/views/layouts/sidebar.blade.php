@@ -39,6 +39,20 @@
                 <span>Pass Slips</span>
             </a>
         </li>
+        <li class="nav-item d-none">
+            <a class="nav-link {{ request()->routeIs('hospital_order_file') ? '' : 'collapsed' }}" href="{{ route('hospital_order_file') }}">
+                <i class="bi bi-hospital"></i>
+                <span>Hospital Order Filing</span>
+            </a>
+        </li>
+        @if(in_array(session('access_rights'), ['admin', 'calendar']))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('hospital_order_approval') ? '' : 'collapsed' }}" href="{{ route('hospital_order_approval') }}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Hospital Order Approval</span>
+                </a>
+            </li>
+        @endif
 
         {{-- ✅ PASS SLIP APPROVAL MODULE (SH, DH, HRH, HR, admin) --}}
         @if(false)
@@ -178,9 +192,9 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link collapsed" href="{{ route('hospital_order') }}">
+                <a class="nav-link {{ request()->routeIs('hospital_order_create') ? '' : 'collapsed' }}" href="{{ route('hospital_order_create') }}">
                     <i class="bi bi-hospital"></i>
-                    <span>Hospital Orders</span>
+                    <span>Hospital Order Create</span>
                 </a>
             </li>
             <li class="nav-item">

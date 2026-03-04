@@ -78,15 +78,24 @@
     @php
         $formatDuration = function ($minutes) {
             $minutes = (int)($minutes ?? 0);
-            if ($minutes <= 0) return '0mins';
+            if ($minutes <= 0) return '0m';
 
             $hours = intdiv($minutes, 60);
             $mins = $minutes % 60;
 
-            if ($hours > 0 && $mins > 0) return $hours . 'hr ' . $mins . 'mins';
-            if ($hours > 0) return $hours . 'hr';
-            return $mins . 'mins';
+            if ($hours > 0 && $mins > 0) return $hours . 'h ' . $mins . 'm';
+            if ($hours > 0) return $hours . 'h';
+            return $mins . 'm';
         };
+
+        $tableBaseHours = collect($employee['dtrs'] ?? [])->sum(function ($dtr) {
+            return is_numeric($dtr['undertime_hours'] ?? null) ? (int)$dtr['undertime_hours'] : 0;
+        });
+        $tableBaseMinutes = collect($employee['dtrs'] ?? [])->sum(function ($dtr) {
+            return is_numeric($dtr['undertime_minutes'] ?? null) ? (int)$dtr['undertime_minutes'] : 0;
+        });
+        $tableTotalHours = $tableBaseHours + intdiv(max($tableBaseMinutes, 0), 60);
+        $tableTotalMinutes = max($tableBaseMinutes, 0) % 60;
 
         $formatRegDays = function ($value) {
             $value = trim((string) ($value ?? ''));
@@ -210,8 +219,8 @@
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
-                        <td></td>
-                        <td></td>
+                        <td style="font-weight: bold">{{ max($tableTotalHours, 0) }}</td>
+                        <td style="font-weight: bold">{{ max($tableTotalMinutes, 0) }}</td>
                     </tr>
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
@@ -360,16 +369,15 @@
                             @endif
                         </tr>
                     @endforeach
-
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
-                        <td></td>
-                        <td></td>
+                        <td style="font-weight: bold">{{ max($tableTotalHours, 0) }}</td>
+                        <td style="font-weight: bold">{{ max($tableTotalMinutes, 0) }}</td>
                     </tr>
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
-                    <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: right;">
+                    <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: start;">
                          @if($employee['division'] == '2')
                         <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>

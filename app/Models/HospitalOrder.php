@@ -12,5 +12,5 @@ class HospitalOrder extends Model
     protected $connection = 'mysql';
     protected $table = 'hospital_orders';
 
-    protected $fillable = ['hospital_order', 'start_date', 'end_date', 'userid', 'created_by'];
+    protected $fillable = ['order_number', 'order_date', 'time_from', 'time_to', 'start_date', 'end_date', 'created_by'];
 }

@@ -208,6 +208,21 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/hospital_order', function () {
         return view('hospital_order');
     })->name('hospital_order');
+    Route::get('/hospital_order/create', function () {
+        if (!in_array(session('access_rights'), ['admin', 'calendar'])) {
+            abort(403);
+        }
+        return view('hospital_order_create');
+    })->name('hospital_order_create');
+    Route::get('/hospital_order/file', function () {
+        return view('hospital_order_file');
+    })->name('hospital_order_file');
+    Route::get('/hospital_order/approval', function () {
+        if (!in_array(session('access_rights'), ['admin', 'calendar'])) {
+            abort(403);
+        }
+        return view('hospital_order_approval');
+    })->name('hospital_order_approval');
 
     Route::get('/leave_management', function () {
         return view('settings.leave_management');
@@ -401,10 +416,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete');
 #HOSPITAL ORDERS
     Route::get('/get_hospital_orders', [HospitalOrderController::class, 'getHospitalOrders'])->name('hospital-orders.get');
-    Route::get('/get_employees_selectize', [\App\Http\Controllers\EmployeeController::class, 'getEmployees'])->name('employee.selectize');
-    Route::get('/hospital-orders/assigned-employees', [HospitalOrderController::class, 'getAssignedEmployees'])->name('hospital-orders.assigned');
     Route::post('/hospital-orders', [HospitalOrderController::class, 'createHospitalOrder'])->name('hospital-orders.store');
-    Route::post('/hospital-orders/assign', [HospitalOrderController::class, 'assignEmployee'])->name('hospital-orders.assign');
+    Route::post('/hospital-orders/file', [HospitalOrderController::class, 'fileForSelf'])->name('hospital-orders.file');
+    Route::get('/hospital-orders/my-filings', [HospitalOrderController::class, 'getMyFilings'])->name('hospital-orders.my-filings');
+    Route::get('/hospital-orders/filings-for-review', [HospitalOrderController::class, 'getFilingsForReview'])->name('hospital-orders.filings-for-review');
+    Route::post('/hospital-orders/filings/{id}/approve', [HospitalOrderController::class, 'approveFiling'])->name('hospital-orders.filings.approve');
+    Route::post('/hospital-orders/filings/{id}/reject', [HospitalOrderController::class, 'rejectFiling'])->name('hospital-orders.filings.reject');
 
 #PRINTING LEAVE FORMS
     Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');
