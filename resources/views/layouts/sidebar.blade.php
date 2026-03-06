@@ -32,24 +32,35 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
-        
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('pass_slip') ? '' : 'collapsed' }}" href="{{ route('pass_slip') }}">
                 <i class="bi bi-calendar-check"></i>
                 <span>Pass Slips</span>
             </a>
         </li>
-        <li class="nav-item d-none">
+        <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('hospital_order_file') ? '' : 'collapsed' }}" href="{{ route('hospital_order_file') }}">
                 <i class="bi bi-hospital"></i>
                 <span>Hospital Order Filing</span>
             </a>
         </li>
-        @if(in_array(session('access_rights'), ['admin', 'calendar']))
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('overtime_file') ? '' : 'collapsed' }}" href="{{ route('overtime_file') }}">
+                <i class="bi bi-clock-history"></i>
+                <span>Overtime Filing</span>
+            </a>
+        </li>
+        @if(in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('hospital_order_approval') ? '' : 'collapsed' }}" href="{{ route('hospital_order_approval') }}">
                     <i class="bi bi-check2-square"></i>
                     <span>Hospital Order Approval</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('overtime_approval') ? '' : 'collapsed' }}" href="{{ route('overtime_approval') }}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Overtime Approval</span>
                 </a>
             </li>
         @endif
@@ -191,12 +202,14 @@
                     <span>Calendar</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('hospital_order_create') ? '' : 'collapsed' }}" href="{{ route('hospital_order_create') }}">
-                    <i class="bi bi-hospital"></i>
-                    <span>Hospital Order Create</span>
-                </a>
-            </li>
+            @if(in_array(session('access_rights'), ['admin']))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('hospital_order_create') ? '' : 'collapsed' }}" href="{{ route('hospital_order_create') }}">
+                        <i class="bi bi-hospital"></i>
+                        <span>Hospital Order Create</span>
+                    </a>
+                </li>
+            @endif
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('timetable') ? '' : 'collapsed' }}"
                    href="{{ route('timetable') }}">

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\HospitalOrderController;
+use App\Http\Controllers\OvertimeController;
 use App\Http\Controllers\PassSlipApproverController;
 use App\Http\Controllers\PassSlipController;
 use Illuminate\Support\Facades\Response;
@@ -209,7 +210,7 @@ Route::group(['middleware' => 'auth'], function () {
         return view('hospital_order');
     })->name('hospital_order');
     Route::get('/hospital_order/create', function () {
-        if (!in_array(session('access_rights'), ['admin', 'calendar'])) {
+        if (!in_array(session('access_rights'), ['admin'])) {
             abort(403);
         }
         return view('hospital_order_create');
@@ -218,11 +219,20 @@ Route::group(['middleware' => 'auth'], function () {
         return view('hospital_order_file');
     })->name('hospital_order_file');
     Route::get('/hospital_order/approval', function () {
-        if (!in_array(session('access_rights'), ['admin', 'calendar'])) {
+        if (!in_array(session('access_rights'), ['admin'], true) && !session('is_section_head') && !session('is_division_head')) {
             abort(403);
         }
         return view('hospital_order_approval');
     })->name('hospital_order_approval');
+    Route::get('/overtime/file', function () {
+        return view('overtime_file');
+    })->name('overtime_file');
+    Route::get('/overtime/approval', function () {
+        if (!in_array(session('access_rights'), ['admin'], true) && !session('is_section_head') && !session('is_division_head')) {
+            abort(403);
+        }
+        return view('overtime_approval');
+    })->name('overtime_approval');
 
     Route::get('/leave_management', function () {
         return view('settings.leave_management');
@@ -422,6 +432,15 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/hospital-orders/filings-for-review', [HospitalOrderController::class, 'getFilingsForReview'])->name('hospital-orders.filings-for-review');
     Route::post('/hospital-orders/filings/{id}/approve', [HospitalOrderController::class, 'approveFiling'])->name('hospital-orders.filings.approve');
     Route::post('/hospital-orders/filings/{id}/reject', [HospitalOrderController::class, 'rejectFiling'])->name('hospital-orders.filings.reject');
+    Route::delete('/hospital-orders/filings/{id}', [HospitalOrderController::class, 'deleteMyFiling'])->name('hospital-orders.filings.delete');
+
+#OVERTIME REQUESTS
+    Route::post('/overtime/file', [OvertimeController::class, 'fileForSelf'])->name('overtime.file');
+    Route::get('/overtime/my-filings', [OvertimeController::class, 'getMyFilings'])->name('overtime.my-filings');
+    Route::get('/overtime/filings-for-review', [OvertimeController::class, 'getFilingsForReview'])->name('overtime.filings-for-review');
+    Route::post('/overtime/filings/{id}/approve', [OvertimeController::class, 'approveFiling'])->name('overtime.filings.approve');
+    Route::post('/overtime/filings/{id}/reject', [OvertimeController::class, 'rejectFiling'])->name('overtime.filings.reject');
+    Route::delete('/overtime/filings/{id}', [OvertimeController::class, 'deleteMyFiling'])->name('overtime.filings.delete');
 
 #PRINTING LEAVE FORMS
     Route::get('/print_leave', [\App\Http\Controllers\PrintController::class, 'printLeaveForm'])->name('printLeaveForm');

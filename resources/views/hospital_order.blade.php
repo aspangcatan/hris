@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        $canCreateHospitalOrder = in_array(session('access_rights'), ['admin', 'calendar']);
-        $canApproveHospitalOrder = $canCreateHospitalOrder;
+        $canCreateHospitalOrder = in_array(session('access_rights'), ['admin']);
+        $canApproveHospitalOrder = in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head');
     @endphp
 
     <div class="card shadow-sm border-0">

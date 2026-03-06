@@ -159,10 +159,11 @@
                                 <th>Time Range</th>
                                 <th>Status</th>
                                 <th>Remarks</th>
+                                <th>Action</th>
                             </tr>
                             </thead>
                             <tbody id="my_filing_list">
-                            <tr><td colspan="5" class="ho-empty">Loading...</td></tr>
+                            <tr><td colspan="6" class="ho-empty">Loading...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -186,6 +187,7 @@
     let filteredFilings = [];
     let currentPage = 1;
     const pageSize = 8;
+    const filingDeleteBaseUrl = "{{ url('/hospital-orders/filings') }}";
 
     $(document).ready(function () {
         getHospitalOrders();
@@ -207,6 +209,12 @@
         $('#filingSearch').on('input', function () {
             currentPage = 1;
             applyFilingFilter();
+        });
+
+        $('body').on('click', '.btn-delete-filing', function () {
+            const filingId = Number($(this).data('id'));
+            if (!filingId) return;
+            deleteFiling(filingId);
         });
 
         $('#fileHospitalOrderForm').submit(function (e) {
@@ -269,7 +277,7 @@
                 applyFilingFilter();
             })
             .catch(() => {
-                $('#my_filing_list').html('<tr><td colspan="5" class="ho-empty text-danger">Failed to load.</td></tr>');
+                $('#my_filing_list').html('<tr><td colspan="6" class="ho-empty text-danger">Failed to load.</td></tr>');
                 $('#filingPagination').empty();
                 $('#filingSummary').text('');
             });
@@ -292,7 +300,7 @@
         $list.empty();
 
         if (!filteredFilings.length) {
-            $list.html('<tr><td colspan="5" class="ho-empty">No filings found.</td></tr>');
+            $list.html('<tr><td colspan="6" class="ho-empty">No filings found.</td></tr>');
             $('#filingSummary').text('0 results');
             return;
         }
@@ -312,6 +320,7 @@
                     <td>${formatTimeRange(it.time_from, it.time_to)}</td>
                     <td>${statusBadge(it.status)}</td>
                     <td>${escapeHtml(it.remarks || '-')}</td>
+                    <td>${deleteAction(it)}</td>
                 </tr>
             `);
         });
@@ -395,6 +404,47 @@
             return;
         }
         toastr.error(fallbackMessage, 'Error');
+    }
+
+    function deleteAction(filing) {
+        const status = String((filing && filing.status) || '').toLowerCase();
+        if (!['pending', 'rejected'].includes(status)) return '-';
+
+        return `
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger btn-delete-filing"
+                    data-id="${Number(filing.id)}">
+                Delete
+            </button>
+        `;
+    }
+
+    function deleteFiling(id) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Delete Filing?',
+            text: 'This will permanently remove the selected filing.',
+            showCancelButton: true,
+            confirmButtonText: 'Delete',
+            confirmButtonColor: '#dc3545'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            fetch(`${filingDeleteBaseUrl}/${id}`, {
+                method: 'DELETE',
+                headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+            })
+                .then(async (res) => {
+                    const data = await res.json();
+                    if (!res.ok) throw data;
+                    return data;
+                })
+                .then((data) => {
+                    toastr.success(data.message || 'Deleted.', 'Success');
+                    getMyFilings();
+                })
+                .catch((err) => showApiError(err, 'Failed to delete filing.'));
+        });
     }
 
     function escapeHtml(value) {

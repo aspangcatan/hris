@@ -37,6 +37,8 @@
     <script>
         let userid = 0;
         let log_id = 0;
+        const accessRights = @json(strtolower((string) session('access_rights')));
+        const canEditRawTimelog = ["admin", "it"].includes(accessRights);
         $(document).ready(function () {
             getEmployeeDtr();
             loadDivision();
@@ -63,8 +65,7 @@
 
 
             $("#btn_save_log").click(async function () {
-                const access = @json(session('access_rights'));
-                if (access !== "DH" && access !== "admin") {
+                if (!canEditRawTimelog) {
                     alert("Permission Denied");
                     return;
                 }
@@ -200,6 +201,11 @@
             });
 
             $("#raw_list").on("click", ".edit-btn", function () {
+                if (!canEditRawTimelog) {
+                    alert("Permission Denied");
+                    return;
+                }
+
                 log_id = $(this).data("id");
                 const date = $(this).data("date");
                 const status = $(this).data("status");
@@ -215,6 +221,11 @@
             });
 
             $("#raw_list").on("click", ".delete-btn", function () {
+                if (!canEditRawTimelog) {
+                    alert("Permission Denied");
+                    return;
+                }
+
                 log_id = $(this).data("id");
                 const date = $(this).data("date");
                 const status = $(this).data("status");
@@ -267,6 +278,11 @@
         });
 
         function addRawLog(){
+            if (!canEditRawTimelog) {
+                alert("Permission Denied");
+                return;
+            }
+
             // Populate modal fields
             $("#log_date").val("");
             $("#log_status").val("");
@@ -436,36 +452,44 @@
                         const date = moment(it.created_at).format("MM/DD/YYYY");
                         const time = moment(it.created_at).format("hh:mm:ss A");
 
-                        // const imageUrl = "/hris/storage/" + it.photo_path; // Assuming 'photo_path' is the column where the image file path is stored
-
-                        let tr = $(`
-                        <tr>
-                            <td>${date}</td>
-                            <td>${it.status}</td>
-                            <td><a target="_blank">${time}</a></td>
-                            <td>
-                                <button
-                                    class="edit-btn"
-                                    data-id="${it.id}"
-                                    data-date="${date}"
-                                    data-status="${it.status}"
-                                    data-time="${time}"
-                                    style="background: transparent; border: none; cursor: pointer;">
-                                    <i class="fa-solid fa-pen text-success"></i>
-                                </button>
-                            </td>
-                             <td>
-                                <button
-                                    class="delete-btn"
-                                    data-id="${it.id}"
-                                    data-date="${date}"
-                                    data-status="${it.status}"
-                                    data-time="${time}"
-                                    style="background: transparent; border: none; cursor: pointer;">
-                                    <i class="fa-solid fa-trash text-danger"></i>
-                                </button>
-                            </td>
-                        </tr>`);
+                        let tr = "";
+                        if (canEditRawTimelog) {
+                            tr = $(`
+                            <tr>
+                                <td>${date}</td>
+                                <td>${it.status}</td>
+                                <td><a target="_blank">${time}</a></td>
+                                <td>
+                                    <button
+                                        class="edit-btn"
+                                        data-id="${it.id}"
+                                        data-date="${date}"
+                                        data-status="${it.status}"
+                                        data-time="${time}"
+                                        style="background: transparent; border: none; cursor: pointer;">
+                                        <i class="fa-solid fa-pen text-success"></i>
+                                    </button>
+                                </td>
+                                 <td>
+                                    <button
+                                        class="delete-btn"
+                                        data-id="${it.id}"
+                                        data-date="${date}"
+                                        data-status="${it.status}"
+                                        data-time="${time}"
+                                        style="background: transparent; border: none; cursor: pointer;">
+                                        <i class="fa-solid fa-trash text-danger"></i>
+                                    </button>
+                                </td>
+                            </tr>`);
+                        } else {
+                            tr = $(`
+                            <tr>
+                                <td>${date}</td>
+                                <td>${it.status}</td>
+                                <td><a target="_blank">${time}</a></td>
+                            </tr>`);
+                        }
                         $("#raw_list").append(tr);
                     });
 

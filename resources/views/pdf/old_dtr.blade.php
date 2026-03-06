@@ -198,11 +198,12 @@
                             </td>
 
                             <!-- UNDERTIME (same rule as before) -->
-                            @if(
-                                !empty($dtr['date_timein_am']) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am'])
-                            )
-                                <td style="font-size: 11px;font-weight: bold" colspan="2">
-                                    {{ $dtr['date_timein_am'] }}
+                            @if(!empty($dtr['day_marker']))
+                                @php
+                                    $isLateAndOt = str_contains((string) $dtr['day_marker'], 'L:') && str_contains((string) $dtr['day_marker'], 'OT:');
+                                @endphp
+                                <td style="font-size: {{ $isLateAndOt ? '8px' : '11px' }}; font-weight: bold; line-height: 1.1;" colspan="2">
+                                    {{ $dtr['day_marker'] }}
                                 </td>
                             @else
                                  @if($employee['division'] == '2')
@@ -352,11 +353,12 @@
                             </td>
 
                             <!-- UNDERTIME (same rule as before) -->
-                            @if(
-                                !empty($dtr['date_timein_am']) && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am'])
-                            )
-                                <td style="font-size: 11px;font-weight: bold" colspan="2">
-                                    {{ $dtr['date_timein_am'] }}
+                            @if(!empty($dtr['day_marker']))
+                                @php
+                                    $isLateAndOt = str_contains((string) $dtr['day_marker'], 'L:') && str_contains((string) $dtr['day_marker'], 'OT:');
+                                @endphp
+                                <td style="font-size: {{ $isLateAndOt ? '8px' : '11px' }}; font-weight: bold; line-height: 1.1;" colspan="2">
+                                    {{ $dtr['day_marker'] }}
                                 </td>
                             @else
                                 @if($employee['division'] == '2')

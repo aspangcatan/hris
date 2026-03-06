@@ -12,13 +12,14 @@ class DTRServices
         $workdays = $this->getAllDays($year, $month); // includes weekends
         $holidays = $this->getHolidays($month, $year); // fetch holidays
         $leaveDates = $this->getApprovedLeaveDates($userid, $month, $year); // fetch approved leave dates
+        $specialDutyDates = $this->getApprovedSpecialDutyDates($userid, $month, $year); // approved H.O and OT dates
         $presentDays = [];
         $absentDays = [];
 
         // Step 1: Determine initial present/absent days
         foreach ($workdays as $date) {
-            // If date is a holiday OR approved leave, mark as present directly
-            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
+            // If date is a holiday, approved leave, or approved special duty, mark as present directly
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
                 $presentDays[$date] = true;
                 unset($absentDays[$date]);
                 continue;
@@ -38,8 +39,8 @@ class DTRServices
         foreach ($workdays as $date) {
             $dayOfWeek = Carbon::parse($date)->format('l');
 
-            // Skip weekend rule processing if holiday or leave
-            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
+            // Skip weekend rule processing if holiday, leave, or approved special duty
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
                 continue;
             }
 
@@ -79,7 +80,7 @@ class DTRServices
         // Step 3: Recalculate present days after weekend + holiday + leave rules
         $finalPresentCount = 0;
         foreach ($workdays as $date) {
-            if (in_array($date, $holidays) || in_array($date, $leaveDates)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
                 $finalPresentCount++;
             } elseif (!isset($absentDays[$date])) {
                 $finalPresentCount++;
@@ -290,6 +291,27 @@ class DTRServices
             ->whereMonth('lda.date_applied', $month)
             ->pluck('lda.date_applied')
             ->toArray();
+    }
+
+    private function getApprovedSpecialDutyDates($userid, $month, $year)
+    {
+        $hospitalOrderDates = DB::table('hris.hospital_order_employees')
+            ->where('userid', $userid)
+            ->where('status', 'approved')
+            ->whereMonth('filed_date', $month)
+            ->whereYear('filed_date', $year)
+            ->pluck('filed_date')
+            ->toArray();
+
+        $overtimeDates = DB::table('hris.overtime_requests')
+            ->where('userid', $userid)
+            ->where('status', 'approved')
+            ->whereMonth('ot_date', $month)
+            ->whereYear('ot_date', $year)
+            ->pluck('ot_date')
+            ->toArray();
+
+        return array_values(array_unique(array_merge($hospitalOrderDates, $overtimeDates)));
     }
 
     private function getApprovedPassSlipDates($userid, $month, $year)

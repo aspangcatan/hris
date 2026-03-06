@@ -1,0 +1,196 @@
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class OvertimeServices
+{
+    private function isAdmin()
+    {
+        return in_array(session('access_rights'), ['admin'], true);
+    }
+
+    private function isSectionHead()
+    {
+        return (bool) session('is_section_head');
+    }
+
+    private function isDivisionHead()
+    {
+        return (bool) session('is_division_head');
+    }
+
+    private function applyManagedEmployeeScope($query, $employeeAlias = 'u')
+    {
+        if ($this->isDivisionHead()) {
+            $managedDivisionIds = DB::table('tdh_user.division')
+                ->where('head', Auth::id())
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($managedDivisionIds)) {
+                $query->whereRaw('1=0');
+                return;
+            }
+
+            $query->whereIn($employeeAlias . '.division', $managedDivisionIds);
+            return;
+        }
+
+        if ($this->isSectionHead()) {
+            $managedSectionIds = DB::table('tdh_user.section')
+                ->where('head', Auth::id())
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($managedSectionIds)) {
+                $query->whereRaw('1=0');
+                return;
+            }
+
+            $query->whereIn($employeeAlias . '.section', $managedSectionIds);
+            return;
+        }
+
+        $query->whereRaw('1=0');
+    }
+
+    public function fileForSelf($otDate, $timeFrom, $timeTo, $reason = null)
+    {
+        $exists = DB::table('hris.overtime_requests')
+            ->where('userid', Auth::id())
+            ->where('ot_date', $otDate)
+            ->where('time_from', $timeFrom)
+            ->where('time_to', $timeTo)
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'ot_date' => 'You already filed an overtime request with the same date and time range.',
+            ]);
+        }
+
+        DB::table('hris.overtime_requests')->insert([
+            'userid' => Auth::id(),
+            'ot_date' => $otDate,
+            'time_from' => $timeFrom,
+            'time_to' => $timeTo,
+            'reason' => $reason,
+            'status' => 'pending',
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ]);
+    }
+
+    public function getMyFilings()
+    {
+        return DB::table('hris.overtime_requests as ot')
+            ->where('ot.userid', Auth::id())
+            ->orderBy('ot.created_at', 'desc')
+            ->get([
+                'ot.id',
+                'ot.ot_date',
+                'ot.time_from',
+                'ot.time_to',
+                'ot.reason',
+                'ot.status',
+                'ot.remarks',
+                'ot.reviewed_at',
+            ]);
+    }
+
+    public function getFilingsForReview()
+    {
+        $query = DB::table('hris.overtime_requests as ot')
+            ->join('tdh_user.users as u', 'u.id', '=', 'ot.userid')
+            ->where('ot.status', 'pending')
+            ->orderBy('ot.created_at', 'desc');
+
+        if (!$this->isAdmin()) {
+            $query->where(function ($where) {
+                $this->applyManagedEmployeeScope($where, 'u');
+            });
+        }
+
+        return $query->get([
+                'ot.id',
+                'ot.userid',
+                DB::raw("CONCAT(COALESCE(u.fname, ''), ' ', COALESCE(LEFT(u.mname,1), ''), CASE WHEN u.mname IS NULL OR u.mname = '' THEN '' ELSE '. ' END, COALESCE(u.lname, ''), CASE WHEN u.suffix IS NULL OR u.suffix = '' THEN '' ELSE CONCAT(' ', u.suffix) END) as employee_name"),
+                'ot.ot_date',
+                'ot.time_from',
+                'ot.time_to',
+                'ot.reason',
+                'ot.status',
+                'ot.remarks',
+                'ot.reviewed_at',
+            ]);
+    }
+
+    public function reviewFiling($filingId, $status, $remarks = null)
+    {
+        $filing = DB::table('hris.overtime_requests as ot')
+            ->join('tdh_user.users as u', 'u.id', '=', 'ot.userid')
+            ->where('ot.id', $filingId)
+            ->select('ot.id', 'ot.status')
+            ;
+
+        if (!$this->isAdmin()) {
+            $filing->where(function ($where) {
+                $this->applyManagedEmployeeScope($where, 'u');
+            });
+        }
+
+        $filing = $filing->first();
+
+        if (!$filing) {
+            throw ValidationException::withMessages([
+                'id' => 'Overtime filing record not found.',
+            ]);
+        }
+
+        if (!in_array(strtolower((string) $filing->status), ['pending'], true)) {
+            throw ValidationException::withMessages([
+                'id' => 'Only pending overtime filings can be reviewed.',
+            ]);
+        }
+
+        DB::table('hris.overtime_requests')
+            ->where('id', $filingId)
+            ->update([
+                'status' => $status,
+                'remarks' => $remarks,
+                'reviewed_by' => Auth::id(),
+                'reviewed_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+    }
+
+    public function deleteMyFiling($filingId)
+    {
+        $filing = DB::table('hris.overtime_requests')
+            ->where('id', $filingId)
+            ->where('userid', Auth::id())
+            ->first(['id', 'status']);
+
+        if (!$filing) {
+            throw ValidationException::withMessages([
+                'id' => 'Overtime filing record not found.',
+            ]);
+        }
+
+        $status = strtolower((string) $filing->status);
+        if (!in_array($status, ['pending', 'rejected'], true)) {
+            throw ValidationException::withMessages([
+                'id' => 'Only pending or rejected overtime filings can be deleted.',
+            ]);
+        }
+
+        DB::table('hris.overtime_requests')
+            ->where('id', $filingId)
+            ->delete();
+    }
+}

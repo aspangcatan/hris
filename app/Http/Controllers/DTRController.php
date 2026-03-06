@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Storage;
 
 class DTRController extends Controller
 {
+    private function canManageRawTimelog(): bool
+    {
+        $accessRights = strtolower((string) session('access_rights'));
+        return in_array($accessRights, ['admin', 'it'], true);
+    }
+
     public function store(Request $request)
     {
         try {
@@ -190,6 +196,10 @@ class DTRController extends Controller
 
     public function storeManual(Request $request)
     {
+        if (!$this->canManageRawTimelog()) {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
+
         $request->validate([
             'status' => 'required|in:IN,OUT',
             'date' => 'required|date',
@@ -230,6 +240,10 @@ class DTRController extends Controller
 
     public function deleteTimeLog(Request $request)
     {
+        if (!$this->canManageRawTimelog()) {
+            return response()->json(['error' => 'Permission denied'], 403);
+        }
+
         try {
             DB::table('hris.dtr_logs')->where('id', '=', $request->log_id)->delete();
             return response()->json(['message' => "DTR log successfully deleted"]);
@@ -510,6 +524,28 @@ class DTRController extends Controller
                     $hospitalOrders[Carbon::parse($ho->filed_date)->toDateString()] = 'H.O #' . $ho->order_number;
                 }
 
+                // Overtime
+                $otsRaw = DB::table('hris.overtime_requests as ot')
+                    ->where('ot.userid', $employee->id)
+                    ->where('ot.status', 'approved')
+                    ->whereMonth('ot.ot_date', $month)
+                    ->whereYear('ot.ot_date', $year)
+                    ->select(DB::raw('DATE(ot.ot_date) as ot_date'), 'ot.time_from', 'ot.time_to')
+                    ->get();
+
+                $overtimeRequests = [];
+                foreach ($otsRaw as $ot) {
+                    $otDate = Carbon::parse($ot->ot_date)->toDateString();
+                    $range = Carbon::parse($ot->time_from)->format('H:i') . ' - ' . Carbon::parse($ot->time_to)->format('H:i');
+                    $label = 'OT: ' . $range;
+
+                    if (!isset($overtimeRequests[$otDate])) {
+                        $overtimeRequests[$otDate] = $label;
+                    } elseif (strpos($overtimeRequests[$otDate], $label) === false) {
+                        $overtimeRequests[$otDate] .= ' | ' . $label;
+                    }
+                }
+
                 // Fetch schedules for the employee for the month
                 $schedulesRaw = DB::table('hris.schedules as s')
                     ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
@@ -524,9 +560,10 @@ class DTRController extends Controller
                     $schedules[$s->schedule_date] = $s;
                 }
 
-                // Official pass slips: waive late/undertime for the slip date (regardless of approval status)
+                // Official pass slips: waive late/undertime and display OB code on DTR
                 $officialPassSlipsRaw = DB::table('hris.pass_slips')
                     ->where('user_id', $employee->id)
+                    ->where('status', 'approved')
                     ->whereMonth('slip_date', $month)
                     ->whereYear('slip_date', $year)
                     ->whereRaw('UPPER(type) = ?', ['OFFICIAL'])
@@ -545,12 +582,24 @@ class DTRController extends Controller
                 $lateTotalMinutes = 0;
                 $undertimeTotalMinutes = 0;
                 
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $schedules, $officialPassSlips, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $officialPassSlips, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
+                    $formatMinutes = function ($minutes) {
+                        $minutes = (int) $minutes;
+                        if ($minutes <= 0) return '0m';
+
+                        $hours = intdiv($minutes, 60);
+                        $mins = $minutes % 60;
+
+                        if ($hours > 0 && $mins > 0) return $hours . 'h ' . $mins . 'm';
+                        if ($hours > 0) return $hours . 'h';
+                        return $mins . 'm';
+                    };
 
                     $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                     $isHoliday = array_key_exists($currentDay, $holidays);
                     $hasLeave = array_key_exists($currentDay, $leaves);
+                    $hasApprovedOvertime = !empty($overtimeRequests[$currentDay]);
                     $hasOfficialPassSlip = !empty($officialPassSlips[$currentDay]);
 
                     $data = [
@@ -558,6 +607,8 @@ class DTRController extends Controller
                         'day_name' => $dayName,
                         'isInsideCutoff' => ($day >= $startDay && $day <= $endDay),
                         'isEmpty' => true,
+                        'late_minutes' => 0,
+                        'day_marker' => '',
                         'planned_schedule' => '',
 
                         'date_timein_am' => '',
@@ -828,6 +879,7 @@ class DTRController extends Controller
                             if ($undertimeMinutes > 0) $undertimeCount++;
                             $lateTotalMinutes += $lateMinutes;
                             $undertimeTotalMinutes += $undertimeMinutes;
+                            $data['late_minutes'] = $lateMinutes;
 
                             $totalMinutes = $lateMinutes + $undertimeMinutes;
                             if ($totalMinutes > 0) {
@@ -837,12 +889,30 @@ class DTRController extends Controller
                         }
                     }
 
-                    // LEAVE / HOLIDAY / H.O
+                    // Keep timelog fields as pure times; render OB/OT as separate marker in the PDF.
+                    // Priority: OB (official pass slip) over OT.
+                    if (!$data['isEmpty'] && ($hasOfficialPassSlip || $hasApprovedOvertime)) {
+                        if ($hasOfficialPassSlip) {
+                            $data['day_marker'] = 'OB';
+                        } else {
+                            $lateMarker = '';
+                            if (!empty($data['late_minutes']) && (int)$data['late_minutes'] > 0) {
+                                $lateMarker = 'L: ' . $formatMinutes((int)$data['late_minutes']) . ' ';
+                            }
+                            $data['day_marker'] = $lateMarker . $overtimeRequests[$currentDay];
+                        }
+                    }
+
+                    // LEAVE / HOLIDAY / H.O / OB / OT
                     if ($data['isEmpty']) {
                         if ($hasLeave) {
                             $code = $leaves[$currentDay]['code'];
                         } elseif (!empty($hospitalOrders[$currentDay])) {
                             $code = $hospitalOrders[$currentDay];
+                        } elseif ($hasOfficialPassSlip) {
+                            $code = 'OB';
+                        } elseif (!empty($overtimeRequests[$currentDay])) {
+                            $code = $overtimeRequests[$currentDay];
                         } elseif ($isHoliday) {
                             $holiday = $holidays[$currentDay];
                             $code = $holiday['type'] != 'Regular' ? strtoupper($holiday['description']) : 'HOLIDAY';
@@ -851,10 +921,7 @@ class DTRController extends Controller
                         }
 
                         if ($code !== null) {
-                            $data['date_timein_am'] = $code;
-                            $data['date_timeout_am'] = $code;
-                            $data['date_timein_pm'] = $code;
-                            $data['date_timeout_pm'] = $code;
+                            $data['day_marker'] = $code;
                         }
                     }
 

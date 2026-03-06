@@ -9,6 +9,56 @@ use Illuminate\Validation\ValidationException;
 
 class HospitalOrderServices
 {
+    private function isAdmin()
+    {
+        return in_array(session('access_rights'), ['admin'], true);
+    }
+
+    private function isSectionHead()
+    {
+        return (bool) session('is_section_head');
+    }
+
+    private function isDivisionHead()
+    {
+        return (bool) session('is_division_head');
+    }
+
+    private function applyManagedEmployeeScope($query, $employeeAlias = 'u')
+    {
+        if ($this->isDivisionHead()) {
+            $managedDivisionIds = DB::table('tdh_user.division')
+                ->where('head', Auth::id())
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($managedDivisionIds)) {
+                $query->whereRaw('1=0');
+                return;
+            }
+
+            $query->whereIn($employeeAlias . '.division', $managedDivisionIds);
+            return;
+        }
+
+        if ($this->isSectionHead()) {
+            $managedSectionIds = DB::table('tdh_user.section')
+                ->where('head', Auth::id())
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($managedSectionIds)) {
+                $query->whereRaw('1=0');
+                return;
+            }
+
+            $query->whereIn($employeeAlias . '.section', $managedSectionIds);
+            return;
+        }
+
+        $query->whereRaw('1=0');
+    }
+
     public function createHospitalOrder($orderNumber, $startDate, $endDate, $timeFrom, $timeTo)
     {
         DB::table('hris.hospital_orders')->insert([
@@ -122,16 +172,16 @@ class HospitalOrderServices
     public function getFilingsForReview()
     {
         $query = DB::table('hris.hospital_order_employees as hoe')
-            ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
             ->join('tdh_user.users as u', 'u.id', '=', 'hoe.userid')
-            ->where(function ($where) {
-                $where->where('ho.created_by', Auth::id());
-                if (in_array(session('access_rights'), ['admin', 'calendar'])) {
-                    $where->orWhereRaw('1=1');
-                }
-            })
+            ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
             ->orderByRaw("CASE WHEN hoe.status = 'pending' THEN 0 ELSE 1 END")
             ->orderBy('hoe.created_at', 'desc');
+
+        if (!$this->isAdmin()) {
+            $query->where(function ($where) {
+                $this->applyManagedEmployeeScope($where, 'u');
+            });
+        }
 
         return $query->get([
             'hoe.id',
@@ -151,10 +201,18 @@ class HospitalOrderServices
     public function reviewFiling($filingId, $status, $remarks = null)
     {
         $filing = DB::table('hris.hospital_order_employees as hoe')
-            ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
+            ->join('tdh_user.users as u', 'u.id', '=', 'hoe.userid')
             ->where('hoe.id', $filingId)
-            ->select('hoe.id', 'hoe.status', 'ho.created_by')
-            ->first();
+            ->select('hoe.id', 'hoe.status')
+            ;
+
+        if (!$this->isAdmin()) {
+            $filing->where(function ($where) {
+                $this->applyManagedEmployeeScope($where, 'u');
+            });
+        }
+
+        $filing = $filing->first();
 
         if (!$filing) {
             throw ValidationException::withMessages([
@@ -162,9 +220,9 @@ class HospitalOrderServices
             ]);
         }
 
-        if (!in_array(session('access_rights'), ['admin', 'calendar']) && (int) $filing->created_by !== (int) Auth::id()) {
+        if (!in_array(strtolower((string) $filing->status), ['pending'], true)) {
             throw ValidationException::withMessages([
-                'id' => 'You are not allowed to review this filing.',
+                'id' => 'Only pending filings can be reviewed.',
             ]);
         }
 
@@ -177,5 +235,30 @@ class HospitalOrderServices
                 'reviewed_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ]);
+    }
+
+    public function deleteMyFiling($filingId)
+    {
+        $filing = DB::table('hris.hospital_order_employees')
+            ->where('id', $filingId)
+            ->where('userid', Auth::id())
+            ->first(['id', 'status']);
+
+        if (!$filing) {
+            throw ValidationException::withMessages([
+                'id' => 'Filing record not found.',
+            ]);
+        }
+
+        $status = strtolower((string) $filing->status);
+        if (!in_array($status, ['pending', 'rejected'], true)) {
+            throw ValidationException::withMessages([
+                'id' => 'Only pending or rejected filings can be deleted.',
+            ]);
+        }
+
+        DB::table('hris.hospital_order_employees')
+            ->where('id', $filingId)
+            ->delete();
     }
 }

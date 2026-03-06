@@ -15,10 +15,17 @@ class HospitalOrderController extends Controller
         $this->hospitalService = $hospitalService;
     }
 
+    private function canReviewHospitalOrderFilings()
+    {
+        return in_array(session('access_rights'), ['admin'], true)
+            || (bool) session('is_section_head')
+            || (bool) session('is_division_head');
+    }
+
     public function createHospitalOrder(Request $request)
     {
         try {
-            if (!in_array(session('access_rights'), ['admin', 'calendar'])) {
+            if (!in_array(session('access_rights'), ['admin'])) {
                 return response()->json(['error' => 'Only authorized users can create hospital orders.'], 403);
             }
 
@@ -93,6 +100,9 @@ class HospitalOrderController extends Controller
     public function getFilingsForReview()
     {
         try {
+            if (!$this->canReviewHospitalOrderFilings()) {
+                return response()->json(['error' => 'You are not allowed to review filings.'], 403);
+            }
             return response()->json($this->hospitalService->getFilingsForReview());
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
@@ -102,6 +112,10 @@ class HospitalOrderController extends Controller
     public function approveFiling(Request $request, $id)
     {
         try {
+            if (!$this->canReviewHospitalOrderFilings()) {
+                return response()->json(['error' => 'You are not allowed to review filings.'], 403);
+            }
+
             $request->validate([
                 'remarks' => 'nullable|string|max:500',
             ]);
@@ -118,12 +132,28 @@ class HospitalOrderController extends Controller
     public function rejectFiling(Request $request, $id)
     {
         try {
+            if (!$this->canReviewHospitalOrderFilings()) {
+                return response()->json(['error' => 'You are not allowed to review filings.'], 403);
+            }
+
             $request->validate([
                 'remarks' => 'nullable|string|max:500',
             ]);
 
             $this->hospitalService->reviewFiling($id, 'rejected', $request->remarks);
             return response()->json(['message' => 'Filing rejected successfully.']);
+        } catch (ValidationException $exception) {
+            return response()->json(['errors' => $exception->errors()], 422);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function deleteMyFiling($id)
+    {
+        try {
+            $this->hospitalService->deleteMyFiling($id);
+            return response()->json(['message' => 'Filing deleted successfully.']);
         } catch (ValidationException $exception) {
             return response()->json(['errors' => $exception->errors()], 422);
         } catch (\Exception $exception) {
