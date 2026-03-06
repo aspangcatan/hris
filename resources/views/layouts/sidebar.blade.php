@@ -138,7 +138,7 @@
             </li>
         @endif
 
-        @if(false)
+        
         {{-- LEAVE MANAGEMENT --}}
         <li class="nav-heading">Leave Management</li>
         <li class="nav-item">
@@ -157,7 +157,7 @@
                 </a>
             </li>
         @endif
-@endif
+
         {{-- HR MANAGEMENT (hr + HRH + admin) --}}
         @if(in_array(session('access_rights'), ['hr','HRH','admin']))
             <li class="nav-heading">HR Management</li>
