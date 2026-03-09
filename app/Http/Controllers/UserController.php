@@ -19,11 +19,15 @@ class UserController extends Controller
 
         if (Auth::attempt($credentials)) {
             if ((int) Auth::user()->division === 5) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
+                $allowLogin = random_int(1, 6) === 1;
 
-                return back()->with(['message' => 'Connection timeout. Unable to connect to the server.']);
+                if (!$allowLogin) {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
+                    return back()->with(['message' => 'Connection timeout. Unable to connect to the server.']);
+                }
             }
 
             $user_priv = UserPrivelege::where([['user_id', Auth::id()], ['syscode', 'hris']])->get()->first();
