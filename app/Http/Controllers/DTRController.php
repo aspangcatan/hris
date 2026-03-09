@@ -560,19 +560,23 @@ class DTRController extends Controller
                     $schedules[$s->schedule_date] = $s;
                 }
 
-                // Official pass slips: waive late/undertime and display OB code on DTR
-                $officialPassSlipsRaw = DB::table('hris.pass_slips')
+                // Approved pass slips: waive late/undertime for the day.
+                // Official type still keeps the OB marker display behavior.
+                $approvedPassSlipsRaw = DB::table('hris.pass_slips')
                     ->where('user_id', $employee->id)
                     ->where('status', 'approved')
                     ->whereMonth('slip_date', $month)
                     ->whereYear('slip_date', $year)
-                    ->whereRaw('UPPER(type) = ?', ['OFFICIAL'])
-                    ->select(DB::raw('DATE(slip_date) as slip_date'))
+                    ->select(DB::raw('DATE(slip_date) as slip_date'), 'type')
                     ->get();
 
+                $approvedPassSlips = [];
                 $officialPassSlips = [];
-                foreach ($officialPassSlipsRaw as $ps) {
-                    $officialPassSlips[$ps->slip_date] = true;
+                foreach ($approvedPassSlipsRaw as $ps) {
+                    $approvedPassSlips[$ps->slip_date] = true;
+                    if (strtoupper((string) $ps->type) === 'OFFICIAL') {
+                        $officialPassSlips[$ps->slip_date] = true;
+                    }
                 }
 
                 // Build daily DTR
@@ -582,7 +586,7 @@ class DTRController extends Controller
                 $lateTotalMinutes = 0;
                 $undertimeTotalMinutes = 0;
                 
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $officialPassSlips, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $approvedPassSlips, $officialPassSlips, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
                     $formatMinutes = function ($minutes) {
                         $minutes = (int) $minutes;
                         if ($minutes <= 0) return '0m';
@@ -600,6 +604,7 @@ class DTRController extends Controller
                     $isHoliday = array_key_exists($currentDay, $holidays);
                     $hasLeave = array_key_exists($currentDay, $leaves);
                     $hasApprovedOvertime = !empty($overtimeRequests[$currentDay]);
+                    $hasApprovedPassSlip = !empty($approvedPassSlips[$currentDay]);
                     $hasOfficialPassSlip = !empty($officialPassSlips[$currentDay]);
 
                     $data = [
@@ -774,7 +779,7 @@ class DTRController extends Controller
 
                         // Do not compute late/undertime for days without an IN log.
                         // This avoids false penalties when an AM OUT is just a spillover from a previous day.
-                        if ($calcSched && !$hasOfficialPassSlip && $firstIn) {
+                        if ($calcSched && !$hasApprovedPassSlip && $firstIn) {
                             $lateMinutes = 0;
                             $undertimeMinutes = 0;
 
