@@ -6,6 +6,13 @@
         </div>
 
         <div class="card-body bg-white">
+            <div class="d-flex justify-content-end align-items-center gap-2">
+                <input type="text" class="form-control w-auto" id="search_employee" placeholder="Search employee">
+                <button class="btn btn-success" id="btn_search">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+
             <div class="table-responsive mt-3">
                 <table class="table table-bordered align-middle text-center">
                     <thead class="table-light">
@@ -24,6 +31,15 @@
                     </tr>
                     </tbody>
                 </table>
+                <div id="pagination_container" class="d-none">
+                    <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+                        <div id="page_items_count"></div>
+                        <nav aria-label="Pass slip pagination">
+                            <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
+                        </nav>
+                        <div id="page_indicator" class="small text-muted"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -32,14 +48,54 @@
 @section('js')
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script>
-        $(document).ready(function () {
-            loadPendingSlips();
+        let currentPage = 1;
+        let lastPage = 1;
 
-            async function loadPendingSlips() {
-                const response = await fetch('{{ route('pass-slip.approver.list') }}');
-                const slips = await response.json();
+        $(document).ready(function () {
+            loadPendingSlips(1);
+
+            $('#btn_search').on('click', function () {
+                currentPage = 1;
+                loadPendingSlips(1);
+            });
+
+            $('#search_employee').on('keypress', function (e) {
+                if (e.which === 13) {
+                    currentPage = 1;
+                    loadPendingSlips(1);
+                }
+            });
+
+            $(document).on('click', '#pagination_links .page-link[data-page]', function (e) {
+                e.preventDefault();
+                const page = parseInt($(this).attr('data-page'), 10);
+                if (!page || page < 1 || page > lastPage || page === currentPage) return;
+                loadPendingSlips(page);
+            });
+
+            async function loadPendingSlips(page = 1) {
+                const search = ($('#search_employee').val() || '').trim();
+                const params = new URLSearchParams({
+                    page: page,
+                    search: search,
+                    per_page: 10
+                });
+                const response = await fetch(`{{ route('pass-slip.approver.list') }}?${params.toString()}`);
+                const payload = await response.json();
+                const slips = payload.results || [];
+                const pagination = payload.pagination || null;
                 const table = $('#pending_slip_list');
+
                 table.empty();
+                $('#pagination_links').empty();
+                $('#page_items_count').text('');
+                $('#page_indicator').text('');
+                $('#pagination_container').addClass('d-none');
+
+                if (pagination) {
+                    currentPage = pagination.current_page;
+                    lastPage = pagination.last_page;
+                }
 
                 if (slips.length === 0) {
                     table.html(`<tr><td colspan="6" class="text-center text-muted">No pending pass slips.</td></tr>`);
@@ -63,6 +119,13 @@
             `;
                     table.append(row);
                 });
+
+                if (pagination) {
+                    $('#pagination_container').removeClass('d-none');
+                    $('#page_items_count').text(`${pagination.from ?? 0} - ${pagination.to ?? 0} of ${pagination.total ?? 0}`);
+                    $('#page_indicator').text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+                    renderPaginationLinks(pagination);
+                }
             }
 
             // Approve
@@ -77,7 +140,7 @@
 
                 const result = await response.json();
                 alert(result.message);
-                loadPendingSlips();
+                loadPendingSlips(currentPage);
             });
 
             // Reject
@@ -92,19 +155,51 @@
 
                 const result = await response.json();
                 alert(result.message);
-                loadPendingSlips();
+                loadPendingSlips(currentPage);
             });
         });
 
         function formatFullName(user) {
-            if (!user) return 'N/A';
             const parts = [
                 user.fname ?? '',
                 user.mname ? user.mname.charAt(0) + '.' : '',
                 user.lname ?? '',
                 user.suffix ?? ''
             ];
-            return parts.filter(Boolean).join(' ').trim();
+            return parts.filter(Boolean).join(' ').trim() || 'N/A';
+        }
+
+        function renderPaginationLinks(pagination) {
+            const $links = $('#pagination_links');
+            if (!$links.length || !pagination || !pagination.last_page) return;
+
+            const current = pagination.current_page;
+            const last = pagination.last_page;
+            const start = Math.max(1, current - 2);
+            const end = Math.min(last, current + 2);
+
+            $links.empty();
+            $links.append(`<li class="page-item${current <= 1 ? ' disabled' : ''}"><a class="page-link" href="#" data-page="${current - 1}">Prev</a></li>`);
+
+            if (start > 1) {
+                $links.append(`<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`);
+                if (start > 2) {
+                    $links.append('<li class="page-item disabled"><span class="page-link">...</span></li>');
+                }
+            }
+
+            for (let i = start; i <= end; i++) {
+                $links.append(`<li class="page-item${i === current ? ' active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`);
+            }
+
+            if (end < last) {
+                if (end < last - 1) {
+                    $links.append('<li class="page-item disabled"><span class="page-link">...</span></li>');
+                }
+                $links.append(`<li class="page-item"><a class="page-link" href="#" data-page="${last}">${last}</a></li>`);
+            }
+
+            $links.append(`<li class="page-item${current >= last ? ' disabled' : ''}"><a class="page-link" href="#" data-page="${current + 1}">Next</a></li>`);
         }
 
     </script>
