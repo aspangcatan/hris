@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -91,7 +92,7 @@
             </div>
         @endif
 
-        <form class="space-y-4" method="post" action="{{ route('authenticate') }}">
+        <form id="loginForm" class="space-y-4" method="post" action="{{ route('authenticate') }}">
             {{ csrf_field() }}
             <div>
                 <label for="inputUsername" class="mb-1 block text-sm font-semibold text-slate-700">Username</label>
@@ -116,5 +117,37 @@
         </p>
     </section>
 </main>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const loginForm = document.getElementById('loginForm');
+        if (!loginForm) return;
+
+        loginForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            Swal.fire({
+                title: 'Connecting...',
+                html: 'Please wait while we connect to the server.',
+                timer: 60000,
+                timerProgressBar: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            }).then((result) => {
+                if (result.dismiss === Swal.DismissReason.timer) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Connection Timeout',
+                        text: 'Unable to connect to the server. Please try again later.',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>

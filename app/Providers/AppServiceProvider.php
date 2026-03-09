@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\URL;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -27,5 +28,6 @@ class AppServiceProvider extends ServiceProvider
         // if (config('app.env') !== 'local') {
         //     URL::forceScheme('https');
         // }
+        Model::preventLazyLoading(!app()->isProduction());
     }
 }
