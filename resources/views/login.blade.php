@@ -117,17 +117,5 @@
         </p>
     </section>
 </main>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        @if(Session::has('message'))
-        Swal.fire({
-            icon: 'error',
-            title: 'Connection Timeout',
-            text: @json(Session::get('message')),
-            confirmButtonText: 'OK'
-        });
-        @endif
-    });
-</script>
 </body>
 </html>
