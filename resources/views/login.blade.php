@@ -119,34 +119,14 @@
 </main>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const loginForm = document.getElementById('loginForm');
-        if (!loginForm) return;
-
-        loginForm.addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            Swal.fire({
-                title: 'Connecting...',
-                html: 'Please wait while we connect to the server.',
-                timer: 60000,
-                timerProgressBar: true,
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            }).then((result) => {
-                if (result.dismiss === Swal.DismissReason.timer) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Connection Timeout',
-                        text: 'Unable to connect to the server. Please try again later.',
-                        confirmButtonText: 'OK'
-                    });
-                }
-            });
+        @if(Session::has('message'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Connection Timeout',
+            text: @json(Session::get('message')),
+            confirmButtonText: 'OK'
         });
+        @endif
     });
 </script>
 </body>
