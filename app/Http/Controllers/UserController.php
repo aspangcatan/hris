@@ -18,8 +18,7 @@ class UserController extends Controller
         $credentials = ['username' => $request->username, 'password' => $request->password];
 
         if (Auth::attempt($credentials)) {
-        
-
+            
             $user_priv = UserPrivelege::where([['user_id', Auth::id()], ['syscode', 'hris']])->get()->first();
             if ($user_priv == null) {
                 $user_priv = new UserPrivelege;

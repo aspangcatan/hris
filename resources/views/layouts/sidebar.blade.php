@@ -66,7 +66,7 @@
         @endif
 
         {{-- ✅ PASS SLIP APPROVAL MODULE (SH, DH, HRH, HR, admin) --}}
-        @if(false)
+        
             @if(in_array(session('access_rights'), ['SH', 'DH', 'HRH', 'hr', 'admin']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('pass-slip.approver.index') ? '' : 'collapsed' }}"
@@ -76,7 +76,6 @@
                     </a>
                 </li>
             @endif
-        @endif
         @if(in_array(session('access_rights'), ['admin']) || session('is_section_head') || session('is_division_head'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee_dtr') ? '' : 'collapsed' }}"
