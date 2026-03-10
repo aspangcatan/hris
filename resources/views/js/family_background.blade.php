@@ -38,8 +38,8 @@
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td>
                                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editChildren(` + it.id + `)">Edit</button>
-                                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteChildren(` + it.id + `)">Delete</button>
+                                        <button type='button'  class="btn btn-action btn-edit" onClick="editChildren(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteChildren(` + it.id + `)"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </td>`;
                     @else
@@ -99,8 +99,8 @@
                 <td>` + moment(params.birthdate).format("MM/DD/YYYY") + `</td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editChildren(` + data.id + `)">Edit</button>
-                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteChildren(` + data.id + `)">Delete</button>
+                        <button type='button'  class="btn btn-action btn-edit" onClick="editChildren(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteChildren(` + data.id + `)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;

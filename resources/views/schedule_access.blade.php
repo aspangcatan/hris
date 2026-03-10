@@ -172,7 +172,7 @@
                             <input class="form-control" id="quick_section_search" list="quick_section_list" placeholder="Quick find section..." style="max-width: 360px;">
                             <datalist id="quick_section_list"></datalist>
                             <button class="btn btn-sm btn-outline-secondary" id="btn_select_visible" type="button">Select Visible</button>
-                            <button class="btn btn-sm btn-outline-danger" id="btn_clear_visible" type="button">Clear Visible</button>
+                            <button class="btn btn-standard btn-outline-danger btn-sm" id="btn_clear_visible" type="button">Clear Visible</button>
                         </div>
                         <div class="section-box" id="modal_section_list"></div>
                     </div>
@@ -333,8 +333,8 @@
                             <td>${manager.designation}</td>
                             <td>${badgesHtml}</td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-primary manager-action btn-open-assign-modal" data-user-id="${manager.id}">
-                                    Assign
+                                <button type="button" class="btn btn-action btn-view manager-action btn-open-assign-modal" data-user-id="${manager.id}" title="Assign">
+                                    <i class="bi bi-sliders"></i>
                                 </button>
                             </td>
                         </tr>

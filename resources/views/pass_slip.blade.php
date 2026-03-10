@@ -165,7 +165,7 @@
                 $.each(slips, function (_, slip) {
                     const badgeColor = getStatusColor(slip.status);
                     const deleteButton = slip.status === 'pending'
-                        ? `<button class="btn btn-sm btn-danger delete-btn" data-id="${slip.id}">Delete</button>`
+                        ? `<button class="btn btn-action btn-delete delete-btn" data-id="${slip.id}" title="Delete"><i class="bi bi-trash"></i></button>`
                         : '';
 
                     const tr = `

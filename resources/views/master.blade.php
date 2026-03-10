@@ -182,6 +182,27 @@
             font-weight: 600;
         }
 
+        .btn:not(.btn-action):not(.btn-link):not(.btn-close):not(.page-link) {
+            padding: 0.55rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn.btn-sm:not(.btn-action) {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-standard {
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 0.55rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
         .btn-success,
         .btn-primary {
             border: 0;
@@ -197,6 +218,51 @@
         .btn-secondary {
             border: 0;
             background: #334155;
+        }
+
+        .btn-action {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-action i {
+            font-size: 1rem;
+        }
+
+        .btn-action.btn-edit {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .btn-action.btn-edit:hover {
+            background: #2e7d32;
+            color: #fff;
+        }
+
+        .btn-action.btn-delete {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .btn-action.btn-delete:hover {
+            background: #c62828;
+            color: #fff;
+        }
+
+        .btn-action.btn-view {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .btn-action.btn-view:hover {
+            background: #1565c0;
+            color: #fff;
         }
 
         .modal-action-row {

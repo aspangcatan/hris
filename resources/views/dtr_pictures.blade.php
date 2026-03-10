@@ -150,7 +150,7 @@
                         </div>
                         <div class="card-body custom-card-body">
                             <div class="d-flex justify-content-end mt-3">
-                                <button class="btn btn-sm btn-primary ms-1" onclick="viewDtr(${it.id})">
+                                <button class="btn btn-standard btn-primary ms-1" onclick="viewDtr(${it.id})">
                                     <i class="fas fa-eye mr-1"></i>
                                     VIEW DTR
                                 </button>

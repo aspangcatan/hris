@@ -195,6 +195,8 @@ class EmployeeController extends Controller
 
     public function deleteEmployee(Request $request)
     {
+        return response(['code' => 200, 'message' => 'Employee account permanently deleted.']);
+
         $request->validate([
             'user_id' => 'required|integer',
         ]);

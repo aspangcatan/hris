@@ -313,7 +313,7 @@
                     let tr = `<tr id="work_id_` + it.id + `">`;
                     tr += `<td>` + it.position_applied + `</td>`;
                     tr += `<td>` + moment(it.date_applied).format("MM/DD/YYYY") + `</td>`;
-                    tr += `<td><button class="btn btn-sm btn-success" onClick="viewWork(` + it.id + `)"><span class="bi bi-eye-fill"></span></button></td>`;
+                    tr += `<td><button class="btn btn-action btn-view" onClick="viewWork(` + it.id + `)" title="View"><span class="bi bi-eye-fill"></span></button></td>`;
                     $("#work_list").append(tr);
                 });
 

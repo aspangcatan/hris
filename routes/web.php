@@ -415,6 +415,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/delete_schedule_master_list/{id}', [\App\Http\Controllers\ScheduleController::class, 'deleteScheduleMasterList'])->name('deleteScheduleMasterList');
 #SCHEDULE
     Route::get('/get_employee_schedules', [\App\Http\Controllers\ScheduleController::class, 'getSchedules'])->name('getSchedules');
+    Route::get('/schedule/print', [\App\Http\Controllers\ScheduleController::class, 'printSchedule'])->name('printSchedule');
     Route::post('/insert_schedule', [\App\Http\Controllers\ScheduleController::class, 'setEmployeeSchedule'])->name('setEmployeeSchedule');
     Route::post('/save-advance-schedule', [\App\Http\Controllers\ScheduleController::class, 'saveAdvanceSchedule'])->name('saveAdvanceSchedule');
     Route::get('/schedule/managed-sections', [\App\Http\Controllers\ScheduleController::class, 'getManagedSections'])->name('getManagedSections');

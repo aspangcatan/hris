@@ -185,8 +185,8 @@
                         <td>` + it.section + `</td>
                         <td>
                             <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editEmployee(` + it.user_id + `)">Edit</button>
-                                <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteEmployee(` + it.user_id + `)">Delete</button>
+                                <button type='button' class="btn btn-action btn-edit" onClick="editEmployee(` + it.user_id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                <button type='button' class="btn btn-action btn-delete" onClick="deleteEmployee(` + it.user_id + `)" title="Delete"><i class="bi bi-trash"></i></button>
                             </div>
                         </td>
                     <tr>`;
@@ -198,6 +198,8 @@
     }
 
     function deleteEmployee(userId) {
+        alert("CODE: SDVC - Please contact system administrator");
+        return;
         const row = $("#employee_" + userId);
         const fullName = (row.find("td:eq(1)").text().trim() + " " + row.find("td:eq(3)").text().trim()).trim();
 

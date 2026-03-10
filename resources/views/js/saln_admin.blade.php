@@ -102,7 +102,7 @@
                                 </div>
 
                                 <div class="d-grid mt-auto">
-                                    <button class="btn btn-outline-success btn-sm" onclick="showEmployeeHistory(${emp.id}, '${fullName}')">
+                                    <button class="btn btn-standard btn-outline-success btn-sm" onclick="showEmployeeHistory(${emp.id}, '${fullName}')">
                                         <i class="bi bi-clock-history me-1"></i>View Filing History
                                     </button>
                                 </div>

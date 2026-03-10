@@ -208,8 +208,8 @@
                     <td>${escapeHtml(it.remarks || '-')}</td>
                     <td>
                         ${canReview ? `
-                            <button type="button" class="btn btn-success btn-sm me-1 mb-1" onclick="reviewFiling(${it.id}, 'approve')">Approve</button>
-                            <button type="button" class="btn btn-danger btn-sm mb-1" onclick="reviewFiling(${it.id}, 'reject')">Reject</button>
+                            <button type="button"  class="btn btn-action btn-edit me-1 mb-1" onclick="reviewFiling(${it.id}, 'approve')" title="Approve"><i class="bi bi-check2"></i></button>
+                            <button type="button"  class="btn btn-action btn-delete mb-1" onclick="reviewFiling(${it.id}, 'reject')" title="Reject"><i class="bi bi-x"></i></button>
                         ` : '-'}
                     </td>
                 </tr>

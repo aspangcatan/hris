@@ -79,7 +79,7 @@
                     <h3>Schedule Master List</h3>
                     <p>Manage schedule templates used by Schedule Management.</p>
                 </div>
-                <button class="btn btn-light fw-semibold" id="btn_add_schedule_master" type="button">
+                <button class="btn btn-standard btn-light fw-semibold" id="btn_add_schedule_master" type="button">
                     <i class="bi bi-plus-lg me-1"></i> Add Schedule
                 </button>
             </div>
@@ -228,11 +228,11 @@
                             <td>${formatTime(item.time_out)}</td>
                             <td>${formatTime(item.time_out_latest)}</td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-primary btn-edit-schedule-master" data-id="${item.id}">
-                                    Edit
+                                <button type="button" class="btn btn-action btn-edit btn-edit-schedule-master" data-id="${item.id}" title="Edit">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-schedule-master" data-id="${item.id}">
-                                    Delete
+                                <button type="button" class="btn btn-action btn-delete btn-delete-schedule-master" data-id="${item.id}" title="Delete">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </td>
                         </tr>

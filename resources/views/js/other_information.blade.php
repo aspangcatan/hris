@@ -22,8 +22,8 @@
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td style="width: 16%">
                                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editSkill(` + it.id + `)">Edit</button>
-                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteSkill(` + it.id + `)">Delete</button>
+                                    <button type='button'  class="btn btn-action btn-edit" onClick="editSkill(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteSkill(` + it.id + `)"><i class="bi bi-trash"></i></button>
                                 </div>
                             </td>`
                     @else
@@ -40,8 +40,8 @@
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td style="width: 16%">
                                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editRecognition(` + it.id + `)">Edit</button>
-                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteRecognition(` + it.id + `)">Delete</button>
+                                    <button type='button'  class="btn btn-action btn-edit" onClick="editRecognition(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteRecognition(` + it.id + `)"><i class="bi bi-trash"></i></button>
                                 </div>
                             </td>`
                     @else
@@ -58,8 +58,8 @@
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td style="width: 16%">
                                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editMembership(` + it.id + `)">Edit</button>
-                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteMembership(` + it.id + `)">Delete</button>
+                                    <button type='button'  class="btn btn-action btn-edit" onClick="editMembership(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteMembership(` + it.id + `)"><i class="bi bi-trash"></i></button>
                                 </div>
                             </td>`
                     @else
@@ -97,8 +97,8 @@
                 <td>` + params.skills + `</td>
                 <td style="width: 16%">
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editSkill(` + data.id + `)">Edit</button>
-                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteSkill(` + data.id + `)">Delete</button>
+                        <button type='button'  class="btn btn-action btn-edit" onClick="editSkill(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteSkill(` + data.id + `)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;
@@ -139,8 +139,8 @@
                 <td>` + params.recognition + `</td>
                 <td style="width: 16%">
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editRecognition(` + data.id + `)">Edit</button>
-                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteRecognition(` + data.id + `)">Delete</button>
+                        <button type='button'  class="btn btn-action btn-edit" onClick="editRecognition(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteRecognition(` + data.id + `)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;
@@ -181,8 +181,8 @@
                 <td>` + params.association + `</td>
                 <td style="width: 16%">
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editMembership(` + data.id + `)">Edit</button>
-                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteMembership(` + data.id + `)">Delete</button>
+                        <button type='button'  class="btn btn-action btn-edit" onClick="editMembership(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteMembership(` + data.id + `)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;

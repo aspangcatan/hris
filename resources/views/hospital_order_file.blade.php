@@ -412,9 +412,10 @@
 
         return `
             <button type="button"
-                    class="btn btn-sm btn-outline-danger btn-delete-filing"
-                    data-id="${Number(filing.id)}">
-                Delete
+                    class="btn btn-action btn-delete btn-delete-filing"
+                    data-id="${Number(filing.id)}"
+                    title="Delete">
+                <i class="bi bi-trash"></i>
             </button>
         `;
     }

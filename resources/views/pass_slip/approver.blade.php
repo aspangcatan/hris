@@ -112,8 +112,12 @@
                     <td>${slip.time_in ?? '-'}</td>
                     <td class="text-capitalize">${slip.type}</td>
                     <td>
-                        <button class="btn btn-sm btn-success approve-btn" data-id="${slip.id}">Approve</button>
-                        <button class="btn btn-sm btn-danger reject-btn" data-id="${slip.id}">Reject</button>
+                        <button class="btn btn-action btn-edit approve-btn" data-id="${slip.id}" title="Approve">
+                            <i class="bi bi-check2"></i>
+                        </button>
+                        <button class="btn btn-action btn-delete reject-btn" data-id="${slip.id}" title="Reject">
+                            <i class="bi bi-x"></i>
+                        </button>
                     </td>
                 </tr>
             `;

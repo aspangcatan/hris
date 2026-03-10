@@ -37,7 +37,7 @@
                                 <div class="d-flex justify-content-end">
                                     <button type="submit" class="btn btn-primary me-1" id="saveBtn">Save</button>
                                     <button type="button" class="btn btn-success ms-1 me-1" id="updateBtn">Update</button>
-                                    <button type="button" class="btn btn-danger ms-1" id="deleteBtn">Delete</button>
+                                    <button type="button"  class="btn btn-action btn-delete ms-1" id="deleteBtn" title="Delete"><i class="bi bi-trash"></i></button>
                                 </div>
                             </form>
                         </div>

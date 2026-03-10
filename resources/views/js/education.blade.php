@@ -28,8 +28,8 @@
                     @if(Route::currentRouteName() != "employee")
                         tr += `<td>
                                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                    <button class="btn btn-sm btn-outline-secondary" onClick="viewEducation(` + it.id + `)">Edit</button>
-                                    <button class="btn btn-sm btn-outline-danger" onClick="deleteEducation(` + it.id + `)">Delete</button>
+                                    <button class="btn btn-action btn-edit" onClick="viewEducation(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-action btn-delete" title="Delete" onClick="deleteEducation(` + it.id + `)"><i class="bi bi-trash"></i></button>
                                 </div>
                             </td>`;
                     @else

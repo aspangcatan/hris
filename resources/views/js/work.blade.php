@@ -27,8 +27,8 @@
                     @if(Route::currentRouteName() == "profile")
                         tr += `<td>
                                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                    <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editWork(` + it.id + `)">Edit</button>
-                                    <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteWork(` + it.id + `)">Delete</button>
+                                    <button type='button'  class="btn btn-action btn-edit" onClick="editWork(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteWork(` + it.id + `)"><i class="bi bi-trash"></i></button>
                                 </div>
                            </td>`
                     @else
@@ -74,8 +74,8 @@
                 <td class="d-none">` + params.is_current_work + `</td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <button type='button' class="btn btn-sm btn-outline-secondary" onClick="editWork(` + data.id + `)">Edit</button>
-                        <button type='button' class="btn btn-sm btn-outline-danger" onClick="deleteWork(` + data.id + `)">Delete</button>
+                        <button type='button'  class="btn btn-action btn-edit" onClick="editWork(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteWork(` + data.id + `)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;

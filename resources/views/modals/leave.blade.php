@@ -16,8 +16,8 @@
             @if(Route::currentRouteName() == "leave_approval")
                 <div class="modal-footer">
                     <div class="d-flex justify-content-end">
-                        <button class="btn btn-lg btn-danger me-1 d-none" id="btn_reject_leave">REJECT</button>
-                        <button class="btn btn-lg btn-success ms-1" id="btn_approve_leave">APPROVE</button>
+                        <button class="btn btn-action btn-delete me-1 d-none" id="btn_reject_leave" title="Reject"><i class="bi bi-x"></i></button>
+                        <button class="btn btn-action btn-edit ms-1" id="btn_approve_leave" title="Approve"><i class="bi bi-check2"></i></button>
                     </div>
                 </div>
             @endif

@@ -208,8 +208,9 @@
                         <label for="employee_search_filter">Search Employee</label>
                     </div>
                 </div>
-                <div class="col-md-2 d-flex align-items-end gap-2">
+                <div class="col-md-2 d-grid gap-2">
                     <button id="btn_advance_schedule" class="btn btn-success btn-lg w-100 btn-advance">Advance</button>
+                    <button id="btn_print_schedule" class="btn btn-outline-success btn-lg w-100">Print Preview</button>
                 </div>
 
 
@@ -276,6 +277,21 @@
                 $("#advance_select_all_employees").prop("checked", true);
 
                 $('#advanceScheduleModal').modal('show');
+            });
+
+            $('#btn_print_schedule').on('click', function () {
+                const year = $('#filter_year').val();
+                const month = $('#filter_month').val();
+                const division = $('#division').val() ?? '';
+                const section = $('#section').val() ?? '';
+
+                if (!year || !month) {
+                    toastr.error("Please select both month and year.", "Missing Filter");
+                    return;
+                }
+
+                const url = `{{ route('printSchedule') }}?month=${month}&year=${year}&division=${division}&section=${section}`;
+                window.open(url, '_blank');
             });
 
             $('#save_advance_schedule').on('click', function () {

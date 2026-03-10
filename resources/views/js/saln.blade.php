@@ -1253,10 +1253,10 @@
                        <td>` + it.name + `</td>
                        <td>` + moment(it.birthdate).format("MM/DD/YYYY") + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editChildren(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editChildren(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteChildren(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteChildren(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -1294,10 +1294,10 @@
                        <td>` + it.acquisition_mode + `</td>
                        <td>` + it.acquisition_cost + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editRealProperties(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editRealProperties(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteRealProperties(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteRealProperties(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -1331,10 +1331,10 @@
                        <td>` + it.various_years + `</td>
                        <td>` + it.acquisition_cost + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editPersonalProperties(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editPersonalProperties(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deletePersonalProperties(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deletePersonalProperties(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -1368,10 +1368,10 @@
                        <td>` + it.creditors_name + `</td>
                        <td>` + it.outstanding_balance + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editLiabilities(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editLiabilities(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteLiabilities(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteLiabilities(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -1405,10 +1405,10 @@
                        <td>` + it.nature + `</td>
                        <td>` + moment(it.date_acquisition).format("MM/DD/YYYY") + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editBusinessInterest(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editBusinessInterest(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteBusinessInterest(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteBusinessInterest(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -1442,10 +1442,10 @@
                        <td>` + it.position + `</td>
                        <td>` + it.agency + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editGovernmentRelative(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editGovernmentRelative(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteGovernmentRelative(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteGovernmentRelative(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -1476,10 +1476,10 @@
                    <tr id='marriage_` + it.id + `'>
                        <td>` + it.spouse + `</td>
                        <td>
-                            <button class="btn btn-sm btn-success me-1" onClick='editMarriage(` + it.id + `)'>
+                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editMarriage(` + it.id + `)'>
                                 <span class="bi bi-pencil"></span>
                             </button>
-                            <button class="btn btn-sm btn-danger ms-1" onClick='deleteMarriage(` + it.id + `)'>
+                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteMarriage(` + it.id + `)'>
                                 <span class="bi bi-trash"></span>
                             </button>
                        </td>
@@ -2138,8 +2138,8 @@
                             <td>${it.acquisition_mode}</td>
                             <td>${it.acquisition_cost}</td>
                             <td>
-                                <button class="btn btn-sm btn-success me-1" onClick='editSpouseRealProperties(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpouseRealProperties(${it.id})'><span class="bi bi-trash"></span></button>
+                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpouseRealProperties(${it.id})'><span class="bi bi-pencil"></span></button>
+                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpouseRealProperties(${it.id})'><span class="bi bi-trash"></span></button>
                             </td>
                         </tr>`);
                 });
@@ -2160,8 +2160,8 @@
                             <td>${it.various_years}</td>
                             <td>${it.acquisition_cost}</td>
                             <td>
-                                <button class="btn btn-sm btn-success me-1" onClick='editSpousePersonalProperties(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpousePersonalProperties(${it.id})'><span class="bi bi-trash"></span></button>
+                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpousePersonalProperties(${it.id})'><span class="bi bi-pencil"></span></button>
+                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpousePersonalProperties(${it.id})'><span class="bi bi-trash"></span></button>
                             </td>
                         </tr>`);
                 });
@@ -2182,8 +2182,8 @@
                             <td>${it.creditors_name}</td>
                             <td>${it.outstanding_balance}</td>
                             <td>
-                                <button class="btn btn-sm btn-success me-1" onClick='editSpouseLiabilities(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpouseLiabilities(${it.id})'><span class="bi bi-trash"></span></button>
+                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpouseLiabilities(${it.id})'><span class="bi bi-pencil"></span></button>
+                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpouseLiabilities(${it.id})'><span class="bi bi-trash"></span></button>
                             </td>
                         </tr>`);
                 });
@@ -2205,8 +2205,8 @@
                             <td>${it.nature}</td>
                             <td>${moment(it.date_acquisition).format("MM/DD/YYYY")}</td>
                             <td>
-                                <button class="btn btn-sm btn-success me-1" onClick='editSpouseBusinessInterest(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-sm btn-danger ms-1" onClick='deleteSpouseBusinessInterest(${it.id})'><span class="bi bi-trash"></span></button>
+                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpouseBusinessInterest(${it.id})'><span class="bi bi-pencil"></span></button>
+                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpouseBusinessInterest(${it.id})'><span class="bi bi-trash"></span></button>
                             </td>
                         </tr>`);
                 });

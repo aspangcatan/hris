@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ScheduleController extends Controller
 {
@@ -51,6 +52,21 @@ class ScheduleController extends Controller
             ->where('id', $employeeId)
             ->whereIn('section', $managedSections)
             ->exists();
+    }
+
+    private function formatName($user): string
+    {
+        if (!$user) {
+            return '';
+        }
+
+        $mInitial = '';
+        if (!empty($user->mname)) {
+            $mInitial = ' ' . strtoupper(substr(trim($user->mname), 0, 1)) . '.';
+        }
+        $suffix = !empty($user->suffix) ? ' ' . trim($user->suffix) : '';
+
+        return trim($user->fname . $mInitial . ' ' . $user->lname . $suffix);
     }
 
     private function isLockedScheduleDate(string $date): bool
@@ -168,6 +184,195 @@ class ScheduleController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    public function printSchedule(Request $request)
+    {
+        try {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Unauthorized access');
+            }
+
+            $accessRights = $this->getCurrentAccessRights();
+            $month = (int) $request->input('month', date('m'));
+            $year = (int) $request->input('year', date('Y'));
+
+            if ($month < 1 || $month > 12 || $year < 2000) {
+                return response()->json(['message' => 'Invalid month or year.'], 422);
+            }
+
+            $employeesQuery = DB::table('tdh_user.users as u')
+                ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->selectRaw("
+                    u.id as employee_id,
+                    u.section as section_id,
+                    u.division as division_id,
+                    CONCAT(
+                        u.fname,
+                        CASE WHEN u.mname IS NOT NULL AND u.mname != '' THEN CONCAT(' ', u.mname) ELSE '' END,
+                        ' ', u.lname,
+                        CASE WHEN u.suffix IS NOT NULL AND u.suffix != '' THEN CONCAT(' ', u.suffix) ELSE '' END
+                    ) AS name,
+                    COALESCE(d.description, 'No Designation') AS designation
+                ")
+                ->orderBy('u.lname', 'asc')
+                ->orderBy('u.fname', 'asc');
+
+            $requestedDivision = $request->input('division');
+            $requestedSection = $request->input('section');
+            $requestedDivision = (is_null($requestedDivision) || $requestedDivision === '' || $requestedDivision === '0' || $requestedDivision === 'null') ? null : (int) $requestedDivision;
+            $requestedSection = (is_null($requestedSection) || $requestedSection === '' || $requestedSection === '0' || $requestedSection === 'null') ? null : (int) $requestedSection;
+
+            if ($accessRights === 'admin') {
+                if (!is_null($requestedSection)) {
+                    $employeesQuery->where('u.section', $requestedSection);
+                } elseif (!is_null($requestedDivision)) {
+                    $employeesQuery->where('u.division', $requestedDivision);
+                } else {
+                    $employeesQuery->where('u.section', Auth::user()->section);
+                }
+            } elseif ($accessRights === 'schedule') {
+                $managedSections = $this->getManagedSectionIdsForCurrentUser();
+                if (empty($managedSections)) {
+                    return response()->json(['message' => 'No managed sections assigned.'], 422);
+                }
+
+                if (!is_null($requestedSection)) {
+                    if (!in_array($requestedSection, $managedSections, true)) {
+                        return response()->json(['message' => 'You are not allowed to print this section.'], 403);
+                    }
+                    $employeesQuery->where('u.section', $requestedSection);
+                } else {
+                    $employeesQuery->whereIn('u.section', $managedSections);
+                    if (!is_null($requestedDivision)) {
+                        $employeesQuery->where('u.division', $requestedDivision);
+                    }
+                }
+            } else {
+                $employeesQuery->where('u.section', Auth::user()->section);
+            }
+
+            $employees = $employeesQuery->get();
+
+            $schedules = DB::table('hris.schedules as s')
+                ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
+                ->whereYear('s.schedule_date', $year)
+                ->whereMonth('s.schedule_date', $month)
+                ->select('s.employee_id', 's.schedule_date', 'sml.code', 'sml.label')
+                ->get();
+
+            $scheduleMap = [];
+            foreach ($schedules as $sched) {
+                $dateKey = Carbon::parse($sched->schedule_date)->toDateString();
+                $scheduleMap[$sched->employee_id][$dateKey] = $sched->label ?: $sched->code;
+            }
+
+            $weekDates = $this->getFirstWeekDates($year, $month);
+            $scheduleList = [];
+            foreach ($employees as $employee) {
+                $weekSchedule = [];
+                foreach ($weekDates as $date) {
+                    $weekSchedule[] = $scheduleMap[$employee->employee_id][$date] ?? 'OFF';
+                }
+
+                $scheduleList[] = [
+                    'name' => $employee->name,
+                    'schedule' => $weekSchedule,
+                    'total_hours' => '40 HRS.',
+                ];
+            }
+
+            $divisionLabel = '';
+            $sectionLabel = '';
+            $divisionId = null;
+            if (!is_null($requestedSection)) {
+                $sectionInfo = DB::table('tdh_user.section as s')
+                    ->join('tdh_user.division as d', 's.division', '=', 'd.id')
+                    ->where('s.id', $requestedSection)
+                    ->select('s.description as section', 'd.description as division', 'd.id as division_id')
+                    ->first();
+                $divisionLabel = $sectionInfo->division ?? '';
+                $sectionLabel = $sectionInfo->section ?? '';
+                $divisionId = $sectionInfo->division_id ?? null;
+            } elseif (!is_null($requestedDivision)) {
+                $divisionInfo = DB::table('tdh_user.division')
+                    ->where('id', $requestedDivision)
+                    ->select('description')
+                    ->first();
+                $divisionLabel = $divisionInfo->description ?? '';
+                $sectionLabel = 'ALL SECTIONS';
+                $divisionId = $requestedDivision;
+            } else {
+                if ($accessRights === 'schedule') {
+                    $divisionLabel = 'ASSIGNED DIVISIONS';
+                    $sectionLabel = 'ALL ALLOWED SECTIONS';
+                    $divisionId = Auth::user()->division ?? null;
+                } else {
+                    $sectionInfo = DB::table('tdh_user.section as s')
+                        ->join('tdh_user.division as d', 's.division', '=', 'd.id')
+                        ->where('s.id', Auth::user()->section)
+                        ->select('s.description as section', 'd.description as division', 'd.id as division_id')
+                        ->first();
+                    $divisionLabel = $sectionInfo->division ?? '';
+                    $sectionLabel = $sectionInfo->section ?? '';
+                    $divisionId = $sectionInfo->division_id ?? (Auth::user()->division ?? null);
+                }
+            }
+
+            $preparedUser = Auth::user();
+            $preparedName = $this->formatName($preparedUser);
+            $preparedTitle = session('designation') ?? '';
+
+            $approverName = '';
+            $approverTitle = '';
+            $approvedDesignation = '';
+            if (!is_null($divisionId)) {
+                $divisionHead = DB::table('tdh_user.division as d')
+                    ->join('tdh_user.users as u', 'd.head', '=', 'u.id')
+                    ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
+                    ->where('d.id', $divisionId)
+                    ->select('u.fname', 'u.mname', 'u.lname', 'u.suffix','u.title', 'de.description as designation')
+                    ->first();
+
+                $approverName = $this->formatName($divisionHead);
+                $approverTitle = $divisionHead->title ?? '';
+                $approvedDesignation = $divisionHead->designation;
+            }
+
+            $approverDisplay = trim($approverName . ($approverTitle ? ', ' . $approverTitle : ''));
+        
+            $pdf = Pdf::loadView('pdf.schedule', [
+                'month_label' => strtoupper(Carbon::createFromDate($year, $month, 1)->format('F Y')),
+                'division' => $divisionLabel,
+                'section' => $sectionLabel,
+                'employees' => array_chunk($scheduleList, 9),
+                'prepared_by' => $preparedName,
+                'prepared_title' => $preparedTitle,
+                'approved_by' => $approverDisplay,
+                'approved_title' => $approvedDesignation,
+            ])->setPaper('a4', 'landscape');
+
+            return $pdf->stream(sprintf('schedule_%s_%02d.pdf', $year, $month), ['Attachment' => false]);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    private function getFirstWeekDates(int $year, int $month): array
+    {
+        $firstOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $monday = $firstOfMonth->copy();
+
+        while ($monday->format('N') !== '1') {
+            $monday->addDay();
+        }
+
+        $dates = [];
+        for ($i = 0; $i < 7; $i++) {
+            $dates[] = $monday->copy()->addDays($i)->toDateString();
+        }
+
+        return $dates;
     }
 
 
