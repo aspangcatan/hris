@@ -110,7 +110,7 @@
                             <div class="d-flex justify-content-between">
                                 <h3>Raw Data</h3>
                                 <div>
-                                    @if(in_array(strtolower((string) session('access_rights')), ['admin', 'it'], true))
+                                    @if(in_array(strtolower((string) session('access_rights')), ['admin', 'it','dh'], true))
                                         <button class="btn btn-success" onclick="addRawLog()">ADD RAW LOG</button>
                                     @endif
                                 </div>

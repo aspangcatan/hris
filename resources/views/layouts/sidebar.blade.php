@@ -169,7 +169,7 @@
             </li>
 
             {{-- PAYROLL MANAGEMENT --}}
-            @if (false)
+            
                 <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('payroll') ? '' : 'collapsed' }}"
@@ -187,7 +187,6 @@
                     </span>
                 </a>
             </li>
-            @endif
             
         @endif
 

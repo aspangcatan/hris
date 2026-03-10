@@ -266,10 +266,14 @@ Route::group(['middleware' => 'auth'], function () {
     //PAYROLL
     Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');
     Route::post('/save_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'savePayrollEmployee'])->name('savePayrollEmployee');
+    Route::post('/payroll/submit_for_approval', [\App\Http\Controllers\PayrollController::class, 'submitForApproval'])->name('submitPayrollForApproval');
+    Route::post('/payroll/approval_action', [\App\Http\Controllers\PayrollController::class, 'approvalAction'])->name('payrollApprovalAction');
+    Route::post('/payroll/release', [\App\Http\Controllers\PayrollController::class, 'releasePayroll'])->name('releasePayroll');
     Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll');
     Route::get('/get_employee_division_section', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeByDivisionSection'])->name('getEmployeeByDivisionSection');
     Route::get('/get_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'getPayrollEmployee'])->name('getPayrollEmployee');
     Route::get('/payroll/export/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'export'])->name('exportPayroll');
+    Route::get('/payroll/payslip/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payslip'])->name('payrollPayslip');
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE

@@ -475,7 +475,7 @@
                     getCredits(employee_id);
                     break;
                 case "#payroll":
-                    getCredits(employee_id);
+                    getPayrollSettings(employee_id);
                     break;
             }
         });
@@ -484,7 +484,7 @@
         getEmployee({fname: "", lname: "", page: page, no_employee_no: no_employee_no});
     });
 
-    function getCredits(id) {
+     function getPayrollSettings(id) {
         employee_id = id;
         $("#payroll input").val("0.00"); // Reset all inputs
         // Fetch existing employee payroll data
@@ -504,6 +504,35 @@
             .catch(error => {
                 console.error("Error fetching data:", error);
                 alert("An error occurred while fetching employee data.");
+            });
+    }
+
+    function getCredits(id) {
+        employee_id = id;
+        $("#payroll input").val("0.00"); // Reset all inputs
+        // Fetch leave credits and render table
+        fetch('{{ route('getCreditBalances') }}?id=' + id, {method: "GET"})
+            .then(response => response.json().then(data => ({ok: response.ok, data})))
+            .then(({ok, data}) => {
+                if (!ok) {
+                    toastr.error(data.error || "Something went wrong, please try again");
+                    return;
+                }
+
+                $("#leave_credits_list").empty();
+                data.forEach(it => {
+                    let tr = "<tr id='" + it.id + "'>";
+                    tr += "<td>" + it.description + "</td>";
+                    tr += "<td><input type='number' class='form-control text-center input-base' value='" + it.based_credit + "' /></td>";
+                    tr += "<td><input type='number' class='form-control text-center input-used' value='" + it.used_credit + "' /></td>";
+                    tr += "<td><input type='number' class='form-control text-center' value='" + it.balance + "' disabled /></td>";
+                    tr += "</tr>";
+                    $("#leave_credits_list").append(tr);
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching leave credits:", error);
+                toastr.error("Something went wrong, please try again");
             });
     }
 

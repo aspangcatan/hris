@@ -498,6 +498,7 @@ class DTRController extends Controller
                     ->where('la.user_id', $employee->id)
                     ->whereMonth('lda.date_applied', $month)
                     ->whereYear('lda.date_applied', $year)
+                    ->where('la.status','Approved')
                     ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code', 'lda.hours')
                     ->get();
 

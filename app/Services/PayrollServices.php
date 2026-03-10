@@ -9,7 +9,7 @@ class PayrollServices
 {
     public function getPayroll($id)
     {
-        return DB::table('hris.payroll')->where('id', $id)->first();
+        return DB::table('hris.payrolls')->where('id', $id)->first();
     }
 
     public function exportRegularPayroll($payrollEmployees, $exportPath)
@@ -316,9 +316,10 @@ class PayrollServices
 
         // ---- Gross Pay (before tardiness deduction) ----
         $gross_pay = ($basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance);
+        $taxableGrossPay = $gross_pay - $totalTardinessDeductions;
 
         // ---- Withholding Tax ----
-        $withholding_tax = $this->computeWithholdingTax($gross_pay - $totalTardinessDeductions);
+        $withholding_tax = $this->computeWithholdingTax($taxableGrossPay);
 
         // ---- Deductions (safe defaults) ----
         $gsis_ps = $deductions->gsis_ps ?? 0.00;
@@ -379,11 +380,10 @@ class PayrollServices
             $gsis_ps_lwop_2pct + $gsis_gs_lwop_2pct -
             ($gsis_plreg_refund + $gsis_mpl_refund + $gsis_emergency_refund + $gsis_consoloan_refund) +
             $subsistence_deduction_from_leave +
-            $second_half_adjustment_resigned_employee +
-            $totalTardinessDeductions;
+            $second_half_adjustment_resigned_employee;
 
         // ---- Net Pay ----
-        $net_pay = ($gross_pay - $totalTardinessDeductions) - $total_deductions;
+        $net_pay = $taxableGrossPay - $total_deductions;
         $first_half_10th = $net_pay / 2;
         $second_half_25th = $net_pay / 2;
         // ---- Insert ----
@@ -400,7 +400,7 @@ class PayrollServices
             'longevity' => $longevity,
             'cellphone_allowance' => $cellphone_allowance,
             'late_absent' => $totalTardinessDeductions,
-            'gross_pay' => $gross_pay - $totalTardinessDeductions,
+            'gross_pay' => $taxableGrossPay,
 
             // Contributions & Loans
             'gsis_ps' => $gsis_ps,
@@ -463,6 +463,20 @@ class PayrollServices
             'created_at' => now(),
             'updated_at' => now()
         ]);
+    }
+
+    public function deletePayrollEmployees($payroll_id)
+    {
+        return DB::table('hris.payroll_employees')
+            ->where('payroll_id', '=', $payroll_id)
+            ->delete();
+    }
+
+    public function getPayrollEmployeeCount($payroll_id)
+    {
+        return DB::table('hris.payroll_employees')
+            ->where('payroll_id', '=', $payroll_id)
+            ->count();
     }
 
 

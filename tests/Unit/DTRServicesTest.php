@@ -20,12 +20,19 @@ class DTRServicesTest extends TestCase
     /** @test */
     public function it_counts_present_days_excluding_holidays()
     {
-        // Mock DB calls
         DB::shouldReceive('table->whereMonth->whereYear->pluck->toArray')
             ->andReturn(['2025-09-10']); // 1 holiday
 
-        DB::shouldReceive('table->join->where->whereBetween->get')
-            ->andReturn(collect()); // no schedules
+        DB::shouldReceive('table->join->where->whereRaw->whereYear->whereMonth->pluck->toArray')
+            ->andReturn([]);
+
+        DB::shouldReceive('table->where->where->whereMonth->whereYear->pluck->toArray')
+            ->zeroOrMoreTimes()
+            ->andReturn([]);
+
+        DB::shouldReceive('table->where->whereDate->where->orderBy->value')
+            ->zeroOrMoreTimes()
+            ->andReturn(null);
 
         $result = $this->dtrService->getTotalPresent(1, 9, 2025);
         $this->assertIsInt($result);
@@ -35,7 +42,13 @@ class DTRServicesTest extends TestCase
     /** @test */
     public function it_returns_total_late_and_undertime_minutes()
     {
-        DB::shouldReceive('table->whereBetween->get')->andReturn(collect([
+        DB::shouldReceive('table->whereBetween->pluck->map->toArray')->andReturn([]);
+
+        DB::shouldReceive('table->join->where->whereRaw->whereBetween->pluck->map->toArray')->andReturn([]);
+
+        DB::shouldReceive('table->where->whereRaw->whereBetween->get')->andReturn(collect([]));
+
+        DB::shouldReceive('table->join->where->whereBetween->get')->andReturn(collect([
             (object)[
                 'schedule_date' => '2025-09-01',
                 'time_in' => '08:00:00',

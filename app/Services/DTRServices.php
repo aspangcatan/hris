@@ -96,9 +96,9 @@ class DTRServices
         $undertime = 0;
         $absences = 0;
 
-        $holidays = $this->getHolidays($start_date, $end_date);
-        $approvedLeaves = $this->getApprovedLeaveDates($userid, $start_date, $end_date);
-        $approvedPassSlips = $this->getApprovedPassSlipDates($userid, $start_date, $end_date);
+        $holidays = $this->getHolidayDatesByRange($start_date, $end_date);
+        $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
+        $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date);
 
         $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
 
@@ -118,31 +118,33 @@ class DTRServices
             $lastOut = $this->getLastOutLog($userid, $date);
 
             // Handle approved pass slips
-            $passSlip = collect($approvedPassSlips)->firstWhere('slip_date', $date);
+            $passSlip = $approvedPassSlips->firstWhere('slip_date', $date);
             if ($passSlip) {
-                if ($passSlip['type'] === 'official') {
-                    // Excused — no late or undertime
+                $type = strtolower((string) $passSlip->type);
+                if ($type === 'official') {
+                    // Excused: no late or undertime
                     continue;
-                } elseif ($passSlip['type'] === 'personal') {
-                    // Compute full duration as undertime/late
-                    $timeOut = Carbon::parse($passSlip['time_out']);
-                    $timeIn = Carbon::parse($passSlip['time_in']);
-                    $minutes = $timeOut->diffInMinutes($timeIn);
-                    $lates += $minutes;
+                } elseif ($type === 'personal' && !empty($passSlip->time_out) && !empty($passSlip->time_in)) {
+                    // Personal pass slip hours are treated as undertime.
+                    $timeOut = Carbon::parse($date . ' ' . $passSlip->time_out);
+                    $timeIn = Carbon::parse($date . ' ' . $passSlip->time_in);
+                    if ($timeIn->gt($timeOut)) {
+                        $undertime += $timeOut->diffInMinutes($timeIn);
+                    }
                     continue;
                 }
             }
 
-            // If no logs — count absence
+            // If no logs count absence
             if (!$firstIn && !$lastOut) {
                 $absences++;
                 continue;
             }
 
             // Process late and undertime
-            list($late, $undertime) = $this->processLogs($firstIn, $lastOut, $schedule, $date);
+            list($late, $undertimeMinutes) = $this->processLogs($firstIn, $lastOut, $schedule, $date);
             $lates += $late;
-            $undertime += $undertime;
+            $undertime += $undertimeMinutes;
         }
 
         return [
@@ -152,13 +154,23 @@ class DTRServices
         ];
     }
 
-
     public function getHolidays($month, $year)
     {
         return DB::table('hris.calendar_holidays')
             ->whereMonth('date', $month)
             ->whereYear('date', $year)
             ->pluck('date')
+            ->toArray();
+    }
+
+    private function getHolidayDatesByRange($startDate, $endDate)
+    {
+        return DB::table('hris.calendar_holidays')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->pluck('date')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
             ->toArray();
     }
 
@@ -286,10 +298,24 @@ class DTRServices
         return DB::table('hris.leave_applications as la')
             ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
             ->where('la.user_id', $userid)
-            ->where('la.status', 'Approved') // only approved leaves
+            ->whereRaw('LOWER(la.status) = ?', ['approved']) // only approved leaves
             ->whereYear('lda.date_applied', $year)
             ->whereMonth('lda.date_applied', $month)
             ->pluck('lda.date_applied')
+            ->toArray();
+    }
+
+    private function getApprovedLeaveDatesByRange($userid, $startDate, $endDate)
+    {
+        return DB::table('hris.leave_applications as la')
+            ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+            ->where('la.user_id', $userid)
+            ->whereRaw('LOWER(la.status) = ?', ['approved'])
+            ->whereBetween('lda.date_applied', [$startDate, $endDate])
+            ->pluck('lda.date_applied')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
             ->toArray();
     }
 
@@ -317,8 +343,8 @@ class DTRServices
     private function getApprovedPassSlipDates($userid, $month, $year)
     {
         $passSlips = DB::table('hris.pass_slips')
-            ->where('userid', $userid)
-            ->where('status', 'approved')
+            ->where('user_id', $userid)
+            ->whereRaw('LOWER(status) = ?', ['approved'])
             ->whereMonth('slip_date', $month)
             ->whereYear('slip_date', $year)
             ->get(['slip_date', 'type']);
@@ -331,4 +357,14 @@ class DTRServices
         return $result;
     }
 
+    private function getApprovedPassSlipsByRange($userid, $startDate, $endDate)
+    {
+        return DB::table('hris.pass_slips')
+            ->where('user_id', $userid)
+            ->whereRaw('LOWER(status) = ?', ['approved'])
+            ->whereBetween('slip_date', [$startDate, $endDate])
+            ->get(['slip_date', 'type', 'time_out', 'time_in']);
+    }
+
 }
+

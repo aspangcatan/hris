@@ -18,6 +18,8 @@ class CreatePayrollsTable extends Migration
             $table->string('title');
             $table->date('start_date');
             $table->date('end_date');
+            $table->string('payroll_type');
+            $table->string('rate_type');
             $table->text('remarks')->nullable();
             $table->string('status')->nullable();
             $table->integer('prepared_by');

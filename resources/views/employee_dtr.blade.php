@@ -38,7 +38,7 @@
         let userid = 0;
         let log_id = 0;
         const accessRights = @json(strtolower((string) session('access_rights')));
-        const canEditRawTimelog = ["admin", "it"].includes(accessRights);
+        const canEditRawTimelog = ["admin", "it","dh"].includes(accessRights);
         $(document).ready(function () {
             getEmployeeDtr();
             loadDivision();

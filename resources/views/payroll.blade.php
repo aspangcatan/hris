@@ -378,6 +378,129 @@
             });
         }
 
+        function formatStatus(status) {
+            const key = (status || 'draft').toLowerCase();
+            const labels = {
+                draft: 'Draft',
+                computed: 'Computed',
+                for_approval: 'For Approval',
+                approved: 'Approved',
+                rejected: 'Rejected',
+                released: 'Released'
+            };
+            const colors = {
+                draft: 'secondary',
+                computed: 'info',
+                for_approval: 'warning',
+                approved: 'success',
+                rejected: 'danger',
+                released: 'primary'
+            };
+
+            const label = labels[key] || key;
+            const color = colors[key] || 'secondary';
+            return `<span class="badge bg-${color}">${label}</span>`;
+        }
+
+        function submitForApproval(id) {
+            fetch('{{ route('submitPayrollForApproval') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({payroll_id: id})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        toastr.error(data.error, 'Error');
+                        return;
+                    }
+                    toastr.success(data.message || 'Submitted for approval.', 'Information');
+                    getPayroll();
+                })
+                .catch(err => console.error(err));
+        }
+
+        function approvePayroll(id) {
+            fetch('{{ route('payrollApprovalAction') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({
+                    payroll_id: id,
+                    status: 'approved',
+                    remarks: ''
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        toastr.error(data.error, 'Error');
+                        return;
+                    }
+                    toastr.success(data.message || 'Payroll approved.', 'Information');
+                    getPayroll();
+                })
+                .catch(err => console.error(err));
+        }
+
+        function rejectPayroll(id) {
+            const remarks = prompt("Enter rejection remarks:");
+            if (remarks === null) return;
+
+            fetch('{{ route('payrollApprovalAction') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({
+                    payroll_id: id,
+                    status: 'rejected',
+                    remarks: remarks
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        toastr.error(data.error, 'Error');
+                        return;
+                    }
+                    toastr.success(data.message || 'Payroll rejected.', 'Information');
+                    getPayroll();
+                })
+                .catch(err => console.error(err));
+        }
+
+        function releasePayroll(id) {
+            fetch('{{ route('releasePayroll') }}', {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({payroll_id: id})
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        toastr.error(data.error, 'Error');
+                        return;
+                    }
+                    toastr.success(data.message || 'Payroll released.', 'Information');
+                    getPayroll();
+                })
+                .catch(err => console.error(err));
+        }
+
+        function downloadPayslip(id) {
+            window.location.href = "{{ url('/payroll/payslip') }}/" + id;
+        }
+
         function viewPayroll(id, type) {
             payroll_id = id;
             const config = {
@@ -548,19 +671,43 @@
                     tbody.empty(); // Clear old records
 
                     if (data.length === 0) {
-                        tbody.append("<tr><td colspan='9' class='text-center'>No payroll records found.</td></tr>");
+                        tbody.append("<tr><td colspan='8' class='text-center'>No payroll records found.</td></tr>");
                         return;
                     }
 
                     data.forEach(item => {
+                        const actions = [];
+                        if (item.can_assign) {
+                            actions.push(`<li><a class="dropdown-item" href="#" onclick="assignEmployee(${item.id})">Assign / Compute</a></li>`);
+                        }
+                        actions.push(`<li><a class="dropdown-item" href="#" onclick="viewPayroll(${item.id},'${item.payroll_type}')">View</a></li>`);
+
+                        if (item.can_submit) {
+                            actions.push(`<li><a class="dropdown-item" href="#" onclick="submitForApproval(${item.id})">Submit for Approval</a></li>`);
+                        }
+                        if (item.can_approve) {
+                            actions.push(`<li><a class="dropdown-item text-success" href="#" onclick="approvePayroll(${item.id})">Approve (${item.pending_approval_role})</a></li>`);
+                            actions.push(`<li><a class="dropdown-item text-danger" href="#" onclick="rejectPayroll(${item.id})">Reject (${item.pending_approval_role})</a></li>`);
+                        }
+                        if (item.can_release) {
+                            actions.push(`<li><a class="dropdown-item" href="#" onclick="releasePayroll(${item.id})">Release Payroll</a></li>`);
+                        }
+                        if (item.can_generate_payslip) {
+                            actions.push(`<li><a class="dropdown-item" href="#" onclick="downloadPayslip(${item.id})">Download Payslip</a></li>`);
+                        }
+
+                        if (actions.length === 0) {
+                            actions.push(`<li><span class="dropdown-item-text text-muted">No actions available</span></li>`);
+                        }
+
                         const row = `
                         <tr>
                             <td>${item.title}</td>
                             <td>${moment(item.start_date).format('MM/DD/YYYY')}</td>
                             <td>${moment(item.end_date).format('MM/DD/YYYY')}</td>
-                            <td></td>
+                            <td>${formatStatus(item.status)}</td>
                             <td>${item.remarks || ''}</td>
-                            <td></td>
+                            <td>${item.prepared_by_name || ''}</td>
                             <td>${moment(item.created_at).format('MM/DD/YYYY hh:mm:ss A')}</td>
                             <td class="text-center position-relative">
                                 <div class="dropdown">
@@ -568,10 +715,7 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu position-absolute" style="z-index: 9999; right: 0; top: 100%;">
-                                        <li><a class="dropdown-item" href="#" onclick="assignEmployee(${item.id})">Assign Employee</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="viewPayroll(${item.id},'${item.payroll_type}')">View</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li class="d-none"><a class="dropdown-item text-danger" href="#" onclick="deletePayroll(${item.id})">Delete</a></li>
+                                        ${actions.join('')}
                                     </ul>
                                 </div>
                             </td>
