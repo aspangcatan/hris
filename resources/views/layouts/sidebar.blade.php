@@ -1,5 +1,6 @@
 <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
+        {{-- GENERAL --}}
         <li class="nav-heading">General</li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('profile') ? '' : 'collapsed' }}" href="{{ route('profile') }}">
@@ -13,8 +14,6 @@
                 <span>SALN</span>
             </a>
         </li>
-
-        {{-- SALN ADMIN (HR + admin) --}}
         @if(in_array(session('access_rights'), ['hr','HRH','admin']))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('saln.admin.*') ? '' : 'collapsed' }}"
@@ -25,6 +24,7 @@
             </li>
         @endif
 
+        {{-- DTR MANAGEMENT --}}
         <li class="nav-heading">DTR Management</li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('dtr') ? '' : 'collapsed' }}" href="{{ route('dtr') }}">
@@ -32,50 +32,6 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('pass_slip') ? '' : 'collapsed' }}" href="{{ route('pass_slip') }}">
-                <i class="bi bi-calendar-check"></i>
-                <span>Pass Slips</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('hospital_order_file') ? '' : 'collapsed' }}" href="{{ route('hospital_order_file') }}">
-                <i class="bi bi-hospital"></i>
-                <span>Hospital Order Filing</span>
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('overtime_file') ? '' : 'collapsed' }}" href="{{ route('overtime_file') }}">
-                <i class="bi bi-clock-history"></i>
-                <span>Overtime Filing</span>
-            </a>
-        </li>
-        @if(in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head'))
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('hospital_order_approval') ? '' : 'collapsed' }}" href="{{ route('hospital_order_approval') }}">
-                    <i class="bi bi-check2-square"></i>
-                    <span>Hospital Order Approval</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('overtime_approval') ? '' : 'collapsed' }}" href="{{ route('overtime_approval') }}">
-                    <i class="bi bi-check2-square"></i>
-                    <span>Overtime Approval</span>
-                </a>
-            </li>
-        @endif
-
-        {{-- ✅ PASS SLIP APPROVAL MODULE (SH, DH, HRH, HR, admin) --}}
-        
-            @if(in_array(session('access_rights'), ['SH', 'DH', 'HRH', 'hr', 'admin']))
-                <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('pass-slip.approver.index') ? '' : 'collapsed' }}"
-                    href="{{ route('pass-slip.approver.index') }}">
-                        <i class="bi bi-check2-square"></i>
-                        <span>Pass Slip Approval</span>
-                    </a>
-                </li>
-            @endif
         @if(in_array(session('access_rights'), ['admin']) || session('is_section_head') || session('is_division_head'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee_dtr') ? '' : 'collapsed' }}"
@@ -86,7 +42,59 @@
             </li>
         @endif
 
-        {{-- SCHEDULE MANAGEMENT (only HRH + admin) --}}
+        {{-- PASS SLIP MANAGEMENT --}}
+        <li class="nav-heading">Pass Slip Management</li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('pass_slip') ? '' : 'collapsed' }}" href="{{ route('pass_slip') }}">
+                <i class="bi bi-calendar-check"></i>
+                <span>Pass Slips</span>
+            </a>
+        </li>
+        @if(in_array(session('access_rights'), ['SH', 'DH', 'HRH', 'hr', 'admin']))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('pass-slip.approver.index') ? '' : 'collapsed' }}"
+                   href="{{ route('pass-slip.approver.index') }}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Pass Slip Approval</span>
+                </a>
+            </li>
+        @endif
+
+        {{-- HOSPITAL ORDER MANAGEMENT --}}
+        <li class="nav-heading">Hospital Order Management</li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('hospital_order_file') ? '' : 'collapsed' }}" href="{{ route('hospital_order_file') }}">
+                <i class="bi bi-hospital"></i>
+                <span>Hospital Order Filing</span>
+            </a>
+        </li>
+        @if(in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head'))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('hospital_order_approval') ? '' : 'collapsed' }}" href="{{ route('hospital_order_approval') }}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Hospital Order Approval</span>
+                </a>
+            </li>
+        @endif
+
+        {{-- OVERTIME MANAGEMENT --}}
+        <li class="nav-heading">Overtime Management</li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('overtime_file') ? '' : 'collapsed' }}" href="{{ route('overtime_file') }}">
+                <i class="bi bi-clock-history"></i>
+                <span>Overtime Filing</span>
+            </a>
+        </li>
+        @if(in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head'))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('overtime_approval') ? '' : 'collapsed' }}" href="{{ route('overtime_approval') }}">
+                    <i class="bi bi-check2-square"></i>
+                    <span>Overtime Approval</span>
+                </a>
+            </li>
+        @endif
+
+        {{-- SCHEDULE MANAGEMENT --}}
         @if(in_array(session('access_rights'), ['admin','schedule']))
             <li class="nav-heading">Schedule Management</li>
             <li class="nav-item">
@@ -104,8 +112,6 @@
                         <span>Schedule Master List</span>
                     </a>
                 </li>
-            @endif
-            @if(in_array(session('access_rights'), ['admin']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_access') ? '' : 'collapsed' }}"
                        href="{{ route('schedule_access') }}">
@@ -125,7 +131,7 @@
             </li>
         @endif
 
-        {{-- CREDITS MANAGEMENT (only HRH + admin) --}}
+        {{-- CREDITS MANAGEMENT --}}
         @if(in_array(session('access_rights'), ['admin']))
             <li class="nav-heading">Credits Management</li>
             <li class="nav-item">
@@ -137,7 +143,6 @@
             </li>
         @endif
 
-        
         {{-- LEAVE MANAGEMENT --}}
         <li class="nav-heading">Leave Management</li>
         <li class="nav-item">
@@ -157,7 +162,7 @@
             </li>
         @endif
 
-        {{-- HR MANAGEMENT (hr + HRH + admin) --}}
+        {{-- HR MANAGEMENT --}}
         @if(in_array(session('access_rights'), ['hr','HRH','admin']))
             <li class="nav-heading">HR Management</li>
             <li class="nav-item">
@@ -169,8 +174,7 @@
             </li>
 
             {{-- PAYROLL MANAGEMENT --}}
-            
-                <li class="nav-heading">Payroll Management</li>
+            <li class="nav-heading">Payroll Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('payroll') ? '' : 'collapsed' }}"
                    href="{{ route('payroll') }}">
@@ -187,11 +191,10 @@
                     </span>
                 </a>
             </li>
-            
         @endif
 
+        {{-- SETTINGS --}}
         @if(in_array(session('access_rights'), ['admin', 'calendar']))
-            {{-- SETTINGS --}}
             <li class="nav-heading">Settings</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('calendar') ? '' : 'collapsed' }}"
