@@ -3,28 +3,61 @@
 @section('content')
     @include('layouts.saln_styles')
     <style>
-        .admin-header {
-            background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
-            border-radius: 12px;
-            padding: 28px 32px;
-            color: #fff;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 16px rgba(15, 118, 110, 0.25);
+        .saln-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         }
-        .admin-header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
+
+        .saln-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .saln-head-title h4 {
             margin: 0;
-            letter-spacing: 0.5px;
+            font-weight: 700;
+            color: #0f172a;
         }
-        .admin-info-bar {
+
+        .saln-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .saln-filter-lite {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .saln-filter-lite .form-select,
+        .saln-filter-lite .form-control {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
             background: #fff;
-            border-radius: 10px;
-            padding: 16px 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            border: 1px solid #e9ecef;
         }
+
+        .saln-count-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            padding: 0.35rem 0.75rem;
+            color: #475569;
+            font-size: 0.85rem;
+        }
+
         .status-badge {
             font-size: 0.75rem;
             padding: 5px 12px;
@@ -34,7 +67,7 @@
         }
         .status-submitted { background: #d1ecf1; color: #0c5460; }
         .status-pending { background: #f8d7da; color: #721c24; }
-        
+
         .employee-card {
             background: #fff;
             border-radius: 10px;
@@ -70,43 +103,44 @@
         }
     </style>
 
-    <div class="admin-header">
-        <h1><i class="bi bi-shield-lock me-2"></i>SALN Administrative Dashboard</h1>
-        <p>Monitor employee compliance, track historical filings, and manage organization-wide SALN records.</p>
-    </div>
+    <div class="saln-board">
+        <div class="saln-head">
+            <div class="saln-head-title">
+                <h4>SALN Administrative Dashboard</h4>
+                <span>Monitor employee compliance, track historical filings, and manage organization-wide SALN records.</span>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <button class="btn btn-action btn-view" onclick="printSummaryReport()">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Print Summary Report
+                </button>
+                <span class="saln-count-badge">
+                    <i class="bi bi-people-fill"></i> <span id="total_employees">0</span> Staff
+                </span>
+            </div>
+        </div>
 
-    <div class="admin-info-bar d-flex align-items-center justify-content-between flex-wrap gap-3">
-        <div class="d-flex align-items-center gap-3 flex-grow-1">
-            <div class="flex-grow-1" style="max-width: 400px;">
+        <div class="saln-filter-lite d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="flex-grow-1" style="max-width: 420px;">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" class="form-control border-start-0" id="admin_search_employee" placeholder="Search by name or employee ID...">
                 </div>
             </div>
             <div>
-                <select class="form-select" id="admin_filter_year" style="min-width: 140px;">
+                <select class="form-select" id="admin_filter_year" style="min-width: 160px;">
                     @for($year = \Carbon\Carbon::now()->format('Y'); $year >= 2020; $year--)
                         <option value="{{ $year }}">{{ $year }} Compliance</option>
                     @endfor
                 </select>
             </div>
         </div>
-        <div class="d-flex gap-2 align-items-center">
-            <button class="btn btn-primary" onclick="printSummaryReport()">
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Print Summary Report
-            </button>
-            <span class="badge bg-info text-dark p-2 px-3">
-                <i class="bi bi-people-fill me-1"></i> <span id="total_employees">0</span> Staff
-            </span>
+
+        <div class="row" id="employee_grid">
+            <!-- Employees will be loaded here -->
         </div>
-    </div>
 
-    <div class="row" id="employee_grid">
-        <!-- Employees will be loaded here -->
+        <div id="pagination_container" class="d-flex justify-content-center mt-4 mb-5"></div>
     </div>
-
-    <!-- Pagination -->
-    <div id="pagination_container" class="d-flex justify-content-center mt-4 mb-5"></div>
 
     <!-- Employee History Modal -->
     <div class="modal fade" id="employee_history_modal" tabindex="-1">

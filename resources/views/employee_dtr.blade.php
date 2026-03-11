@@ -461,24 +461,24 @@
                                 <td><a target="_blank">${time}</a></td>
                                 <td>
                                     <button
-                                        class="edit-btn"
+                                        class="btn btn-action btn-edit edit-btn"
                                         data-id="${it.id}"
                                         data-date="${date}"
                                         data-status="${it.status}"
                                         data-time="${time}"
-                                        style="background: transparent; border: none; cursor: pointer;">
-                                        <i class="fa-solid fa-pen text-success"></i>
+                                        title="Edit">
+                                        <i class="bi bi-pencil"></i>
                                     </button>
                                 </td>
                                  <td>
                                     <button
-                                        class="delete-btn"
+                                        class="btn btn-action btn-delete delete-btn"
                                         data-id="${it.id}"
                                         data-date="${date}"
                                         data-status="${it.status}"
                                         data-time="${time}"
-                                        style="background: transparent; border: none; cursor: pointer;">
-                                        <i class="fa-solid fa-trash text-danger"></i>
+                                        title="Delete">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </td>
                             </tr>`);

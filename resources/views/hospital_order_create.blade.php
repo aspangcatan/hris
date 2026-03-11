@@ -9,81 +9,81 @@
         <div class="alert alert-danger">You are not authorized to create hospital orders.</div>
     @else
         <style>
-            .ho-create-page {
-                --ho-surface: #ffffff;
-                --ho-line: #dce6f2;
-                --ho-muted: #5e728d;
-                --ho-title: #10233d;
-                --ho-grad-1: #0f766e;
-                --ho-grad-2: #0ea5a4;
-                --ho-grad-3: #0891b2;
-            }
-
-            .ho-create-shell {
-                border: 0;
+            .ho-board {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
                 border-radius: 20px;
-                box-shadow: 0 24px 44px rgba(15, 23, 42, 0.10);
-                background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-                overflow: hidden;
+                padding: 1.5rem;
+                box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
             }
 
-            .ho-create-header {
-                background: linear-gradient(125deg, var(--ho-grad-1), var(--ho-grad-2), var(--ho-grad-3));
-                color: #fff;
-                padding: 1.1rem 1.2rem;
+            .ho-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                margin-bottom: 1.25rem;
+                flex-wrap: wrap;
             }
 
-            .ho-create-title {
+            .ho-head-title h4 {
                 margin: 0;
-                font-weight: 800;
-                letter-spacing: 0.2px;
+                font-weight: 700;
+                color: #0f172a;
             }
 
-            .ho-create-subtitle {
-                margin: .2rem 0 0;
-                opacity: .95;
-                font-weight: 500;
-                font-size: .9rem;
+            .ho-head-title span {
+                font-size: 0.9rem;
+                color: #64748b;
             }
 
-            .ho-create-card {
-                border: 1px solid var(--ho-line);
-                border-radius: 14px;
-                background: var(--ho-surface);
-                padding: .95rem;
+            .ho-panel {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                padding: 1rem;
+                margin-bottom: 1.25rem;
             }
 
-            .ho-create-label {
+            .ho-panel .form-control,
+            .ho-panel .form-select {
+                border-radius: 12px;
+                border: 1px solid #d8e1ee;
+                background: #fff;
+            }
+
+            .ho-label {
                 font-size: .76rem;
                 text-transform: uppercase;
                 letter-spacing: .06em;
                 font-weight: 700;
-                color: var(--ho-muted);
+                color: #5e728d;
                 margin-bottom: .32rem;
             }
 
-            .ho-create-table-wrap {
-                border: 1px solid var(--ho-line);
-                border-radius: 14px;
+            .ho-table-shell {
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
                 overflow: hidden;
                 background: #fff;
             }
 
-            .ho-create-table {
+            .ho-table-shell table {
                 margin-bottom: 0;
             }
 
-            .ho-create-table thead th {
-                background: #f5f9ff;
-                color: #4f6684;
+            .ho-table-shell table thead th {
+                background: #f8fafc;
+                color: #0f172a;
+                font-size: 0.72rem;
                 text-transform: uppercase;
-                letter-spacing: .06em;
-                font-size: .72rem;
-                font-weight: 800;
+                letter-spacing: 0.08em;
             }
 
-            .ho-create-table tbody tr:hover {
-                background: #f8fbff;
+            .ho-table-shell table tbody td {
+                color: #1e293b;
+                font-weight: 500;
+                vertical-align: middle;
             }
 
             .ho-empty {
@@ -107,79 +107,77 @@
                 font-size: .8rem;
             }
 
-            .ho-create-search {
+            .ho-search {
                 max-width: 320px;
             }
         </style>
 
-        <div class="ho-create-page">
-            <div class="card ho-create-shell">
-                <div class="ho-create-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h4 class="ho-create-title">Create Hospital Order</h4>
-                        <p class="ho-create-subtitle">Create date-bound hospital orders and manage the latest records</p>
-                    </div>
-                    <a href="{{ route('hospital_order') }}" class="btn btn-light btn-sm">Back</a>
+        <div class="ho-board">
+            <div class="ho-head">
+                <div class="ho-head-title">
+                    <h4>Hospital Orders</h4>
+                    <span>Create date-bound hospital orders and manage the latest records</span>
                 </div>
+            </div>
 
-                <div class="card-body p-3">
-                    <div class="ho-create-card mb-3">
-                        <form id="hospitalOrderForm" class="row g-3 align-items-end">
-                            <div class="col-lg-3">
-                                <label class="ho-create-label">Hospital Order #</label>
-                                <input type="text" class="form-control" name="order_number" required>
-                            </div>
-                            <div class="col-lg-2">
-                                <label class="ho-create-label">Start Date</label>
-                                <input type="date" class="form-control" name="start_date" required>
-                            </div>
-                            <div class="col-lg-2">
-                                <label class="ho-create-label">End Date</label>
-                                <input type="date" class="form-control" name="end_date" required>
-                            </div>
-                            <div class="col-lg-2">
-                                <label class="ho-create-label">Time From</label>
-                                <input type="time" class="form-control" name="time_from" required>
-                            </div>
-                            <div class="col-lg-2">
-                                <label class="ho-create-label">Time To</label>
-                                <input type="time" class="form-control" name="time_to" required>
-                            </div>
-                            <div class="col-lg-1">
-                                <button type="submit" class="btn btn-primary w-100">Create</button>
-                            </div>
-                        </form>
+            <div class="ho-panel">
+                <form id="hospitalOrderForm" class="row g-3 align-items-end">
+                    <div class="col-lg-3">
+                        <label class="ho-label">Hospital Order #</label>
+                        <input type="text" class="form-control" name="order_number" required>
                     </div>
+                    <div class="col-lg-2">
+                        <label class="ho-label">Start Date</label>
+                        <input type="date" class="form-control" name="start_date" required>
+                    </div>
+                    <div class="col-lg-2">
+                        <label class="ho-label">End Date</label>
+                        <input type="date" class="form-control" name="end_date" required>
+                    </div>
+                    <div class="col-lg-2">
+                        <label class="ho-label">Time From</label>
+                        <input type="time" class="form-control" name="time_from" required>
+                    </div>
+                    <div class="col-lg-2">
+                        <label class="ho-label">Time To</label>
+                        <input type="time" class="form-control" name="time_to" required>
+                    </div>
+                    <div class="col-lg-1">
+                        <button type="submit" class="btn btn-action btn-edit w-100">
+                            <i class="bi bi-plus-lg"></i>
+                            Create
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
-                        <h6 class="mb-0 fw-bold">Hospital Orders</h6>
-                        <input type="text" id="orderSearch" class="form-control ho-create-search" placeholder="Search order #...">
-                    </div>
+            <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+                <h6 class="mb-0 fw-bold">Hospital Orders</h6>
+                <input type="text" id="orderSearch" class="form-control ho-search" placeholder="Search order #...">
+            </div>
 
-                    <div class="ho-create-table-wrap">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle ho-create-table">
-                                <thead>
-                                <tr>
-                                    <th>Order #</th>
-                                    <th>Date Range</th>
-                                    <th>Time Range</th>
-                                </tr>
-                                </thead>
-                                <tbody id="order_list">
-                                <tr><td colspan="3" class="ho-empty">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-                        <small class="text-muted" id="orderSummary"></small>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0 ho-pagination" id="orderPagination"></ul>
-                        </nav>
-                    </div>
+            <div class="ho-table-shell">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Date Range</th>
+                            <th>Time Range</th>
+                        </tr>
+                        </thead>
+                        <tbody id="order_list">
+                        <tr><td colspan="3" class="ho-empty">Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                <small class="text-muted" id="orderSummary"></small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0 ho-pagination" id="orderPagination"></ul>
+                </nav>
             </div>
         </div>
     @endif

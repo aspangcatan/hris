@@ -9,65 +9,71 @@
         <div class="alert alert-danger">You are not authorized to approve/reject filings.</div>
     @else
         <style>
-            .ho-approval-page {
-                --ho-surface: #ffffff;
-                --ho-line: #dce6f2;
-                --ho-muted: #5e728d;
-                --ho-title: #10233d;
-                --ho-grad-1: #0f766e;
-                --ho-grad-2: #0ea5a4;
-                --ho-grad-3: #0891b2;
-            }
-
-            .ho-approval-shell {
-                border: 0;
+            .ho-board {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
                 border-radius: 20px;
-                box-shadow: 0 24px 44px rgba(15, 23, 42, 0.10);
-                background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-                overflow: hidden;
+                padding: 1.5rem;
+                box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
             }
 
-            .ho-approval-header {
-                background: linear-gradient(125deg, var(--ho-grad-1), var(--ho-grad-2), var(--ho-grad-3));
-                color: #fff;
-                padding: 1.1rem 1.2rem;
+            .ho-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                margin-bottom: 1.25rem;
+                flex-wrap: wrap;
             }
 
-            .ho-approval-title {
+            .ho-head-title h4 {
                 margin: 0;
-                font-weight: 800;
-                letter-spacing: 0.2px;
+                font-weight: 700;
+                color: #0f172a;
             }
 
-            .ho-approval-subtitle {
-                margin: .2rem 0 0;
-                opacity: .95;
-                font-weight: 500;
-                font-size: .9rem;
+            .ho-head-title span {
+                font-size: 0.9rem;
+                color: #64748b;
             }
 
-            .ho-approval-table-wrap {
-                border: 1px solid var(--ho-line);
-                border-radius: 14px;
+            .ho-panel {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                padding: 1rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .ho-panel .form-control {
+                border-radius: 12px;
+                border: 1px solid #d8e1ee;
+                background: #fff;
+            }
+
+            .ho-table-shell {
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
                 overflow: hidden;
                 background: #fff;
             }
 
-            .ho-approval-table {
+            .ho-table-shell table {
                 margin-bottom: 0;
             }
 
-            .ho-approval-table thead th {
-                background: #f5f9ff;
-                color: #4f6684;
+            .ho-table-shell table thead th {
+                background: #f8fafc;
+                color: #0f172a;
+                font-size: 0.72rem;
                 text-transform: uppercase;
-                letter-spacing: .06em;
-                font-size: .72rem;
-                font-weight: 800;
+                letter-spacing: 0.08em;
             }
 
-            .ho-approval-table tbody tr:hover {
-                background: #f8fbff;
+            .ho-table-shell table tbody td {
+                color: #1e293b;
+                font-weight: 500;
+                vertical-align: middle;
             }
 
             .ho-empty {
@@ -91,55 +97,50 @@
                 font-size: .8rem;
             }
 
-            .ho-approval-search {
+            .ho-search {
                 max-width: 340px;
             }
         </style>
 
-        <div class="ho-approval-page">
-            <div class="card ho-approval-shell">
-                <div class="ho-approval-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h4 class="ho-approval-title">Approve / Reject Hospital Order Filings</h4>
-                        <p class="ho-approval-subtitle">Review submitted filings and provide optional remarks</p>
-                    </div>
-                    <a href="{{ route('hospital_order') }}" class="btn btn-light btn-sm">Back</a>
+        <div class="ho-board">
+            <div class="ho-head">
+                <div class="ho-head-title">
+                    <h4>Hospital Order Filings Review</h4>
+                    <span>Review submitted filings and provide optional remarks</span>
                 </div>
+            </div>
 
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
-                        <h6 class="mb-0 fw-bold">Filings for Review</h6>
-                        <input type="text" id="reviewSearch" class="form-control ho-approval-search" placeholder="Search employee/order #/status...">
-                    </div>
+            <div class="ho-panel d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                <div class="fw-bold">Filings for Review</div>
+                <input type="text" id="reviewSearch" class="form-control ho-search" placeholder="Search employee/order #/status...">
+            </div>
 
-                    <div class="ho-approval-table-wrap">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle ho-approval-table">
-                                <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Order #</th>
-                                    <th>Date</th>
-                                    <th>Time Range</th>
-                                    <th>Status</th>
-                                    <th>Remarks</th>
-                                    <th>Action</th>
-                                </tr>
-                                </thead>
-                                <tbody id="review_list">
-                                <tr><td colspan="7" class="ho-empty">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-                        <small class="text-muted" id="reviewSummary"></small>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0 ho-pagination" id="reviewPagination"></ul>
-                        </nav>
-                    </div>
+            <div class="ho-table-shell">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Time Range</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="review_list">
+                        <tr><td colspan="7" class="ho-empty">Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                <small class="text-muted" id="reviewSummary"></small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0 ho-pagination" id="reviewPagination"></ul>
+                </nav>
             </div>
         </div>
     @endif

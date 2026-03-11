@@ -1,15 +1,125 @@
 @extends('master')
 @section('content')
+    <style>
+        .dtr-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+        }
 
-    <div class="card">
-        <div class="card-header">
-            <h4>Time Log Record Viewer</h4>
+        .dtr-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .dtr-header-title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .dtr-header-title h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .dtr-header-title span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .dtr-filters {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .dtr-filters .form-floating > .form-control,
+        .dtr-filters .form-floating > .form-select {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .dtr-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .dtr-table-shell table {
+            margin-bottom: 0;
+        }
+
+        .dtr-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .dtr-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+
+        .dtr-section-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.65rem;
+        }
+
+        .dtr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.25rem;
+            align-items: stretch;
+        }
+
+        .dtr-panel {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .dtr-panel .dtr-table-shell {
+            flex: 1 1 auto;
+        }
+    </style>
+
+    <div class="dtr-board">
+        <div class="dtr-header">
+            <div class="dtr-header-title">
+                <h4>Daily Time Record</h4>
+                <span>Time Log Record Viewer</span>
+            </div>
+            <div>
+                <button class="btn btn-danger" onclick="printDTR()" title="Print Individual DTR">
+                    <i class="bi bi-printer"></i>
+                    PRINT DTR
+                </button>
+            </div>
         </div>
-        <div class="card-body">
-            <!-- Filter Section -->
-            <div class="row mb-3 mt-3">
+
+        <div class="dtr-filters">
+            <div class="row g-3 align-items-end">
                 <div class="col-md-3">
-                    <div class="form-floating mb-3">
+                    <div class="form-floating">
                         <select class="form-control" id="month">
                             <option value="" selected disabled>Select month</option>
                             <option value="1">January</option>
@@ -25,11 +135,11 @@
                             <option value="11">November</option>
                             <option value="12">December</option>
                         </select>
-                        <label for="floatingInput">Month</label>
+                        <label for="month">Month</label>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="form-floating mb-3">
+                    <div class="form-floating">
                         <select class="form-control" id="year">
                             <option value="">Select year</option>
                             @for($year=2023; $year<= \Carbon\Carbon::now()->format('Y'); $year++)
@@ -39,58 +149,40 @@
                         <label for="year" class="form-label">Year</label>
                     </div>
                 </div>
-                <!-- DTR Table -->
-                <div class="col-md-6">
-                    <button class="btn btn-danger" style="padding: 1rem 1rem;" onclick="printDTR()">
-                        <i class="bi bi-printer mr-2"></i>
-                        PRINT INDIVIDUAL DTR
-                    </button>
-                    @if(false)
-                        <button class="btn btn-danger" style="padding: 1rem 1rem;" onclick="printDTR()">
-                            <i class="bi bi-printer mr-2"></i>
-                            PRINT DTR
-                        </button>
-                    @endif
-                </div>
             </div>
+        </div>
 
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="table-responsive">
-                        <h3>DTR</h3>
-                        <table class="table table-bordered text-center">
-                            <thead class="table-dark">
+        <div class="dtr-grid">
+            <div class="dtr-panel">
+                <div class="dtr-section-title">DTR</div>
+                <div class="table-responsive dtr-table-shell">
+                    <table class="table table-bordered text-center">
+                        <thead>
                             <tr>
                                 <th>Day</th>
                                 <th>Time In</th>
                                 <th>Time Out</th>
                             </tr>
-                            </thead>
-                            <tbody id="dtr_list">
-
-                            <!-- More rows can be dynamically added here -->
-                            </tbody>
-                        </table>
-                    </div>
+                        </thead>
+                        <tbody id="dtr_list">
+                        </tbody>
+                    </table>
                 </div>
-                <div class="col-md-6">
-                    <div class="table-responsive">
-                        <h3>Raw Data</h3>
-                        <table class="table table-bordered text-center">
-                            <thead class="table-dark">
+            </div>
+            <div class="dtr-panel">
+                <div class="dtr-section-title">Raw Data</div>
+                <div class="table-responsive dtr-table-shell">
+                    <table class="table table-bordered text-center">
+                        <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Status</th>
                                 <th>Time</th>
                             </tr>
-                            </thead>
-                            <tbody id="raw_list">
-
-                            <!-- More rows can be dynamically added here -->
-                            </tbody>
-                        </table>
-                    </div>
+                        </thead>
+                        <tbody id="raw_list">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

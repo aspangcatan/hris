@@ -1,77 +1,156 @@
 @extends('master')
 @section('content')
-    <div class="card shadow-sm border-0 rounded-3" style="background-color: #f8f9fa;">
-        <div class="card-header bg-white border-bottom py-3">
-            <h4 class="mb-0 fw-bold text-dark">📝 Pass Slips Management</h4>
+    <style>
+        .ps-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+        }
+
+        .ps-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .ps-head-title h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .ps-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .ps-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .ps-panel .form-control,
+        .ps-panel .form-select {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .ps-section-title {
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.6rem;
+        }
+
+        .ps-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .ps-table-shell table {
+            margin-bottom: 0;
+        }
+
+        .ps-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .ps-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+    </style>
+
+    <div class="ps-board">
+        <div class="ps-head">
+            <div class="ps-head-title">
+                <h4>Pass Slips</h4>
+                <span>File and manage your pass slip requests</span>
+            </div>
         </div>
-        <div class="card-body bg-white">
-            <div class="row g-4 mt-2">
-                <!-- Create Pass Slip -->
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-light fw-bold">Create Pass Slip</div>
-                        <div class="card-body mt-3">
-                            <div class="form-floating mb-3">
-                                <input type="date" id="date" class="form-control form-control-sm">
-                                <label for="date">Date</label>
-                            </div>
 
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="time" id="time_out" class="form-control form-control-sm">
-                                        <label for="time_out">Time Out</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="time" id="time_in" class="form-control form-control-sm">
-                                        <label for="time_in">Time In</label>
-                                    </div>
-                                </div>
-                            </div>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="ps-panel h-100">
+                    <div class="ps-section-title">Create Pass Slip</div>
+                    <div class="form-floating mb-3">
+                        <input type="date" id="date" class="form-control">
+                        <label for="date">Date</label>
+                    </div>
 
-                            <div class="form-floating mb-3">
-                                <select id="type" class="form-select form-control-sm">
-                                    <option value="" selected disabled>Select Type</option>
-                                    <option value="Personal">Personal</option>
-                                    <option value="Official">Official</option>
-                                </select>
-                                <label for="type">Type</label>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="form-floating">
+                                <input type="time" id="time_out" class="form-control">
+                                <label for="time_out">Time Out</label>
                             </div>
-
-                            <div class="d-flex justify-content-between mt-4">
-                                <button type="button" class="btn btn-secondary w-50 me-2" id="clearBtn">Clear</button>
-                                <button type="button" class="btn btn-primary w-50" id="submitBtn">Submit</button>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating">
+                                <input type="time" id="time_in" class="form-control">
+                                <label for="time_in">Time In</label>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Pass Slip List -->
-                <div class="col-md-8">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-light fw-bold">Pass Slip List</div>
-                        <div class="card-body mt-3">
-                            <div class="table-responsive">
-                                <table class="table table-bordered align-middle text-center">
-                                    <thead class="table-light">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Time Out</th>
-                                        <th>Time In</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th style="width: 4%"></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="pass_slip_list">
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted">Loading...</td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div class="form-floating mb-3">
+                        <select id="type" class="form-select">
+                            <option value="" selected disabled>Select Type</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Official">Official</option>
+                        </select>
+                        <label for="type">Type</label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-action btn-view w-50" id="clearBtn">
+                            <i class="bi bi-eraser"></i>
+                            Clear
+                        </button>
+                        <button type="button" class="btn btn-action btn-edit w-50" id="submitBtn">
+                            <i class="bi bi-check2"></i>
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="ps-panel h-100">
+                    <div class="ps-section-title">Pass Slip List</div>
+                    <div class="ps-table-shell">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle text-center">
+                                <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time Out</th>
+                                    <th>Time In</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th style="width: 4%"></th>
+                                </tr>
+                                </thead>
+                                <tbody id="pass_slip_list">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Loading...</td>
+                                </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -111,7 +190,7 @@
                 };
 
                 if (!data.slip_date || !data.time_out || !data.type) {
-                    alert('⚠️ Please fill in required fields.');
+                    alert('Please fill in required fields.');
                     return;
                 }
 
@@ -134,7 +213,7 @@
 
                 } catch (error) {
                     console.error(error);
-                    alert('❌ Something went wrong while submitting your pass slip.');
+                    alert('Something went wrong while submitting your pass slip.');
                 } finally {
                     $(this).prop('disabled', false).text('Submit');
                 }

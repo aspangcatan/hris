@@ -2,80 +2,81 @@
 
 @section('content')
     <style>
-        .ot-file-page {
-            --ot-surface: #ffffff;
-            --ot-line: #dce6f2;
-            --ot-muted: #5e728d;
-            --ot-grad-1: #14532d;
-            --ot-grad-2: #16a34a;
-            --ot-grad-3: #22c55e;
-        }
-
-        .ot-file-shell {
-            border: 0;
+        .ot-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
-            box-shadow: 0 24px 44px rgba(15, 23, 42, 0.10);
-            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-            overflow: hidden;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         }
 
-        .ot-file-header {
-            background: linear-gradient(125deg, var(--ot-grad-1), var(--ot-grad-2), var(--ot-grad-3));
-            color: #fff;
-            padding: 1.1rem 1.2rem;
+        .ot-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
         }
 
-        .ot-file-title {
+        .ot-head-title h4 {
             margin: 0;
-            font-weight: 800;
-            letter-spacing: 0.2px;
+            font-weight: 700;
+            color: #0f172a;
         }
 
-        .ot-file-subtitle {
-            margin: .2rem 0 0;
-            opacity: .95;
-            font-weight: 500;
-            font-size: .9rem;
+        .ot-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
         }
 
-        .ot-file-card {
-            border: 1px solid var(--ot-line);
-            border-radius: 14px;
-            background: var(--ot-surface);
-            padding: .95rem;
+        .ot-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
         }
 
-        .ot-file-label {
+        .ot-panel .form-control,
+        .ot-panel .form-select {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .ot-label {
             font-size: .76rem;
             text-transform: uppercase;
             letter-spacing: .06em;
             font-weight: 700;
-            color: var(--ot-muted);
+            color: #5e728d;
             margin-bottom: .32rem;
         }
 
-        .ot-file-table-wrap {
-            border: 1px solid var(--ot-line);
-            border-radius: 14px;
+        .ot-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             overflow: hidden;
             background: #fff;
         }
 
-        .ot-file-table {
+        .ot-table-shell table {
             margin-bottom: 0;
         }
 
-        .ot-file-table thead th {
-            background: #f5f9ff;
-            color: #4f6684;
+        .ot-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: .06em;
-            font-size: .72rem;
-            font-weight: 800;
+            letter-spacing: 0.08em;
         }
 
-        .ot-file-table tbody tr:hover {
-            background: #f8fbff;
+        .ot-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
         }
 
         .ot-empty {
@@ -89,78 +90,76 @@
             margin: 0 2px;
         }
 
-        .ot-file-search {
+        .ot-search {
             max-width: 320px;
         }
     </style>
 
-    <div class="ot-file-page">
-        <div class="card ot-file-shell">
-            <div class="ot-file-header d-flex justify-content-between align-items-center gap-2">
-                <div>
-                    <h4 class="ot-file-title">File Overtime Request</h4>
-                    <p class="ot-file-subtitle">Submit your overtime date and time range for approval</p>
-                </div>
-                <a href="{{ route('dtr') }}" class="btn btn-light btn-sm">Back</a>
+    <div class="ot-board">
+        <div class="ot-head">
+            <div class="ot-head-title">
+                <h4>Overtime Requests</h4>
+                <span>Submit your overtime date and time range for approval</span>
             </div>
+        </div>
 
-            <div class="card-body p-3">
-                <div class="ot-file-card mb-3">
-                    <form id="fileOvertimeForm" class="row g-3 align-items-end">
-                        <div class="col-lg-2">
-                            <label class="ot-file-label">Date</label>
-                            <input type="date" class="form-control" name="ot_date" required>
-                        </div>
-                        <div class="col-lg-2">
-                            <label class="ot-file-label">Time From</label>
-                            <input type="time" class="form-control" name="time_from" required>
-                        </div>
-                        <div class="col-lg-2">
-                            <label class="ot-file-label">Time To</label>
-                            <input type="time" class="form-control" name="time_to" required>
-                        </div>
-                        <div class="col-lg-5">
-                            <label class="ot-file-label">Reason (optional)</label>
-                            <input type="text" class="form-control" name="reason" maxlength="500">
-                        </div>
-                        <div class="col-lg-1">
-                            <button type="submit" class="btn btn-primary w-100">File</button>
-                        </div>
-                    </form>
+        <div class="ot-panel">
+            <form id="fileOvertimeForm" class="row g-3 align-items-end">
+                <div class="col-lg-2">
+                    <label class="ot-label">Date</label>
+                    <input type="date" class="form-control" name="ot_date" required>
                 </div>
+                <div class="col-lg-2">
+                    <label class="ot-label">Time From</label>
+                    <input type="time" class="form-control" name="time_from" required>
+                </div>
+                <div class="col-lg-2">
+                    <label class="ot-label">Time To</label>
+                    <input type="time" class="form-control" name="time_to" required>
+                </div>
+                <div class="col-lg-5">
+                    <label class="ot-label">Reason (optional)</label>
+                    <input type="text" class="form-control" name="reason" maxlength="500">
+                </div>
+                <div class="col-lg-1">
+                    <button type="submit" class="btn btn-action btn-edit w-100">
+                        <i class="bi bi-send"></i>
+                        File
+                    </button>
+                </div>
+            </form>
+        </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
-                    <h6 class="mb-0 fw-bold">My Overtime Filings</h6>
-                    <input type="text" id="filingSearch" class="form-control ot-file-search" placeholder="Search reason/status...">
-                </div>
+        <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+            <h6 class="mb-0 fw-bold">My Overtime Filings</h6>
+            <input type="text" id="filingSearch" class="form-control ot-search" placeholder="Search reason/status...">
+        </div>
 
-                <div class="ot-file-table-wrap">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle ot-file-table">
-                            <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time Range</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                                <th>Remarks</th>
-                                <th>Action</th>
-                            </tr>
-                            </thead>
-                            <tbody id="my_filing_list">
-                            <tr><td colspan="6" class="ot-empty">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-                    <small class="text-muted" id="filingSummary"></small>
-                    <nav>
-                        <ul class="pagination pagination-sm mb-0 ot-pagination" id="filingPagination"></ul>
-                    </nav>
-                </div>
+        <div class="ot-table-shell">
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle">
+                    <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time Range</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="my_filing_list">
+                    <tr><td colspan="6" class="ot-empty">Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <small class="text-muted" id="filingSummary"></small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0 ot-pagination" id="filingPagination"></ul>
+            </nav>
         </div>
     </div>
 @stop

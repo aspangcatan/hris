@@ -9,64 +9,71 @@
         <div class="alert alert-danger">You are not authorized to approve/reject overtime filings.</div>
     @else
         <style>
-            .ot-approval-page {
-                --ot-surface: #ffffff;
-                --ot-line: #dce6f2;
-                --ot-muted: #5e728d;
-                --ot-grad-1: #14532d;
-                --ot-grad-2: #16a34a;
-                --ot-grad-3: #22c55e;
-            }
-
-            .ot-approval-shell {
-                border: 0;
+            .ot-board {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
                 border-radius: 20px;
-                box-shadow: 0 24px 44px rgba(15, 23, 42, 0.10);
-                background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-                overflow: hidden;
+                padding: 1.5rem;
+                box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
             }
 
-            .ot-approval-header {
-                background: linear-gradient(125deg, var(--ot-grad-1), var(--ot-grad-2), var(--ot-grad-3));
-                color: #fff;
-                padding: 1.1rem 1.2rem;
+            .ot-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                margin-bottom: 1.25rem;
+                flex-wrap: wrap;
             }
 
-            .ot-approval-title {
+            .ot-head-title h4 {
                 margin: 0;
-                font-weight: 800;
-                letter-spacing: 0.2px;
+                font-weight: 700;
+                color: #0f172a;
             }
 
-            .ot-approval-subtitle {
-                margin: .2rem 0 0;
-                opacity: .95;
-                font-weight: 500;
-                font-size: .9rem;
+            .ot-head-title span {
+                font-size: 0.9rem;
+                color: #64748b;
             }
 
-            .ot-approval-table-wrap {
-                border: 1px solid var(--ot-line);
-                border-radius: 14px;
+            .ot-panel {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
+                padding: 1rem;
+                margin-bottom: 1.25rem;
+            }
+
+            .ot-panel .form-control {
+                border-radius: 12px;
+                border: 1px solid #d8e1ee;
+                background: #fff;
+            }
+
+            .ot-table-shell {
+                border: 1px solid #e2e8f0;
+                border-radius: 16px;
                 overflow: hidden;
                 background: #fff;
             }
 
-            .ot-approval-table {
+            .ot-table-shell table {
                 margin-bottom: 0;
             }
 
-            .ot-approval-table thead th {
-                background: #f5f9ff;
-                color: #4f6684;
+            .ot-table-shell table thead th {
+                background: #f8fafc;
+                color: #0f172a;
+                font-size: 0.72rem;
                 text-transform: uppercase;
-                letter-spacing: .06em;
-                font-size: .72rem;
-                font-weight: 800;
+                letter-spacing: 0.08em;
             }
 
-            .ot-approval-table tbody tr:hover {
-                background: #f8fbff;
+            .ot-table-shell table tbody td {
+                color: #1e293b;
+                font-weight: 500;
+                vertical-align: middle;
             }
 
             .ot-empty {
@@ -80,55 +87,50 @@
                 margin: 0 2px;
             }
 
-            .ot-approval-search {
+            .ot-search {
                 max-width: 340px;
             }
         </style>
 
-        <div class="ot-approval-page">
-            <div class="card ot-approval-shell">
-                <div class="ot-approval-header d-flex justify-content-between align-items-center gap-2">
-                    <div>
-                        <h4 class="ot-approval-title">Approve / Reject Overtime Filings</h4>
-                        <p class="ot-approval-subtitle">Review pending overtime requests and add optional remarks</p>
-                    </div>
-                    <a href="{{ route('dtr') }}" class="btn btn-light btn-sm">Back</a>
+        <div class="ot-board">
+            <div class="ot-head">
+                <div class="ot-head-title">
+                    <h4>Overtime Filings Review</h4>
+                    <span>Review pending overtime requests and add optional remarks</span>
                 </div>
+            </div>
 
-                <div class="card-body p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
-                        <h6 class="mb-0 fw-bold">Filings for Review</h6>
-                        <input type="text" id="reviewSearch" class="form-control ot-approval-search" placeholder="Search employee/reason/status...">
-                    </div>
+            <div class="ot-panel d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                <div class="fw-bold">Filings for Review</div>
+                <input type="text" id="reviewSearch" class="form-control ot-search" placeholder="Search employee/date/status...">
+            </div>
 
-                    <div class="ot-approval-table-wrap">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm align-middle ot-approval-table">
-                                <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Date</th>
-                                    <th>Time Range</th>
-                                    <th>Reason</th>
-                                    <th>Status</th>
-                                    <th>Remarks</th>
-                                    <th>Action</th>
-                                </tr>
-                                </thead>
-                                <tbody id="review_list">
-                                <tr><td colspan="7" class="ot-empty">Loading...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-                        <small class="text-muted" id="reviewSummary"></small>
-                        <nav>
-                            <ul class="pagination pagination-sm mb-0 ot-pagination" id="reviewPagination"></ul>
-                        </nav>
-                    </div>
+            <div class="ot-table-shell">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Time Range</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="review_list">
+                        <tr><td colspan="7" class="ot-empty">Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                <small class="text-muted" id="reviewSummary"></small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0 ot-pagination" id="reviewPagination"></ul>
+                </nav>
             </div>
         </div>
     @endif
@@ -170,9 +172,9 @@
 
         filteredFilingsForReview = allFilingsForReview.filter(it => {
             const employee = String((it.employee_name || '').replace(/\s+/g, ' ').trim()).toLowerCase();
-            const reason = String(it.reason || '').toLowerCase();
+            const date = String(it.ot_date || '').toLowerCase();
             const status = String(it.status || '').toLowerCase();
-            return employee.includes(keyword) || reason.includes(keyword) || status.includes(keyword);
+            return employee.includes(keyword) || date.includes(keyword) || status.includes(keyword);
         });
 
         renderReviewRows();
@@ -208,8 +210,8 @@
                     <td>${escapeHtml(it.remarks || '-')}</td>
                     <td>
                         ${canReview ? `
-                            <button type="button"  class="btn btn-action btn-edit me-1 mb-1" onclick="reviewFiling(${it.id}, 'approve')" title="Approve"><i class="bi bi-check2"></i></button>
-                            <button type="button"  class="btn btn-action btn-delete mb-1" onclick="reviewFiling(${it.id}, 'reject')" title="Reject"><i class="bi bi-x"></i></button>
+                            <button type="button" class="btn btn-action btn-edit me-1 mb-1" onclick="reviewFiling(${it.id}, 'approve')" title="Approve"><i class="bi bi-check2"></i></button>
+                            <button type="button" class="btn btn-action btn-delete mb-1" onclick="reviewFiling(${it.id}, 'reject')" title="Reject"><i class="bi bi-x"></i></button>
                         ` : '-'}
                     </td>
                 </tr>

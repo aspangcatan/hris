@@ -155,7 +155,7 @@
                     <h5 class="modal-title" id="modalTitle">
                         <i class="bi bi-file-earmark-plus"></i> Create New SALN
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <!-- Year and Filing Type Selection -->

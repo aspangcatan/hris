@@ -2,85 +2,81 @@
 
 @section('content')
     <style>
-        .ho-file-page {
-            --ho-surface: #ffffff;
-            --ho-line: #dce6f2;
-            --ho-muted: #5e728d;
-            --ho-title: #10233d;
-            --ho-grad-1: #0f766e;
-            --ho-grad-2: #0ea5a4;
-            --ho-grad-3: #0891b2;
-        }
-
-        .ho-file-shell {
-            border: 0;
+        .ho-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 20px;
-            box-shadow: 0 24px 44px rgba(15, 23, 42, 0.10);
-            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
-            overflow: hidden;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         }
 
-        .ho-file-header {
-            background: linear-gradient(125deg, var(--ho-grad-1), var(--ho-grad-2), var(--ho-grad-3));
-            color: #fff;
-            padding: 1.1rem 1.2rem;
+        .ho-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
         }
 
-        .ho-file-title {
+        .ho-head-title h4 {
             margin: 0;
-            font-weight: 800;
-            letter-spacing: 0.2px;
+            font-weight: 700;
+            color: #0f172a;
         }
 
-        .ho-file-subtitle {
-            margin: .2rem 0 0;
-            opacity: .95;
-            font-weight: 500;
-            font-size: .9rem;
+        .ho-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
         }
 
-        .ho-file-card {
-            border: 1px solid var(--ho-line);
-            border-radius: 14px;
-            background: var(--ho-surface);
-            padding: .95rem;
+        .ho-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
         }
 
-        .ho-file-label {
+        .ho-panel .form-control,
+        .ho-panel .form-select {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .ho-label {
             font-size: .76rem;
             text-transform: uppercase;
             letter-spacing: .06em;
             font-weight: 700;
-            color: var(--ho-muted);
+            color: #5e728d;
             margin-bottom: .32rem;
         }
 
-        .ho-file-search {
-            max-width: 320px;
-        }
-
-        .ho-file-table-wrap {
-            border: 1px solid var(--ho-line);
-            border-radius: 14px;
+        .ho-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             overflow: hidden;
             background: #fff;
         }
 
-        .ho-file-table {
+        .ho-table-shell table {
             margin-bottom: 0;
         }
 
-        .ho-file-table thead th {
-            background: #f5f9ff;
-            color: #4f6684;
+        .ho-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: .06em;
-            font-size: .72rem;
-            font-weight: 800;
+            letter-spacing: 0.08em;
         }
 
-        .ho-file-table tbody tr:hover {
-            background: #f8fbff;
+        .ho-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
         }
 
         .ho-empty {
@@ -103,79 +99,81 @@
             font-weight: 600;
             font-size: .8rem;
         }
+
+        .ho-search {
+            max-width: 320px;
+        }
     </style>
 
-    <div class="ho-file-page">
-        <div class="card ho-file-shell">
-            <div class="ho-file-header d-flex justify-content-between align-items-center gap-2">
-                <div>
-                    <h4 class="ho-file-title">File Hospital Order</h4>
-                    <p class="ho-file-subtitle">Select a hospital order and submit using its assigned date/time details</p>
-                </div>
-                <a href="{{ route('hospital_order') }}" class="btn btn-light btn-sm">Back</a>
+    <div class="ho-board">
+        <div class="ho-head">
+            <div class="ho-head-title">
+                <h4>Hospital Order Filings</h4>
+                <span>Select a hospital order and submit using its assigned date/time details</span>
             </div>
+        </div>
 
-            <div class="card-body p-3">
-                <div class="ho-file-card mb-3">
-                    <form id="fileHospitalOrderForm" class="row g-3 align-items-end">
-                        <div class="col-lg-4">
-                            <label class="ho-file-label">Hospital Order #</label>
-                            <select class="form-select" name="ho_id" id="hoSelect" required></select>
-                        </div>
-                        <div class="col-lg-3">
-                            <label class="ho-file-label">Date Range</label>
-                            <input type="text" class="form-control" id="filedDateRangeDisplay" readonly>
-                        </div>
-                        <div class="col-lg-2">
-                            <label class="ho-file-label">Time From</label>
-                            <input type="time" class="form-control" id="fileTimeFromDisplay" readonly>
-                        </div>
-                        <div class="col-lg-2">
-                            <label class="ho-file-label">Time To</label>
-                            <input type="time" class="form-control" id="fileTimeToDisplay" readonly>
-                        </div>
-                        <div class="col-lg-1">
-                            <button type="submit" class="btn btn-primary w-100">File</button>
-                        </div>
-
-                        <input type="hidden" name="filed_date" id="filedDateInput" required>
-                        <input type="hidden" name="time_from" id="fileTimeFrom" required>
-                        <input type="hidden" name="time_to" id="fileTimeTo" required>
-                    </form>
+        <div class="ho-panel">
+            <form id="fileHospitalOrderForm" class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="ho-label">Hospital Order #</label>
+                    <select class="form-select" name="ho_id" id="hoSelect" required></select>
+                </div>
+                <div class="col-lg-3">
+                    <label class="ho-label">Date Range</label>
+                    <input type="text" class="form-control" id="filedDateRangeDisplay" readonly>
+                </div>
+                <div class="col-lg-2">
+                    <label class="ho-label">Time From</label>
+                    <input type="time" class="form-control" id="fileTimeFromDisplay" readonly>
+                </div>
+                <div class="col-lg-2">
+                    <label class="ho-label">Time To</label>
+                    <input type="time" class="form-control" id="fileTimeToDisplay" readonly>
+                </div>
+                <div class="col-lg-1">
+                    <button type="submit" class="btn btn-action btn-edit w-100">
+                        <i class="bi bi-send"></i>
+                        File
+                    </button>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
-                    <h6 class="mb-0 fw-bold">My Filings</h6>
-                    <input type="text" id="filingSearch" class="form-control ho-file-search" placeholder="Search HO #...">
-                </div>
+                <input type="hidden" name="filed_date" id="filedDateInput" required>
+                <input type="hidden" name="time_from" id="fileTimeFrom" required>
+                <input type="hidden" name="time_to" id="fileTimeTo" required>
+            </form>
+        </div>
 
-                <div class="ho-file-table-wrap">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm align-middle ho-file-table">
-                            <thead>
-                            <tr>
-                                <th>Order #</th>
-                                <th>Date</th>
-                                <th>Time Range</th>
-                                <th>Status</th>
-                                <th>Remarks</th>
-                                <th>Action</th>
-                            </tr>
-                            </thead>
-                            <tbody id="my_filing_list">
-                            <tr><td colspan="6" class="ho-empty">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        <div class="d-flex justify-content-between align-items-center mb-2 gap-2 flex-wrap">
+            <h6 class="mb-0 fw-bold">My Filings</h6>
+            <input type="text" id="filingSearch" class="form-control ho-search" placeholder="Search HO #...">
+        </div>
 
-                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-                    <small class="text-muted" id="filingSummary"></small>
-                    <nav>
-                        <ul class="pagination pagination-sm mb-0 ho-pagination" id="filingPagination"></ul>
-                    </nav>
-                </div>
+        <div class="ho-table-shell">
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle">
+                    <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Time Range</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody id="my_filing_list">
+                    <tr><td colspan="6" class="ho-empty">Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+            <small class="text-muted" id="filingSummary"></small>
+            <nav>
+                <ul class="pagination pagination-sm mb-0 ho-pagination" id="filingPagination"></ul>
+            </nav>
         </div>
     </div>
 @stop

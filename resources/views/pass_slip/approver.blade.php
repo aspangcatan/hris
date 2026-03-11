@@ -1,21 +1,96 @@
 @extends('master')
 @section('content')
-    <div class="card shadow-sm border-0 rounded-3" style="background-color: #f8f9fa;">
-        <div class="card-header bg-white border-bottom py-3">
-            <h4 class="mb-0 fw-bold text-dark">✅ Pass Slip Approver Module</h4>
+    <style>
+        .ps-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+        }
+
+        .ps-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .ps-head-title h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .ps-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .ps-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .ps-panel .form-control {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .ps-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .ps-table-shell table {
+            margin-bottom: 0;
+        }
+
+        .ps-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .ps-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+    </style>
+
+    <div class="ps-board">
+        <div class="ps-head">
+            <div class="ps-head-title">
+                <h4>Pass Slip Approvals</h4>
+                <span>Review and act on pending pass slips</span>
+            </div>
         </div>
 
-        <div class="card-body bg-white">
-            <div class="d-flex justify-content-end align-items-center gap-2">
-                <input type="text" class="form-control w-auto" id="search_employee" placeholder="Search employee">
-                <button class="btn btn-success" id="btn_search">
+        <div class="ps-panel d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <div class="fw-bold">Pending Pass Slips</div>
+            <div class="d-flex align-items-center gap-2">
+                <input type="text" class="form-control" id="search_employee" placeholder="Search employee">
+                <button class="btn btn-action btn-view" id="btn_search" title="Search">
                     <i class="bi bi-search"></i>
                 </button>
             </div>
+        </div>
 
-            <div class="table-responsive mt-3">
+        <div class="ps-table-shell">
+            <div class="table-responsive">
                 <table class="table table-bordered align-middle text-center">
-                    <thead class="table-light">
+                    <thead>
                     <tr>
                         <th>Employee</th>
                         <th>Date</th>

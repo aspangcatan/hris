@@ -2,73 +2,65 @@
 
 @section('content')
     <style>
-        .schedule-access-page {
-            --sa-bg: #f4f7fb;
-            --sa-card: #ffffff;
-            --sa-text: #1b2a41;
-            --sa-muted: #5d6b82;
-            --sa-line: #e5ebf3;
-            --sa-brand: #0f766e;
-            --sa-brand-2: #0ea5a4;
+        .schedule-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         }
 
-        .schedule-access-page .hero {
-            border-radius: 18px;
-            padding: 1.2rem 1.35rem;
-            background: linear-gradient(135deg, var(--sa-brand), var(--sa-brand-2));
-            color: #fff;
-            box-shadow: 0 14px 30px rgba(15, 118, 110, 0.24);
+        .schedule-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
         }
 
-        .schedule-access-page .hero h3 {
+        .schedule-head-title h4 {
             margin: 0;
             font-weight: 700;
-            letter-spacing: .25px;
+            color: #0f172a;
         }
 
-        .schedule-access-page .hero p {
-            margin: .35rem 0 0;
-            opacity: .9;
-            font-size: .92rem;
+        .schedule-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
         }
 
-        .schedule-access-page .premium-table-wrap {
-            margin-top: 1rem;
-            border: 1px solid var(--sa-line);
-            border-radius: 14px;
-            background: var(--sa-card);
+        .schedule-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             overflow: hidden;
+            background: #fff;
         }
 
-        .schedule-access-page table thead th {
-            background: #f8fbff;
-            color: var(--sa-muted);
-            font-size: .74rem;
+        .schedule-table-shell table {
+            margin-bottom: 0;
+        }
+
+        .schedule-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: .7px;
-            font-weight: 700;
-            border-bottom-color: var(--sa-line);
+            letter-spacing: 0.08em;
         }
 
-        .schedule-access-page table tbody td {
+        .schedule-table-shell table tbody td {
             vertical-align: middle;
-            color: var(--sa-text);
+            color: #1b2a41;
         }
 
-        .schedule-access-page .badge-soft {
+        .badge-soft {
             background: #eaf7f6;
             color: #0f766e;
             border: 1px solid #ccebe8;
             font-weight: 600;
             margin-right: .35rem;
             margin-bottom: .35rem;
-        }
-
-        .schedule-access-page .manager-action {
-            border: 0;
-            background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 100%);
-            box-shadow: 0 9px 18px rgba(15, 118, 110, 0.25);
-            font-weight: 600;
         }
 
         #scheduleAccessModal .modal-content {
@@ -79,17 +71,17 @@
         }
 
         #scheduleAccessModal .modal-header {
-            border-bottom: 1px solid var(--sa-line);
-            background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+            border-bottom: 1px solid #e5ebf3;
+            background: #f8fafc;
         }
 
         #scheduleAccessModal .modal-title {
-            color: var(--sa-text);
+            color: #1b2a41;
             font-weight: 700;
         }
 
         #scheduleAccessModal .search-line {
-            border: 1px solid var(--sa-line);
+            border: 1px solid #e5ebf3;
             border-radius: 12px;
             padding: .4rem .65rem;
             background: #fff;
@@ -98,7 +90,7 @@
         #scheduleAccessModal .section-box {
             max-height: 400px;
             overflow: auto;
-            border: 1px solid var(--sa-line);
+            border: 1px solid #e5ebf3;
             border-radius: 12px;
             background: #fbfdff;
             padding: .85rem;
@@ -113,7 +105,7 @@
         }
 
         #scheduleAccessModal .division-title {
-            color: var(--sa-muted);
+            color: #5d6b82;
             font-weight: 700;
             font-size: .78rem;
             text-transform: uppercase;
@@ -122,18 +114,20 @@
         }
     </style>
 
-    <div class="schedule-access-page">
+    <div class="schedule-board">
         @if(strtolower((string) session('access_rights')) !== 'admin')
             <div class="alert alert-danger mb-0">
                 You are not authorized to access this page.
             </div>
         @else
-            <div class="hero">
-                <h3>Schedule Access Control</h3>
-                <p>Assign one or multiple sections per schedule manager using a quick modal workflow.</p>
+            <div class="schedule-head">
+                <div class="schedule-head-title">
+                    <h4>Schedule Access Control</h4>
+                    <span>Assign one or multiple sections per schedule manager using a quick modal workflow.</span>
+                </div>
             </div>
 
-            <div class="premium-table-wrap">
+            <div class="schedule-table-shell">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
@@ -164,21 +158,21 @@
                             <h5 class="modal-title mb-1">Assign Sections</h5>
                             <div class="text-muted small" id="modal_manager_label"></div>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
                             <input type="text" class="form-control search-line" id="section_search" placeholder="Search section or division..." style="max-width: 320px;">
                             <input class="form-control" id="quick_section_search" list="quick_section_list" placeholder="Quick find section..." style="max-width: 360px;">
                             <datalist id="quick_section_list"></datalist>
-                            <button class="btn btn-sm btn-outline-secondary" id="btn_select_visible" type="button">Select Visible</button>
-                            <button class="btn btn-standard btn-outline-danger btn-sm" id="btn_clear_visible" type="button">Clear Visible</button>
+                            <button class="btn btn-action btn-view btn-sm" id="btn_select_visible" type="button">Select Visible</button>
+                            <button class="btn btn-action btn-delete btn-sm" id="btn_clear_visible" type="button">Clear Visible</button>
                         </div>
                         <div class="section-box" id="modal_section_list"></div>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-light" data-bs-dismiss="modal" type="button">Cancel</button>
-                        <button class="btn btn-primary manager-action" id="btn_save_modal_sections" type="button">Save Sections</button>
+                        <button class="btn btn-action btn-edit" id="btn_save_modal_sections" type="button">Save Sections</button>
                     </div>
                 </div>
             </div>
@@ -333,7 +327,7 @@
                             <td>${manager.designation}</td>
                             <td>${badgesHtml}</td>
                             <td>
-                                <button type="button" class="btn btn-action btn-view manager-action btn-open-assign-modal" data-user-id="${manager.id}" title="Assign">
+                                <button type="button" class="btn btn-action btn-view btn-open-assign-modal" data-user-id="${manager.id}" title="Assign">
                                     <i class="bi bi-sliders"></i>
                                 </button>
                             </td>
@@ -349,7 +343,7 @@
                 }
 
                 currentManagerId = userId;
-                $("#modal_manager_label").text(`${manager.name} • ${manager.designation}`);
+                $("#modal_manager_label").text(`${manager.name} - ${manager.designation}`);
                 $("#section_search").val("");
                 renderQuickSectionOptions();
                 renderSectionChecklist(userId, "");

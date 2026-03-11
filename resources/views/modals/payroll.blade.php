@@ -1,10 +1,39 @@
-<div class="modal fade" id="payroll_settings_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<style>
+    .payroll-modal-theme .modal-content {
+        border: 0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+    }
+
+    .payroll-modal-theme .modal-header {
+        background: linear-gradient(135deg, #0f766e, #0ea5a4);
+        color: #fff;
+        border: 0;
+    }
+
+    .payroll-modal-theme .modal-title {
+        font-weight: 700;
+        letter-spacing: 0.2px;
+    }
+
+    .payroll-modal-theme .btn-close {
+        filter: invert(1);
+        opacity: 0.9;
+    }
+
+    .payroll-modal-theme .modal-body {
+        background: #f8fafc;
+    }
+</style>
+
+<div class="modal fade payroll-modal-theme" id="payroll_settings_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <!-- Sticky Header -->
-            <div class="modal-header bg-primary text-white sticky-top">
-                <h3 class="modal-title">Payroll Settings</h3>
+            <div class="modal-header sticky-top">
+                <h3 class="modal-title text-white">Payroll Settings</h3>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
@@ -177,8 +206,8 @@
 
             <!-- Footer with Save Button -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="btn_save">Save Changes</button>
+                <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success btn-edit" id="btn_save">Save Changes</button>
             </div>
         </div>
     </div>
@@ -186,14 +215,14 @@
 
 
 <!-- Create Payroll Modal -->
-<div class="modal fade" id="create_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade payroll-modal-theme" id="create_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
 
             <!-- Sticky Header -->
-            <div class="modal-header bg-primary text-white sticky-top">
-                <h3 class="modal-title">Create Payroll</h3>
+            <div class="modal-header sticky-top">
+                <h3 class="modal-title text-white">Create Payroll</h3>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
@@ -245,21 +274,21 @@
 
             <!-- Footer with Save Button -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="btn_save_payroll">Save Changes</button>
+                <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success btn-edit" id="btn_save_payroll">Save Changes</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="append_employee_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade payroll-modal-theme" id="append_employee_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
 
             <!-- Sticky Header -->
-            <div class="modal-header bg-primary text-white sticky-top">
-                <h3 class="modal-title">Append Employees</h3>
+            <div class="modal-header sticky-top">
+                <h3 class="modal-title text-white">Append Employees</h3>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
@@ -322,22 +351,22 @@
 
             <!-- Footer with Save Button -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="btn_save_employees">Save Changes</button>
+                <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success btn-edit" id="btn_save_employees">Save Changes</button>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="regular_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade payroll-modal-theme" id="regular_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xxl">
         <div class="modal-content">
 
             <!-- Sticky Header -->
-            <div class="modal-header bg-light border-bottom sticky-top shadow-sm">
-                <h3 class="modal-title">Regular Payroll</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"
+            <div class="modal-header sticky-top">
+                <h3 class="modal-title text-white">Regular Payroll</h3>
+                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
@@ -438,11 +467,11 @@
             </div>
 
             <!-- Optional Footer -->
-            <div class="modal-footer bg-light">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-view" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i> Close
                 </button>
-                <button class="btn btn-outline-primary" id="btn_export_regular">
+                <button class="btn btn-success btn-edit" id="btn_export_regular">
                     <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
                 </button>
             </div>
@@ -451,15 +480,15 @@
     </div>
 </div>
 
-<div class="modal fade" id="jo_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade payroll-modal-theme" id="jo_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xxl">
         <div class="modal-content">
 
             <!-- Sticky Header -->
-            <div class="modal-header bg-light border-bottom sticky-top shadow-sm">
-                <h3 class="modal-title">Job Order Payroll</h3>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"
+            <div class="modal-header sticky-top">
+                <h3 class="modal-title text-white">Job Order Payroll</h3>
+                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
@@ -509,9 +538,9 @@
             </div>
 
             <!-- Footer -->
-            <div class="modal-footer border-top">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-                <button class="btn btn-outline-primary" id="btn_export_jo">
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-success btn-edit" id="btn_export_jo">
                     <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
                 </button>
             </div>

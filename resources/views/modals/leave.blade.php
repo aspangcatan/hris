@@ -155,7 +155,7 @@
         <div class="modal-content border border-dark">
             <div class="modal-header border-bottom-0">
                 <h5 class="modal-title" id="viewLeaveModalLabel">Leave Application</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <!-- Steps -->

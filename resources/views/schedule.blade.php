@@ -2,130 +2,91 @@
 
 @section('content')
     <style>
-        .schedule-page {
-            --surface: #ffffff;
-            --surface-soft: #f7fafc;
-            --line: #e5eaf1;
-            --text-strong: #12263f;
-            --text-muted: #526581;
-            --brand-1: #0f766e;
-            --brand-2: #0ea5a4;
-            --accent: #0f766e;
-            --font-ui: "Manrope", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        .schedule-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
         }
 
-        .schedule-page .premium-shell {
-            border: 0;
-            border-radius: 18px;
-            box-shadow: 0 16px 35px rgba(16, 24, 40, 0.08);
-            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+        .schedule-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
         }
 
-        .schedule-page .page-head {
-            border-radius: 14px;
-            padding: 1rem 1.1rem;
-            background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-            color: #fff;
-        }
-
-        .schedule-page .page-head h2 {
-            font-weight: 700;
+        .schedule-head-title h4 {
             margin: 0;
-            letter-spacing: 0.2px;
+            font-weight: 700;
+            color: #0f172a;
         }
 
-        .schedule-page .legend-box {
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(4px);
-            border-radius: 12px;
-            padding: 0.75rem 0.85rem;
+        .schedule-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
         }
 
-        .schedule-page .filter-panel {
-            margin-top: 1rem;
-            border: 1px solid var(--line);
+        .schedule-legend {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 14px;
-            background: var(--surface);
+            padding: 0.75rem 0.9rem;
+            min-width: 220px;
+        }
+
+        .schedule-legend .row {
+            font-size: 0.85rem;
+            color: #475569;
+        }
+
+        .schedule-filter {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             padding: 1rem;
+            margin-bottom: 1.25rem;
         }
 
-        .schedule-page .filter-panel .form-control,
-        .schedule-page .filter-panel .form-select {
-            border-radius: 10px;
-            border-color: #d7dfea;
+        .schedule-filter .form-control,
+        .schedule-filter .form-select {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
         }
 
-        .schedule-page .filter-panel .form-control:focus,
-        .schedule-page .filter-panel .form-select:focus {
-            border-color: #0ea5a4;
-            box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
-        }
-
-        .schedule-page .btn-advance {
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 100%);
-            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.24);
-            font-weight: 600;
-        }
-
-        .schedule-page .table-wrap {
-            margin-top: 1rem;
-            border: 1px solid var(--line);
-            border-radius: 14px;
+        .schedule-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             overflow: hidden;
-            background: var(--surface);
+            background: #fff;
         }
 
-        .schedule-page .schedule-table {
+        .schedule-table-shell table {
             margin-bottom: 0;
-            font-family: var(--font-ui);
         }
 
-        .schedule-page .schedule-table thead th {
+        .schedule-table-shell table thead th {
             position: sticky;
             top: 0;
             z-index: 2;
-            background: var(--surface-soft);
-            color: var(--text-muted);
+            background: #f8fafc;
+            color: #0f172a;
             font-size: 0.72rem;
-            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            line-height: 1.1;
-            padding-top: 0.7rem;
-            padding-bottom: 0.7rem;
+            letter-spacing: 0.08em;
         }
 
-        .schedule-page .schedule-table tbody tr:hover {
-            background: #f8fbff;
-        }
-
-        .schedule-page .schedule-table tbody td {
-            font-size: 0.94rem;
-            color: #27364b;
-            letter-spacing: 0.1px;
-            line-height: 1.35;
+        .schedule-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
             vertical-align: top;
         }
 
-        .schedule-page .schedule-table tbody td:nth-child(2) {
-            font-weight: 700;
-            color: #11243c;
-            font-size: 0.96rem;
-            letter-spacing: 0.15px;
-        }
-
-        .schedule-page .schedule-table tbody td:nth-child(3) {
-            font-weight: 600;
-            color: #4d5f78;
-            font-size: 0.89rem;
-            line-height: 1.4;
-        }
-
-        .schedule-page .schedule-table .schedule-cell {
-            font-family: var(--font-ui);
+        .schedule-table-shell .schedule-cell {
             font-size: 0.84rem;
             font-weight: 700 !important;
             color: #0f766e !important;
@@ -136,19 +97,20 @@
         }
     </style>
 
-    <div class="schedule-page">
-    <div class="card">
-        <div class="card-body p-4 premium-shell">
-            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 page-head">
-                <h2>Schedule Management</h2>
-                <div class="legend-box">
-                    <strong>Legend:</strong>
-                    <div class="row" id="legend_list"></div>
-                </div>
+    <div class="schedule-board">
+        <div class="schedule-head">
+            <div class="schedule-head-title">
+                <h4>Schedule Management</h4>
+                <span>Build and manage monthly schedules by division and section.</span>
             </div>
+            <div class="schedule-legend">
+                <div class="fw-bold mb-1">Legend</div>
+                <div class="row" id="legend_list"></div>
+            </div>
+        </div>
 
-            <!-- Filters -->
-            <div class="row g-3 align-items-end filter-panel">
+        <div class="schedule-filter">
+            <div class="row g-3 align-items-end">
                 <div class="col-md-2">
                     <div class="form-floating">
                         <select class="form-select form-control-sm" id="filter_month">
@@ -209,27 +171,23 @@
                     </div>
                 </div>
                 <div class="col-md-2 d-grid gap-2">
-                    <button id="btn_advance_schedule" class="btn btn-success btn-lg w-100 btn-advance">Advance</button>
-                    <button id="btn_print_schedule" class="btn btn-outline-success btn-lg w-100">Print Preview</button>
+                    <button id="btn_advance_schedule" class="btn btn-action btn-edit w-100">Advance</button>
+                    <button id="btn_print_schedule" class="btn btn-action btn-view w-100">Print Preview</button>
                 </div>
-
-
-            </div>
-
-            <!-- Schedule Table -->
-            <div class="table-responsive mt-4 table-wrap">
-                <table class="table table-bordered table-hover schedule-table">
-                    <thead>
-                    <tr id="schedule_header">
-                        <th>Name</th>
-                        <th>Designation</th>
-                    </tr>
-                    </thead>
-                    <tbody id="employee_list"></tbody>
-                </table>
             </div>
         </div>
-    </div>
+
+        <div class="table-responsive schedule-table-shell">
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr id="schedule_header">
+                    <th>Name</th>
+                    <th>Designation</th>
+                </tr>
+                </thead>
+                <tbody id="employee_list"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Modals -->
@@ -546,7 +504,7 @@
             fetch('{{ route('getScheduleMasterList') }}')
                 .then(res => res.json())
                 .then(data => {
-                        $('#scheduleSelect').append(`<option value="""></option>`);
+                        $('#scheduleSelect').append(`<option value=""></option>`);
                     data.forEach(it => {
                         $('#legend_list').append(`<div class="col-md-6"><div>${it.code} - ${it.label}</div></div>`);
                         $('#scheduleSelect').append(`<option value="${it.id}" data-code="${it.code}">${it.label}</option>`);

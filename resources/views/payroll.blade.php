@@ -1,12 +1,89 @@
 @extends('master')
 @section('content')
-    <div class="card shadow-sm border-0 rounded-3" style="background-color: #f8f9fa;">
-        <div class="card-header bg-white border-bottom py-3">
-            <h4 class="mb-0 fw-bold text-dark">📊 Create Payroll</h4>
+    <style>
+        .payroll-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+        }
+
+        .payroll-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .payroll-head-title h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .payroll-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .payroll-filter {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .payroll-filter .form-control,
+        .payroll-filter .form-select {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .payroll-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .payroll-table-shell table {
+            margin-bottom: 0;
+        }
+
+        .payroll-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .payroll-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+    </style>
+
+    <div class="payroll-board">
+        <div class="payroll-head">
+            <div class="payroll-head-title">
+                <h4>Payroll Processing</h4>
+                <span>Create and manage payroll periods for employees.</span>
+            </div>
+            <button class="btn btn-success btn-edit" id="btn_add">
+                <i class="bi bi-plus-lg"></i>
+                Create Payroll
+            </button>
         </div>
-        <div class="card-body bg-white">
-            <!-- Filter Section -->
-            <div class="row g-3 align-items-end mb-4 mt-3">
+
+        <div class="payroll-filter">
+            <div class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <div class="form-floating">
                         <select class="form-select form-control-sm" id="month">
@@ -40,22 +117,11 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Divider -->
-            <hr class="my-4">
-
-            <!-- Leave Credit Earned Logs -->
-            <div class="d-flex justify-content-between">
-                <h5 class="fw-bold text-dark mb-3">📅 Generated Payroll List</h5>
-                <div>
-                    <button class="btn btn-success" id="btn_add">CREATE PAYROLL</button>
-                </div>
-            </div>
-
-
-            <div class="table-responsive position-relative" style="overflow: visible;">
-                <table class="table table-bordered align-middle text-center" style="background-color: #fff;">
-                    <thead class="table-light">
+        <div class="table-responsive payroll-table-shell">
+                <table class="table table-bordered align-middle text-center">
+                    <thead>
                     <tr>
                         <th style="width: 20%">Title</th>
                         <th style="width: 10%">Period Start</th>
@@ -74,8 +140,6 @@
                     </tr>
                     </tbody>
                 </table>
-            </div>
-
         </div>
     </div>
     @include('modals.payroll')

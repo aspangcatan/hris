@@ -263,8 +263,8 @@
     </div>
 
     <div class="modal-action-row">
-        <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
-        <button type="button" class="btn btn-modal-save" id="btn_save_personal">
+        <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
+        <button type="button" class="btn btn-success btn-modal-save" id="btn_save_personal">
             <i class="bi bi-check2-circle me-1"></i>Save Changes
         </button>
     </div>
