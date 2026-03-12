@@ -528,9 +528,14 @@
         }
 
         function getAdvanceRangeValidation() {
+            const year = $('#filter_year').val();
+            const month = $('#filter_month').val();
             const rangeStart = $('#advance_start_date').val();
             const rangeEnd = $('#advance_end_date').val();
 
+            if (!year || !month) {
+                return { valid: false, message: "Please select both month and year." };
+            }
             if (!rangeStart || !rangeEnd) {
                 return { valid: false, message: "Select both start and end dates." };
             }
