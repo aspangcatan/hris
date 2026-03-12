@@ -76,9 +76,8 @@
             font-weight: 700;
         }
         .legend {
-            margin: 0 auto;
             font-size: 8px;
-            width: 55%;
+            width: 40%;
             border: 1px solid #000;
             border-collapse: collapse;
         }
@@ -96,7 +95,7 @@
             font-weight: 700;
         }
         .legend td.code {
-            width: 15%;
+            width: 4%;
             font-weight: 700;
             text-align: center;
         }
@@ -213,6 +212,53 @@
         @endforeach
         </tbody>
     </table>
+
+    <div class="legend-wrap" style="margin-top:20px">
+    @php
+        $legendRows = $legend_items
+            ->filter(function ($item) {
+                return strtoupper((string) $item->code) !== 'OFF';
+            })
+            ->values()
+            ->chunk(2);
+    @endphp
+    <table class="legend">
+        <thead>
+        <tr>
+            <th colspan="4" style="background: #f1c40f">LEGEND</th>
+        </tr>
+        <tr>
+            <th>CODE</th>
+            <th>TIME</th>
+            <th>CODE</th>
+            <th>TIME</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach($legendRows as $row)
+            <tr>
+                @foreach($row as $item)
+                    @php
+                        $start = $item->time_in === $item->time_in_latest
+                            ? \Carbon\Carbon::parse($item->time_in)->format('h:i A')
+                            : \Carbon\Carbon::parse($item->time_in)->format('h:i A') . '-' . \Carbon\Carbon::parse($item->time_in_latest)->format('h:i A');
+                        $end = $item->time_out === $item->time_out_latest
+                            ? \Carbon\Carbon::parse($item->time_out)->format('h:i A')
+                            : \Carbon\Carbon::parse($item->time_out)->format('h:i A') . '-' . \Carbon\Carbon::parse($item->time_out_latest)->format('h:i A');
+                        $time = $start . ' - ' . $end;
+                    @endphp
+                    <td class="code">{{ strtoupper($item->code) }}</td>
+                    <td class="time">{{ $time }}</td>
+                @endforeach
+                @if($row->count() < 2)
+                    <td class="code">&nbsp;</td>
+                    <td class="time">&nbsp;</td>
+                @endif
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+</div>
 
     @if($pageIndex < count($employees) - 1)
         <div class="page-break"></div>
