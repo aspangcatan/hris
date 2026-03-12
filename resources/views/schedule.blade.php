@@ -234,6 +234,8 @@
                 filterAdvanceEmployees("");
                 $("#advance_select_all_employees").prop("checked", true);
 
+                syncAdvanceRangeBounds();
+                updateAdvanceRangeState();
                 $('#advanceScheduleModal').modal('show');
             });
 
@@ -258,27 +260,8 @@
                 const rangeStart = $('#advance_start_date').val();
                 const rangeEnd = $('#advance_end_date').val();
 
-                if (!year || !month) {
-                    toastr.error("Please select both year and month", "Error");
+                if (!updateAdvanceRangeState(true)) {
                     return;
-                }
-
-                if ((rangeStart && !rangeEnd) || (!rangeStart && rangeEnd)) {
-                    toastr.warning("Please select both start and end dates.", "Missing Range");
-                    return;
-                }
-
-                if (rangeStart && rangeEnd) {
-                    const startDate = parseYmdToLocalDate(rangeStart);
-                    const endDate = parseYmdToLocalDate(rangeEnd);
-                    if (startDate > endDate) {
-                        toastr.warning("Start date must be on or before end date.", "Invalid Range");
-                        return;
-                    }
-                    if (!isSameMonthYear(startDate, year, month) || !isSameMonthYear(endDate, year, month)) {
-                        toastr.warning("Date range must be within the selected month and year.", "Invalid Range");
-                        return;
-                    }
                 }
 
                 const employeeIds = $('.advance-employee-check:checked').map(function () {
@@ -362,6 +345,15 @@
                 $('#selectedEmployeeId').val(employeeId);
                 $('#selectedDay').val(day);
                 $('#scheduleModal').modal('show');
+            });
+
+            $('#advance_start_date, #advance_end_date').on('change input', function () {
+                updateAdvanceRangeState();
+            });
+
+            $('#filter_month, #filter_year').on('change', function () {
+                syncAdvanceRangeBounds();
+                updateAdvanceRangeState();
             });
 
             $('#btn_save_schedule').on('click', function () {
@@ -519,6 +511,42 @@
             });
         }
 
+        function updateAdvanceRangeState(showToast = false) {
+            const { valid, message } = getAdvanceRangeValidation();
+            const $btn = $('#save_advance_schedule');
+            $('#advance_range_error').text(valid ? '' : message);
+            if (!valid && showToast && message) {
+                toastr.warning(message, "Invalid Range");
+                $btn.prop('disabled', true);
+
+                
+            }else{
+                $btn.prop('disabled', false);
+            }
+
+            return valid;
+        }
+
+        function getAdvanceRangeValidation() {
+            const rangeStart = $('#advance_start_date').val();
+            const rangeEnd = $('#advance_end_date').val();
+
+            if (!rangeStart || !rangeEnd) {
+                return { valid: false, message: "Select both start and end dates." };
+            }
+
+            const startDate = parseYmdToLocalDate(rangeStart);
+            const endDate = parseYmdToLocalDate(rangeEnd);
+            if (startDate > endDate) {
+                return { valid: false, message: "Start date must be on or before end date." };
+            }
+            if (!isSameMonthYear(startDate, year, month) || !isSameMonthYear(endDate, year, month)) {
+                return { valid: false, message: "Date range must be within the selected month and year." };
+            }
+
+            return { valid: true, message: "" };
+        }
+
 
         function loadScheduleMasterList() {
             fetch('{{ route('getScheduleMasterList') }}')
@@ -634,6 +662,24 @@
 
         function isSameMonthYear(date, year, month) {
             return date.getFullYear() === Number(year) && (date.getMonth() + 1) === Number(month);
+        }
+
+        function syncAdvanceRangeBounds() {
+            const year = $('#filter_year').val();
+            const month = $('#filter_month').val();
+            if (!year || !month) {
+                $('#advance_start_date').attr('min', '').attr('max', '');
+                $('#advance_end_date').attr('min', '').attr('max', '');
+                return;
+            }
+
+            const first = new Date(Number(year), Number(month) - 1, 1);
+            const last = getLastDayOfMonth(Number(year), Number(month) - 1);
+            const min = first.toISOString().slice(0, 10);
+            const max = last.toISOString().slice(0, 10);
+
+            $('#advance_start_date').attr('min', min).attr('max', max);
+            $('#advance_end_date').attr('min', min).attr('max', max);
         }
     </script>
 @stop

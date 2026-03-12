@@ -114,6 +114,13 @@
         color: #667085;
     }
 
+    #advanceScheduleModal .range-error {
+        font-size: 0.82rem;
+        color: #b42318;
+        font-weight: 600;
+        min-height: 1.1rem;
+    }
+
     #advanceScheduleModal .modal-footer {
         border-top: 1px solid #e9eef5;
         background: #f8fafc;
@@ -133,7 +140,7 @@
     <div class="modal-dialog modal-xxl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Advance Schedule Builder</h5>
+                <h5 class="modal-title text-white">Advance Schedule Builder</h5>
                 <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -172,16 +179,17 @@
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-5">
                                     <label for="advance_start_date" class="form-label mb-1">Start Date</label>
-                                    <input type="date" id="advance_start_date" class="form-control range-input">
+                                    <input type="date" id="advance_start_date" class="form-control range-input" required>
                                 </div>
                                 <div class="col-md-5">
                                     <label for="advance_end_date" class="form-label mb-1">End Date</label>
-                                    <input type="date" id="advance_end_date" class="form-control range-input">
+                                    <input type="date" id="advance_end_date" class="form-control range-input" required>
                                 </div>
                                 <div class="col-md-2">
                                     <span class="range-help d-block">Pick a custom range. Only dates inside the range will be scheduled.</span>
                                 </div>
                             </div>
+                            <div id="advance_range_error" class="range-error mt-2"></div>
                         </div>
                     </div>
                     <div class="col-lg-12">
@@ -221,7 +229,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-success" id="save_advance_schedule">Apply Schedule</button>
+                <button class="btn btn-success" id="save_advance_schedule" disabled>Apply Schedule</button>
             </div>
         </div>
     </div>
