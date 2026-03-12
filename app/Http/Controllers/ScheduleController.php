@@ -69,6 +69,21 @@ class ScheduleController extends Controller
         return trim($user->fname . $mInitial . ' ' . $user->lname . $suffix);
     }
 
+    private function formatNameLastFirst($user): string
+    {
+        if (!$user) {
+            return '';
+        }
+
+        $mInitial = '';
+        if (!empty($user->mname)) {
+            $mInitial = ' ' . strtoupper(substr(trim($user->mname), 0, 1)) . '.';
+        }
+        $suffix = !empty($user->suffix) ? ', ' . trim($user->suffix) : '';
+
+        return trim($user->lname . ', ' . $user->fname . $mInitial . $suffix);
+    }
+
     private function isLockedScheduleDate(string $date): bool
     {
         return false;        
@@ -213,12 +228,10 @@ class ScheduleController extends Controller
                     u.id as employee_id,
                     u.section as section_id,
                     u.division as division_id,
-                    CONCAT(
-                        u.fname,
-                        CASE WHEN u.mname IS NOT NULL AND u.mname != '' THEN CONCAT(' ', u.mname) ELSE '' END,
-                        ' ', u.lname,
-                        CASE WHEN u.suffix IS NOT NULL AND u.suffix != '' THEN CONCAT(' ', u.suffix) ELSE '' END
-                    ) AS name,
+                    u.fname,
+                    u.mname,
+                    u.lname,
+                    u.suffix,
                     COALESCE(d.description, 'No Designation') AS designation
                 ")
                 ->orderBy('u.lname', 'asc')
@@ -276,7 +289,7 @@ class ScheduleController extends Controller
             $scheduleList = [];
             foreach ($employees as $employee) {
                 $scheduleList[] = [
-                    'name' => $employee->name,
+                    'name' => $this->formatNameLastFirst($employee),
                     'schedule' => array_map(function ($date) use ($scheduleMap, $employee) {
                         return $scheduleMap[$employee->employee_id][$date] ?? 'RD';
                     }, $dateList),
@@ -378,6 +391,9 @@ class ScheduleController extends Controller
 
             $approverDisplay = trim($approverName . ($approverTitle ? ', ' . $approverTitle : ''));
         
+            $rowsPerPage = 20;
+            $employeePages = array_chunk($scheduleList, $rowsPerPage);
+
             $pdf = Pdf::loadView('pdf.schedule', [
                 'month_label' => strtoupper(Carbon::createFromDate($year, $month, 1)->format('F Y')),
                 'day_numbers' => range(1, $daysInMonth),
@@ -389,7 +405,7 @@ class ScheduleController extends Controller
                 }, $dateList),
                 'division' => $divisionLabel,
                 'section' => $sectionLabel,
-                'employees' => array_chunk($scheduleList, 15),
+                'employees' => $employeePages,
                 'legend_items' => $legendItems,
                 'prepared_by' => $preparedName,
                 'prepared_title' => $preparedTitle,

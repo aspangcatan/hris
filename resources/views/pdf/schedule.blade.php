@@ -76,9 +76,9 @@
             font-weight: 700;
         }
         .legend {
-            margin-top: 14px;
+            margin: 0 auto;
             font-size: 8px;
-            width: 100%;
+            width: 55%;
             border: 1px solid #000;
             border-collapse: collapse;
         }
@@ -101,7 +101,7 @@
             text-align: center;
         }
         .legend td.time {
-            text-align: center
+            text-align: center;
             width: 35%;
         }
         .text-off {
@@ -148,13 +148,23 @@
             margin-top: 12px;
             text-align: center;
         }
-        .legend {
-            margin: 0 auto;
-            width: 50%;
+        .footer-fixed {
+            position: fixed;
+            left: 32px;
+            right: 32px;
+            bottom: 24px;
         }
     </style>
 </head>
 <body>
+@include('pdf.schedule_footer', [
+    'legend_items' => $legend_items,
+    'prepared_by' => $prepared_by,
+    'prepared_title' => $prepared_title,
+    'approved_by' => $approved_by,
+    'approved_title' => $approved_title,
+    'footer_fixed' => true
+])
 @foreach($employees as $pageIndex => $pageEmployees)
     <div class="header">
         <div>Republic of the Philippines</div>
@@ -203,68 +213,6 @@
         @endforeach
         </tbody>
     </table>
-
-    <div class="signatures">
-        <div class="sig-block sig-indent">
-            <div class="sig-label">Prepared by:</div>
-            <div class="sig-space"></div>
-            <div class="sig-name">{{ strtoupper($prepared_by) }}</div>
-            <div class="sig-title">{{ $prepared_title }}</div>
-        </div>
-        <div class="sig-block sig-indent">
-            <div class="sig-label">Approved by:</div>
-            <div class="sig-space"></div>
-            <div class="sig-name">{{ strtoupper($approved_by) }}</div>
-            <div class="sig-title">{{ $approved_title }}</div>
-        </div>
-    </div>
-
-    <div class="legend-wrap" style="margin-top:20px">
-        @php
-            $legendRows = $legend_items
-                ->filter(function ($item) {
-                    return strtoupper((string) $item->code) !== 'OFF';
-                })
-                ->values()
-                ->chunk(2);
-        @endphp
-        <table class="legend">
-            <thead>
-            <tr>
-                <th colspan="4">LEGEND</th>
-            </tr>
-            <tr>
-                <th>CODE</th>
-                <th>TIME</th>
-                <th>CODE</th>
-                <th>TIME</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($legendRows as $row)
-                <tr>
-                    @foreach($row as $item)
-                        @php
-                            $start = $item->time_in === $item->time_in_latest
-                                ? \Carbon\Carbon::parse($item->time_in)->format('h:i A')
-                                : \Carbon\Carbon::parse($item->time_in)->format('h:i A') . '-' . \Carbon\Carbon::parse($item->time_in_latest)->format('h:i A');
-                            $end = $item->time_out === $item->time_out_latest
-                                ? \Carbon\Carbon::parse($item->time_out)->format('h:i A')
-                                : \Carbon\Carbon::parse($item->time_out)->format('h:i A') . '-' . \Carbon\Carbon::parse($item->time_out_latest)->format('h:i A');
-                            $time = $start . ' - ' . $end;
-                        @endphp
-                        <td class="code">{{ strtoupper($item->code) }}</td>
-                        <td class="time">{{ $time }}</td>
-                    @endforeach
-                    @if($row->count() < 2)
-                        <td class="code">&nbsp;</td>
-                        <td class="time">&nbsp;</td>
-                    @endif
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    </div>
 
     @if($pageIndex < count($employees) - 1)
         <div class="page-break"></div>
