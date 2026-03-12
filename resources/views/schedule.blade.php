@@ -222,11 +222,18 @@
                     return;
                 }
 
-                const options = $("#scheduleSelect").html();
-                $(".advance-schedule-select").each(function () {
-                    if ($(this).children().length <= 1) {
-                        $(this).append(options);
+                const scheduleOptions = $('#scheduleSelect option').map(function () {
+                    const value = $(this).val();
+                    if (!value) {
+                        return null;
                     }
+                    const label = $(this).text();
+                    return `<option value="${value}">${label}</option>`;
+                }).get().join('');
+
+                $(".advance-schedule-select").each(function () {
+                    $(this).html(`<option value="">-- Select --</option>${scheduleOptions}`);
+                    $(this).val('');
                 });
 
                 renderAdvanceEmployeeTable();
@@ -255,6 +262,7 @@
             });
 
             $('#save_advance_schedule').on('click', function () {
+                const $btn = $(this);
                 const year = $('#filter_year').val();
                 const month = $('#filter_month').val();
                 const rangeStart = $('#advance_start_date').val();
@@ -274,6 +282,7 @@
                 }
 
                 let scheduleData = [];
+                let clearDays = [];
 
                 $('.advance-schedule-select').each(function () {
                     const dayName = $(this).data('day');
@@ -285,13 +294,19 @@
                                 scheduleData.push({employee_id: id, schedule_id, schedule_date: date});
                             });
                         });
+                    } else {
+                        clearDays.push(dayName);
                     }
                 });
 
-                if (scheduleData.length === 0) {
-                    toastr.warning("Please select at least one schedule", "Warning");
+                if (scheduleData.length === 0 && clearDays.length === 0) {
+                    toastr.warning("Please select at least one schedule or leave a day blank to clear.", "Warning");
                     return;
                 }
+
+                const originalText = $btn.text();
+                $btn.prop('disabled', true);
+                $btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving...');
 
                 fetch("{{ route('saveAdvanceSchedule') }}", {
                     method: "POST",
@@ -299,7 +314,15 @@
                         "Content-Type": "application/json",
                         "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
                     },
-                    body: JSON.stringify({schedules: scheduleData})
+                    body: JSON.stringify({
+                        schedules: scheduleData,
+                        clear_days: clearDays,
+                        range_start: rangeStart,
+                        range_end: rangeEnd,
+                        employee_ids: employeeIds,
+                        year: year,
+                        month: month
+                    })
                 })
                     .then(async res => {
                         const data = await res.json();
@@ -316,6 +339,10 @@
                     .catch(err => {
                         console.error(err);
                         toastr.error(err.message || "Failed to save schedule", "Error");
+                    })
+                    .finally(() => {
+                        $btn.prop('disabled', false);
+                        $btn.text(originalText);
                     });
             });
 
@@ -363,7 +390,9 @@
                 const schedule_id = $('#scheduleSelect').val();
                 const schedule_code = $('#scheduleSelect option:selected').data("code");
                 const schedule_date = `${$('#filter_year').val()}-${$('#filter_month').val()}-${String(day).padStart(2, '0')}`;
+                const originalText = $btn.text();
                 $btn.prop('disabled', true);
+                $btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving...');
 
                 fetch('{{ route('setEmployeeSchedule') }}', {
                     method: "POST",
@@ -398,6 +427,7 @@
                     })
                     .finally(() => {
                         $btn.prop('disabled', false);
+                        $btn.text(originalText);
                     });
             });
 

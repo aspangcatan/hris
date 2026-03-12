@@ -517,10 +517,26 @@ class ScheduleController extends Controller
 
     public function saveAdvanceSchedule(Request $request)
     {
-        $schedules = $request->input('schedules');
+        $schedules = $request->input('schedules', []);
+        $clearDays = $request->input('clear_days', []);
+        $employeeIds = collect($request->input('employee_ids', []))
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0)
+            ->unique()
+            ->values();
+        $rangeStart = $request->input('range_start');
+        $rangeEnd = $request->input('range_end');
 
-        foreach ($schedules as $sched) {
-            if (!$this->canManageEmployee((int) ($sched['employee_id'] ?? 0))) {
+        $allEmployeeIds = collect($schedules)
+            ->pluck('employee_id')
+            ->merge($employeeIds)
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        foreach ($allEmployeeIds as $employeeId) {
+            if (!$this->canManageEmployee($employeeId)) {
                 return response()->json(['message' => 'You are not allowed to manage one or more selected employees.'], 403);
             }
         }
@@ -531,6 +547,55 @@ class ScheduleController extends Controller
                     'message' => 'Schedules from last month and older can no longer be edited.'
                 ], 422);
             }
+        }
+
+        $clearDates = [];
+        if (!empty($clearDays)) {
+            if (empty($rangeStart) || empty($rangeEnd)) {
+                return response()->json(['message' => 'Start and end dates are required to clear schedules.'], 422);
+            }
+
+            $dayMap = [
+                'Sunday' => 0,
+                'Monday' => 1,
+                'Tuesday' => 2,
+                'Wednesday' => 3,
+                'Thursday' => 4,
+                'Friday' => 5,
+                'Saturday' => 6,
+            ];
+
+            $clearDayNumbers = collect($clearDays)
+                ->map(fn($day) => $dayMap[$day] ?? null)
+                ->filter(fn($day) => $day !== null)
+                ->unique()
+                ->values()
+                ->all();
+
+            if (!empty($clearDayNumbers)) {
+                $cursor = Carbon::parse($rangeStart)->startOfDay();
+                $end = Carbon::parse($rangeEnd)->startOfDay();
+
+                while ($cursor->lte($end)) {
+                    if (in_array($cursor->dayOfWeek, $clearDayNumbers, true)) {
+                        $date = $cursor->toDateString();
+                        if ($this->isLockedScheduleDate($date)) {
+                            return response()->json([
+                                'message' => 'Schedules from last month and older can no longer be edited.'
+                            ], 422);
+                        }
+                        $clearDates[] = $date;
+                    }
+                    $cursor->addDay();
+                }
+            }
+        }
+
+        if (!empty($clearDates) && $employeeIds->isNotEmpty()) {
+            DB::table('hris.schedules')
+                ->whereIn('employee_id', $employeeIds->all())
+                ->whereIn('schedule_date', $clearDates)
+                ->delete();
         }
 
         foreach ($schedules as $sched) {

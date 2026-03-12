@@ -630,10 +630,11 @@ class DTRController extends Controller
                     $sched = $schedules[$currentDay] ?? null;
                     $isOffSchedule = false;
                     if ($sched) {
+                        $scheduleCode = trim((string) $sched->code);
                         $scheduleLabel = trim((string) ($sched->label ?: $sched->code));
-                        if ($scheduleLabel !== '' && strtoupper($scheduleLabel) === 'OFF') {
+                        if ($scheduleCode !== '' && strtoupper($scheduleCode) === 'OFF') {
                             $isOffSchedule = true;
-                            $data['off_label'] = $scheduleLabel;
+                            $data['off_label'] = $scheduleLabel !== '' ? $scheduleLabel : $scheduleCode;
                         }
 
                         $formatTime = function($time, $showAmpm = true) {
