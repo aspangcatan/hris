@@ -81,10 +81,11 @@
                 <tr>
                     <th>Label</th>
                     <th>Code</th>
+                    <th>Type</th>
                     <th>Time In</th>
-                    <th>Break Out</th>
-                    <th>Break In</th>
+                    <th>Time In Latest</th>
                     <th>Time Out</th>
+                    <th>Time Out Latest</th>
                     <th style="width: 8%">Action</th>
                 </tr>
                 </thead>
@@ -97,8 +98,8 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="schedule_master_modal_title">Add Schedule Master</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title text-white fs-3" id="schedule_master_modal_title">Add Schedule Master</h5>
+                    <button type="button" class="btn-close btn-close-white fs-2" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="schedule_master_id">
@@ -110,27 +111,34 @@
                         <label class="form-label">Code</label>
                         <input type="text" class="form-control" id="schedule_code">
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" id="schedule_type">
+                            <option value="FIXED">FIXED</option>
+                            <option value="GLIDING">GLIDING</option>
+                        </select>
+                    </div>
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="form-label">Time In</label>
                             <input type="time" class="form-control" id="schedule_time_in">
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Break Out</label>
-                            <input type="time" class="form-control" id="schedule_break_out">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Break In</label>
-                            <input type="time" class="form-control" id="schedule_break_in">
+                            <label class="form-label">Time In Latest</label>
+                            <input type="time" class="form-control" id="schedule_time_in_latest">
                         </div>
                         <div class="col-6">
                             <label class="form-label">Time Out</label>
                             <input type="time" class="form-control" id="schedule_time_out">
                         </div>
+                        <div class="col-6">
+                            <label class="form-label">Time Out Latest</label>
+                            <input type="time" class="form-control" id="schedule_time_out_latest">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-action btn-view" id="btn_save_schedule_master" type="button">Save</button>
+                    <button class="btn btn-success btn-view" id="btn_save_schedule_master" type="button">Save</button>
                 </div>
             </div>
         </div>
@@ -187,7 +195,7 @@
             tbody.empty();
 
             if (!scheduleMasterRows.length) {
-                tbody.append(`<tr><td colspan="7" class="text-center text-muted py-4">No schedule master list found.</td></tr>`);
+                tbody.append(`<tr><td colspan="8" class="text-center text-muted py-4">No schedule master list found.</td></tr>`);
                 return;
             }
 
@@ -196,10 +204,11 @@
                     <tr>
                         <td>${item.label}</td>
                         <td>${item.code}</td>
-                        <td>${item.time_in}</td>
-                        <td>${item.break_out}</td>
-                        <td>${item.break_in}</td>
-                        <td>${item.time_out}</td>
+                        <td>${item.type || ""}</td>
+                        <td>${item.time_in || ""}</td>
+                        <td>${item.time_in_latest || ""}</td>
+                        <td>${item.time_out || ""}</td>
+                        <td>${item.time_out_latest || ""}</td>
                         <td>
                             <button type="button" class="btn btn-action btn-edit btn-edit-schedule-master" data-id="${item.id}" title="Edit">
                                 <i class="bi bi-pencil"></i>
@@ -215,26 +224,36 @@
 
         function openScheduleMasterModal(item = null) {
             const isEdit = !!item;
+            const normalizeTime = (value) => {
+                if (!value) return "";
+                return String(value).slice(0, 5);
+            };
             $("#schedule_master_modal_title").text(isEdit ? "Edit Schedule Master" : "Add Schedule Master");
             $("#schedule_master_id").val(isEdit ? item.id : "");
             $("#schedule_label").val(isEdit ? item.label : "");
             $("#schedule_code").val(isEdit ? item.code : "");
-            $("#schedule_time_in").val(isEdit ? item.time_in : "");
-            $("#schedule_break_out").val(isEdit ? item.break_out : "");
-            $("#schedule_break_in").val(isEdit ? item.break_in : "");
-            $("#schedule_time_out").val(isEdit ? item.time_out : "");
+            $("#schedule_type").val(isEdit ? item.type : "FIXED");
+            $("#schedule_time_in").val(isEdit ? normalizeTime(item.time_in) : "");
+            $("#schedule_time_in_latest").val(isEdit ? normalizeTime(item.time_in_latest) : "");
+            $("#schedule_time_out").val(isEdit ? normalizeTime(item.time_out) : "");
+            $("#schedule_time_out_latest").val(isEdit ? normalizeTime(item.time_out_latest) : "");
             scheduleMasterModal.show();
         }
 
         function saveScheduleMasterListEntry() {
+            const normalizeTime = (value) => {
+                if (!value) return "";
+                return String(value).slice(0, 5);
+            };
             const payload = {
                 id: Number($("#schedule_master_id").val() || 0),
                 label: $("#schedule_label").val(),
                 code: $("#schedule_code").val(),
-                time_in: $("#schedule_time_in").val(),
-                break_out: $("#schedule_break_out").val(),
-                break_in: $("#schedule_break_in").val(),
-                time_out: $("#schedule_time_out").val()
+                type: $("#schedule_type").val(),
+                time_in: normalizeTime($("#schedule_time_in").val()),
+                time_in_latest: normalizeTime($("#schedule_time_in_latest").val()),
+                time_out: normalizeTime($("#schedule_time_out").val()),
+                time_out_latest: normalizeTime($("#schedule_time_out_latest").val())
             };
 
             fetch("{{ route('saveScheduleMasterList') }}", {
