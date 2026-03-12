@@ -54,6 +54,22 @@
             vertical-align: middle;
         }
 
+        .schedule-pagination {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .schedule-pagination .page-link {
+            color: #0f172a;
+        }
+
+        .schedule-pagination .page-item.active .page-link {
+            background-color: #0f766e;
+            border-color: #0f766e;
+            color: #fff;
+        }
+
         #scheduleMasterModal .modal-content {
             border-radius: 16px;
         }
@@ -92,6 +108,9 @@
                 <tbody id="schedule_master_tbody"></tbody>
             </table>
         </div>
+        <nav class="schedule-pagination" aria-label="Schedule master list pagination">
+            <ul class="pagination pagination-sm mb-0" id="schedule_master_pagination"></ul>
+        </nav>
     </div>
 
     <div class="modal fade" id="scheduleMasterModal" tabindex="-1" aria-hidden="true">
@@ -149,6 +168,8 @@
     <script>
         let scheduleMasterModal = null;
         let scheduleMasterRows = [];
+        let scheduleMasterPage = 1;
+        const scheduleMasterPageSize = 10;
 
         $(document).ready(function () {
             scheduleMasterModal = new bootstrap.Modal(document.getElementById("scheduleMasterModal"));
@@ -173,6 +194,15 @@
             $("#btn_save_schedule_master").on("click", function () {
                 saveScheduleMasterListEntry();
             });
+
+            $("body").on("click", "#schedule_master_pagination .page-link", function (event) {
+                event.preventDefault();
+                const targetPage = Number($(this).data("page") || 1);
+                if (Number.isFinite(targetPage) && targetPage > 0) {
+                    scheduleMasterPage = targetPage;
+                    renderScheduleMasterRows();
+                }
+            });
         });
 
         function loadScheduleMasterListPage() {
@@ -196,10 +226,20 @@
 
             if (!scheduleMasterRows.length) {
                 tbody.append(`<tr><td colspan="8" class="text-center text-muted py-4">No schedule master list found.</td></tr>`);
+                renderScheduleMasterPagination(0);
                 return;
             }
 
-            scheduleMasterRows.forEach(item => {
+            const sortedRows = [...scheduleMasterRows].sort((a, b) => {
+                const aTime = String(a.time_in || "").slice(0, 5);
+                const bTime = String(b.time_in || "").slice(0, 5);
+                return aTime.localeCompare(bTime);
+            });
+
+            const startIndex = (scheduleMasterPage - 1) * scheduleMasterPageSize;
+            const pageRows = sortedRows.slice(startIndex, startIndex + scheduleMasterPageSize);
+
+            pageRows.forEach(item => {
                 tbody.append(`
                     <tr>
                         <td>${item.label}</td>
@@ -220,6 +260,45 @@
                     </tr>
                 `);
             });
+
+            renderScheduleMasterPagination(sortedRows.length);
+        }
+
+        function renderScheduleMasterPagination(totalItems) {
+            const pagination = $("#schedule_master_pagination");
+            pagination.empty();
+
+            const totalPages = Math.max(1, Math.ceil(totalItems / scheduleMasterPageSize));
+            if (scheduleMasterPage > totalPages) {
+                scheduleMasterPage = totalPages;
+            }
+
+            const prevPage = Math.max(1, scheduleMasterPage - 1);
+            const nextPage = Math.min(totalPages, scheduleMasterPage + 1);
+
+            const prevDisabled = scheduleMasterPage === 1 ? " disabled" : "";
+            const nextDisabled = scheduleMasterPage === totalPages ? " disabled" : "";
+
+            pagination.append(`
+                <li class="page-item${prevDisabled}">
+                    <a class="page-link" href="#" data-page="${prevPage}">Previous</a>
+                </li>
+            `);
+
+            for (let page = 1; page <= totalPages; page++) {
+                const active = page === scheduleMasterPage ? " active" : "";
+                pagination.append(`
+                    <li class="page-item${active}">
+                        <a class="page-link" href="#" data-page="${page}">${page}</a>
+                    </li>
+                `);
+            }
+
+            pagination.append(`
+                <li class="page-item${nextDisabled}">
+                    <a class="page-link" href="#" data-page="${nextPage}">Next</a>
+                </li>
+            `);
         }
 
         function openScheduleMasterModal(item = null) {
@@ -260,14 +339,17 @@
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    "Accept": "application/json",
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 body: JSON.stringify(payload)
             })
                 .then(async res => {
-                    const data = await res.json();
+                    const contentType = res.headers.get("content-type") || "";
+                    const isJson = contentType.includes("application/json");
+                    const data = isJson ? await res.json() : { message: await res.text() };
                     if (!res.ok) {
-                        throw new Error(data.message || "Failed to save schedule master list.");
+                        throw new Error(data.message || data.error || "Failed to save schedule master list.");
                     }
                     return data;
                 })
