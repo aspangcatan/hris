@@ -215,7 +215,11 @@
                             </td>
 
                             <!-- UNDERTIME (same rule as before) -->
-                            @if(!empty($dtr['day_marker']))
+                            @if(!empty($dtr['off_label']))
+                                <td style="font-size: 9.5px; font-weight: bold; line-height: 1.1;" colspan="2">
+                                    {{ $dtr['off_label'] }}
+                                </td>
+                            @elseif(!empty($dtr['day_marker']))
                                 @php
                                     $isLateAndOt = str_contains((string) $dtr['day_marker'], 'L:') && str_contains((string) $dtr['day_marker'], 'OT:');
                                 @endphp
@@ -387,7 +391,11 @@
                             </td>
 
                             <!-- UNDERTIME (same rule as before) -->
-                            @if(!empty($dtr['day_marker']))
+                            @if(!empty($dtr['off_label']))
+                                <td style="font-size: 11px; font-weight: bold; line-height: 1.1;" colspan="2">
+                                    {{ $dtr['off_label'] }}
+                                </td>
+                            @elseif(!empty($dtr['day_marker']))
                                 @php
                                     $isLateAndOt = str_contains((string) $dtr['day_marker'], 'L:') && str_contains((string) $dtr['day_marker'], 'OT:');
                                 @endphp

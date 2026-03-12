@@ -98,6 +98,22 @@
         border-color: #d5deea;
     }
 
+    #advanceScheduleModal .range-input {
+        border-radius: 10px;
+        border: 1px solid #d5deea;
+        padding: 0.55rem 0.75rem;
+    }
+
+    #advanceScheduleModal .range-input:focus {
+        border-color: #0ea5a4;
+        box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
+    }
+
+    #advanceScheduleModal .range-help {
+        font-size: 0.8rem;
+        color: #667085;
+    }
+
     #advanceScheduleModal .modal-footer {
         border-top: 1px solid #e9eef5;
         background: #f8fafc;
@@ -148,8 +164,27 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="col-lg-6">
+                        <div class="row">
+   <div class="col-lg-12">
+                        <div class="premium-panel">
+                            <div class="panel-title">Schedule Range</div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-5">
+                                    <label for="advance_start_date" class="form-label mb-1">Start Date</label>
+                                    <input type="date" id="advance_start_date" class="form-control range-input">
+                                </div>
+                                <div class="col-md-5">
+                                    <label for="advance_end_date" class="form-label mb-1">End Date</label>
+                                    <input type="date" id="advance_end_date" class="form-control range-input">
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="range-help d-block">Pick a custom range. Only dates inside the range will be scheduled.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-12">
                         <div class="premium-panel h-100">
                             <div class="panel-title">Weekly Template</div>
                             <div class="table-responsive">
@@ -179,6 +214,9 @@
                             </div>
                         </div>
                     </div>
+                        </div>
+                    </div>
+                 
                 </div>
             </div>
             <div class="modal-footer">

@@ -255,10 +255,30 @@
             $('#save_advance_schedule').on('click', function () {
                 const year = $('#filter_year').val();
                 const month = $('#filter_month').val();
+                const rangeStart = $('#advance_start_date').val();
+                const rangeEnd = $('#advance_end_date').val();
 
                 if (!year || !month) {
                     toastr.error("Please select both year and month", "Error");
                     return;
+                }
+
+                if ((rangeStart && !rangeEnd) || (!rangeStart && rangeEnd)) {
+                    toastr.warning("Please select both start and end dates.", "Missing Range");
+                    return;
+                }
+
+                if (rangeStart && rangeEnd) {
+                    const startDate = parseYmdToLocalDate(rangeStart);
+                    const endDate = parseYmdToLocalDate(rangeEnd);
+                    if (startDate > endDate) {
+                        toastr.warning("Start date must be on or before end date.", "Invalid Range");
+                        return;
+                    }
+                    if (!isSameMonthYear(startDate, year, month) || !isSameMonthYear(endDate, year, month)) {
+                        toastr.warning("Date range must be within the selected month and year.", "Invalid Range");
+                        return;
+                    }
                 }
 
                 const employeeIds = $('.advance-employee-check:checked').map(function () {
@@ -276,7 +296,7 @@
                     const dayName = $(this).data('day');
                     const schedule_id = $(this).val();
                     if (schedule_id) {
-                        const dates = getDatesForDayOfWeek(dayName, year, month);
+                        const dates = getDatesForDayOfWeek(dayName, year, month, rangeStart, rangeEnd);
                         dates.forEach(date => {
                             employeeIds.forEach(id => {
                                 scheduleData.push({employee_id: id, schedule_id, schedule_date: date});
@@ -580,23 +600,40 @@
         }
 
         // Get Dates for Day of Week
-        function getDatesForDayOfWeek(dayName, year, month) {
+        function getDatesForDayOfWeek(dayName, year, month, rangeStart, rangeEnd) {
             const dayMap = {Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6};
             const dates = [];
             const date = new Date(`${year}-${month}-01`);
             const targetDay = dayMap[dayName];
+            const startDate = rangeStart ? parseYmdToLocalDate(rangeStart) : new Date(Number(year), Number(month) - 1, 1);
+            const endDate = rangeEnd ? parseYmdToLocalDate(rangeEnd) : getLastDayOfMonth(Number(year), Number(month) - 1);
 
             while (date.getMonth() === parseInt(month, 10) - 1) {
                 if (date.getDay() === targetDay) {
                     const yyyy = date.getFullYear();
                     const mm = String(date.getMonth() + 1).padStart(2, '0');
                     const dd = String(date.getDate()).padStart(2, '0');
-                    dates.push(`${yyyy}-${mm}-${dd}`);
+                    if (date >= startDate && date <= endDate) {
+                        dates.push(`${yyyy}-${mm}-${dd}`);
+                    }
                 }
                 date.setDate(date.getDate() + 1);
             }
 
             return dates;
+        }
+
+        function parseYmdToLocalDate(ymd) {
+            const [y, m, d] = String(ymd).split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function getLastDayOfMonth(year, monthIndex) {
+            return new Date(year, monthIndex + 1, 0);
+        }
+
+        function isSameMonthYear(date, year, month) {
+            return date.getFullYear() === Number(year) && (date.getMonth() + 1) === Number(month);
         }
     </script>
 @stop

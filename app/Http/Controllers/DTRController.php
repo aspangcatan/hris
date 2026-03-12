@@ -553,7 +553,7 @@ class DTRController extends Controller
                     ->where('s.employee_id', $employee->id)
                     ->whereMonth('s.schedule_date', $month)
                     ->whereYear('s.schedule_date', $year)
-                    ->select('s.schedule_date', 'sml.time_in', 'sml.time_in_latest', 'sml.time_out', 'sml.time_out_latest', 'sml.type')
+                    ->select('s.schedule_date', 'sml.time_in', 'sml.time_in_latest', 'sml.time_out', 'sml.time_out_latest', 'sml.type', 'sml.code', 'sml.label')
                     ->get();
 
                 $schedules = [];
@@ -615,6 +615,7 @@ class DTRController extends Controller
                         'isEmpty' => true,
                         'late_minutes' => 0,
                         'day_marker' => '',
+                        'off_label' => '',
                         'planned_schedule' => '',
 
                         'date_timein_am' => '',
@@ -627,7 +628,14 @@ class DTRController extends Controller
 
                     // Populate planned schedule
                     $sched = $schedules[$currentDay] ?? null;
+                    $isOffSchedule = false;
                     if ($sched) {
+                        $scheduleLabel = trim((string) ($sched->label ?: $sched->code));
+                        if ($scheduleLabel !== '' && strtoupper($scheduleLabel) === 'OFF') {
+                            $isOffSchedule = true;
+                            $data['off_label'] = $scheduleLabel;
+                        }
+
                         $formatTime = function($time, $showAmpm = true) {
                             $c = Carbon::parse($time);
                             $format = ($c->format('i') === '00') ? 'g' : 'g:i';
@@ -635,17 +643,19 @@ class DTRController extends Controller
                             return $c->format($format);
                         };
 
-                        $in = $formatTime($sched->time_in, $sched->time_in == $sched->time_in_latest);
-                        if ($sched->time_in != $sched->time_in_latest) {
-                            $in .= '-' . $formatTime($sched->time_in_latest, true);
-                        }
+                        if (!$isOffSchedule) {
+                            $in = $formatTime($sched->time_in, $sched->time_in == $sched->time_in_latest);
+                            if ($sched->time_in != $sched->time_in_latest) {
+                                $in .= '-' . $formatTime($sched->time_in_latest, true);
+                            }
 
-                        $out = $formatTime($sched->time_out, $sched->time_out == $sched->time_out_latest);
-                        if ($sched->time_out != $sched->time_out_latest) {
-                            $out .= '-' . $formatTime($sched->time_out_latest, true);
-                        }
+                            $out = $formatTime($sched->time_out, $sched->time_out == $sched->time_out_latest);
+                            if ($sched->time_out != $sched->time_out_latest) {
+                                $out .= '-' . $formatTime($sched->time_out_latest, true);
+                            }
 
-                        $data['planned_schedule'] = $in . "\n" . $out;
+                            $data['planned_schedule'] = $in . "\n" . $out;
+                        }
                     }
 
                     if (!$data['isInsideCutoff']) return $data;
@@ -699,7 +709,7 @@ class DTRController extends Controller
                             $data['isEmpty'] = false;
                         }
 
-                        // Calculate Late and Undertime
+                        // Calculate Late and Undertime (skip when OFF)
                         $rawSched = $schedules[$currentDay] ?? null;
                         $isOvernightSchedule = false;
                         $rawSchedIn = null;
@@ -750,7 +760,7 @@ class DTRController extends Controller
                         $firstIn = null;
                         $lastOut = null;
 
-                        if ($calcSched) {
+                        if ($calcSched && !$isOffSchedule) {
                             $calcSchedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
                             $calcSchedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
                             if ($calcSchedOut->lte($calcSchedIn)) {
