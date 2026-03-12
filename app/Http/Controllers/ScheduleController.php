@@ -201,6 +201,12 @@ class ScheduleController extends Controller
                 return response()->json(['message' => 'Invalid month or year.'], 422);
             }
 
+            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+            $dateList = [];
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $dateList[] = Carbon::createFromDate($year, $month, $day)->toDateString();
+            }
+
             $employeesQuery = DB::table('tdh_user.users as u')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
                 ->selectRaw("
@@ -258,29 +264,37 @@ class ScheduleController extends Controller
                 ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
                 ->whereYear('s.schedule_date', $year)
                 ->whereMonth('s.schedule_date', $month)
-                ->select('s.employee_id', 's.schedule_date', 'sml.code', 'sml.label')
+                ->select('s.employee_id', 's.schedule_date', 'sml.code')
                 ->get();
 
             $scheduleMap = [];
             foreach ($schedules as $sched) {
                 $dateKey = Carbon::parse($sched->schedule_date)->toDateString();
-                $scheduleMap[$sched->employee_id][$dateKey] = $sched->label ?: $sched->code;
+                $scheduleMap[$sched->employee_id][$dateKey] = $sched->code;
             }
 
-            $weekDates = $this->getFirstWeekDates($year, $month);
             $scheduleList = [];
             foreach ($employees as $employee) {
-                $weekSchedule = [];
-                foreach ($weekDates as $date) {
-                    $weekSchedule[] = $scheduleMap[$employee->employee_id][$date] ?? 'OFF';
-                }
-
                 $scheduleList[] = [
                     'name' => $employee->name,
-                    'schedule' => $weekSchedule,
-                    'total_hours' => '40 HRS.',
+                    'schedule' => array_map(function ($date) use ($scheduleMap, $employee) {
+                        return $scheduleMap[$employee->employee_id][$date] ?? 'RD';
+                    }, $dateList),
+                    'remarks' => '',
                 ];
             }
+
+            $legendItems = DB::table('hris.schedule_master_lists')
+                ->orderBy('code')
+                ->get([
+                    'code',
+                    'label',
+                    'time_in',
+                    'time_out',
+                    'time_in_latest',
+                    'time_out_latest',
+                    'type'
+                ]);
 
             $divisionLabel = '';
             $sectionLabel = '';
@@ -319,9 +333,32 @@ class ScheduleController extends Controller
                 }
             }
 
-            $preparedUser = Auth::user();
-            $preparedName = $this->formatName($preparedUser);
-            $preparedTitle = session('designation') ?? '';
+            $preparedName = '';
+            $preparedTitle = '';
+            $preparedSectionId = null;
+            if (!is_null($requestedSection)) {
+                $preparedSectionId = $requestedSection;
+            } elseif (Auth::check() && Auth::user()->section) {
+                $preparedSectionId = (int) Auth::user()->section;
+            }
+
+            if (!is_null($preparedSectionId)) {
+                $sectionHead = DB::table('tdh_user.section as s')
+                    ->join('tdh_user.users as u', 's.head', '=', 'u.id')
+                    ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
+                    ->where('s.id', $preparedSectionId)
+                    ->select('u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.title', 'de.description as designation')
+                    ->first();
+
+                $preparedName = $this->formatName($sectionHead);
+                $preparedTitle = $sectionHead->designation ?? '';
+            }
+
+            if ($preparedName === '') {
+                $preparedUser = Auth::user();
+                $preparedName = $this->formatName($preparedUser);
+                $preparedTitle = session('designation') ?? '';
+            }
 
             $approverName = '';
             $approverTitle = '';
@@ -343,9 +380,17 @@ class ScheduleController extends Controller
         
             $pdf = Pdf::loadView('pdf.schedule', [
                 'month_label' => strtoupper(Carbon::createFromDate($year, $month, 1)->format('F Y')),
+                'day_numbers' => range(1, $daysInMonth),
+                'day_labels' => array_map(function ($date) {
+                    return strtoupper(Carbon::parse($date)->format('D'));
+                }, $dateList),
+                'day_is_weekend' => array_map(function ($date) {
+                    return Carbon::parse($date)->isWeekend();
+                }, $dateList),
                 'division' => $divisionLabel,
                 'section' => $sectionLabel,
-                'employees' => array_chunk($scheduleList, 9),
+                'employees' => array_chunk($scheduleList, 15),
+                'legend_items' => $legendItems,
                 'prepared_by' => $preparedName,
                 'prepared_title' => $preparedTitle,
                 'approved_by' => $approverDisplay,
@@ -356,23 +401,6 @@ class ScheduleController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
-    }
-
-    private function getFirstWeekDates(int $year, int $month): array
-    {
-        $firstOfMonth = Carbon::createFromDate($year, $month, 1)->startOfDay();
-        $monday = $firstOfMonth->copy();
-
-        while ($monday->format('N') !== '1') {
-            $monday->addDay();
-        }
-
-        $dates = [];
-        for ($i = 0; $i < 7; $i++) {
-            $dates[] = $monday->copy()->addDays($i)->toDateString();
-        }
-
-        return $dates;
     }
 
 

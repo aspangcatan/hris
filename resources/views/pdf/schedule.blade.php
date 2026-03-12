@@ -9,7 +9,7 @@
         body {
             font-family: "Helvetica", "Arial", sans-serif;
             color: #000;
-            font-size: 11px;
+            font-size: 10px;
         }
         .header {
             text-align: center;
@@ -35,10 +35,10 @@
         table.schedule th,
         table.schedule td {
             border: 1px solid #000;
-            padding: 6px 4px;
+            padding: 1px 1px;
             vertical-align: middle;
             text-align: center;
-            font-size: 10px;
+            font-size: 8px;
         }
         table.schedule th.name,
         table.schedule td.name {
@@ -46,13 +46,66 @@
             width: 18%;
             font-weight: 700;
         }
-        table.schedule th.day {
-            width: 11%;
+        table.schedule th.name {
+            font-size: 9px;
+            letter-spacing: 0.5px;
         }
-        table.schedule th.total,
-        table.schedule td.total {
-            width: 10%;
+        table.schedule th.day {
+            width: 2.5%;
+        }
+        table.schedule th.remarks,
+        table.schedule td.remarks {
+            width: 8%;
             font-weight: 700;
+        }
+        table.schedule thead .day-label {
+            font-size: 6px;
+            letter-spacing: 0.3px;
+        }
+        table.schedule thead .day-number {
+            font-size: 7px;
+        }
+        table.schedule thead th.day {
+            padding: 0 1px;
+        }
+        .weekend {
+            background: #000;
+            color: #fff;
+        }
+        table.schedule td.code {
+            font-weight: 700;
+        }
+        .legend {
+            margin-top: 14px;
+            font-size: 8px;
+            width: 100%;
+            border: 1px solid #000;
+            border-collapse: collapse;
+        }
+        .legend thead th {
+            border: 1px solid #000;
+        }
+        .legend th,
+        .legend td {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            text-align: left;
+        }
+        .legend th {
+            text-align: center;
+            font-weight: 700;
+        }
+        .legend td.code {
+            width: 15%;
+            font-weight: 700;
+            text-align: center;
+        }
+        .legend td.time {
+            text-align: center
+            width: 35%;
+        }
+        .text-off {
+            color: #c1121f;
         }
         .signatures {
             margin-top: 22px;
@@ -91,6 +144,14 @@
         .page-break {
             page-break-after: always;
         }
+        .legend-wrap {
+            margin-top: 12px;
+            text-align: center;
+        }
+        .legend {
+            margin: 0 auto;
+            width: 50%;
+        }
     </style>
 </head>
 <body>
@@ -115,25 +176,29 @@
     <table class="schedule">
         <thead>
         <tr>
-            <th class="name">NAME/S</th>
-            <th class="day">MON</th>
-            <th class="day">TUE</th>
-            <th class="day">WED</th>
-            <th class="day">THUR</th>
-            <th class="day">FRI</th>
-            <th class="day">SAT</th>
-            <th class="day">SUN</th>
-            <th class="total">TOTAL NO. OF<br>HOURS</th>
+            <th class="name" rowspan="2" style="text-align: center">NAME/S</th>
+            @foreach($day_numbers as $idx => $day)
+                <th class="day day-number">{{ $day }}</th>
+            @endforeach
+            <th class="remarks" rowspan="2">REMARKS</th>
+        </tr>
+        <tr class="day-label">
+            @foreach($day_labels as $idx => $label)
+                <th class="day {{ $day_is_weekend[$idx] ? 'weekend' : '' }}">{{ $label }}</th>
+            @endforeach
         </tr>
         </thead>
         <tbody>
         @foreach($pageEmployees as $employee)
             <tr>
                 <td class="name">{{ strtoupper($employee['name']) }}</td>
-                @foreach($employee['schedule'] as $sched)
-                    <td>{{ $sched }}</td>
+                @foreach($employee['schedule'] as $idx => $sched)
+                    @php
+                        $isOff = trim((string) $sched) === '' || strtoupper((string) $sched) === 'RD' || strtoupper((string) $sched) === 'OFF';
+                    @endphp
+                    <td class="code {{ $isOff ? 'text-off' : '' }}">{{ $sched }}</td>
                 @endforeach
-                <td class="total">{{ $employee['total_hours'] }}</td>
+                <td class="remarks">{{ $employee['remarks'] }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -152,6 +217,53 @@
             <div class="sig-name">{{ strtoupper($approved_by) }}</div>
             <div class="sig-title">{{ $approved_title }}</div>
         </div>
+    </div>
+
+    <div class="legend-wrap" style="margin-top:20px">
+        @php
+            $legendRows = $legend_items
+                ->filter(function ($item) {
+                    return strtoupper((string) $item->code) !== 'OFF';
+                })
+                ->values()
+                ->chunk(2);
+        @endphp
+        <table class="legend">
+            <thead>
+            <tr>
+                <th colspan="4">LEGEND</th>
+            </tr>
+            <tr>
+                <th>CODE</th>
+                <th>TIME</th>
+                <th>CODE</th>
+                <th>TIME</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($legendRows as $row)
+                <tr>
+                    @foreach($row as $item)
+                        @php
+                            $start = $item->time_in === $item->time_in_latest
+                                ? \Carbon\Carbon::parse($item->time_in)->format('h:i A')
+                                : \Carbon\Carbon::parse($item->time_in)->format('h:i A') . '-' . \Carbon\Carbon::parse($item->time_in_latest)->format('h:i A');
+                            $end = $item->time_out === $item->time_out_latest
+                                ? \Carbon\Carbon::parse($item->time_out)->format('h:i A')
+                                : \Carbon\Carbon::parse($item->time_out)->format('h:i A') . '-' . \Carbon\Carbon::parse($item->time_out_latest)->format('h:i A');
+                            $time = $start . ' - ' . $end;
+                        @endphp
+                        <td class="code">{{ strtoupper($item->code) }}</td>
+                        <td class="time">{{ $time }}</td>
+                    @endforeach
+                    @if($row->count() < 2)
+                        <td class="code">&nbsp;</td>
+                        <td class="time">&nbsp;</td>
+                    @endif
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
     </div>
 
     @if($pageIndex < count($employees) - 1)
