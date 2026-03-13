@@ -589,7 +589,7 @@
                 .then(data => {
                         $('#scheduleSelect').append(`<option value=""></option>`);
                     data.forEach(it => {
-                        $('#legend_list').append(`<div class="col-md-6"><div>${it.code} - ${it.label}</div></div>`);
+                        $('#legend_list').append(`<div class="col-md-6"><div><strong>${it.code}</strong> - ${it.label}</div></div>`);
                         $('#scheduleSelect').append(`<option value="${it.id}" data-code="${it.code}">${it.label}</option>`);
                     });
                 })

@@ -157,7 +157,6 @@
 </head>
 <body>
 @include('pdf.schedule_footer', [
-    'legend_items' => $legend_items,
     'prepared_by' => $prepared_by,
     'prepared_title' => $prepared_title,
     'approved_by' => $approved_by,

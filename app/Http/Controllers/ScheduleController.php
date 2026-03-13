@@ -112,6 +112,7 @@ class ScheduleController extends Controller
 
             $employees = DB::table('tdh_user.users as u')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->selectRaw("
                 u.id as employee_id,
                 CONCAT(
@@ -122,6 +123,7 @@ class ScheduleController extends Controller
                 ) AS name,
                 COALESCE(d.description, 'No Designation') AS designation
             ")
+                ->where('e.employee_type','<>','Resigned')
                 ->orderBy('u.lname', 'asc')
                 ->orderBy('u.fname', 'asc');
 
