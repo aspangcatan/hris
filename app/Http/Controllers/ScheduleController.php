@@ -123,7 +123,10 @@ class ScheduleController extends Controller
                 ) AS name,
                 COALESCE(d.description, 'No Designation') AS designation
             ")
-                ->where('e.employee_type','<>','Resigned')
+                ->where(function ($query) {
+                    $query->where('e.employee_type', '<>', 'Resigned')
+                        ->orWhereNull('e.employee_type');
+                })
                 ->orderBy('u.lname', 'asc')
                 ->orderBy('u.fname', 'asc');
 
