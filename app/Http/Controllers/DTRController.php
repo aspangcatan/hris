@@ -17,7 +17,7 @@ class DTRController extends Controller
     private function canManageRawTimelog(): bool
     {
         $accessRights = strtolower((string) session('access_rights'));
-        return in_array($accessRights, ['admin', 'it'], true);
+        return in_array($accessRights, ['admin', 'it','DH'], true);
     }
 
     public function store(Request $request)
