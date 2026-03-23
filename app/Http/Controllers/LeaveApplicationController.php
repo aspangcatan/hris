@@ -109,7 +109,7 @@ class LeaveApplicationController extends Controller
                 $query->where('user_id', Auth::id());
             })->first();
 
-            if (!model) {
+            if (!$model) {
                 return response()->json(['code' => 500, 'message' => 'Leave Application not found']);
             }
 

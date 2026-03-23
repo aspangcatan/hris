@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('leave_date_applied')) { return; }
         Schema::create('leave_date_applied', function (Blueprint $table) {
             $table->integer('id', true);
             $table->integer('leave_application_id');
@@ -31,3 +32,4 @@ return new class extends Migration
         Schema::dropIfExists('leave_date_applied');
     }
 };
+

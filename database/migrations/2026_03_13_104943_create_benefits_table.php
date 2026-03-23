@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('benefits')) { return; }
         Schema::create('benefits', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->timestamps();
@@ -29,3 +30,4 @@ return new class extends Migration
         Schema::dropIfExists('benefits');
     }
 };
+

@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('schedule_user_sections')) { return; }
         Schema::create('schedule_user_sections', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id')->index('schedule_user_sections_user_id_idx');
@@ -33,3 +34,4 @@ return new class extends Migration
         Schema::dropIfExists('schedule_user_sections');
     }
 };
+

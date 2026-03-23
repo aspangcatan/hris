@@ -60,145 +60,55 @@
                         </div>
                     </div>
 
-                    <!-- BENEFITS -->
+                    <!-- GLOBAL EARNINGS OVERRIDES -->
                     <div class="mb-4 border p-3 rounded shadow-sm">
-                        <h5 class="text-success border-bottom pb-2">Benefits</h5>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">PERA</label>
-                                <input type="number" class="form-control" id="pera">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">RATA</label>
-                                <input type="number" class="form-control" id="rata">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Subistence</label>
-                                <input type="number" class="form-control" id="subsistence">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Laundry</label>
-                                <input type="number" class="form-control" id="laundry">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Longevity</label>
-                                <input type="number" class="form-control" id="longevity">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Cellphone Allowance</label>
-                                <input type="number" class="form-control" id="cellphone_allowance">
-                            </div>
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
+                            <h5 class="text-primary mb-0">Global Earnings (Overrides)</h5>
+                            <span class="small text-muted">Defaults apply to all employees unless overridden here.</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                <tr>
+                                    <th style="width: 20%;">Earning</th>
+                                    <th style="width: 12%;">Default</th>
+                                    <th style="width: 16%;">Override Amount</th>
+                                    <th style="width: 10%;">Exclude</th>
+                                    <th style="width: 14%;">Effective From</th>
+                                    <th style="width: 14%;">Effective To</th>
+                                </tr>
+                                </thead>
+                                <tbody id="dynamic_components_earnings_body"></tbody>
+                            </table>
+                        </div>
+                        <div class="small text-muted">
+                            Leave override blank to use the global default amount.
                         </div>
                     </div>
 
-                    <!-- DEDUCTIONS -->
+                    <!-- GLOBAL DEDUCTIONS OVERRIDES -->
                     <div class="mb-4 border p-3 rounded shadow-sm">
-                        <h5 class="text-danger border-bottom pb-2">Deductions</h5>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS PS</label>
-                                <input type="number" class="form-control" id="gsis_ps">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS GS</label>
-                                <input type="number" class="form-control" id="gsis_gs">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS EC</label>
-                                <input type="number" class="form-control" id="gsis_ec">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">HDMF (PagIbig)</label>
-                                <input type="number" class="form-control" id="hdmf">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">PHIC</label>
-                                <input type="number" class="form-control" id="phic">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">PAGIBIG CAL</label>
-                                <input type="number" class="form-control" id="pagibig_cal">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">PAGIBIG MPL</label>
-                                <input type="number" class="form-control" id="pagibig_mpl">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">PAGIBIG MP2</label>
-                                <input type="number" class="form-control" id="pagibig_mp2">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">PAGIBIG MP2 2nd</label>
-                                <input type="number" class="form-control" id="pagibig_mp2_2nd">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">PAGIBIG MP2 3rd</label>
-                                <input type="number" class="form-control" id="pagibig_mp2_3rd">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS Consoloan</label>
-                                <input type="number" class="form-control" id="gsis_consoloan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS Emergency Loan</label>
-                                <input type="number" class="form-control" id="gsis_emergency_loan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS Educational Loan</label>
-                                <input type="number" class="form-control" id="gsis_educational_loan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS Policy Loan</label>
-                                <input type="number" class="form-control" id="gsis_policy_loan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS OPT_Life</label>
-                                <input type="number" class="form-control" id="gsis_opt_life_loan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS GFAL</label>
-                                <input type="number" class="form-control" id="gsis_gfal">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS MPL</label>
-                                <input type="number" class="form-control" id="gsis_mpl">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS CPL</label>
-                                <input type="number" class="form-control" id="gsis_cpl">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">GSIS MPL Lite</label>
-                                <input type="number" class="form-control" id="gsis_mpl_lite">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">CFI Coop</label>
-                                <input type="number" class="form-control" id="cfi_coop">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">1st Valley Bank</label>
-                                <input type="number" class="form-control" id="first_valley_bank">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">TDHEA</label>
-                                <input type="number" class="form-control" id="tdhea">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">DBP Loan</label>
-                                <input type="number" class="form-control" id="dbp_loan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">UCPB Loan</label>
-                                <input type="number" class="form-control" id="ucpb_loan">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">MEDS Payable</label>
-                                <input type="number" class="form-control" id="meds_payable">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">SSS Deduction</label>
-                                <input type="number" class="form-control" id="sss_deduction">
-                            </div>
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
+                            <h5 class="text-primary mb-0">Global Deductions (Overrides)</h5>
+                            <span class="small text-muted">Defaults apply to all employees unless overridden here.</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                <tr>
+                                    <th style="width: 20%;">Deduction</th>
+                                    <th style="width: 12%;">Default</th>
+                                    <th style="width: 16%;">Override Amount</th>
+                                    <th style="width: 10%;">Exclude</th>
+                                    <th style="width: 14%;">Effective From</th>
+                                    <th style="width: 14%;">Effective To</th>
+                                </tr>
+                                </thead>
+                                <tbody id="dynamic_components_deductions_body"></tbody>
+                            </table>
+                        </div>
+                        <div class="small text-muted">
+                            Leave override blank to use the global default amount.
                         </div>
                     </div>
                 </div>
@@ -248,6 +158,20 @@
                         <label for="payroll_end" class="form-label">Payroll Period End</label>
                         <input type="date" class="form-control" id="end_date" name="end_date" required>
                     </div>
+                    <div class="col-md-12">
+                        <label for="cutoff_period" class="form-label">Cutoff Period</label>
+                        <select class="form-control" id="cutoff_period">
+                            <option value="">Use payroll period dates</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cutoff Start</label>
+                        <input type="date" class="form-control" id="cutoff_start_date" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Cutoff End</label>
+                        <input type="date" class="form-control" id="cutoff_end_date" readonly>
+                    </div>
                     <div class="col-md-6">
                         <label for="payroll_type" class="form-label">Type</label>
                         <select class="form-control" id="payroll_type">
@@ -261,6 +185,12 @@
                             <option selected>Non Pro-rated</option>
                             <option>Pro-rated</option>
                         </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="tax_purpose" class="form-label">Tax Purpose</label>
+                        <input type="text" class="form-control" id="tax_purpose" list="tax_purpose_list"
+                               placeholder="e.g. Payroll Monthly Salary">
+                        <datalist id="tax_purpose_list"></datalist>
                     </div>
                     <!-- Remarks -->
                     <div class="col-md-12">
@@ -323,6 +253,26 @@
                             </select>
                         </div>
                     </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="filter_name" class="form-label">Search Name</label>
+                            <input type="text" class="form-control" id="filter_name" placeholder="Search employee">
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button class="btn btn-action btn-view w-100 mb-3" id="btn_preview_cutoff">
+                            <i class="bi bi-eye me-1"></i>
+                            Preview Cutoff Summary
+                        </button>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="mb-3 w-100">
+                            <div class="small text-muted">Cutoff Period</div>
+                            <div class="fw-semibold">
+                                <span id="preview_cutoff_start">-</span> to <span id="preview_cutoff_end">-</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="border rounded p-2" style="height: 55vh; overflow-y: auto;">
                     <div>
@@ -346,6 +296,25 @@
                             <tbody id="employee_list"></tbody>
                         </table>
                     </div>
+                </div>
+                <div class="mt-3 table-responsive shadow-sm rounded">
+                    <table class="table table-sm table-bordered align-middle text-center">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Employee</th>
+                            <th>Working Days</th>
+                            <th>Days Present</th>
+                            <th>Days Absent</th>
+                            <th>Late (mins)</th>
+                            <th>Undertime (mins)</th>
+                        </tr>
+                        </thead>
+                        <tbody id="cutoff_preview_body">
+                        <tr>
+                            <td colspan="6" class="text-muted text-center">Preview cutoff summary to view totals.</td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 

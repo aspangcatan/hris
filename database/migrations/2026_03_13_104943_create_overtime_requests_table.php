@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('overtime_requests')) { return; }
         Schema::create('overtime_requests', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('userid');
@@ -40,3 +41,4 @@ return new class extends Migration
         Schema::dropIfExists('overtime_requests');
     }
 };
+

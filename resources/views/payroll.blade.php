@@ -148,10 +148,14 @@
     <script>
         let selectedEmployees = [];
         let payroll_id = 0;
+        let payrollMeta = {};
+        let cutoffMeta = {};
 
         $(document).ready(function () {
             getPayroll();
             loadDivision();
+            loadTaxPurposes();
+            loadCutoffPeriods();
 
             $("#select_all").change(function () {
                 if ($(this).prop("checked")) {
@@ -242,6 +246,10 @@
                 }
             });
 
+            $("#filter_name").on("input", function () {
+                filterEmployeeRows();
+            });
+
 
             $("#filter_section").change(function () {
                 getEmployee($("#filter_division").val(), $("#filter_section").val(), $("#filter_status").val());
@@ -292,7 +300,15 @@
                 })
                     .then(res => res.json())
                     .then(data => {
-                        toastr.success(data.message, 'Information');
+                        if (data.error) {
+                            toastr.error(data.error, 'Error');
+                            return;
+                        }
+                        if (data.missing_employee_ids) {
+                            toastr.error("Missing cutoff summaries for some employees.", "Error");
+                            return;
+                        }
+                        toastr.success(data.message || "Payroll computation completed.", 'Information');
                     }).catch(err => {
                     console.log(err);
                 });
@@ -307,6 +323,10 @@
                 const payroll_type = $("#payroll_type").val();
                 const rate_type = $("#rate_type").val();
                 const remarks = $("#remarks").val().trim();
+                const tax_purpose = $("#tax_purpose").val().trim();
+                const cutoff_start_date = $("#cutoff_start_date").val();
+                const cutoff_end_date = $("#cutoff_end_date").val();
+                const cutoff_title = ($("#cutoff_period").find(":selected").data("title") || "").trim();
 
                 // Basic validation
                 if (!title || !start || !end) {
@@ -327,7 +347,11 @@
                     end_date: end,
                     payroll_type: payroll_type,
                     rate_type: rate_type,
-                    remarks: remarks
+                    remarks: remarks,
+                    tax_purpose: tax_purpose || null,
+                    cutoff_start_date: cutoff_start_date || null,
+                    cutoff_end_date: cutoff_end_date || null,
+                    cutoff_title: cutoff_title || null
                 };
 
                 fetch('{{ route('savePayroll') }}', {
@@ -348,11 +372,32 @@
                 });
             });
 
+            $("#btn_preview_cutoff").click(function () {
+                previewCutoffSummary();
+            });
+
             $("#btn_export_regular").click(function () {
                 window.location.href = "{{ url('/payroll/export') }}/" + payroll_id;
             });
 
         });
+
+        function loadTaxPurposes() {
+            fetch('{{ route('getPayrollTaxRules') }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        return;
+                    }
+                    const purposes = [...new Set((data.data || []).map(item => item.purpose).filter(Boolean))];
+                    const $list = $("#tax_purpose_list");
+                    $list.empty();
+                    purposes.forEach(purpose => {
+                        $list.append(`<option value="${purpose}"></option>`);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
 
         function getEmployee(division, section, type) {
             fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}&type=${type}`)
@@ -367,7 +412,7 @@
                         const fullName = `${emp.lname}, ${emp.fname} ${middleInitial} ${suffix}`.trim();
 
                         const row = `
-                    <tr>
+                    <tr data-name="${fullName.toLowerCase()}">
                         <td class="text-center">
                             <input type="checkbox" class="form-check-input employee-checkbox" value="${emp.user_id}" data-name="${fullName}">
                         </td>
@@ -388,11 +433,12 @@
                             <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
                         </td>
                     </tr>
-                `;
+                    `;
 
                         $tbody.append(row);
                     });
                     updateCheckedStatus();
+                    filterEmployeeRows();
                 })
                 .catch(err => {
                     console.error("Error fetching employees:", err);
@@ -611,6 +657,9 @@
 
         function assignEmployee(id) {
             payroll_id = id;
+            const meta = payrollMeta[id] || {};
+            $("#preview_cutoff_start").text(meta.cutoff_start_date || meta.start_date || "-");
+            $("#preview_cutoff_end").text(meta.cutoff_end_date || meta.end_date || "-");
             $("#append_employee_modal").modal("show");
         }
 
@@ -740,6 +789,7 @@
                     }
 
                     data.forEach(item => {
+                        payrollMeta[item.id] = item;
                         const actions = [];
                         if (item.can_assign) {
                             actions.push(`<li><a class="dropdown-item" href="#" onclick="assignEmployee(${item.id})">Assign / Compute</a></li>`);
@@ -791,5 +841,105 @@
                     console.error("Error fetching payroll:", error);
                 });
         }
+
+        function filterEmployeeRows() {
+            const search = ($("#filter_name").val() || "").toLowerCase();
+            $("#employee_list tr").each(function () {
+                const name = ($(this).data("name") || "").toString();
+                if (!search || name.includes(search)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+
+        function previewCutoffSummary() {
+            const meta = payrollMeta[payroll_id] || {};
+            const startDate = meta.cutoff_start_date || meta.start_date;
+            const endDate = meta.cutoff_end_date || meta.end_date;
+            if (!startDate || !endDate) {
+                toastr.error("Cutoff period is not set for this payroll.", "Validation");
+                return;
+            }
+
+            const selected = $("#employee_list .employee-checkbox:checked").map(function () {
+                return $(this).val();
+            }).get();
+
+            const params = new URLSearchParams();
+            params.append("start_date", startDate);
+            params.append("end_date", endDate);
+            if (selected.length) {
+                params.append("employees", selected.join(","));
+            }
+
+            fetch(`{{ route('getCutoffSummaryPreview') }}?${params.toString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    const $tbody = $("#cutoff_preview_body");
+                    $tbody.empty();
+                    if (!data.success || !data.data || !data.data.length) {
+                        $tbody.append("<tr><td colspan='6' class='text-muted text-center'>No cutoff summaries found for this period.</td></tr>");
+                        return;
+                    }
+
+                    data.data.forEach(item => {
+                        const middleInitial = item.mname ? item.mname.charAt(0) + '.' : '';
+                        const suffix = item.suffix ? ` ${item.suffix}` : '';
+                        const fullName = `${item.lname}, ${item.fname} ${middleInitial}${suffix}`.trim();
+                        const row = `
+                            <tr>
+                                <td>${fullName}</td>
+                                <td>${item.total_working_days ?? 0}</td>
+                                <td>${item.days_present ?? 0}</td>
+                                <td>${item.days_absent ?? 0}</td>
+                                <td>${item.late_minutes ?? 0}</td>
+                                <td>${item.undertime_minutes ?? 0}</td>
+                            </tr>`;
+                        $tbody.append(row);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    toastr.error("Failed to load cutoff summary.", "Error");
+                });
+        }
+
+        function loadCutoffPeriods() {
+            fetch('{{ route('getCutoffPeriods') }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        return;
+                    }
+                    const $select = $("#cutoff_period");
+                    $select.empty().append("<option value=''>Use payroll period dates</option>");
+                    cutoffMeta = {};
+                    (data.data || []).forEach((item, index) => {
+                        const title = item.remarks || `Cutoff ${item.period_start} - ${item.period_end}`;
+                        const value = `${item.period_start}|${item.period_end}|${title}`;
+                        cutoffMeta[value] = item;
+                        $select.append(`<option value="${value}" data-title="${title}">${title} (${item.period_start} to ${item.period_end})</option>`);
+                    });
+                })
+                .catch(err => console.error(err));
+        }
+
+        $("#cutoff_period").change(function () {
+            const value = $(this).val();
+            if (!value) {
+                $("#cutoff_start_date").val("");
+                $("#cutoff_end_date").val("");
+                $("#start_date").prop("readonly", false);
+                $("#end_date").prop("readonly", false);
+                return;
+            }
+            const parts = value.split("|");
+            $("#cutoff_start_date").val(parts[0] || "");
+            $("#cutoff_end_date").val(parts[1] || "");
+            $("#start_date").val(parts[0] || "").prop("readonly", true);
+            $("#end_date").val(parts[1] || "").prop("readonly", true);
+        });
     </script>
 @stop

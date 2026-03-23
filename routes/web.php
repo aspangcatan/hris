@@ -244,6 +244,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/payroll_settings', function () {
         return view('settings.payroll');
     })->name('payroll_settings');
+    Route::get('/payroll-components/manage', function () {
+        return view('settings.payroll_components');
+    })->name('payroll_components');
 
     Route::get('/timetable', function () {
         return view('settings.timetable');
@@ -262,6 +265,22 @@ Route::group(['middleware' => 'auth'], function () {
     //PAYROLL SETTINGS
     Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings');
     Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings');
+    Route::get('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'getPayrollComponents'])->name('getPayrollComponents');
+    Route::post('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'savePayrollComponents'])->name('savePayrollComponents');
+    Route::get('/payroll-tax-rules/manage', function () {
+        return view('settings.payroll_tax_rules');
+    })->name('payroll_tax_rules');
+    Route::get('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'getPayrollTaxRules'])->name('getPayrollTaxRules');
+    Route::post('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'savePayrollTaxRules'])->name('savePayrollTaxRules');
+    Route::get('/cutoff-summaries/manage', function () {
+        return view('settings.cutoff_summaries');
+    })->name('cutoff_summaries');
+    Route::get('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaries'])->name('getCutoffSummaries');
+    Route::post('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'createCutoffSummaries'])->name('createCutoffSummaries');
+    Route::get('/cutoff-periods', [\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
+    Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview');
+    Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits');
+    Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits');
 
     //PAYROLL
     Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');

@@ -2,15 +2,22 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class LeaveCreditService
 {
-    public function computeEarnedCredits($totalPresent, $totalLateUndertime)
+    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $month = null, $year = null)
     {
         try {
             // Get monthly earned points for given present days
             $lookupPresent = $totalPresent > 30 ? 30 : $totalPresent;
+            if ((int) $month === 2 && !empty($year)) {
+                $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+                if ($totalPresent >= $daysInMonth) {
+                    $lookupPresent = 30;
+                }
+            }
 
             $monthly_points_earned = DB::table('monthly_earned_points')
                     ->where('present', '=', $lookupPresent)
@@ -52,7 +59,8 @@ class LeaveCreditService
     public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes, $earnedPoints, $deductionPoints)
     {
         $leaveTypes = DB::table('hris.leave_types')
-            ->where('monthly_points_earned', '>', 0)
+            ->where('status', 'active')
+            ->where('monthly_earned', 1)
             ->get();
 
 

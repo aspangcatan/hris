@@ -1,49 +1,124 @@
 @extends('master')
 @section('content')
-    <div class="d-flex justify-content-end mb-2">
-        <div>
-            <input class="form-control" placeholder="Search by firstname" id="search_fname"/>
-        </div>
-        <div class="ms-2 me-1">
-            <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
-        </div>
-        <div class="ms-1">
-            <button class="btn btn-success" id="btn_search">
-                <i class="bi bi-search"></i>
-            </button>
-        </div>
-    </div>
-    <div class="card mt-2">
-        <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between">
-                <h5 class="fw-bold card-title">Payroll Settings</h5>
-            </div>
+    <style>
+        .payroll-board {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+        }
 
-            <div class="table-responsive">
-                <table class="table text-center">
-                    <thead>
-                    <tr>
-                        <th></th>
-                        <th>Firstname</th>
-                        <th>Middlename</th>
-                        <th>Lastname</th>
-                        <th>Suffix</th>
-                        <th>Designation</th>
-                        <th>Section</th>
-                        <th style="width: 4%"></th>
-                    </tr>
-                    </thead>
-                    <tbody id="employee_list"></tbody>
-                </table>
-                <div id="pagination_container">
-                    <div class="d-flex flex-column align-items-center justify-content-center gap-2">
-                        <div id="page_items_count"></div>
-                        <nav aria-label="Payroll employee pagination">
-                            <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
-                        </nav>
-                        <div id="page_indicator" class="small text-muted"></div>
-                    </div>
+        .payroll-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .payroll-head-title h4 {
+            margin: 0;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .payroll-head-title span {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .payroll-filter {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .payroll-filter .form-control {
+            border-radius: 12px;
+            border: 1px solid #d8e1ee;
+            background: #fff;
+        }
+
+        .payroll-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .payroll-table-shell table {
+            margin-bottom: 0;
+        }
+
+        .payroll-table-shell table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .payroll-table-shell table tbody td {
+            color: #1e293b;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+    </style>
+
+    <div class="payroll-board">
+        <div class="payroll-head">
+            <div class="payroll-head-title">
+                <h4>Payroll Settings</h4>
+                <span>Configure employee payroll details and overrides.</span>
+            </div>
+        </div>
+
+        <div class="payroll-filter">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <input class="form-control" placeholder="Search by firstname" id="search_fname"/>
                 </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-action btn-view w-100" id="btn_search">
+                        <i class="bi bi-search"></i>
+                        Search
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive payroll-table-shell">
+            <table class="table text-center">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Firstname</th>
+                    <th>Middlename</th>
+                    <th>Lastname</th>
+                    <th>Suffix</th>
+                    <th>Designation</th>
+                    <th>Section</th>
+                    <th style="width: 16%">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="employee_list"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-3" id="pagination_container">
+            <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+                <div id="page_items_count"></div>
+                <nav aria-label="Payroll employee pagination">
+                    <ul class="pagination pagination-sm mb-0" id="pagination_links"></ul>
+                </nav>
+                <div id="page_indicator" class="small text-muted"></div>
             </div>
         </div>
     </div>
@@ -55,8 +130,12 @@
         let page = 1;
         let payroll_last_page = 1;
         let employee_id = 0;
+        let globalEarnings = [];
+        let globalDeductions = [];
+        let globalComponentsLoaded = false;
         $(document).ready(function () {
             getEmployee({fname: "", lname: "", page: page});
+            loadGlobalComponents();
 
             $("#btn_search").click(function () {
                 page = 1;
@@ -83,8 +162,8 @@
 
                 params["userid"] = employee_id;
 
-                // Select all input fields inside the modal (adjust selector if needed)
-                $("#modal_salary_details input").each(function () {
+                // Select all fixed input fields inside the modal
+                $("#modal_salary_details input[id]").each(function () {
                     let input = $(this);
                     let name = input.attr("id");
                     let value = parseFloat(input.val());
@@ -108,6 +187,8 @@
                     return;
                 }
 
+                params["components"] = collectDynamicComponents();
+
                 fetch('{{ route('savePayrollSettings') }}', {
                         method: "POST",
                         headers: {
@@ -129,7 +210,8 @@
 
         function editEmployee(id) {
             employee_id = id;
-            $("#modal_salary_details input").val("0.00"); // Reset all inputs
+            $("#modal_salary_details input[id]").val("0.00"); // Reset fixed inputs
+            renderDynamicComponents([]);
             $("#payroll_settings_modal").modal("show");
 
             // Fetch existing employee payroll data
@@ -144,12 +226,151 @@
                                 input.val(key === 'salary_grade' || key === 'step' ? parseInt(value) : parseFloat(value).toFixed(2));
                             }
                         }
+                        ensureGlobalComponents().then(() => {
+                            renderDynamicComponents(data.components || []);
+                        });
                     }
                 })
                 .catch(error => {
                     console.error("Error fetching data:", error);
                     alert("An error occurred while fetching employee data.");
                 });
+        }
+
+        function renderDynamicComponents(components) {
+            const $earningsBody = $("#dynamic_components_earnings_body");
+            const $deductionsBody = $("#dynamic_components_deductions_body");
+            $earningsBody.empty();
+            $deductionsBody.empty();
+
+            const employeeComponentMap = {};
+            (components || []).forEach(component => {
+                employeeComponentMap[component.code] = component;
+            });
+
+            if (!globalEarnings.length) {
+                $earningsBody.append("<tr><td colspan='6' class='text-muted text-center py-3'>No global earnings configured.</td></tr>");
+            } else {
+                globalEarnings.forEach(component => {
+                    const override = employeeComponentMap[component.code] || {};
+                    addDynamicComponentRow(component, override, $earningsBody);
+                });
+            }
+
+            if (!globalDeductions.length) {
+                $deductionsBody.append("<tr><td colspan='6' class='text-muted text-center py-3'>No global deductions configured.</td></tr>");
+                return;
+            }
+
+            globalDeductions.forEach(component => {
+                const override = employeeComponentMap[component.code] || {};
+                addDynamicComponentRow(component, override, $deductionsBody);
+            });
+        }
+
+        function addDynamicComponentRow(component = {}, override = {}, $body) {
+            const code = component.code || "";
+            const name = component.name || "";
+            const defaultAmount = component.default_amount !== undefined && component.default_amount !== null
+                ? parseFloat(component.default_amount).toFixed(2)
+                : "0.00";
+            const overrideAmount = override.amount_override !== undefined && override.amount_override !== null
+                ? parseFloat(override.amount_override).toFixed(2)
+                : "";
+            const excluded = override.is_excluded ? "checked" : "";
+            const effectiveFrom = override.effective_from || "";
+            const effectiveTo = override.effective_to || "";
+
+            const row = `
+                <tr data-code="${code}" data-default="${defaultAmount}">
+                    <td>
+                        <div class="fw-semibold">${name}</div>
+                        <div class="small text-muted">${code}</div>
+                    </td>
+                    <td>${defaultAmount}</td>
+                    <td><input type="number" class="form-control form-control-sm component-amount" value="${overrideAmount}"></td>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input component-exclude" ${excluded}>
+                    </td>
+                    <td><input type="date" class="form-control form-control-sm component-effective-from" value="${effectiveFrom}"></td>
+                    <td><input type="date" class="form-control form-control-sm component-effective-to" value="${effectiveTo}"></td>
+                </tr>`;
+
+            $body.append(row);
+        }
+
+        function collectDynamicComponents() {
+            const components = [];
+            components.push(...collectDynamicOverrides($("#dynamic_components_earnings_body tr"), globalEarnings));
+            components.push(...collectDynamicOverrides($("#dynamic_components_deductions_body tr"), globalDeductions));
+            return components;
+        }
+
+        function collectDynamicOverrides($rows, sourceComponents) {
+            const components = [];
+
+            $rows.each(function () {
+                const $row = $(this);
+                const code = $row.data("code");
+                if (!code) {
+                    return;
+                }
+                const defaultAmount = parseFloat($row.data("default") || "0");
+                const overrideRaw = $row.find(".component-amount").val();
+                const overrideAmount = overrideRaw === "" ? null : parseFloat(overrideRaw);
+                const excluded = $row.find(".component-exclude").is(":checked");
+                const effectiveFrom = $row.find(".component-effective-from").val();
+                const effectiveTo = $row.find(".component-effective-to").val();
+
+                const hasOverride = overrideAmount !== null && !isNaN(overrideAmount) && overrideAmount !== defaultAmount;
+                if (!excluded && !hasOverride && !effectiveFrom && !effectiveTo) {
+                    return;
+                }
+
+                const component = sourceComponents.find(item => item.code === code);
+                if (!component) {
+                    return;
+                }
+
+                components.push({
+                    code: component.code,
+                    name: component.name,
+                    type: component.type,
+                    taxable: component.taxable,
+                    is_global: true,
+                    default_amount: parseFloat(component.default_amount || 0),
+                    amount_override: hasOverride ? overrideAmount : null,
+                    is_excluded: excluded,
+                    effective_from: effectiveFrom || null,
+                    effective_to: effectiveTo || null
+                });
+            });
+
+            return components;
+        }
+
+        function loadGlobalComponents() {
+            return fetch('{{ route('getPayrollComponents') }}')
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        return;
+                    }
+                    const items = data.data || [];
+                    globalEarnings = items.filter(item => item.type === 'earning' && item.is_global);
+                    globalDeductions = items.filter(item => item.type === 'deduction' && item.is_global);
+                    globalComponentsLoaded = true;
+                })
+                .catch(err => {
+                    console.error(err);
+                });
+        }
+
+        function ensureGlobalComponents() {
+            if (globalComponentsLoaded) {
+                return Promise.resolve();
+            }
+            return loadGlobalComponents();
         }
 
 

@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('user_permissions')) { return; }
         Schema::create('user_permissions', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
@@ -34,3 +35,4 @@ return new class extends Migration
         Schema::dropIfExists('user_permissions');
     }
 };
+

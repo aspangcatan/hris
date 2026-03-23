@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('leave_application_logs')) { return; }
         Schema::create('leave_application_logs', function (Blueprint $table) {
             $table->integer('id', true);
             $table->integer('leave_application_id');
@@ -35,3 +36,4 @@ return new class extends Migration
         Schema::dropIfExists('leave_application_logs');
     }
 };
+

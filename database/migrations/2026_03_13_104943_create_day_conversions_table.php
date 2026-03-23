@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('day_conversions')) { return; }
         Schema::create('day_conversions', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('days_present');
@@ -32,3 +33,4 @@ return new class extends Migration
         Schema::dropIfExists('day_conversions');
     }
 };
+

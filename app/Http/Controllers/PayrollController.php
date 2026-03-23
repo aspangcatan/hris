@@ -24,20 +24,30 @@ class PayrollController extends Controller
     {
         try {
             $payroll = DB::table('payroll_settings')->where('userid', $request->userid)->first();
-            $benefits = DB::table('employee_benefits')->where('userid', $request->userid)->first();
-            $deductions = DB::table('employee_deductions')->where('userid', $request->userid)->first();
-
-            if (!$payroll && !$benefits && !$deductions) {
-                return response()->json(['success' => false, 'message' => 'No data found.']);
-            }
+            $components = DB::table('hris.employee_payroll_components as epc')
+                ->join('hris.payroll_components as pc', 'pc.id', '=', 'epc.payroll_component_id')
+                ->where('epc.userid', $request->userid)
+                ->orderBy('pc.sort_order')
+                ->select(
+                    'pc.code',
+                    'pc.name',
+                    'pc.type',
+                    'pc.taxable',
+                    'pc.is_global',
+                    'pc.default_amount',
+                    'epc.amount',
+                    'epc.amount_override',
+                    'epc.is_active',
+                    'epc.is_excluded',
+                    'epc.effective_from',
+                    'epc.effective_to'
+                )
+                ->get();
 
             return response()->json([
                 'success' => true,
-                'data' => array_merge(
-                    (array) $payroll,
-                    (array) $benefits,
-                    (array) $deductions
-                )
+                'data' => $payroll ? (array) $payroll : [],
+                'components' => $components ?? []
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -51,43 +61,12 @@ class PayrollController extends Controller
                 'salary_grade' => 'required|integer|min:1',
                 'step' => 'required|integer|min:1',
                 'basic_salary' => 'required|numeric|min:0',
-
-                // Benefits
-                'pera' => 'required|numeric|min:0',
-                'rata' => 'required|numeric|min:0',
-                'subsistence' => 'required|numeric|min:0',
-                'laundry' => 'required|numeric|min:0',
-                'longevity' => 'required|numeric|min:0',
-                'cellphone_allowance' => 'required|numeric|min:0',
-
-                // Deductions
-                'gsis_ps' => 'required|numeric|min:0',
-                'gsis_gs' => 'required|numeric|min:0',
-                'gsis_ec' => 'required|numeric|min:0',
-                'hdmf' => 'required|numeric|min:0',
-                'phic' => 'required|numeric|min:0',
-                'pagibig_cal' => 'required|numeric|min:0',
-                'pagibig_mpl' => 'required|numeric|min:0',
-                'pagibig_mp2' => 'required|numeric|min:0',
-                'pagibig_mp2_2nd' => 'required|numeric|min:0',
-                'pagibig_mp2_3rd' => 'required|numeric|min:0',
-                'gsis_consoloan' => 'required|numeric|min:0',
-                'gsis_emergency_loan' => 'required|numeric|min:0',
-                'gsis_educational_loan' => 'required|numeric|min:0',
-                'gsis_policy_loan' => 'required|numeric|min:0',
-                'gsis_opt_life_loan' => 'required|numeric|min:0',
-                'gsis_gfal' => 'required|numeric|min:0',
-                'gsis_mpl' => 'required|numeric|min:0',
-                'gsis_cpl' => 'required|numeric|min:0',
-                'gsis_mpl_lite' => 'required|numeric|min:0',
-                'cfi_coop' => 'required|numeric|min:0',
-                'first_valley_bank' => 'required|numeric|min:0',
-                'tdhea' => 'required|numeric|min:0',
-                'dbp_loan' => 'required|numeric|min:0',
-                'ucpb_loan' => 'required|numeric|min:0',
-                'meds_payable' => 'required|numeric|min:0',
-                'sss_deduction' => 'required|numeric|min:0',
             ]);
+
+            $dynamicComponents = $request->input('components', null);
+            if ($dynamicComponents !== null && !is_array($dynamicComponents)) {
+                $dynamicComponents = [];
+            }
 
             DB::table('payroll_settings')->updateOrInsert(
                 ['userid' => $request->userid],
@@ -100,53 +79,9 @@ class PayrollController extends Controller
                 ]
             );
 
-            DB::table('employee_benefits')->updateOrInsert(
-                ['userid' => $request->userid],
-                [
-                    'pera' => $validatedData['pera'],
-                    'rata' => $validatedData['rata'],
-                    'subsistence' => $validatedData['subsistence'],
-                    'laundry' => $validatedData['laundry'],
-                    'longevity' => $validatedData['longevity'],
-                    'cellphone_allowance' => $validatedData['cellphone_allowance'],
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
-
-            DB::table('employee_deductions')->updateOrInsert(
-                ['userid' => $request->userid],
-                [
-                    'gsis_ps' => $validatedData['gsis_ps'],
-                    'gsis_gs' => $validatedData['gsis_gs'],
-                    'gsis_ec' => $validatedData['gsis_ec'],
-                    'hdmf' => $validatedData['hdmf'],
-                    'phic' => $validatedData['phic'],
-                    'pagibig_cal' => $validatedData['pagibig_cal'],
-                    'pagibig_mpl' => $validatedData['pagibig_mpl'],
-                    'pagibig_mp2' => $validatedData['pagibig_mp2'],
-                    'pagibig_mp2_2nd' => $validatedData['pagibig_mp2_2nd'],
-                    'pagibig_mp2_3rd' => $validatedData['pagibig_mp2_3rd'],
-                    'gsis_consoloan' => $validatedData['gsis_consoloan'],
-                    'gsis_emergency_loan' => $validatedData['gsis_emergency_loan'],
-                    'gsis_educational_loan' => $validatedData['gsis_educational_loan'],
-                    'gsis_policy_loan' => $validatedData['gsis_policy_loan'],
-                    'gsis_opt_life_loan' => $validatedData['gsis_opt_life_loan'],
-                    'gsis_gfal' => $validatedData['gsis_gfal'],
-                    'gsis_mpl' => $validatedData['gsis_mpl'],
-                    'gsis_cpl' => $validatedData['gsis_cpl'],
-                    'gsis_mpl_lite' => $validatedData['gsis_mpl_lite'],
-                    'cfi_coop' => $validatedData['cfi_coop'],
-                    'first_valley_bank' => $validatedData['first_valley_bank'],
-                    'tdhea' => $validatedData['tdhea'],
-                    'dbp_loan' => $validatedData['dbp_loan'],
-                    'ucpb_loan' => $validatedData['ucpb_loan'],
-                    'meds_payable' => $validatedData['meds_payable'],
-                    'sss_deduction' => $validatedData['sss_deduction'],
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
+            if ($dynamicComponents !== null) {
+                $this->syncDynamicComponents($request->userid, $dynamicComponents);
+            }
 
             return response()->json([
                 'message' => 'Payroll settings saved successfully.',
@@ -161,6 +96,140 @@ class PayrollController extends Controller
         }
     }
 
+    private function syncDynamicComponents($userid, array $components): void
+    {
+        DB::transaction(function () use ($userid, $components) {
+            DB::table('hris.employee_payroll_components')
+                ->where('userid', $userid)
+                ->update([
+                    'is_active' => 0,
+                    'updated_at' => now(),
+                ]);
+
+            foreach ($components as $component) {
+                if (empty($component['code']) || empty($component['name']) || empty($component['type'])) {
+                    continue;
+                }
+
+                $code = strtoupper(trim((string) $component['code']));
+                $name = trim((string) $component['name']);
+                $type = strtolower(trim((string) $component['type'])) === 'deduction' ? 'deduction' : 'earning';
+                $taxable = !empty($component['taxable']);
+                $amount = isset($component['amount']) ? (float) $component['amount'] : 0;
+                $amountOverride = array_key_exists('amount_override', $component) ? $component['amount_override'] : null;
+                $isExcluded = !empty($component['is_excluded']);
+                $effectiveFrom = $component['effective_from'] ?? null;
+                $effectiveTo = $component['effective_to'] ?? null;
+                $isGlobal = !empty($component['is_global']);
+                $defaultAmount = isset($component['default_amount']) ? (float) $component['default_amount'] : 0;
+
+                $componentId = DB::table('hris.payroll_components')
+                    ->where('code', $code)
+                    ->value('id');
+
+                if (!$componentId) {
+                    $componentId = DB::table('hris.payroll_components')->insertGetId([
+                        'code' => $code,
+                        'name' => $name,
+                        'type' => $type,
+                        'is_global' => $isGlobal ? 1 : 0,
+                        'taxable' => $taxable,
+                        'default_amount' => $defaultAmount,
+                        'is_active' => 1,
+                        'sort_order' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('hris.payroll_components')
+                        ->where('id', $componentId)
+                        ->update([
+                            'name' => $name,
+                            'type' => $type,
+                            'is_global' => $isGlobal ? 1 : 0,
+                            'taxable' => $taxable,
+                            'default_amount' => $defaultAmount,
+                            'updated_at' => now(),
+                        ]);
+                }
+
+                DB::table('hris.employee_payroll_components')->updateOrInsert(
+                    [
+                        'payroll_component_id' => $componentId,
+                        'userid' => $userid,
+                    ],
+                    [
+                        'amount' => $amount,
+                        'amount_override' => $amountOverride,
+                        'is_active' => $isExcluded ? 0 : 1,
+                        'is_excluded' => $isExcluded ? 1 : 0,
+                        'effective_from' => $effectiveFrom,
+                        'effective_to' => $effectiveTo,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
+        });
+    }
+
+    public function getPayrollComponents()
+    {
+        try {
+            $components = DB::table('hris.payroll_components')
+                ->where('is_active', 1)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+
+            return response()->json(['success' => true, 'data' => $components]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function savePayrollComponents(Request $request)
+    {
+        try {
+            $components = $request->input('components', []);
+            if (!is_array($components)) {
+                return response()->json(['success' => false, 'message' => 'Invalid payload.'], 422);
+            }
+
+            foreach ($components as $component) {
+                if (empty($component['code']) || empty($component['name']) || empty($component['type'])) {
+                    continue;
+                }
+
+                $code = strtoupper(trim((string) $component['code']));
+                $name = trim((string) $component['name']);
+                $type = strtolower(trim((string) $component['type'])) === 'deduction' ? 'deduction' : 'earning';
+                $taxable = !empty($component['taxable']);
+                $defaultAmount = isset($component['default_amount']) ? (float) $component['default_amount'] : 0;
+                $isGlobal = !empty($component['is_global']);
+                $isActive = array_key_exists('is_active', $component) ? (bool) $component['is_active'] : true;
+
+                DB::table('hris.payroll_components')->updateOrInsert(
+                    ['code' => $code],
+                    [
+                        'name' => $name,
+                        'type' => $type,
+                        'is_global' => $isGlobal ? 1 : 0,
+                        'taxable' => $taxable,
+                        'default_amount' => $defaultAmount,
+                        'is_active' => $isActive ? 1 : 0,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
+
+            return response()->json(['success' => true, 'message' => 'Components saved successfully.']);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
     public function savePayroll(Request $request)
     {
         try {
@@ -171,15 +240,23 @@ class PayrollController extends Controller
                 'payroll_type' => 'nullable|string|max:50',
                 'rate_type' => 'nullable|string|max:50',
                 'remarks' => 'nullable|string',
+                'tax_purpose' => 'nullable|string|max:150',
+                'cutoff_start_date' => 'nullable|date',
+                'cutoff_end_date' => 'nullable|date|after_or_equal:cutoff_start_date',
+                'cutoff_title' => 'nullable|string|max:255',
             ]);
 
-            DB::table('payrolls')->insert([
+            DB::table('hris.payrolls')->insert([
                 'title' => $validated['title'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
+                'cutoff_start_date' => $validated['cutoff_start_date'] ?? null,
+                'cutoff_end_date' => $validated['cutoff_end_date'] ?? null,
+                'cutoff_title' => $validated['cutoff_title'] ?? null,
                 'payroll_type' => $validated['payroll_type'] ?? 'Regular',
                 'rate_type' => $validated['rate_type'] ?? 'Non Pro-rated',
                 'remarks' => $validated['remarks'] ?? null,
+                'tax_purpose' => $validated['tax_purpose'] ?? null,
                 'status' => 'draft',
                 'prepared_by' => Auth::id(),
                 'created_at' => now(),
@@ -189,6 +266,228 @@ class PayrollController extends Controller
             return response()->json(['message' => 'Payroll created successfully.']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getPayrollTaxRules()
+    {
+        try {
+            $rules = DB::table('hris.payroll_tax_rules')
+                ->where('is_active', 1)
+                ->orderBy('purpose')
+                ->orderBy('min_annual')
+                ->get();
+
+            return response()->json(['success' => true, 'data' => $rules]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function savePayrollTaxRules(Request $request)
+    {
+        try {
+            $rules = $request->input('rules', []);
+            if (!is_array($rules)) {
+                return response()->json(['success' => false, 'message' => 'Invalid payload.'], 422);
+            }
+
+            foreach ($rules as $rule) {
+                $purpose = trim((string) ($rule['purpose'] ?? ''));
+                if ($purpose === '') {
+                    continue;
+                }
+                $minAnnual = isset($rule['min_annual']) ? (float) $rule['min_annual'] : 0;
+                $maxAnnual = array_key_exists('max_annual', $rule) ? $rule['max_annual'] : null;
+                $ratePercent = isset($rule['rate_percent']) ? (float) $rule['rate_percent'] : 0;
+                $taxMode = strtolower((string) ($rule['tax_mode'] ?? 'flat')) === 'progressive' ? 'progressive' : 'flat';
+                $isActive = array_key_exists('is_active', $rule) ? (bool) $rule['is_active'] : true;
+                $sortOrder = isset($rule['sort_order']) ? (int) $rule['sort_order'] : 0;
+                $remarks = $rule['remarks'] ?? null;
+
+                $payload = [
+                    'purpose' => $purpose,
+                    'min_annual' => $minAnnual,
+                    'max_annual' => $maxAnnual === '' ? null : $maxAnnual,
+                    'rate_percent' => $ratePercent,
+                    'tax_mode' => $taxMode,
+                    'is_active' => $isActive ? 1 : 0,
+                    'sort_order' => $sortOrder,
+                    'remarks' => $remarks,
+                    'updated_at' => now(),
+                ];
+
+                if (!empty($rule['id'])) {
+                    DB::table('hris.payroll_tax_rules')
+                        ->where('id', $rule['id'])
+                        ->update($payload);
+                } else {
+                    $payload['created_at'] = now();
+                    DB::table('hris.payroll_tax_rules')->insert($payload);
+                }
+            }
+
+            return response()->json(['success' => true, 'message' => 'Tax rules saved successfully.']);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getCutoffSummaries(Request $request)
+    {
+        try {
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+
+            $table = $this->payrollServices->getCutoffSummaryTableName();
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+            $query = DB::table($table . ' as cs')
+                ->leftJoin($masterTable . ' as cm', 'cm.id', '=', 'cs.cutoff_id')
+                ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+                ->select(
+                    'cs.*',
+                    'cm.title as remarks',
+                    'cm.period_start',
+                    'cm.period_end',
+                    'u.fname',
+                    'u.mname',
+                    'u.lname',
+                    'u.suffix'
+                )
+                ->orderByDesc('cm.period_start')
+                ->orderByDesc('cs.created_at');
+
+            if (!empty($startDate) && !empty($endDate)) {
+                $query->whereDate('cm.period_start', '>=', $startDate)
+                    ->whereDate('cm.period_end', '<=', $endDate);
+            } elseif (!empty($startDate)) {
+                $query->whereDate('cm.period_start', '>=', $startDate);
+            } elseif (!empty($endDate)) {
+                $query->whereDate('cm.period_end', '<=', $endDate);
+            }
+
+            $results = $query->get();
+
+            return response()->json(['success' => true, 'data' => $results]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function createCutoffSummaries(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'employees' => 'required|array|min:1',
+                'employees.*' => 'required|integer',
+            ]);
+
+            $table = $this->payrollServices->getCutoffSummaryTableName();
+            $master = $this->payrollServices->getOrCreateCutoffMaster(
+                $validated['start_date'],
+                $validated['end_date'],
+                $validated['title'],
+                Auth::id()
+            );
+            $locked = DB::table($table)
+                ->where('cutoff_id', $master->id)
+                ->whereIn('employee_id', $validated['employees'])
+                ->where('is_locked', 1)
+                ->pluck('employee_id')
+                ->toArray();
+
+            if (!empty($locked)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cutoff period is locked for some employees.',
+                    'locked_employee_ids' => $locked,
+                ], 422);
+            }
+
+            DB::transaction(function () use ($validated) {
+                foreach ($validated['employees'] as $employeeId) {
+                    $this->payrollServices->generateCutoffSummary(
+                        $employeeId,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $validated['title'],
+                        Auth::id()
+                    );
+                }
+            });
+
+            return response()->json(['success' => true, 'message' => 'Cutoff summaries generated.']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getCutoffPeriods()
+    {
+        try {
+            $table = $this->payrollServices->getCutoffSummaryMasterTableName();
+            $periods = DB::table($table)
+                ->select('period_start', 'period_end', 'title as remarks')
+                ->orderByDesc('period_start')
+                ->get();
+
+            return response()->json(['success' => true, 'data' => $periods]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function getCutoffSummaryPreview(Request $request)
+    {
+        try {
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+            $employees = $request->query('employees', []);
+
+            if (is_string($employees)) {
+                $employees = array_filter(explode(',', $employees));
+            }
+
+            $table = $this->payrollServices->getCutoffSummaryTableName();
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+            $query = DB::table($table . ' as cs')
+                ->leftJoin($masterTable . ' as cm', 'cm.id', '=', 'cs.cutoff_id')
+                ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+                ->select(
+                    'cs.*',
+                    'cm.title as remarks',
+                    'cm.period_start',
+                    'cm.period_end',
+                    'u.fname',
+                    'u.mname',
+                    'u.lname',
+                    'u.suffix'
+                );
+
+            if (!empty($startDate)) {
+                $query->where('cm.period_start', $startDate);
+            }
+            if (!empty($endDate)) {
+                $query->where('cm.period_end', $endDate);
+            }
+            if (!empty($employees)) {
+                $query->whereIn('cs.employee_id', $employees);
+            }
+
+            $results = $query->orderBy('u.lname')->get();
+
+            return response()->json(['success' => true, 'data' => $results]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
     }
 
@@ -202,6 +501,9 @@ class PayrollController extends Controller
                     'p.title',
                     'p.start_date',
                     'p.end_date',
+                    'p.cutoff_start_date',
+                    'p.cutoff_end_date',
+                    'p.cutoff_title',
                     'p.payroll_type',
                     'p.rate_type',
                     'p.remarks',
@@ -261,23 +563,56 @@ class PayrollController extends Controller
                 return response()->json(['error' => "Payroll doesn't exist."], 404);
             }
 
+            $cutoffStart = $period->cutoff_start_date ?? $period->start_date;
+            $cutoffEnd = $period->cutoff_end_date ?? $period->end_date;
+            $cutoffTitle = $period->cutoff_title ?? null;
+
+            $cutoffMaster = $this->payrollServices->getCutoffMasterByPeriod($cutoffStart, $cutoffEnd, $cutoffTitle);
+            if (!$cutoffMaster) {
+                return response()->json([
+                    'error' => 'Cutoff master record not found for the selected period.',
+                ], 422);
+            }
+
             $currentStatus = strtolower((string) ($period->status ?? 'draft'));
             if (in_array($currentStatus, ['for_approval', 'approved', 'released'], true)) {
                 return response()->json(['error' => 'Payroll is already in approval/released state and cannot be recomputed.'], 422);
             }
 
-            DB::transaction(function () use ($validated, $period) {
+            $employeeIds = array_map(function ($employee) {
+                return $employee['userid'];
+            }, $validated['employees']);
+
+            $cutoffTable = $this->payrollServices->getCutoffSummaryTableName();
+            $existingCutoffs = DB::table($cutoffTable)
+                ->where('cutoff_id', $cutoffMaster->id)
+                ->whereIn('employee_id', $employeeIds)
+                ->pluck('employee_id')
+                ->toArray();
+
+            $missing = array_diff($employeeIds, $existingCutoffs);
+            if (!empty($missing)) {
+                return response()->json([
+                    'error' => 'Missing cutoff summaries for selected employees.',
+                    'missing_employee_ids' => array_values($missing),
+                ], 422);
+            }
+
+            DB::transaction(function () use ($validated, $period, $cutoffStart, $cutoffEnd, $employeeIds) {
                 $this->payrollServices->deletePayrollEmployees($validated['payroll_id']);
                 DB::table('payroll_approvals')->where('payroll_id', $validated['payroll_id'])->delete();
 
-                $month = date('m', strtotime($period->start_date));
-                $year = date('Y', strtotime($period->start_date));
-                $totalWorkingDays = $this->payrollServices->getWorkingDays($year, $month);
-
                 foreach ($validated['employees'] as $employee) {
-                    $result = $this->dtrServices->getTotalLateAbsent($employee['userid'], $period->start_date, $period->end_date);
-                    $totalLateUndertimeMinutes = $result['late_minutes'] + $result['undertime_minutes'];
-                    $totalAbsentDays = $result['absences'];
+                    $summary = $this->payrollServices->getOrCreateCutoffSummary(
+                        $employee['userid'],
+                        $cutoffStart,
+                        $cutoffEnd,
+                        Auth::id()
+                    );
+
+                    $totalLateUndertimeMinutes = ((int) ($summary->late_minutes ?? 0)) + ((int) ($summary->undertime_minutes ?? 0));
+                    $totalAbsentDays = (int) ($summary->days_absent ?? 0);
+                    $totalWorkingDays = (int) ($summary->total_working_days ?? 0);
 
                     $this->payrollServices->savePayrollEmployee(
                         $validated['payroll_id'],
@@ -295,6 +630,17 @@ class PayrollController extends Controller
                         'reviewed_by' => null,
                         'approved_at' => null,
                         'released_at' => null,
+                        'updated_at' => now(),
+                    ]);
+
+                $cutoffTable = $this->payrollServices->getCutoffSummaryTableName();
+                DB::table($cutoffTable)
+                    ->where('cutoff_id', $cutoffMaster->id)
+                    ->whereIn('employee_id', $employeeIds)
+                    ->update([
+                        'is_locked' => 1,
+                        'locked_by' => Auth::id(),
+                        'locked_at' => now(),
                         'updated_at' => now(),
                     ]);
             });

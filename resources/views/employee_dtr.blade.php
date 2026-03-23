@@ -31,16 +31,25 @@
         <!-- DTR cards will be appended here -->
     </div>
 
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
+        <div class="text-muted small" id="employee_range">Showing 0-0 of 0</div>
+        <nav aria-label="Employee DTR pagination">
+            <ul class="pagination mb-0" id="employee-pagination"></ul>
+        </nav>
+    </div>
+
     @include('modals.employee_dtr')
 @stop
 @section('js')
     <script>
         let userid = 0;
         let log_id = 0;
+        let currentPage = 1;
+        const perPage = 12;
         const accessRights = @json(strtolower((string) session('access_rights')));
         const canEditRawTimelog = ["admin", "it","dh"].includes(accessRights);
         $(document).ready(function () {
-            getEmployeeDtr();
+            getEmployeeDtr(1);
             loadDivision();
 
             $("#month,#year").change(function () {
@@ -161,12 +170,12 @@
             });
 
             $("#search_section").change(function () {
-                getEmployeeDtr();
+                getEmployeeDtr(1);
             });
 
             $("#search_fname, #search_lname").on("keypress", function (e) {
                 if (e.which === 13) { // 13 is the Enter key code
-                    getEmployeeDtr(); // Call your fetch function
+                    getEmployeeDtr(1); // Call your fetch function
                 }
             });
 
@@ -315,7 +324,59 @@
                 });
         }
 
-        async function getEmployeeDtr() {
+        function renderPagination(meta) {
+            const container = $("#employee-pagination");
+            container.empty();
+
+            if (!meta || meta.last_page <= 1) {
+                return;
+            }
+
+            const current = meta.current_page;
+            const last = meta.last_page;
+
+            const buildItem = (page, label, disabled = false, active = false) => {
+                const liClass = `page-item${disabled ? " disabled" : ""}${active ? " active" : ""}`;
+                const dataAttr = disabled ? "" : `data-page=\"${page}\"`;
+                return `<li class=\"${liClass}\"><a class=\"page-link\" href=\"#\" ${dataAttr}>${label}</a></li>`;
+            };
+
+            container.append(buildItem(current - 1, "&laquo;", current === 1));
+
+            const start = Math.max(1, current - 2);
+            const end = Math.min(last, current + 2);
+
+            if (start > 1) {
+                container.append(buildItem(1, "1", false, current === 1));
+                if (start > 2) {
+                    container.append(buildItem(0, "...", true));
+                }
+            }
+
+            for (let page = start; page <= end; page++) {
+                container.append(buildItem(page, page, false, page === current));
+            }
+
+            if (end < last) {
+                if (end < last - 1) {
+                    container.append(buildItem(0, "...", true));
+                }
+                container.append(buildItem(last, last, false, current === last));
+            }
+
+            container.append(buildItem(current + 1, "&raquo;", current === last));
+        }
+
+        $(document).on("click", "#employee-pagination .page-link", function (e) {
+            e.preventDefault();
+            const page = parseInt($(this).data("page"), 10);
+            if (!page || page === currentPage) {
+                return;
+            }
+            getEmployeeDtr(page);
+        });
+
+        async function getEmployeeDtr(page = 1) {
             const search_division = ($("#search_division").val() === undefined) ? "" : $("#search_division").val();
             let search_section = $("#search_section").val();
             if (search_division == "")
@@ -329,18 +390,46 @@
 
             container.empty();         // Clear old results
             loading.show();            // Show loading spinner
+            $("#employee-pagination").empty();
+            $("#employee_range").text("Showing 0-0 of 0");
+            currentPage = page;
 
             fetch("{{ route('getEmployeeDtr') }}?search_section=" + search_section +
                 "&search_division=" + search_division +
                 "&search_fname=" + search_fname +
-                "&search_lname=" + search_lname, {
+                "&search_lname=" + search_lname +
+                "&page=" + page +
+                "&per_page=" + perPage, {
                 method: "GET"
             })
                 .then(response => response.json())
                 .then(data => {
-                    const path = '{{ url('/avatar/')}}';
+                    const list = data.data || [];
+                    const meta = {
+                        current_page: data.current_page || 1,
+                        last_page: data.last_page || 1,
+                        total: data.total || list.length,
+                        from: data.from || (list.length ? 1 : 0),
+                        to: data.to || list.length
+                    };
 
-                    data.forEach(it => {
+                    $("#employee_range").text(`Showing ${meta.from}-${meta.to} of ${meta.total}`);
+                    renderPagination(meta);
+
+                    if (!list.length) {
+                        container.append(`
+                            <div class="col-12">
+                                <div class="card p-4 text-center text-muted">
+                                    <div class="mb-2"><i class="bi bi-archive"></i></div>
+                                    <div>No employee records found.</div>
+                                </div>
+                            </div>
+                        `);
+                        loading.hide();
+                        return;
+                    }
+
+                    list.forEach(it => {
                         const image = (it.picture) ? "https://dohcsmc.com/id/storage/crop/"+it.picture : "assets/img/logo.png";
                         const timeIn = it.time_in ? new Date(it.time_in).toLocaleTimeString([], {
                             hour: '2-digit',

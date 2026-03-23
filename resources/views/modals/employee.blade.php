@@ -1,3 +1,52 @@
+<style>
+    .payroll-tab-board {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+    }
+
+    .payroll-tab-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .payroll-tab-section .form-control {
+        border-radius: 12px;
+        border: 1px solid #d8e1ee;
+        background: #fff;
+    }
+
+    .payroll-tab-table-shell {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .payroll-tab-table-shell table {
+        margin-bottom: 0;
+    }
+
+    .payroll-tab-table-shell table thead th {
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .payroll-tab-table-shell table tbody td {
+        color: #1e293b;
+        font-weight: 500;
+        vertical-align: middle;
+    }
+</style>
+
 <div class="modal fade" id="employee_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -109,43 +158,69 @@
                                     </ul>
                                     <div class="tab-content pt-2">
                                         <div class="tab-pane fade pt-3" id="personal_information">
-                                            @include('forms.personal_information')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.personal_information')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="address">
-                                            @include('forms.address')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.address')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="family_background">
-                                            @include('forms.family_background')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.family_background')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="educational_background">
-                                            @include('forms.educational_background')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.educational_background')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="civil_service">
-                                            @include('forms.civil_service')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.civil_service')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="work_experience">
-                                            @include('forms.work_experience')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.work_experience')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="voluntary_work">
-                                            @include('forms.voluntary_work')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.voluntary_work')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="learning_development">
-                                            @include('forms.learning_development')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.learning_development')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="other_information">
-                                            @include('forms.other_information')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.other_information')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="reference">
-                                            @include('forms.reference')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.reference')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="survey">
-                                            @include('forms.survey')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.survey')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="service_records">
-                                            @include('forms.service_record')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.service_record')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="leave_credits">
-                                            @include('forms.leave_credits')
+                                            <div class="payroll-tab-board">
+                                                @include('forms.leave_credits')
+                                            </div>
                                         </div>
                                         <div class="tab-pane fade pt-3" id="payroll">
                                             @include('forms.payroll')

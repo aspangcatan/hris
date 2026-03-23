@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('pass_slips')) { return; }
         Schema::create('pass_slips', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('user_id')->nullable();
@@ -37,3 +38,4 @@ return new class extends Migration
         Schema::dropIfExists('pass_slips');
     }
 };
+

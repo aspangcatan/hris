@@ -20,8 +20,8 @@
         $("#btn_add_leave").click(function () {
             $("#description").val("");
             $("#code").val("");
-            $("#monthly_points_earned").val("");
-            $("#minute_deduction").val("");
+            $("#leave_status").val("active");
+            $("#monthly_earned").val("1");
             $("#leave_type_modal").modal("show");
         });
 
@@ -31,16 +31,14 @@
     async function store() {
         const description = $("#description").val();
         const code = $("#code").val();
-        const monthly_points_earned = $("#monthly_points_earned").val();
-        const minute_deduction = $("#minute_deduction").val();
-        const day_deduction = $("#day_deduction").val();
+        const status = $("#leave_status").val();
+        const monthly_earned = $("#monthly_earned").val();
 
         const params = {
             description: description,
             code: code,
-            monthly_points_earned: monthly_points_earned,
-            minute_deduction: minute_deduction,
-            day_deduction: day_deduction
+            status: status,
+            monthly_earned: monthly_earned
         }
 
         const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
@@ -69,16 +67,14 @@
     function editLeave(id) {
         const description = $("#leave_" + id + " td:eq(0)").text();
         const code = $("#leave_" + id + " td:eq(1)").text();
-        const monthly_points_earned = $("#leave_" + id + " td:eq(2)").text();
-        const minute_deduction = $("#leave_" + id + " td:eq(3)").text();
-        const day_deduction = $("#leave_" + id + " td:eq(4)").text();
+        const status = $("#leave_" + id + " td:eq(2)").data("value");
+        const monthlyEarned = $("#leave_" + id + " td:eq(3)").data("value");
 
 
         $("#description").val(description);
         $("#code").val(code);
-        $("#monthly_points_earned").val(monthly_points_earned);
-        $("#minute_deduction").val(minute_deduction);
-        $("#day_deduction").val(day_deduction);
+        $("#leave_status").val(status || "active");
+        $("#monthly_earned").val((monthlyEarned !== undefined && monthlyEarned !== null) ? monthlyEarned : "1");
         $("#leave_type_modal").modal("show");
     }
 
@@ -138,13 +134,14 @@
                 }
 
                 data.forEach(it => {
+                    const statusLabel = (it.status || 'active').toString();
+                    const monthlyEarnedLabel = parseInt(it.monthly_earned || 0, 10) === 1 ? "Yes" : "No";
                     const tr = `
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
                         <td>` + it.code + `</td>
-                        <td>` + it.monthly_points_earned + `</td>
-                        <td>` + it.minute_deduction + `</td>
-                        <td>` + it.day_deduction + `</td>
+                        <td data-value="` + statusLabel + `">` + statusLabel + `</td>
+                        <td data-value="` + (it.monthly_earned ?? 0) + `">` + monthlyEarnedLabel + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>

@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('schedule_master_lists')) { return; }
         Schema::create('schedule_master_lists', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('label', 50);
@@ -36,3 +37,4 @@ return new class extends Migration
         Schema::dropIfExists('schedule_master_lists');
     }
 };
+

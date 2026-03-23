@@ -155,9 +155,8 @@ class LeaveController extends Controller
                 'description' => $request->description,
             ], [
                 'code' => $request->code,
-                'monthly_points_earned' => $request->monthly_points_earned,
-                'minute_deduction' => $request->minute_deduction,
-                'day_deduction' => $request->day_deduction,
+                'status' => $request->status ?? 'active',
+                'monthly_earned' => $request->monthly_earned ?? 1,
             ]);
             return response()->json(['message' => 'Leave type successfully stored']);
         } catch (\Exception $exception) {

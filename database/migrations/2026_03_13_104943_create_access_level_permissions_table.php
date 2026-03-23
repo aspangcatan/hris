@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('access_level_permissions')) { return; }
         Schema::create('access_level_permissions', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('level', 191);
@@ -33,3 +34,4 @@ return new class extends Migration
         Schema::dropIfExists('access_level_permissions');
     }
 };
+

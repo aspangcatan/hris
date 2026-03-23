@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('leave_applications')) { return; }
         Schema::create('leave_applications', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('user_id');
@@ -36,3 +37,4 @@ return new class extends Migration
         Schema::dropIfExists('leave_applications');
     }
 };
+

@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('leave_types')) { return; }
         Schema::create('leave_types', function (Blueprint $table) {
             $table->integer('id', true);
             $table->string('description', 45);
@@ -33,3 +34,4 @@ return new class extends Migration
         Schema::dropIfExists('leave_types');
     }
 };
+

@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('dtr_logs')) { return; }
         Schema::create('dtr_logs', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('userid');
@@ -36,3 +37,4 @@ return new class extends Migration
         Schema::dropIfExists('dtr_logs');
     }
 };
+

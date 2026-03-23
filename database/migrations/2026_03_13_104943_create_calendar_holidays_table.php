@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('calendar_holidays')) { return; }
         Schema::create('calendar_holidays', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->date('date')->unique('date_UNIQUE');
@@ -32,3 +33,4 @@ return new class extends Migration
         Schema::dropIfExists('calendar_holidays');
     }
 };
+

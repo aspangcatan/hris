@@ -175,11 +175,38 @@
 
             {{-- PAYROLL MANAGEMENT --}}
             <li class="nav-heading">Payroll Management</li>
-            <li class="nav-item">
+             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('payroll') ? '' : 'collapsed' }}"
                    href="{{ route('payroll') }}">
                     <i class="bi bi-cash-stack"></i>
                     <span>Payroll</span>
+                </a>
+            </li> <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('payroll') ? '' : 'collapsed' }}"
+                   href="{{ route('payroll_settings') }}">
+                    <i class="bi bi-list-check"></i>
+                    <span>Payroll Settings</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('payroll_components') ? '' : 'collapsed' }}"
+                   href="{{ route('payroll_components') }}">
+                    <i class="bi bi-list-check"></i>
+                    <span>Earnings/Deductions</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('payroll_tax_rules') ? '' : 'collapsed' }}"
+                   href="{{ route('payroll_tax_rules') }}">
+                    <i class="bi bi-percent"></i>
+                    <span>Taxation</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('cutoff_summaries') ? '' : 'collapsed' }}"
+                   href="{{ route('cutoff_summaries') }}">
+                    <i class="bi bi-calendar-range"></i>
+                    <span>Cutoff Summary</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -228,6 +255,7 @@
         @endif
 
         {{-- MOBILE DTR --}}
+        @if(false)
         <li class="nav-heading">Mobile DTR</li>
         <li class="nav-item">
             <a class="nav-link collapsed" href="{{ route('download.latest') }}">
@@ -241,5 +269,6 @@
                 <span>Download Old Version</span>
             </a>
         </li>
+        @endif
     </ul>
 </aside>

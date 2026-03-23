@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('permission_audit_logs')) { return; }
         Schema::create('permission_audit_logs', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('performer_id');
@@ -33,3 +34,4 @@ return new class extends Migration
         Schema::dropIfExists('permission_audit_logs');
     }
 };
+

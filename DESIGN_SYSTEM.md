@@ -1,149 +1,126 @@
-# CSMC SPMS - Design & UI Documentation
+# HRIS Design System
 
-This document outlines the design system, visual identity, and UI/UX patterns used in the **E-SPMS (Strategic Performance Management System)**.
+## Purpose
+This document captures the current UI language used in the HRIS app so new work matches the existing look and feel. It is grounded in the live layout and page styles already in the codebase. Do not introduce new colors or patterns unless they already exist in this repository.
 
----
+## Sources Of Truth
+- Global theme tokens and component refinements: `resources/views/master.blade.php`
+- List view styling: `resources/views/saln.blade.php`, `resources/views/layouts/saln_styles.blade.php`
+- Non-list view styling: `resources/views/profile.blade.php`
+- Base template styles: `public/assets/css/style.css`
 
-## 3. UI / UX Design
+## Frameworks And Libraries
+- Laravel 8 + Blade templates
+- Bootstrap 5 (layout, components, utilities)
+- Tailwind CDN utilities (used heavily in `profile.blade.php`)
+- Icons: Bootstrap Icons, Font Awesome
 
-### Design Philosophy
-The E-SPMS interface follows a **"Modern Professional"** aesthetic. It prioritizes clarity, readability, and ease of use, leveraging a clean, light-themed environment with high-contrast distinct accents. The design aims to reduce cognitive load by using generous spacing, card-based groupings, and subtle drop shadows.
+## Typography
+- Primary font: Plus Jakarta Sans (loaded in `resources/views/master.blade.php`)
+- Headings inherit theme color `--text-primary` with heavier weights
+- Page title: `.pagetitle h1` uses 1.55rem, weight 800, slight letter spacing
 
-### Layout Structure
-- **Sidebar Layout**: A fixed 280px sidebar on the left for primary navigation.
-- **Top Navigation**: A sticky top navbar (72px height) for user profile management and secondary actions.
-- **Card-Based Interface**: Content is grouped into `.card-modern` containers with rounded corners (16px) and soft shadows to distinguish content from the background.
-- **Grid System**: Utilizes the Bootstrap 5 and Tailwind CSS grid systems for responsive alignment.
-- **Spacing**: Uses a consistent spacing scale (Tailwind's 4px scale), typically handling padding/margins in multiples of 4 (e.g., `p-4`, `m-8`).
+## Color Tokens
+Global tokens (`resources/views/master.blade.php`):
+- `--app-bg`: `#eef3f9`
+- `--surface`: `#ffffff`
+- `--surface-soft`: `#f8fafc`
+- `--text-primary`: `#0f172a`
+- `--text-secondary`: `#475569`
+- `--line`: `#dbe3ee`
+- `--brand-600`: `#0f766e`
+- `--brand-500`: `#0ea5a4`
+- `--brand-100`: `#ccfbf1`
+- `--shadow-soft`: `0 14px 36px rgba(2, 32, 71, 0.08)`
+- `--shadow-card`: `0 18px 44px rgba(15, 23, 42, 0.08)`
 
-### Navigation Patterns
-- **Active States**: Navigation items highlight with a light orange background (`#fff5f2`) and orange text to indicate the current active page.
-- **Hover Effects**: subtle interactions, such as text color changes and slight transforms (translateX) on sidebar items, provide immediate feedback.
-- **Dropdowns**: Profile and action menus use rounded, shadowed dropdowns with clear separation lines.
+SALN tokens (`resources/views/layouts/saln_styles.blade.php`):
+- `--saln-primary`: `#0f766e`
+- `--saln-primary-dark`: `#115e59`
+- `--saln-primary-light`: `#ccfbf1`
+- `--saln-text-main`: `#0f172a`
+- `--saln-text-muted`: `#64748b`
+- `--saln-bg-soft`: `#f8fafc`
 
-### Accessibility Considerations
-- **Typography**: Uses **Inter**, a highly readable sans-serif font optimized for computer screens.
-- **Contrast**: High contrast between text (`#1a1e23`) and background (`#f7f8f9`).
-- **Visual Hierarchy**: Clear separation of headings, labels, and body text using font weights (Bold `700`, Medium `500`) and uppercase tracking for labels.
-- **Icons**: Font Awesome icons accompany text labels to aid visual scanning.
+Color usage rules:
+- Use only the tokens above or Bootstrap utilities already in use.
+- Primary action gradients use `--brand-600` to `--brand-500`.
+- List views should use SALN token set when applicable.
 
----
+## Layout And Surfaces
+- App background uses soft radial gradients over `--app-bg`.
+- Primary surfaces are white with subtle borders and `--shadow-card`.
+- Cards are rounded (20px) with shadow and border (`.card` in `master.blade.php`).
 
-## 4. Theme & Visual Identity
+## Spacing And Radius
+- Use Bootstrap spacing utilities or Tailwind spacing scale already in use.
+- Common radii:
+  - 10px: small action buttons (`.btn-action`)
+  - 12px: buttons and inputs
+  - 16px–20px: cards and panels
+  - 9999px: badges, pills
 
-### Overall Theme
-- **Light Theme**: The application uses a strictly light theme to maintain a clean, document-oriented look suitable for government/corporate performance reviews.
-- **Glass/Modern touches**: Subtle transparency and blurred shadows are used instead of distinct heavy borders.
+## Buttons
+Global styles in `resources/views/master.blade.php`:
+- `.btn`: radius 12px, weight 600
+- `.btn-primary` / `.btn-success`: gradient background, no border, shadow
+- `.btn-secondary`: solid `#334155`
+- `.btn-action`: 38x38, icon-only, rounded 10px
+- `.btn-action.btn-edit`: green theme with hover inversion
+- `.btn-action.btn-delete`: red theme with hover inversion
+- `.btn-action.btn-view`: blue theme with hover inversion
+- `.btn-modal-close`: neutral outline, soft hover
+- `.btn-modal-save`: gradient primary, strong shadow
 
-### Design Inspiration
-- **Modern SaaS Dashboards**: Influence from modern web application dashboards (like Stripe or Vercel) is evident in the usage of rounded corners, subtle off-white backgrounds, and refined typography.
+Reuse existing classes. Do not create new button colors or shapes.
 
-### Brand Tone and Mood
-- **Professional**: Serious and trustworthy (Grays/Whites).
-- **Energetic**: The Primary Orange adds a layer of urgency and modernity appropriate for performance tracking.
-- **Clean**: Minimalist approach to forms and data presentation.
+## Cards
+- Base card: `.card` uses white background, 20px radius, `--shadow-card`.
+- SALN list cards: `.saln-record-card` with 16px radius, subtle border, hover lift.
+- Profile panels use Tailwind `rounded-3xl` and strong shadows.
 
----
+## Forms And Inputs
+- `.form-control`, `.form-select`, `.selectize-input` use 12px radius and 42px min height.
+- Focus state: 4px glow ring with `rgba(14, 165, 164, 0.14)` and border `--brand-500`.
+- SALN premium inputs use `.form-control-premium` with similar focus treatment.
 
-## 5. Color System
+## Tables
+- Table header: uppercase, small type, `#f8fafc` background.
+- Borders use `--line`.
+- Stripe/hover backgrounds match `--surface-soft` and `--brand-100` tints.
 
-The color palette is concise, relying on a neutral grayscale with a single strong primary accent color.
+## Tabs And Navigation
+- Tabs use `.nav-tabs` or `.nav-tabs-bordered` with rounded tabs and active state in brand color.
+- Profile tabs use `.profile-tab` pill buttons with teal border and gradient active state.
 
-### Color Usage Guidelines
-- **Primary Orange** is used for Call-to-Action (CTA) buttons, active navigation states, and key highlights.
-- **Grays** are used for text hierarchy (Darkest for headings, Medium for body, Lightest for borders).
-- **White** is the primary container background.
-- **Off-White** (`#f7f8f9`) is the global page background.
+## Badges
+- `.badge` uses pill radius and compact padding.
+- SALN has specialized badges like `.filing-badge` with predefined backgrounds.
 
-### Color Palette
+## Modals
+- Standard modals use Bootstrap structure.
+- Premium modals (`.premium-modal`) use gradient headers, rounded 24px, and soft shadows.
 
-| Color Name | Purpose | HEX Value | RGB Value |
-| :--- | :--- | :--- | :--- |
-| **Primary Orange** | CTAs, Active States, Brand Accents | `#f06a38` | `240, 106, 56` |
-| **Orange Light** | Active Backgrounds, Hover States | `#fff5f2` | `255, 245, 242` |
-| **Dark Text** | Main Headings, Body Text | `#1a1e23` | `26, 30, 35` |
-| **Secondary Text** | Subtitles, Meta info | `#4b5563` | `75, 85, 99` |
-| **Muted Text** | Placeholders, Icons | `#64748b` | `100, 116, 139` |
-| **Page Background** | Global Body Background | `#f7f8f9` | `247, 248, 249` |
-| **Card / Surface** | Component Backgrounds | `#ffffff` | `255, 255, 255` |
-| **Border Light** | Dividers, Card Borders | `#edf1f5` | `237, 241, 245` |
-| **Border Dark** | Input Borders, Button Outlines | `#e5e7eb` | `229, 231, 235` |
+## Icons
+- Primary icons are Bootstrap Icons (`bi` classes) and Font Awesome.
+- Use existing icon sets only.
 
----
+## View Type Rules
+- Non-list views should follow the design language of `resources/views/profile.blade.php`.
+  - Use bold card surfaces, large radii, and Tailwind layout utilities.
+- List views should follow `resources/views/saln.blade.php` + `resources/views/layouts/saln_styles.blade.php`.
+  - Use `.saln-board`, `.saln-filter-lite`, `.saln-record-card`, and `.empty-state` patterns.
 
-## 6. Typography
+## Consistency Rules
+- Reuse existing button classes and card structures.
+- Match current responsive breakpoints (Bootstrap/Tailwind defaults).
+- Preserve existing hover and focus behaviors.
+- Never introduce new colors unless they already exist in tokens or Bootstrap defaults used in the app.
 
-### Font Families
-- **Primary Font**: [Inter](https://fonts.google.com/specimen/Inter), Sans-serif.
-  - Used for 100% of the UI text.
-
-### Font Sizes & Hierarchy
-| Element | Size | Weight | Tracking (Letter Spacing) | Usage |
-| :--- | :--- | :--- | :--- | :--- |
-| **Main Headings** | `text-2xl` (1.5rem) | Black/Bold (900/700) | `tracking-tight` | Page Titles, Brand Name |
-| **Section Titles** | `text-xl` (1.25rem) | Bold (700) | Normal | Modal Titles, Card Headers |
-| **Body Text** | `text-sm` (0.875rem) | Normal (400) | Normal | General Content, Form Inputs |
-| **Small Utility** | `text-xs` (0.75rem) | Bold (700) | `tracking-widest` | Buttons, Badges, Nav items |
-| **Micro Labels** | `text-[10px]` | Black (900) | `tracking-widest` | Overlines, Section Dividers |
-
----
-
-## 7. Components & UI Elements
-
-### Buttons
-- **Primary Button** (`.btn-orange`):
-  - Background: `#f06a38`
-  - Text: White, Bold, Uppercase (optional)
-  - Radius: `8px`
-  - Hover: Opacity 0.9
-- **Outline Button** (`.btn-outline-modern`):
-  - Background: White
-  - Border: `#e5e7eb`
-  - Text: Dark Gray
-  - Radius: `8px`
-
-### Cards (`.card-modern`)
-- **Style**: White background, `rounded-2xl` (16px), 1px solid `#f1f1f1` border.
-- **Shadow**: `shadow-sm` (subtle elevation).
-- **Usage**: Used to wrap all major content sections (Forms, Data Tables, Charts).
-
-### Forms
-- **Inputs**:
-  - Background: `#f9fafb` (Gray-50)
-  - Border: `#e5e7eb` (Gray-200)
-  - Radius: `rounded-2xl`
-  - Padding: Generous (py-3, px-4) for touch friendliness.
-  - Focus: Ring with Primary Orange (`focus:ring-orange-500`).
-
-### Modals (`.modal-content`)
-- **Shape**: `rounded-3xl` (Large rounded corners).
-- **Header**: Often dark (`bg-gray-900`) with white text for high contrast in security/important modals.
-- **Backdrop**: Standard dimmed background.
-
-### Alerts / Notifications (SweetAlert2)
-- **Theme**: Custom "Modern" theme.
-- **Styling**: `rounded-2xl`, Padding `2rem`.
-- **Confirm Button**: Matches Primary Orange button style.
-- **Icons**: Standard SweetAlert animated icons.
-
-### Consistency Rules
-1.  **Rounding**: Use `rounded-xl` or `rounded-2xl` for containers; `rounded-lg` for smaller inner elements (buttons, inputs). Avoid sharp corners.
-2.  **Shadows**: Use clear, diffuse shadows (`shadow-lg`, `shadow-xl`) only for floating elements (Dropdowns, Modals). Static elements use `shadow-sm`.
-3.  **Uppercase**: Use Uppercase + Wide Tracking for "Micro Labels" (e.g., "MAIN MENU", "SYSTEM VERSION") to distinguish them from actionable text.
-
----
-
-## 8. Responsiveness
-
-### Desktop (>= 1024px)
-- **Sidebar**: Visible and fixed on the left.
-- **Content**: Margin-left adjusted (`280px`) to account for sidebar.
-- **Navbar**: Full width of the content area.
-
-### Tablet & Mobile (< 1024px)
-- **Sidebar**: Hidden by default (`transform: translateX(-100%)`).
-- **Toggle**: Hamburger menu icon (`.fa-bars`) appears in the top-left.
-- **Drawer**: Sidebar slides in from the left when toggled (`.show` class).
-- **Backdrop**: A click outside the sidebar closes it.
-- **Content**: Full width (No margin).
-- **Typography**: Sizes generally scale down slightly using Tailwind's responsive utilities (e.g., `text-xl md:text-2xl`).
+## Quick Reference (Common Classes)
+- Buttons: `.btn`, `.btn-primary`, `.btn-success`, `.btn-secondary`, `.btn-action`, `.btn-modal-close`, `.btn-modal-save`
+- Cards: `.card`, `.saln-record-card`, `.saln-board`
+- Inputs: `.form-control`, `.form-select`, `.selectize-input`, `.form-control-premium`
+- Tables: `.table`, `.saln-table-premium`
+- Tabs: `.nav-tabs`, `.nav-tabs-bordered`, `.profile-tab`, `.saln-tab-nav`, `.saln-sub-tab-nav`
+- Empty states: `.empty-state`

@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('promotion_work_experience')) { return; }
         Schema::create('promotion_work_experience', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('user_id');
@@ -31,3 +32,4 @@ return new class extends Migration
         Schema::dropIfExists('promotion_work_experience');
     }
 };
+

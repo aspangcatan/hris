@@ -63,6 +63,9 @@
     let is_reference_loaded = false;
     let is_survey_loaded = false;
     let is_service_loaded = false;
+    let payroll_globals_loaded = false;
+    let globalEarnings = [];
+    let globalDeductions = [];
 
     $(document).ready(function () {
         $("input[name='citizenship']").change(function () {
@@ -176,23 +179,21 @@
 
             params["userid"] = employee_id;
 
-            // Select all input fields inside the modal (adjust selector if needed)
-            $("#payroll input").each(function () {
-                let input = $(this);
-                let name = input.attr("id");
-                let value = parseFloat(input.val());
-
-                // Check for invalid value (empty or less than 0)
-                if (isNaN(value) || value < 0) {
-                    input.addClass("is-invalid"); // Optional: add red border
+            const numericFields = ["salary_grade", "step", "basic_salary"];
+            numericFields.forEach(field => {
+                const input = $("#" + field);
+                if (!input.length) {
+                    return;
+                }
+                const value = parseFloat(input.val());
+                if (isNaN(value) || value < 0 || ((field === "salary_grade" || field === "step") && value < 1)) {
+                    input.addClass("is-invalid");
                     isValid = false;
                 } else {
                     input.removeClass("is-invalid");
-                    if (name === 'salary_grade' || name === 'step') {
-                        params[name] = parseInt(value); // keep as integer
-                    } else {
-                        params[name] = parseFloat(value).toFixed(2); // 2 decimal format
-                    }
+                    params[field] = (field === "salary_grade" || field === "step")
+                        ? parseInt(value)
+                        : parseFloat(value).toFixed(2);
                 }
             });
 
@@ -200,6 +201,8 @@
                 alert("All input fields must have a valid number (0.00 or higher).");
                 return;
             }
+
+            params["components"] = collectDynamicComponents();
 
             fetch('{{ route('savePayrollSettings') }}', {
                     method: "POST",
@@ -588,10 +591,169 @@
         $("#employee_modal table>tbody").empty();
 
         getEmployeeDetails(employee_id);
+        loadPayrollSettingsForEmployee(employee_id);
         const image = $("#employee_" + id + " td:eq(0) img").attr("src");
         const fname = $("#employee_" + id + " td:eq(1)").text().trim();
         const lname = $("#employee_" + id + " td:eq(3)").text().trim();
         $("#employee_img").attr("src", image);
         $("#employee_name").text(fname + " " + lname);
+    }
+
+    function loadPayrollSettingsForEmployee(id) {
+        $("#salary_grade, #step, #basic_salary").val("0.00");
+        renderDynamicComponents([]);
+        fetch('{{ route('getPayrollSettings') }}?userid=' + id)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    return;
+                }
+                for (const [key, value] of Object.entries(data.data || {})) {
+                    const input = $(`#${key}`);
+                    if (input.length) {
+                        input.val(key === 'salary_grade' || key === 'step' ? parseInt(value) : parseFloat(value).toFixed(2));
+                    }
+                }
+                ensureGlobalComponents().then(() => {
+                    renderDynamicComponents(data.components || []);
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching payroll settings:", error);
+            });
+    }
+
+    function loadGlobalComponents() {
+        return fetch('{{ route('getPayrollComponents') }}')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    return;
+                }
+                const items = data.data || [];
+                globalEarnings = items.filter(item => item.type === 'earning' && item.is_global);
+                globalDeductions = items.filter(item => item.type === 'deduction' && item.is_global);
+                payroll_globals_loaded = true;
+            })
+            .catch(err => console.error(err));
+    }
+
+    function ensureGlobalComponents() {
+        if (payroll_globals_loaded) {
+            return Promise.resolve();
+        }
+        return loadGlobalComponents();
+    }
+
+    function renderDynamicComponents(components) {
+        const $earningsBody = $("#dynamic_components_earnings_body");
+        const $deductionsBody = $("#dynamic_components_deductions_body");
+        $earningsBody.empty();
+        $deductionsBody.empty();
+
+        const employeeComponentMap = {};
+        (components || []).forEach(component => {
+            employeeComponentMap[component.code] = component;
+        });
+
+        if (!globalEarnings.length) {
+            $earningsBody.append("<tr><td colspan='6' class='text-muted text-center py-3'>No global earnings configured.</td></tr>");
+        } else {
+            globalEarnings.forEach(component => {
+                const override = employeeComponentMap[component.code] || {};
+                addDynamicComponentRow(component, override, $earningsBody);
+            });
+        }
+
+        if (!globalDeductions.length) {
+            $deductionsBody.append("<tr><td colspan='6' class='text-muted text-center py-3'>No global deductions configured.</td></tr>");
+            return;
+        }
+
+        globalDeductions.forEach(component => {
+            const override = employeeComponentMap[component.code] || {};
+            addDynamicComponentRow(component, override, $deductionsBody);
+        });
+    }
+
+    function addDynamicComponentRow(component = {}, override = {}, $body) {
+        const code = component.code || "";
+        const name = component.name || "";
+        const defaultAmount = component.default_amount !== undefined && component.default_amount !== null
+            ? parseFloat(component.default_amount).toFixed(2)
+            : "0.00";
+        const overrideAmount = override.amount_override !== undefined && override.amount_override !== null
+            ? parseFloat(override.amount_override).toFixed(2)
+            : "";
+        const excluded = override.is_excluded ? "checked" : "";
+        const effectiveFrom = override.effective_from || "";
+        const effectiveTo = override.effective_to || "";
+
+        const row = `
+            <tr data-code="${code}" data-default="${defaultAmount}">
+                <td>
+                    <div class="fw-semibold">${name}</div>
+                    <div class="small text-muted">${code}</div>
+                </td>
+                <td>${defaultAmount}</td>
+                <td><input type="number" class="form-control form-control-sm component-amount" value="${overrideAmount}"></td>
+                <td class="text-center">
+                    <input type="checkbox" class="form-check-input component-exclude" ${excluded}>
+                </td>
+                <td><input type="date" class="form-control form-control-sm component-effective-from" value="${effectiveFrom}"></td>
+                <td><input type="date" class="form-control form-control-sm component-effective-to" value="${effectiveTo}"></td>
+            </tr>`;
+
+        $body.append(row);
+    }
+
+    function collectDynamicComponents() {
+        const components = [];
+        components.push(...collectDynamicOverrides($("#dynamic_components_earnings_body tr"), globalEarnings));
+        components.push(...collectDynamicOverrides($("#dynamic_components_deductions_body tr"), globalDeductions));
+        return components;
+    }
+
+    function collectDynamicOverrides($rows, sourceComponents) {
+        const components = [];
+
+        $rows.each(function () {
+            const $row = $(this);
+            const code = $row.data("code");
+            if (!code) {
+                return;
+            }
+            const defaultAmount = parseFloat($row.data("default") || "0");
+            const overrideRaw = $row.find(".component-amount").val();
+            const overrideAmount = overrideRaw === "" ? null : parseFloat(overrideRaw);
+            const excluded = $row.find(".component-exclude").is(":checked");
+            const effectiveFrom = $row.find(".component-effective-from").val();
+            const effectiveTo = $row.find(".component-effective-to").val();
+
+            const hasOverride = overrideAmount !== null && !isNaN(overrideAmount) && overrideAmount !== defaultAmount;
+            if (!excluded && !hasOverride && !effectiveFrom && !effectiveTo) {
+                return;
+            }
+
+            const component = sourceComponents.find(item => item.code === code);
+            if (!component) {
+                return;
+            }
+
+            components.push({
+                code: component.code,
+                name: component.name,
+                type: component.type,
+                taxable: component.taxable,
+                is_global: true,
+                default_amount: parseFloat(component.default_amount || 0),
+                amount_override: hasOverride ? overrideAmount : null,
+                is_excluded: excluded,
+                effective_from: effectiveFrom || null,
+                effective_to: effectiveTo || null
+            });
+        });
+
+        return components;
     }
 </script>

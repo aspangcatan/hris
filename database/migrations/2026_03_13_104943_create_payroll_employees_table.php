@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('payroll_employees')) { return; }
         Schema::create('payroll_employees', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('payroll_id')->index('payroll_employees_payroll_id_foreign');
@@ -92,3 +93,4 @@ return new class extends Migration
         Schema::dropIfExists('payroll_employees');
     }
 };
+

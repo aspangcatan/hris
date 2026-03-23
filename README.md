@@ -1,62 +1,78 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# HRIS (Human Resource Information System)
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+## Overview
+This repository contains a Laravel 8 HRIS that manages employee records and HR workflows such as leave, DTR (daily time record), schedules, payroll, SALN, and related reporting/printing. The app also exposes mobile DTR endpoints and serves APK downloads.
 
-## About Laravel
+## Key Features
+- Employee master data and PDS management
+- Leave applications, approvals, and credit management
+- DTR logging, manual entries, and printing
+- Schedule management and printing
+- Payroll runs, approvals, release, exports, and payslips
+- SALN filing, historical tracking, and admin review
+- Hospital orders, overtime requests, and pass slip workflows
+- PDF and spreadsheet exports for reporting
+- Mobile DTR endpoints and APK downloads
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Tech Stack
+- Backend: PHP 7.3+ (platform pinned to 7.4.33) with Laravel 8
+- Frontend: Blade templates, Bootstrap 5, Tailwind CDN utilities
+- Build: Laravel Mix (Webpack)
+- Reporting: Dompdf, Snappy (wkhtmltopdf), FPDF/FPDI, PHPSpreadsheet
+- UI libraries: Bootstrap Icons, Font Awesome, Simple Datatables, Selectize, Toastr
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
+- PHP 7.4.33 (per Composer platform config)
+- Composer
+- Node.js and npm (for asset builds)
+- Database configured in `.env`
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Setup
+1. Install PHP dependencies:
+   `composer install`
+2. Install frontend dependencies:
+   `npm install`
+3. Configure environment:
+   - Copy or update `.env` with database credentials and app settings.
+   - Generate an app key if needed: `php artisan key:generate`
+4. Database:
+   - Run migrations and seeders if applicable to your environment.
 
-## Learning Laravel
+## Running Locally
+- With Laravel's dev server:
+  `php artisan serve`
+- Or through your local web server (WAMP/LAMP) pointing to `public`.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Asset Build
+- Development build:
+  `npm run dev`
+- Production build:
+  `npm run production`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Testing
+- PHPUnit:
+  `vendor/bin/phpunit`
 
-## Laravel Sponsors
+## Key Entry Points
+- Web routes: `routes/web.php`
+- API routes: `routes/api.php` (default scaffold)
+- Main layout: `resources/views/master.blade.php`
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+## UI Structure
+- Layouts: `resources/views/layouts`
+- Pages: `resources/views/*.blade.php`
+- Form partials: `resources/views/forms`
+- Modals: `resources/views/modals`
+- View-level scripts: `resources/views/js`
+- PDF templates: `resources/views/pdf`
 
-### Premium Partners
+## Mobile DTR
+- Endpoints live in `routes/web.php` under the mobile section.
+- APKs are served from `public/apk/*` via download routes.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Notes
+- The UI is built on top of the NiceAdmin Bootstrap template with custom theming.
+- The design language is primarily defined in `resources/views/master.blade.php` and view-specific styles (for example `resources/views/layouts/saln_styles.blade.php`).
 
 ## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-"# hris" 
+This project is a private application. See `composer.json` for framework licensing details.

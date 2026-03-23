@@ -1037,6 +1037,8 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
             $employee = DB::table('tdh_user.users as u')
                 ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->join('tdh_user.designation as d1', 'd1.id', '=', 'u.designation')
+                ->leftJoin('tdh_user.division as dv', 'dv.id', '=', 'u.division')
+                ->leftJoin('tdh_user.section as sc', 'sc.id', '=', 'u.section')
                 ->select(
                     'u.id',
                     'u.fname',
@@ -1045,7 +1047,9 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                     'd1.description as designation',
                     'u.picture',
                     'u.section',
-                    'u.division'
+                    'u.division',
+                    'dv.description as division_name',
+                    'sc.description as section_name'
                 )
                 ->where(function ($query) {
                     $query->where('e.employee_type', '!=', 'Resigned')
@@ -1100,6 +1104,13 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
             $search_section = $request->search_section;
             $search_fname = $request->search_fname;
             $search_lname = $request->search_lname;
+            $perPage = (int) $request->input('per_page', 12);
+            if ($perPage < 1) {
+                $perPage = 12;
+            }
+            if ($perPage > 60) {
+                $perPage = 60;
+            }
 
             $employee = DB::table('tdh_user.users as u')
                 ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
@@ -1140,7 +1151,7 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 $employee->where('u.lname', 'LIKE', "%$search_lname%");
             }
 
-            $result = $employee->orderBy('u.lname')->get();
+            $result = $employee->orderBy('u.lname')->paginate($perPage)->appends($request->all());
 
             return response()->json($result);
         } catch (\Exception $exception) {

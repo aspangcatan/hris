@@ -1,3 +1,72 @@
+<style>
+    .payroll-tab-board {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+    }
+
+    .payroll-tab-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        flex-wrap: wrap;
+    }
+
+    .payroll-tab-head h4 {
+        margin: 0;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .payroll-tab-head span {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .payroll-tab-section {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .payroll-tab-section .form-control {
+        border-radius: 12px;
+        border: 1px solid #d8e1ee;
+        background: #fff;
+    }
+
+    .payroll-tab-table-shell {
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .payroll-tab-table-shell table {
+        margin-bottom: 0;
+    }
+
+    .payroll-tab-table-shell table thead th {
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .payroll-tab-table-shell table tbody td {
+        color: #1e293b;
+        font-weight: 500;
+        vertical-align: middle;
+    }
+</style>
+
 <div class="text-white bg-danger rounded p-2 mt-5 d-none" id="address_error">
     <div class="d-flex align-items-center">
         <i class="fas fa-exclamation-triangle me-2"></i>
@@ -5,169 +74,86 @@
     </div>
     <ul class="error_list"></ul>
 </div>
-<div id="payroll"><!-- EMPLOYEE -->
-    <div class="mb-4 border p-3 rounded shadow-sm">
-        <h5 class="text-primary border-bottom pb-2">Employee Info</h5>
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Salary Grade</label>
-                <input type="number" class="form-control" placeholder="e.g. 11" id="salary_grade">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Steps</label>
-                <input type="number" class="form-control" placeholder="e.g. 5" id="step">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Basic Salary</label>
-                <input type="number" class="form-control" placeholder="₱" id="basic_salary">
+
+<div id="payroll">
+    <div class="payroll-tab-board">
+        <div class="payroll-tab-head">
+            <div>
+                <h4>Payroll Details</h4>
+                <span>Manage salary inputs and component overrides for this employee.</span>
             </div>
         </div>
-    </div>
 
-    <!-- BENEFITS -->
-    <div class="mb-4 border p-3 rounded shadow-sm">
-        <h5 class="text-success border-bottom pb-2">Benefits</h5>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">PERA</label>
-                <input type="number" class="form-control" id="pera">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">RATA</label>
-                <input type="number" class="form-control" id="rata">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Subistence</label>
-                <input type="number" class="form-control" id="subsistence">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Laundry</label>
-                <input type="number" class="form-control" id="laundry">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Longevity</label>
-                <input type="number" class="form-control" id="longevity">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Cellphone Allowance</label>
-                <input type="number" class="form-control" id="cellphone_allowance">
+        <div class="payroll-tab-section">
+            <h5 class="text-primary border-bottom pb-2">Employee Info</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Salary Grade</label>
+                    <input type="number" class="form-control" placeholder="e.g. 11" id="salary_grade">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Steps</label>
+                    <input type="number" class="form-control" placeholder="e.g. 5" id="step">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Basic Salary</label>
+                    <input type="number" class="form-control" placeholder="â‚±" id="basic_salary">
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- DEDUCTIONS -->
-    <div class="mb-4 border p-3 rounded shadow-sm">
-        <h5 class="text-danger border-bottom pb-2">Deductions</h5>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">GSIS PS</label>
-                <input type="number" class="form-control" id="gsis_ps">
+        <div class="payroll-tab-section">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
+                <h5 class="text-primary mb-0">Global Earnings (Overrides)</h5>
+                <span class="small text-muted">Defaults apply to all employees unless overridden here.</span>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS GS</label>
-                <input type="number" class="form-control" id="gsis_gs">
+            <div class="table-responsive payroll-tab-table-shell">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th style="width: 20%;">Earning</th>
+                        <th style="width: 12%;">Default</th>
+                        <th style="width: 16%;">Override Amount</th>
+                        <th style="width: 10%;">Exclude</th>
+                        <th style="width: 14%;">Effective From</th>
+                        <th style="width: 14%;">Effective To</th>
+                    </tr>
+                    </thead>
+                    <tbody id="dynamic_components_earnings_body"></tbody>
+                </table>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS EC</label>
-                <input type="number" class="form-control" id="gsis_ec">
+            <div class="small text-muted mt-2">
+                Leave override blank to use the global default amount.
             </div>
-            <div class="col-md-3">
-                <label class="form-label">HDMF (PagIbig)</label>
-                <input type="number" class="form-control" id="hdmf">
+        </div>
+
+        <div class="payroll-tab-section">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
+                <h5 class="text-primary mb-0">Global Deductions (Overrides)</h5>
+                <span class="small text-muted">Defaults apply to all employees unless overridden here.</span>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">PHIC</label>
-                <input type="number" class="form-control" id="phic">
+            <div class="table-responsive payroll-tab-table-shell">
+                <table class="table table-sm align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th style="width: 20%;">Deduction</th>
+                        <th style="width: 12%;">Default</th>
+                        <th style="width: 16%;">Override Amount</th>
+                        <th style="width: 10%;">Exclude</th>
+                        <th style="width: 14%;">Effective From</th>
+                        <th style="width: 14%;">Effective To</th>
+                    </tr>
+                    </thead>
+                    <tbody id="dynamic_components_deductions_body"></tbody>
+                </table>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">PAGIBIG CAL</label>
-                <input type="number" class="form-control" id="pagibig_cal">
+            <div class="small text-muted mt-2">
+                Leave override blank to use the global default amount.
             </div>
-            <div class="col-md-3">
-                <label class="form-label">PAGIBIG MPL</label>
-                <input type="number" class="form-control" id="pagibig_mpl">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">PAGIBIG MP2</label>
-                <input type="number" class="form-control" id="pagibig_mp2">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">PAGIBIG MP2 2nd</label>
-                <input type="number" class="form-control" id="pagibig_mp2_2nd">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">PAGIBIG MP2 3rd</label>
-                <input type="number" class="form-control" id="pagibig_mp2_3rd">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS Consoloan</label>
-                <input type="number" class="form-control" id="gsis_consoloan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS Emergency Loan</label>
-                <input type="number" class="form-control" id="gsis_emergency_loan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS Educational Loan</label>
-                <input type="number" class="form-control" id="gsis_educational_loan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS Policy Loan</label>
-                <input type="number" class="form-control" id="gsis_policy_loan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS OPT_Life</label>
-                <input type="number" class="form-control" id="gsis_opt_life_loan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS GFAL</label>
-                <input type="number" class="form-control" id="gsis_gfal">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS MPL</label>
-                <input type="number" class="form-control" id="gsis_mpl">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS CPL</label>
-                <input type="number" class="form-control" id="gsis_cpl">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">GSIS MPL Lite</label>
-                <input type="number" class="form-control" id="gsis_mpl_lite">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">CFI Coop</label>
-                <input type="number" class="form-control" id="cfi_coop">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">1st Valley Bank</label>
-                <input type="number" class="form-control" id="first_valley_bank">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">TDHEA</label>
-                <input type="number" class="form-control" id="tdhea">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">DBP Loan</label>
-                <input type="number" class="form-control" id="dbp_loan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">UCPB Loan</label>
-                <input type="number" class="form-control" id="ucpb_loan">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">MEDS Payable</label>
-                <input type="number" class="form-control" id="meds_payable">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">SSS Deduction</label>
-                <input type="number" class="form-control" id="sss_deduction">
-            </div>
+        </div>
+
+        <div class="text-end">
+            <button type="button" class="btn btn-success btn-edit" id="btn_save_payroll">Save Changes</button>
         </div>
     </div>
 </div>
-
-<div class="text-end mt-5">
-    <button type="button" class="btn btn-success" id="btn_save_payroll">SAVE CHANGES</button>
-</div>
-

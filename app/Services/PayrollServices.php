@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PayrollServices
 {
@@ -186,7 +187,7 @@ class PayrollServices
 
     public function getPayrollEmployee($payroll_id)
     {
-        return $list = DB::table('hris.payroll_employees as e')
+        $list = DB::table('hris.payroll_employees as e')
             ->join('tdh_user.users as u', 'u.id', '=', 'e.employee_id')
             ->join('tdh_user.designation as de', 'u.designation', '=', 'de.id')
             ->join('tdh_user.division as d', 'd.id', '=', 'u.division')
@@ -203,24 +204,86 @@ class PayrollServices
                 'de.description as designation'
             )
             ->get();
+
+        if ($list->isEmpty()) {
+            return $list;
+        }
+
+        $componentRows = DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', $list->pluck('id'))
+            ->select('payroll_employee_id', 'code', 'amount')
+            ->get()
+            ->groupBy('payroll_employee_id');
+
+        $legacyMap = $this->getLegacyComponentMap();
+
+        foreach ($list as $item) {
+            $components = $componentRows->get($item->id, collect());
+            $codeTotals = [];
+            foreach ($components as $component) {
+                $code = strtoupper((string) $component->code);
+                $codeTotals[$code] = ($codeTotals[$code] ?? 0) + (float) $component->amount;
+            }
+
+            foreach ($legacyMap as $field => $code) {
+                $item->$field = $codeTotals[$code] ?? 0;
+            }
+        }
+
+        return $list;
     }
 
-    private function computeWithholdingTax($gross)
+    private function computeWithholdingTax($annualGross, $purpose)
     {
-        // Simplified sample monthly BIR tax table (2023 TRAIN Law)
-        if ($gross <= 20833) {
+        $rules = DB::table('hris.payroll_tax_rules')
+            ->where('is_active', 1)
+            ->where('purpose', $purpose)
+            ->orderBy('min_annual')
+            ->get();
+
+        if ($rules->isEmpty()) {
             return 0;
-        } elseif ($gross <= 33333) {
-            return ($gross - 20833) * 0.15;
-        } elseif ($gross <= 66667) {
-            return 1875 + ($gross - 33333) * 0.20;
-        } elseif ($gross <= 166667) {
-            return 8541.8 + ($gross - 66667) * 0.25;
-        } elseif ($gross <= 666667) {
-            return 33541.8 + ($gross - 166667) * 0.30;
-        } else {
-            return 183541.8 + ($gross - 666667) * 0.35;
         }
+
+        $hasProgressive = $rules->contains(function ($rule) {
+            return $rule->tax_mode === 'progressive';
+        });
+
+        if ($hasProgressive) {
+            $tax = 0;
+            foreach ($rules as $rule) {
+                $min = (float) $rule->min_annual;
+                $max = $rule->max_annual !== null ? (float) $rule->max_annual : $annualGross;
+                if ($annualGross <= $min) {
+                    continue;
+                }
+                $upper = min($annualGross, $max);
+                $taxableSlice = max(0, $upper - $min);
+                $tax += $taxableSlice * ((float) $rule->rate_percent / 100);
+            }
+            return $tax;
+        }
+
+        $matched = $rules
+            ->filter(function ($rule) use ($annualGross) {
+                $min = (float) $rule->min_annual;
+                $max = $rule->max_annual !== null ? (float) $rule->max_annual : null;
+                if ($annualGross < $min) {
+                    return false;
+                }
+                if ($max !== null && $annualGross > $max) {
+                    return false;
+                }
+                return true;
+            })
+            ->sortByDesc('min_annual')
+            ->first();
+
+        if (!$matched) {
+            return 0;
+        }
+
+        return $annualGross * ((float) $matched->rate_percent / 100);
     }
 
     private function generateAcronym($designation)
@@ -282,17 +345,52 @@ class PayrollServices
             ->first();
     }
 
+    public function getWorkingDaysByRange($startDate, $endDate)
+    {
+        if (!$startDate || !$endDate) {
+            return 0;
+        }
+
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        $holidays = DB::table('hris.calendar_holidays')
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->pluck('date')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
+            ->toArray();
+
+        $count = 0;
+        while ($start <= $end) {
+            if ($start->isWeekday() && !in_array($start->toDateString(), $holidays)) {
+                $count++;
+            }
+            $start->addDay();
+        }
+
+        return $count;
+    }
+
+    public function getTotalDaysByRange($startDate, $endDate)
+    {
+        if (!$startDate || !$endDate) {
+            return 0;
+        }
+
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+        return $start->diffInDays($end) + 1;
+    }
+
     public function savePayrollEmployee($payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays, $totalWorkingDays)
     {
+        $period = $this->getPayrollPeriod($payroll_id);
+        $periodStart = $period->cutoff_start_date ?? $period->start_date ?? null;
+        $periodEnd = $period->cutoff_end_date ?? $period->end_date ?? null;
+
         $salary = DB::table('hris.payroll_settings')
-            ->where('userid', '=', $employee["userid"])
-            ->first();
-
-        $benefits = DB::table('hris.employee_benefits')
-            ->where('userid', '=', $employee["userid"])
-            ->first();
-
-        $deductions = DB::table('hris.employee_deductions')
             ->where('userid', '=', $employee["userid"])
             ->first();
 
@@ -306,144 +404,53 @@ class PayrollServices
         $absentDeduction = $totalAbsentDays * $daily_rate;
         $totalTardinessDeductions = $lateUndertimeDeduction + $absentDeduction;
 
-        // ---- Benefits ----
-        $pera = $benefits->pera ?? 0.00;
-        $rata = $benefits->rata ?? 0.00;
-        $subsistence = $benefits->subsistence ?? 0.00;
-        $laundry = $benefits->laundry ?? 0.00;
-        $longevity = $benefits->longevity ?? 0.00;
-        $cellphone_allowance = $benefits->cellphone_allowance ?? 0.00;
+        $dynamicComponents = $this->getEmployeeDynamicComponents($employee["userid"], $periodStart, $periodEnd);
+        $computedComponents = $this->getComputedComponents($employee, $totalTardinessDeductions);
+        $allComponents = $dynamicComponents->merge($computedComponents);
+        $dynamicEarnings = $allComponents->where('type', 'earning')->sum('amount');
+        $dynamicDeductions = $allComponents->where('type', 'deduction')->sum('amount');
 
         // ---- Gross Pay (before tardiness deduction) ----
-        $gross_pay = ($basic_salary + $pera + $rata + $subsistence + $laundry + $longevity + $cellphone_allowance);
-        $taxableGrossPay = $gross_pay - $totalTardinessDeductions;
+        $gross_pay = ($basic_salary + $dynamicEarnings);
+        $taxableEarnings = $allComponents
+            ->where('type', 'earning')
+            ->where('taxable', true)
+            ->sum('amount');
+        $taxableGrossPay = ($basic_salary + $taxableEarnings) - $totalTardinessDeductions;
 
         // ---- Withholding Tax ----
-        $withholding_tax = $this->computeWithholdingTax($taxableGrossPay);
-
-        // ---- Deductions (safe defaults) ----
-        $gsis_ps = $deductions->gsis_ps ?? 0.00;
-        $gsis_gs = $deductions->gsis_gs ?? 0.00;
-        $gsis_ec = $deductions->gsis_ec ?? 0.00;
-        $hdmf = $deductions->hdmf ?? 0.00;
-        $phic = $deductions->phic ?? 0.00;
-        $pagibig_cal = $deductions->pagibig_cal ?? 0.00;
-        $pagibig_mpl = $deductions->pagibig_mpl ?? 0.00;
-        $pagibig_mp2 = $deductions->pagibig_mp2 ?? 0.00;
-        $pagibig_mp2_2nd = $deductions->pagibig_mp2_2nd ?? 0.00;
-        $pagibig_mp2_3rd = $deductions->pagibig_mp2_3rd ?? 0.00;
-
-        // ---- Loans & Others ----
-        $gsis_consoloan = $deductions->gsis_consoloan ?? 0.00;
-        $gsis_emergency_loan = $deductions->gsis_emergency_loan ?? 0.00;
-        $gsis_educational_loan = $deductions->gsis_educational_loan ?? 0.00;
-        $gsis_policy_loan = $deductions->gsis_policy_loan ?? 0.00;
-        $gsis_opt_life_loan = $deductions->gsis_opt_life_loan ?? 0.00;
-        $gsis_gfal = $deductions->gsis_gfal ?? 0.00;
-        $gsis_mpl = $deductions->gsis_mpl ?? 0.00;
-        $gsis_cpl = $deductions->gsis_cpl ?? 0.00;
-        $gsis_mpl_lite = $deductions->gsis_mpl_lite ?? 0.00;
-
-        $cfi_coop = $deductions->cfi_coop ?? 0.00;
-        $first_valley_bank = $deductions->first_valley_bank ?? 0.00;
-        $tdhea = $deductions->tdhea ?? 0.00;
-        $dbp_loan = $deductions->dbp_loan ?? 0.00;
-        $ucpb_loan = $deductions->ucpb_loan ?? 0.00;
-        $meds_payable = $deductions->meds_payable ?? 0.00;
-        $sss_deduction = $deductions->sss_deduction ?? 0.00;
-
-        // ---- Adjustments & Refunds ----
-        $withholding_tax_adjustment = $employee['withholding_tax_adjustment'] ?? 0.00;
-        $phic_contri_adj = $employee['phic_contri_adj'] ?? 0.00;
-        $phic_refund_from_eo = $employee['phic_refund_from_eo'] ?? 0.00;
-        $sss_adjustment = $employee['sss_adjustment'] ?? 0.00;
-        $gsis_ps_lwop_2pct = $employee['gsis_ps_lwop_2pct'] ?? 0.00;
-        $gsis_gs_lwop_2pct = $employee['gsis_gs_lwop_2pct'] ?? 0.00;
-        $gsis_plreg_refund = $employee['gsis_plreg_refund'] ?? 0.00;
-        $gsis_mpl_refund = $employee['gsis_mpl_refund'] ?? 0.00;
-        $gsis_emergency_refund = $employee['gsis_emergency_refund'] ?? 0.00;
-        $gsis_consoloan_refund = $employee['gsis_consoloan_refund'] ?? 0.00;
-        $subsistence_deduction_from_leave = $employee['subsistence_deduction_from_leave'] ?? 0.00;
-        $second_half_adjustment_resigned_employee = $employee['second_half_adjustment_resigned_employee'] ?? 0.00;
-
+        $taxPurpose = $period->tax_purpose ?? 'Payroll Monthly Salary';
+        $annualGross = $taxableGrossPay * 12;
+        $withholding_tax = $this->computeWithholdingTax($annualGross, $taxPurpose) / 12;
 
         // ---- Final Deductions ----
-        $total_deductions =
-            $withholding_tax + $withholding_tax_adjustment +
-            $gsis_ps + $gsis_gs + $gsis_ec +
-            $hdmf + $phic + $phic_contri_adj - $phic_refund_from_eo +
-            $pagibig_cal + $pagibig_mpl + $pagibig_mp2 + $pagibig_mp2_2nd + $pagibig_mp2_3rd +
-            $gsis_consoloan + $gsis_emergency_loan + $gsis_educational_loan +
-            $gsis_policy_loan + $gsis_opt_life_loan + $gsis_gfal + $gsis_mpl + $gsis_cpl + $gsis_mpl_lite +
-            $cfi_coop + $first_valley_bank + $tdhea + $dbp_loan + $ucpb_loan + $meds_payable +
-            $sss_deduction + $sss_adjustment +
-            $gsis_ps_lwop_2pct + $gsis_gs_lwop_2pct -
-            ($gsis_plreg_refund + $gsis_mpl_refund + $gsis_emergency_refund + $gsis_consoloan_refund) +
-            $subsistence_deduction_from_leave +
-            $second_half_adjustment_resigned_employee;
+        $withholdingComponent = (object) [
+            'payroll_component_id' => null,
+            'code' => 'WITHHOLDING_TAX',
+            'name' => 'Withholding Tax',
+            'type' => 'deduction',
+            'taxable' => false,
+            'amount' => $withholding_tax,
+        ];
+        $allComponents = $allComponents->push($withholdingComponent);
+        $dynamicDeductions = $allComponents->where('type', 'deduction')->sum('amount');
+        $total_deductions = $dynamicDeductions;
 
         // ---- Net Pay ----
         $net_pay = $taxableGrossPay - $total_deductions;
         $first_half_10th = $net_pay / 2;
         $second_half_25th = $net_pay / 2;
         // ---- Insert ----
-        return DB::table('hris.payroll_employees')->insertGetId([
+        $payrollEmployeeId = DB::table('hris.payroll_employees')->insertGetId([
             'payroll_id' => $payroll_id,
             'employee_id' => $employee['userid'],
             'division' => 1,
             'section' => 2,
             'basic_salary' => $basic_salary,
-            'pera' => $pera,
-            'rata' => $rata,
-            'subsistence' => $subsistence,
-            'laundry' => $laundry,
-            'longevity' => $longevity,
-            'cellphone_allowance' => $cellphone_allowance,
+            'other_earnings' => $dynamicEarnings,
             'late_absent' => $totalTardinessDeductions,
             'gross_pay' => $taxableGrossPay,
-
-            // Contributions & Loans
-            'gsis_ps' => $gsis_ps,
-            'gsis_gs' => $gsis_gs,
-            'gsis_ec' => $gsis_ec,
-            'hdmf' => $hdmf,
-            'phic' => $phic,
-            'pagibig_cal' => $pagibig_cal,
-            'pagibig_mpl' => $pagibig_mpl,
-            'pagibig_mp2' => $pagibig_mp2,
-            'pagibig_mp2_2nd' => $pagibig_mp2_2nd,
-            'pagibig_mp2_3rd' => $pagibig_mp2_3rd,
-            'gsis_consoloan' => $gsis_consoloan,
-            'gsis_emergency_loan' => $gsis_emergency_loan,
-            'gsis_educational_loan' => $gsis_educational_loan,
-            'gsis_policy_loan' => $gsis_policy_loan,
-            'gsis_opt_life_loan' => $gsis_opt_life_loan,
-            'gsis_gfal' => $gsis_gfal,
-            'gsis_mpl' => $gsis_mpl,
-            'gsis_cpl' => $gsis_cpl,
-            'gsis_mpl_lite' => $gsis_mpl_lite,
-            'cfi_coop' => $cfi_coop,
-            'first_valley_bank' => $first_valley_bank,
-            'tdhea' => $tdhea,
-            'dbp_loan' => $dbp_loan,
-            'ucpb_loan' => $ucpb_loan,
-            'meds_payable' => $meds_payable,
-            'sss_deduction' => $sss_deduction,
-
-            // Adjustments & Refunds
-            'withholding_tax' => $withholding_tax,
-            'withholding_tax_adjustment' => $withholding_tax_adjustment,
-            'phic_contri_adj' => $phic_contri_adj,
-            'phic_refund_from_eo' => $phic_refund_from_eo,
-            'sss_adjustment' => $sss_adjustment,
-            'gsis_ps_lwop_2pct' => $gsis_ps_lwop_2pct,
-            'gsis_gs_lwop_2pct' => $gsis_gs_lwop_2pct,
-            'gsis_plreg_refund' => $gsis_plreg_refund,
-            'gsis_mpl_refund' => $gsis_mpl_refund,
-            'gsis_emergency_refund' => $gsis_emergency_refund,
-            'gsis_consoloan_refund' => $gsis_consoloan_refund,
-            'subsistence_deduction_from_leave' => $subsistence_deduction_from_leave,
-            'second_half_adjustment_resigned_employee' => $second_half_adjustment_resigned_employee,
+            'other_deductions' => $dynamicDeductions,
 
             // Split pay
             'first_half_10th' => $first_half_10th,
@@ -453,16 +460,13 @@ class PayrollServices
             'deductions' => $total_deductions,
             'net_pay' => $net_pay,
 
-            // Other adjustments
-            'salary_adjustment' => $employee['salary_adjustment'] ?? 0.00,
-            'hazard_adjustment' => $employee['hazard_adjustment'] ?? 0.00,
-            'pera_adjustment' => $employee['pera_adjustment'] ?? 0.00,
-            'subsistence_adjustment' => $employee['subsistence_adjustment'] ?? 0.00,
-            'laundry_adjustment' => $employee['laundry_adjustment'] ?? 0.00,
-
             'created_at' => now(),
             'updated_at' => now()
         ]);
+
+        $this->storePayrollEmployeeComponents($payrollEmployeeId, $allComponents);
+
+        return $payrollEmployeeId;
     }
 
     public function deletePayrollEmployees($payroll_id)
@@ -477,6 +481,408 @@ class PayrollServices
         return DB::table('hris.payroll_employees')
             ->where('payroll_id', '=', $payroll_id)
             ->count();
+    }
+
+    private function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd)
+    {
+        $globals = DB::table('hris.payroll_components as pc')
+            ->leftJoin('hris.employee_payroll_components as epc', function ($join) use ($userId) {
+                $join->on('epc.payroll_component_id', '=', 'pc.id')
+                    ->where('epc.userid', '=', $userId);
+            })
+            ->where('pc.is_active', 1)
+            ->where('pc.is_global', 1)
+            ->select(
+                'pc.id as payroll_component_id',
+                'pc.code',
+                'pc.name',
+                'pc.type',
+                'pc.taxable',
+                'pc.default_amount',
+                'epc.amount_override',
+                'epc.is_active as employee_active',
+                'epc.is_excluded',
+                'epc.effective_from',
+                'epc.effective_to'
+            )
+            ->get()
+            ->filter(function ($row) use ($periodStart, $periodEnd) {
+                if ($row->is_excluded || $row->employee_active === 0) {
+                    return false;
+                }
+
+                if ($periodStart && $row->effective_to) {
+                    if ($row->effective_to < $periodStart) return false;
+                }
+                if ($periodEnd && $row->effective_from) {
+                    if ($row->effective_from > $periodEnd) return false;
+                }
+                return true;
+            })
+            ->map(function ($row) {
+                $amount = $row->amount_override !== null ? $row->amount_override : $row->default_amount;
+                return (object) [
+                    'payroll_component_id' => $row->payroll_component_id,
+                    'code' => $row->code,
+                    'name' => $row->name,
+                    'type' => $row->type,
+                    'taxable' => $row->taxable,
+                    'amount' => $amount ?? 0,
+                ];
+            });
+
+        $employeeSpecific = DB::table('hris.employee_payroll_components as epc')
+            ->join('hris.payroll_components as pc', 'pc.id', '=', 'epc.payroll_component_id')
+            ->where('epc.userid', $userId)
+            ->where('pc.is_active', 1)
+            ->where(function ($q) {
+                $q->where('pc.is_global', 0)->orWhereNull('pc.is_global');
+            })
+            ->where('epc.is_active', 1)
+            ->select(
+                'pc.id as payroll_component_id',
+                'pc.code',
+                'pc.name',
+                'pc.type',
+                'pc.taxable',
+                'epc.amount_override',
+                'epc.amount'
+            )
+            ->get()
+            ->map(function ($row) {
+                $amount = $row->amount_override !== null ? $row->amount_override : $row->amount;
+                return (object) [
+                    'payroll_component_id' => $row->payroll_component_id,
+                    'code' => $row->code,
+                    'name' => $row->name,
+                    'type' => $row->type,
+                    'taxable' => $row->taxable,
+                    'amount' => $amount ?? 0,
+                ];
+            });
+
+        return $globals->merge($employeeSpecific);
+    }
+
+    private function getComputedComponents($employee, $totalTardinessDeductions)
+    {
+        $components = [];
+        $earningAdjustments = [
+            'SALARY_ADJUSTMENT' => $employee['salary_adjustment'] ?? 0.00,
+            'HAZARD_ADJUSTMENT' => $employee['hazard_adjustment'] ?? 0.00,
+            'PERA_ADJUSTMENT' => $employee['pera_adjustment'] ?? 0.00,
+            'SUBSISTENCE_ADJUSTMENT' => $employee['subsistence_adjustment'] ?? 0.00,
+            'LAUNDRY_ADJUSTMENT' => $employee['laundry_adjustment'] ?? 0.00,
+        ];
+
+        foreach ($earningAdjustments as $code => $amount) {
+            if ((float) $amount !== 0.0) {
+                $components[] = (object) [
+                    'payroll_component_id' => null,
+                    'code' => $code,
+                    'name' => $code,
+                    'type' => 'earning',
+                    'taxable' => false,
+                    'amount' => (float) $amount,
+                ];
+            }
+        }
+
+        $deductionAdjustments = [
+            'WITHHOLDING_TAX_ADJUSTMENT' => (float) ($employee['withholding_tax_adjustment'] ?? 0.00),
+            'PHIC_CONTRI_ADJ' => (float) ($employee['phic_contri_adj'] ?? 0.00),
+            'SSS_ADJUSTMENT' => (float) ($employee['sss_adjustment'] ?? 0.00),
+            'GSIS_PS_LWOP_2PCT' => (float) ($employee['gsis_ps_lwop_2pct'] ?? 0.00),
+            'GSIS_GS_LWOP_2PCT' => (float) ($employee['gsis_gs_lwop_2pct'] ?? 0.00),
+            'SUBSISTENCE_DEDUCTION_FROM_LEAVE' => (float) ($employee['subsistence_deduction_from_leave'] ?? 0.00),
+            'SECOND_HALF_ADJUSTMENT_RESIGNED' => (float) ($employee['second_half_adjustment_resigned_employee'] ?? 0.00),
+        ];
+
+        foreach ($deductionAdjustments as $code => $amount) {
+            if ((float) $amount !== 0.0) {
+                $components[] = (object) [
+                    'payroll_component_id' => null,
+                    'code' => $code,
+                    'name' => $code,
+                    'type' => 'deduction',
+                    'taxable' => false,
+                    'amount' => (float) $amount,
+                ];
+            }
+        }
+
+        $refunds = [
+            'PHIC_REFUND_FROM_EO' => (float) ($employee['phic_refund_from_eo'] ?? 0.00),
+            'GSIS_PLREG_REFUND' => (float) ($employee['gsis_plreg_refund'] ?? 0.00),
+            'GSIS_MPL_REFUND' => (float) ($employee['gsis_mpl_refund'] ?? 0.00),
+            'GSIS_EMERGENCY_REFUND' => (float) ($employee['gsis_emergency_refund'] ?? 0.00),
+            'GSIS_CONSOLOAN_REFUND' => (float) ($employee['gsis_consoloan_refund'] ?? 0.00),
+        ];
+
+        foreach ($refunds as $code => $amount) {
+            if ((float) $amount !== 0.0) {
+                $components[] = (object) [
+                    'payroll_component_id' => null,
+                    'code' => $code,
+                    'name' => $code,
+                    'type' => 'deduction',
+                    'taxable' => false,
+                    'amount' => (float) $amount * -1,
+                ];
+            }
+        }
+
+        return collect($components);
+    }
+
+    private function getLegacyComponentMap()
+    {
+        return [
+            'pera' => 'PERA',
+            'rata' => 'RATA',
+            'subsistence' => 'SUBSISTENCE',
+            'laundry' => 'LAUNDRY',
+            'hazard' => 'HAZARD',
+            'longevity' => 'LONGEVITY',
+            'cellphone_allowance' => 'CELLPHONE_ALLOWANCE',
+            'gsis_ps' => 'GSIS_PS',
+            'gsis_gs' => 'GSIS_GS',
+            'gsis_ec' => 'GSIS_EC',
+            'hdmf' => 'HDMF',
+            'phic' => 'PHIC',
+            'pagibig_cal' => 'PAGIBIG_CAL',
+            'pagibig_mpl' => 'PAGIBIG_MPL',
+            'pagibig_mp2' => 'PAGIBIG_MP2',
+            'pagibig_mp2_2nd' => 'PAGIBIG_MP2_2ND',
+            'pagibig_mp2_3rd' => 'PAGIBIG_MP2_3RD',
+            'gsis_consoloan' => 'GSIS_CONSOLOAN',
+            'gsis_emergency_loan' => 'GSIS_EMERGENCY_LOAN',
+            'gsis_educational_loan' => 'GSIS_EDUCATIONAL_LOAN',
+            'gsis_policy_loan' => 'GSIS_POLICY_LOAN',
+            'gsis_opt_life_loan' => 'GSIS_OPT_LIFE_LOAN',
+            'gsis_gfal' => 'GSIS_GFAL',
+            'gsis_mpl' => 'GSIS_MPL',
+            'gsis_cpl' => 'GSIS_CPL',
+            'gsis_mpl_lite' => 'GSIS_MPL_LITE',
+            'cfi_coop' => 'CFI_COOP',
+            'first_valley_bank' => 'FIRST_VALLEY_BANK',
+            'tdhea' => 'TDHEA',
+            'dbp_loan' => 'DBP_LOAN',
+            'ucpb_loan' => 'UCPB_LOAN',
+            'meds_payable' => 'MEDS_PAYABLE',
+            'sss_deduction' => 'SSS_DEDUCTION',
+            'withholding_tax' => 'WITHHOLDING_TAX',
+            'withholding_tax_adjustment' => 'WITHHOLDING_TAX_ADJUSTMENT',
+            'phic_contri_adj' => 'PHIC_CONTRI_ADJ',
+            'phic_refund_from_eo' => 'PHIC_REFUND_FROM_EO',
+            'sss_adjustment' => 'SSS_ADJUSTMENT',
+            'gsis_ps_lwop_2pct' => 'GSIS_PS_LWOP_2PCT',
+            'gsis_gs_lwop_2pct' => 'GSIS_GS_LWOP_2PCT',
+            'gsis_plreg_refund' => 'GSIS_PLREG_REFUND',
+            'gsis_mpl_refund' => 'GSIS_MPL_REFUND',
+            'gsis_emergency_refund' => 'GSIS_EMERGENCY_REFUND',
+            'gsis_consoloan_refund' => 'GSIS_CONSOLOAN_REFUND',
+            'subsistence_deduction_from_leave' => 'SUBSISTENCE_DEDUCTION_FROM_LEAVE',
+            'second_half_adjustment_resigned_employee' => 'SECOND_HALF_ADJUSTMENT_RESIGNED',
+            'salary_adjustment' => 'SALARY_ADJUSTMENT',
+            'hazard_adjustment' => 'HAZARD_ADJUSTMENT',
+            'pera_adjustment' => 'PERA_ADJUSTMENT',
+            'subsistence_adjustment' => 'SUBSISTENCE_ADJUSTMENT',
+            'laundry_adjustment' => 'LAUNDRY_ADJUSTMENT',
+        ];
+    }
+
+    public function getOrCreateCutoffSummary($employeeId, $startDate, $endDate, $generatedBy = null)
+    {
+        $table = $this->resolveCutoffSummaryTable();
+        $master = $this->getOrCreateCutoffMaster($startDate, $endDate, null, $generatedBy);
+
+        $summary = DB::table($table)
+            ->where('employee_id', $employeeId)
+            ->where('cutoff_id', $master->id)
+            ->first();
+
+        if ($summary) {
+            return $summary;
+        }
+
+        $dtrService = app(DTRServices::class);
+        $result = $dtrService->getTotalLateAbsent($employeeId, $startDate, $endDate);
+        $totalWorkingDays = $this->getTotalDaysByRange($startDate, $endDate);
+        $totalPresent = $dtrService->getTotalPresentByRange($employeeId, $startDate, $endDate);
+        $lateMinutes = $result['late_minutes'] ?? 0;
+        $undertimeMinutes = $result['undertime_minutes'] ?? 0;
+        $absences = $result['absences'] ?? 0;
+        $daysPresent = max($totalPresent, 0);
+
+        DB::table($table)->insert([
+            'employee_id' => $employeeId,
+            'cutoff_id' => $master->id,
+            'period_start' => $startDate,
+            'period_end' => $endDate,
+            'total_working_days' => $totalWorkingDays,
+            'days_present' => $daysPresent,
+            'days_absent' => $absences,
+            'late_minutes' => $lateMinutes,
+            'undertime_minutes' => $undertimeMinutes,
+            'approved_overtime_minutes' => 0,
+            'approved_pass_slips_minutes' => 0,
+            'approved_leave_days' => 0,
+            'hospital_order_days' => 0,
+            'generated_by' => $generatedBy,
+            'generated_at' => now(),
+            'remarks' => $master->title ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table($table)
+            ->where('employee_id', $employeeId)
+            ->where('cutoff_id', $master->id)
+            ->first();
+    }
+
+    public function generateCutoffSummary($employeeId, $startDate, $endDate, $title = null, $generatedBy = null)
+    {
+        $table = $this->resolveCutoffSummaryTable();
+        $master = $this->getOrCreateCutoffMaster($startDate, $endDate, $title, $generatedBy);
+        $dtrService = app(DTRServices::class);
+        $result = $dtrService->getTotalLateAbsent($employeeId, $startDate, $endDate);
+        $totalWorkingDays = $this->getTotalDaysByRange($startDate, $endDate);
+        $totalPresent = $dtrService->getTotalPresentByRange($employeeId, $startDate, $endDate);
+        $lateMinutes = $result['late_minutes'] ?? 0;
+        $undertimeMinutes = $result['undertime_minutes'] ?? 0;
+        $absences = $result['absences'] ?? 0;
+        $daysPresent = max($totalPresent, 0);
+
+        $payload = [
+            'employee_id' => $employeeId,
+            'cutoff_id' => $master->id,
+            'period_start' => $startDate,
+            'period_end' => $endDate,
+            'total_working_days' => $totalWorkingDays,
+            'days_present' => $daysPresent,
+            'days_absent' => $absences,
+            'late_minutes' => $lateMinutes,
+            'undertime_minutes' => $undertimeMinutes,
+            'approved_overtime_minutes' => 0,
+            'approved_pass_slips_minutes' => 0,
+            'approved_leave_days' => 0,
+            'hospital_order_days' => 0,
+            'generated_by' => $generatedBy,
+            'generated_at' => now(),
+            'remarks' => $master->title ?? $title,
+            'updated_at' => now(),
+        ];
+
+        DB::table($table)->updateOrInsert(
+            [
+                'employee_id' => $employeeId,
+                'cutoff_id' => $master->id,
+            ],
+            $payload + ['created_at' => now()]
+        );
+
+        return DB::table($table)
+            ->where('employee_id', $employeeId)
+            ->where('cutoff_id', $master->id)
+            ->first();
+    }
+
+    public function getCutoffSummaryTableName()
+    {
+        return $this->resolveCutoffSummaryTable();
+    }
+
+    public function getCutoffSummaryMasterTableName()
+    {
+        return $this->resolveCutoffSummaryMasterTable();
+    }
+
+    public function getCutoffMasterByPeriod($startDate, $endDate, $title = null)
+    {
+        $table = $this->resolveCutoffSummaryMasterTable();
+        $query = DB::table($table)
+            ->where('period_start', $startDate)
+            ->where('period_end', $endDate);
+
+        if ($title !== null) {
+            $query->where('title', $title);
+        }
+
+        return $query->orderByDesc('id')->first();
+    }
+
+    public function getOrCreateCutoffMaster($startDate, $endDate, $title = null, $generatedBy = null)
+    {
+        $table = $this->resolveCutoffSummaryMasterTable();
+        $existing = $this->getCutoffMasterByPeriod($startDate, $endDate, $title);
+        if ($existing) {
+            return $existing;
+        }
+
+        $id = DB::table($table)->insertGetId([
+            'title' => $title,
+            'period_start' => $startDate,
+            'period_end' => $endDate,
+            'generated_by' => $generatedBy,
+            'generated_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table($table)->where('id', $id)->first();
+    }
+
+    private function resolveCutoffSummaryTable()
+    {
+        if ($this->tableExistsInSchema('hris', 'cutoff_summaries')) {
+            return 'hris.cutoff_summaries';
+        }
+
+        return 'cutoff_summaries';
+    }
+
+    private function resolveCutoffSummaryMasterTable()
+    {
+        if ($this->tableExistsInSchema('hris', 'cutoff_summaries_master')) {
+            return 'hris.cutoff_summaries_master';
+        }
+
+        return 'cutoff_summaries_master';
+    }
+
+    private function tableExistsInSchema(string $schema, string $table): bool
+    {
+        $result = DB::selectOne(
+            'SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = ?',
+            [$schema, $table]
+        );
+
+        return $result && (int) $result->count > 0;
+    }
+
+    private function storePayrollEmployeeComponents($payrollEmployeeId, $components)
+    {
+        if ($components->isEmpty()) {
+            return;
+        }
+
+        $rows = $components->map(function ($component) use ($payrollEmployeeId) {
+            return [
+                'payroll_employee_id' => $payrollEmployeeId,
+                'payroll_component_id' => $component->payroll_component_id,
+                'code' => $component->code,
+                'name' => $component->name,
+                'type' => $component->type,
+                'taxable' => $component->taxable ? 1 : 0,
+                'amount' => $component->amount ?? 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        })->all();
+
+        DB::table('hris.payroll_employee_components')->insert($rows);
     }
 
 

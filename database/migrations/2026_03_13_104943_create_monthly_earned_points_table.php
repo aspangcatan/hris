@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('monthly_earned_points')) { return; }
         Schema::create('monthly_earned_points', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->decimal('present', 6);
@@ -31,3 +32,4 @@ return new class extends Migration
         Schema::dropIfExists('monthly_earned_points');
     }
 };
+

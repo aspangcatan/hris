@@ -11,6 +11,8 @@ class LeaveApprovalService
     public function getLeavesForApproval($search_employee = null)
     {
         $accessRight = session('access_rights');
+        $isSectionHead = (bool) session('is_section_head');
+        $isDivisionHead = (bool) session('is_division_head');
         $user = Auth::user();
 
         $query = DB::table('hris.leave_applications as la')
@@ -31,43 +33,43 @@ class LeaveApprovalService
                 'la.created_at'
             );
 
-        // 🔎 Apply role-based filters
-        if ($accessRight === "SH" || $accessRight === "admin") {
+        // Apply role-based filters
+        if ($isSectionHead) {
             $query->where('lp.approver_id', $user->section)
-                ->where('lp.role', "SH");
-        } elseif ($accessRight === "DH") {
+                ->where('lp.role', 'SH');
+        } elseif ($isDivisionHead) {
             $query->where('lp.approver_id', $user->division)
-                ->where('lp.role', "DH")
+                ->where('lp.role', 'DH')
                 ->whereExists(function ($sub) {
                     $sub->select(DB::raw(1))
                         ->from('hris.leave_application_approvals as sh')
                         ->whereColumn('sh.leave_application_id', 'la.id')
                         ->where('sh.role', 'SH')
-                        ->where('sh.status', 'approved');
+                        ->whereRaw('LOWER(sh.status) = ?', ['approved']);
                 });
-        } elseif ($accessRight === "HR" || $accessRight === "HRH") {
+        } elseif ($accessRight === 'HR' || $accessRight === 'HRH') {
             $query->where('lp.approver_id', 15)
-                ->where('lp.role', "HR")
+                ->where('lp.role', 'HR')
                 ->whereExists(function ($sub) {
                     $sub->select(DB::raw(1))
                         ->from('hris.leave_application_approvals as sh')
                         ->whereColumn('sh.leave_application_id', 'la.id')
                         ->where('sh.role', 'SH')
-                        ->where('sh.status', 'approved');
+                        ->whereRaw('LOWER(sh.status) = ?', ['approved']);
                 })
                 ->whereExists(function ($sub) {
                     $sub->select(DB::raw(1))
                         ->from('hris.leave_application_approvals as dh')
                         ->whereColumn('dh.leave_application_id', 'la.id')
                         ->where('dh.role', 'DH')
-                        ->where('dh.status', 'approved');
+                        ->whereRaw('LOWER(dh.status) = ?', ['approved']);
                 });
         }
 
         // Always pending
-        $query->where('lp.status', "pending");
+        $query->where('lp.status', 'pending');
 
-        // 🔎 Optional search
+        // Optional search
         if (!empty($search_employee)) {
             $query->where(function ($q) use ($search_employee) {
                 $q->where('u.fname', 'like', "%{$search_employee}%")
@@ -78,31 +80,68 @@ class LeaveApprovalService
         return $query->get();
     }
 
-
-
     public function updateApprovalStatus($leave_id, $role, $remarks, $status)
     {
-        DB::transaction(function () use ($leave_id, $role, $remarks, $status) {
-            // Update the approver’s row
+        $normalizedStatus = strtolower(trim($status));
+        $allowedStatuses = ['pending', 'approved', 'rejected'];
+        if (!in_array($normalizedStatus, $allowedStatuses, true)) {
+            throw new \InvalidArgumentException('Invalid approval status.');
+        }
+
+        $effectiveRole = $role;
+        if ($role === 'admin') {
+            $effectiveRole = 'SH';
+        } elseif ($role === 'HRH') {
+            $effectiveRole = 'HR';
+        }
+
+        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus) {
+            // Enforce approval order: SH -> DH -> HR
+            if ($effectiveRole === 'DH') {
+                $sectionApproved = DB::table('hris.leave_application_approvals')
+                    ->where('leave_application_id', $leave_id)
+                    ->where('role', 'SH')
+                    ->whereRaw('LOWER(status) = ?', ['approved'])
+                    ->exists();
+
+                if (!$sectionApproved) {
+                    throw new \RuntimeException('Section head approval is required before division head approval.');
+                }
+            }
+
+            if ($effectiveRole === 'HR') {
+                $sectionApproved = DB::table('hris.leave_application_approvals')
+                    ->where('leave_application_id', $leave_id)
+                    ->where('role', 'SH')
+                    ->whereRaw('LOWER(status) = ?', ['approved'])
+                    ->exists();
+
+                $divisionApproved = DB::table('hris.leave_application_approvals')
+                    ->where('leave_application_id', $leave_id)
+                    ->where('role', 'DH')
+                    ->whereRaw('LOWER(status) = ?', ['approved'])
+                    ->exists();
+
+                if (!$sectionApproved || !$divisionApproved) {
+                    throw new \RuntimeException('Section and division head approvals are required before HR approval.');
+                }
+            }
+
+            // Update the approver's row
             DB::table('hris.leave_application_approvals')
-                ->where(function ($query) use ($leave_id, $role) {
+                ->where(function ($query) use ($leave_id, $effectiveRole) {
                     $query->where('leave_application_id', '=', $leave_id);
-                    if ($role == "admin")
-                        $query->where('role', '=', "SH");
-                    else if ($role == "HRH")
-                        $query->where('role', '=', "HR");
-                    else
-                        $query->where('role', '=', $role);
+                    $query->where('role', '=', $effectiveRole);
                 })
                 ->update([
-                    'status' => $status,
+                    'status' => $normalizedStatus,
                     'remarks' => $remarks,
                     'approved_at' => Carbon::now(),
                     'updated_at' => Carbon::now()
                 ]);
 
-            // If rejected → restore credits and mark application
-            if ($status == "Rejected") {
+            // If rejected -> restore credits and mark application
+            if ($normalizedStatus === 'rejected') {
                 $leaveApp = DB::table('hris.leave_applications')
                     ->where('id', $leave_id)
                     ->first();
@@ -129,7 +168,7 @@ class LeaveApprovalService
                 DB::table('hris.leave_applications')
                     ->where('id', '=', $leave_id)
                     ->update([
-                        'status' => $status,
+                        'status' => ucfirst($normalizedStatus),
                         'updated_at' => Carbon::now()
                     ]);
 
@@ -137,15 +176,14 @@ class LeaveApprovalService
             }
 
             // If final approver (HR/HRH), mark application approved
-            if ($role == "HRH" || $role == "HR") {
+            if ($effectiveRole === 'HR') {
                 DB::table('hris.leave_applications')
                     ->where('id', '=', $leave_id)
                     ->update([
-                        'status' => $status,
+                        'status' => ucfirst($normalizedStatus),
                         'updated_at' => Carbon::now()
                     ]);
             }
         });
     }
-
 }

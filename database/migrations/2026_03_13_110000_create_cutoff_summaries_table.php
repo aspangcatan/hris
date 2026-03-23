@@ -13,6 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('cutoff_summaries')) { return; }
         Schema::create('cutoff_summaries', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('employee_id');
@@ -48,3 +49,4 @@ return new class extends Migration
         Schema::dropIfExists('cutoff_summaries');
     }
 };
+

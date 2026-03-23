@@ -19,16 +19,18 @@
                         <label>Code</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="monthly_points_earned" placeholder="">
-                        <label>Monthly points earned</label>
+                        <select class="form-control" id="leave_status">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <label>Status</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="minute_deduction" placeholder="">
-                        <label>Deduction per minute(s)</label>
-                    </div>
-                    <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="day_deduction" placeholder="">
-                        <label>Deduction per day(s)</label>
+                        <select class="form-control" id="monthly_earned">
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                        <label>Monthly Earned</label>
                     </div>
                 </div>
                 <div class="text-center mt-4">
