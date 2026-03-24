@@ -812,7 +812,7 @@
                     </div>
 
                     <div class="signature-line" style="margin-top: 22px;">
-                        <span class="name-inline">DONNABELLE L. ARANAS, MPA, FPCHA</span>
+                        <span class="name-inline">{{ $authorizedOfficerName }}</span>
                         <span class="caption">(Authorized Officer)</span>
                     </div>
                 </td>
@@ -838,7 +838,7 @@
             <tr>
                 <td colspan="2">
                     <div class="bottom-authority">
-                        <span class="name-inline">DONNABELLE L. ARANAS, MPA, FPCHA</span>
+                        <span class="name-inline">{{ $authorizedOfficialName }}</span>
                         <div class="line"></div>
                         <div class="caption">(Authorized Official)</div>
                     </div>

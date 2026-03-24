@@ -235,6 +235,98 @@ class PrintController extends Controller
         ];
     }
 
+    private function formatOfficerName($user): string
+    {
+        if (!$user) {
+            return '';
+        }
+
+        $middleInitial = trim((string) ($user->mname ?? '')) !== ''
+            ? strtoupper(substr(trim((string) $user->mname), 0, 1)) . '.'
+            : '';
+
+        $parts = array_filter([
+            strtoupper((string) $user->fname),
+            $middleInitial,
+            strtoupper((string) $user->lname),
+            strtoupper((string) $user->suffix),
+        ]);
+
+        $name = trim(implode(' ', $parts));
+        $title = trim((string) ($user->title ?? ''));
+
+        return $title !== '' ? $name . ', ' . $title : $name;
+    }
+
+    private function getUserById(int $userId)
+    {
+        return DB::connection('users')
+            ->table('users')
+            ->where('id', $userId)
+            ->first(['id', 'fname', 'mname', 'lname', 'suffix', 'title']);
+    }
+
+    private function getSectionById(?int $sectionId)
+    {
+        if (empty($sectionId)) {
+            return null;
+        }
+
+        return DB::connection('users')
+            ->table('section')
+            ->where('id', $sectionId)
+            ->first(['id', 'division', 'head', 'subsection']);
+    }
+
+    private function getDivisionById(?int $divisionId)
+    {
+        if (empty($divisionId)) {
+            return null;
+        }
+
+        return DB::connection('users')
+            ->table('division')
+            ->where('id', $divisionId)
+            ->first(['id', 'head']);
+    }
+
+    private function resolveLeavePrintApprovers($leaveApplication): array
+    {
+        $userId = (int) $leaveApplication->user_id;
+        $sectionId = (int) $leaveApplication->section_id;
+        $divisionId = (int) $leaveApplication->division_id;
+
+        $currentSection = $this->getSectionById($sectionId);
+        $currentDivision = $this->getDivisionById($divisionId);
+
+        $isSectionHead = DB::connection('users')->table('section')->where('head', $userId)->exists();
+        $isDivisionHead = DB::connection('users')->table('division')->where('head', $userId)->exists();
+        $isUnitHead = $currentSection && !empty($currentSection->subsection) && (int) $currentSection->head === $userId;
+
+        $authorizedOfficerId = null;
+        $authorizedOfficialId = null;
+
+        if ($isUnitHead) {
+            $parentSection = $this->getSectionById((int) $currentSection->subsection);
+            $authorizedOfficerId = $parentSection->head ?? null;
+            $authorizedOfficialId = $currentDivision->head ?? null;
+        } elseif ($isSectionHead) {
+            $authorizedOfficerId = $currentDivision->head ?? null;
+            $authorizedOfficialId = 35;
+        } elseif (!$isDivisionHead) {
+            $authorizedOfficerId = $currentSection->head ?? null;
+            $authorizedOfficialId = $currentDivision->head ?? null;
+        } else {
+            $authorizedOfficerId = 35;
+            $authorizedOfficialId = 35;
+        }
+
+        return [
+            'authorized_officer' => $this->formatOfficerName($authorizedOfficerId ? $this->getUserById((int) $authorizedOfficerId) : null),
+            'authorized_official' => $this->formatOfficerName($authorizedOfficialId ? $this->getUserById((int) $authorizedOfficialId) : null),
+        ];
+    }
+
     public function printLeaveForm(Request $request)
     {
         $leave_application = DB::table('hris.leave_applications as l')
@@ -254,6 +346,8 @@ class PrintController extends Controller
                 'u.fname',
                 'u.mname',
                 'u.lname',
+                'u.id as user_id',
+                'u.section as section_id',
                 'l.created_at',
                 'd.description as designation',
                 'l.leave_id',
@@ -276,6 +370,7 @@ class PrintController extends Controller
         $formattedCreatedAt = Carbon::parse($leave_application->created_at)->format('M. j, Y');
         $leaveTypeOptions = $this->getLeaveTypeOptions();
         $leaveDetailGroups = $this->getLeaveDetailGroups();
+        $approvers = $this->resolveLeavePrintApprovers($leave_application);
         $knownLeaveTypeIds = collect($leaveTypeOptions)->pluck('id')->map(function ($id) {
             return (int) $id;
         })->all();
@@ -292,6 +387,8 @@ class PrintController extends Controller
             'salaryLabel' => 'P' . number_format($leave_application->basic_salary ?? 0, 2, '.', ','),
             'leaveTypeOptions' => $leaveTypeOptions,
             'leaveDetailGroups' => $leaveDetailGroups,
+            'authorizedOfficerName' => $approvers['authorized_officer'],
+            'authorizedOfficialName' => $approvers['authorized_official'],
             'otherLeaveType' => $otherLeaveType,
             'totalDays' => $totalDays,
             'totalHours' => $totalDays * 8,
