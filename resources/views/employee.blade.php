@@ -67,6 +67,114 @@
             font-weight: 500;
             vertical-align: middle;
         }
+
+        .leave-credit-note {
+            padding: 0.85rem 1rem;
+            border: 1px solid #d6e4f0;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+            color: #4b5563;
+            font-size: 0.85rem;
+        }
+
+        .leave-credit-table-shell {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .leave-credit-table {
+            margin-bottom: 0;
+        }
+
+        .leave-credit-table thead th {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .leave-credit-table tbody td {
+            vertical-align: middle;
+            border-color: #eef2f7;
+        }
+
+        .leave-credit-title {
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .leave-credit-code {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+        }
+
+        .leave-credit-display {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.35rem;
+            padding: 0.55rem 0.85rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #dbe5f0;
+        }
+
+        .leave-credit-value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .leave-credit-input-group .form-control {
+            min-width: 110px;
+            border-radius: 12px 0 0 12px;
+            border-color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .leave-credit-input-group .btn {
+            min-width: 42px;
+        }
+
+        .leave-credit-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .leave-credit-actions .btn {
+            border-radius: 10px;
+        }
+
+        .leave-credit-status {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .leave-credit-row.is-editing .leave-credit-display {
+            display: none;
+        }
+
+        .leave-credit-row.is-editing .leave-credit-input-group {
+            display: flex !important;
+        }
+
+        .leave-credit-row.is-editing .credit-edit-btn {
+            display: none;
+        }
+
+        .leave-credit-empty {
+            text-align: center;
+            color: #64748b;
+            font-weight: 500;
+        }
     </style>
 
     <div class="employee-board">

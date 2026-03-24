@@ -150,7 +150,7 @@ class LeaveApplicationController extends Controller
     public function updateApprovalStatus(Request $request)
     {
         try {
-            $this->leaveApprovalService->updateApprovalStatus($request->id, session('access_rights'), $request->remarks,$request->status);
+            $this->leaveApprovalService->updateApprovalStatus($request->id, null, $request->remarks, $request->status);
             return response()->json(['message' => 'Update status done']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
@@ -160,12 +160,11 @@ class LeaveApplicationController extends Controller
     public function approveLeave(Request $request)
     {
         try {
-            $role = session('access_rights');
+            $role = $this->leaveApprovalService->resolveCurrentApprovalRoleForLeave($request->id);
             $updated = 0;
 
             switch ($role) {
                 case "SH":
-                case "admin": // SPECIAL CASE SINCE JIMMY IS OUR SECTION HEAD AND ONLY HIM IS ADMIN
                     $updated = $this->leaveLogService->updateStatus($request->id, '1', 'Approved');
                     $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '2');
                     break;
@@ -174,7 +173,6 @@ class LeaveApplicationController extends Controller
                     $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '3');
                     break;
                 case "HR":
-                case "HRH":
                     $updated = $this->leaveLogService->updateStatus($request->id, '3', 'Approved');
                     $this->leaveApplicationService->updateStatus($request->id, 'Approved');
                     break;

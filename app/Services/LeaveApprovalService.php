@@ -8,12 +8,64 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApprovalService
 {
+    private function canActAsHr(): bool
+    {
+        $accessRight = strtoupper((string) session('access_rights'));
+
+        return in_array($accessRight, ['HR', 'HRH'], true);
+    }
+
+    private function canApprovePendingStep(object $pendingApproval, $user): bool
+    {
+        $accessRight = strtoupper((string) session('access_rights'));
+
+        if ($pendingApproval->role === 'SH') {
+            return $accessRight === 'ADMIN'
+                || (
+                    (bool) session('is_section_head')
+                    && !empty($user->section)
+                    && (int) $pendingApproval->approver_id === (int) $user->section
+                );
+        }
+
+        if ($pendingApproval->role === 'DH') {
+            return (bool) session('is_division_head')
+                && !empty($user->division)
+                && (int) $pendingApproval->approver_id === (int) $user->division;
+        }
+
+        if ($pendingApproval->role === 'HR') {
+            return $this->canActAsHr();
+        }
+
+        return false;
+    }
+
+    public function resolveCurrentApprovalRoleForLeave($leaveId): ?string
+    {
+        $user = Auth::user();
+        $pendingApproval = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $leaveId)
+            ->where('status', 'pending')
+            ->orderBy('order_no', 'asc')
+            ->first(['role', 'approver_id']);
+
+        if (!$pendingApproval) {
+            return null;
+        }
+
+        return $this->canApprovePendingStep($pendingApproval, $user)
+            ? $pendingApproval->role
+            : null;
+    }
+
     public function getLeavesForApproval($search_employee = null)
     {
-        $accessRight = session('access_rights');
+        $user = Auth::user();
+        $isAdmin = strtoupper((string) session('access_rights')) === 'ADMIN';
         $isSectionHead = (bool) session('is_section_head');
         $isDivisionHead = (bool) session('is_division_head');
-        $user = Auth::user();
+        $canActAsHr = $this->canActAsHr();
 
         $query = DB::table('hris.leave_applications as la')
             ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
@@ -33,41 +85,36 @@ class LeaveApprovalService
                 'la.created_at'
             );
 
-        // Apply role-based filters
-        if ($isSectionHead) {
-            $query->where('lp.approver_id', $user->section)
-                ->where('lp.role', 'SH');
-        } elseif ($isDivisionHead) {
-            $query->where('lp.approver_id', $user->division)
-                ->where('lp.role', 'DH')
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('hris.leave_application_approvals as sh')
-                        ->whereColumn('sh.leave_application_id', 'la.id')
-                        ->where('sh.role', 'SH')
-                        ->whereRaw('LOWER(sh.status) = ?', ['approved']);
-                });
-        } elseif ($accessRight === 'HR' || $accessRight === 'HRH') {
-            $query->where('lp.approver_id', 15)
-                ->where('lp.role', 'HR')
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('hris.leave_application_approvals as sh')
-                        ->whereColumn('sh.leave_application_id', 'la.id')
-                        ->where('sh.role', 'SH')
-                        ->whereRaw('LOWER(sh.status) = ?', ['approved']);
-                })
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('hris.leave_application_approvals as dh')
-                        ->whereColumn('dh.leave_application_id', 'la.id')
-                        ->where('dh.role', 'DH')
-                        ->whereRaw('LOWER(dh.status) = ?', ['approved']);
-                });
-        }
+        $query->where('lp.status', 'pending')
+            ->whereRaw(
+                'lp.order_no = (SELECT MIN(p.order_no) FROM hris.leave_application_approvals as p WHERE p.leave_application_id = la.id AND p.status = ?)',
+                ['pending']
+            )
+            ->where(function ($approvalQuery) use ($isAdmin, $isSectionHead, $isDivisionHead, $canActAsHr, $user) {
+                if ($isAdmin || ($isSectionHead && !empty($user->section))) {
+                    $approvalQuery->orWhere(function ($q) use ($isAdmin, $isSectionHead, $user) {
+                        $q->where('lp.role', 'SH');
 
-        // Always pending
-        $query->where('lp.status', 'pending');
+                        if (!$isAdmin && $isSectionHead) {
+                            $q->where('lp.approver_id', $user->section);
+                        }
+                    });
+                }
+
+                if ($isDivisionHead && !empty($user->division)) {
+                    $approvalQuery->orWhere(function ($q) use ($user) {
+                        $q->where('lp.role', 'DH')
+                            ->where('lp.approver_id', $user->division);
+                    });
+                }
+
+                if ($canActAsHr) {
+                    $approvalQuery->orWhere(function ($q) {
+                        $q->where('lp.role', 'HR')
+                            ->where('lp.approver_id', 15);
+                    });
+                }
+            });
 
         // Optional search
         if (!empty($search_employee)) {
@@ -80,7 +127,7 @@ class LeaveApprovalService
         return $query->get();
     }
 
-    public function updateApprovalStatus($leave_id, $role, $remarks, $status)
+    public function updateApprovalStatus($leave_id, $role = null, $remarks = null, $status = null)
     {
         $normalizedStatus = strtolower(trim($status));
         $allowedStatuses = ['pending', 'approved', 'rejected'];
@@ -88,11 +135,9 @@ class LeaveApprovalService
             throw new \InvalidArgumentException('Invalid approval status.');
         }
 
-        $effectiveRole = $role;
-        if ($role === 'admin') {
-            $effectiveRole = 'SH';
-        } elseif ($role === 'HRH') {
-            $effectiveRole = 'HR';
+        $effectiveRole = $role ?: $this->resolveCurrentApprovalRoleForLeave($leave_id);
+        if ($effectiveRole === null) {
+            throw new \RuntimeException('Current user is not allowed to approve this leave application.');
         }
 
         DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus) {

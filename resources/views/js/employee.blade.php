@@ -76,65 +76,73 @@
             }
         });
 
-        $("body").on("keyup", ".input-base", async function (event) {
-            if (event.key === "Enter") {
-                const value = $(this).val();
-                const leave_id = $(this).parent().parent().attr("id");
-                const response = await fetch('{{ route('insertUpdateBaseCredit') }}', {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    body: JSON.stringify({
-                        employee_id: employee_id,
-                        leave_id: leave_id,
-                        based_credit: value
-                    })
-                });
-
-                try {
-                    const data = await response.json();
-                    if (response.ok) {
-                        toastr.success(data.message,"Information");
-                    } else {
-                        toastr.error(data.error || 'Something went wrong, please try again');
-                    }
-                } catch (error) {
-                    console.error('Error parsing JSON response', error);
-                    toastr.error('Something went wrong, please try again');
-                }
-            }
+        $("body").on("click", ".credit-edit-btn", function () {
+            const row = $(this).closest(".leave-credit-row");
+            row.addClass("is-editing");
+            row.find(".leave-credit-input").trigger("focus").select();
         });
 
-        $("body").on("keyup", ".input-used", async function (event) {
-            if (event.key === "Enter") {
-                const value = $(this).val();
-                const leave_id = $(this).parent().parent().attr("id");
-                const response = await fetch('{{ route('insertUpdateUsedCredit') }}', {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    body: JSON.stringify({
-                        employee_id: employee_id,
-                        leave_id: leave_id,
-                        used_credit: value
-                    })
-                });
+        $("body").on("input", ".leave-credit-input", function () {
+            const input = $(this);
+            const row = input.closest(".leave-credit-row");
+            const saveButton = row.find(".leave-credit-save-btn");
+            const currentValue = parseFloat(input.val() || 0);
+            const originalValue = parseFloat(input.data("original") || 0);
 
-                try {
-                    const data = await response.json();
-                    if (response.ok) {
-                        toastr.success(data.message);
-                    } else {
-                        toastr.error(data.error || 'Something went wrong, please try again');
-                    }
-                } catch (error) {
-                    console.error('Error parsing JSON response', error);
-                    toastr.error('Something went wrong, please try again');
+            saveButton.prop("disabled", currentValue === originalValue);
+        });
+
+        $("body").on("click", ".leave-credit-cancel-btn", function () {
+            const row = $(this).closest(".leave-credit-row");
+            const input = row.find(".leave-credit-input");
+            const originalValue = parseFloat(input.data("original") || 0);
+
+            input.val(originalValue.toFixed(2));
+            row.find(".leave-credit-save-btn").prop("disabled", true);
+            row.removeClass("is-editing");
+        });
+
+        $("body").on("click", ".leave-credit-save-btn", async function () {
+            const button = $(this);
+            const row = button.closest(".leave-credit-row");
+            const input = row.find(".leave-credit-input");
+            const leaveId = row.data("leaveId");
+            const value = parseFloat(input.val() || 0);
+
+            button.prop("disabled", true);
+
+            const response = await fetch('{{ route('insertUpdateBaseCredit') }}', {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                body: JSON.stringify({
+                    employee_id: employee_id,
+                    leave_id: leaveId,
+                    based_credit: value
+                })
+            });
+
+            try {
+                const data = await response.json();
+                if (response.ok) {
+                    const formattedValue = formatLeaveCreditValue(value);
+
+                    input.val(formattedValue);
+                    input.data("original", value);
+                    row.find(".leave-credit-value").text(formattedValue);
+                    row.find(".leave-credit-status").text("Saved");
+                    row.removeClass("is-editing");
+                    toastr.success(data.message, "Information");
+                } else {
+                    button.prop("disabled", false);
+                    toastr.error(data.error || data.message || 'Something went wrong, please try again');
                 }
+            } catch (error) {
+                button.prop("disabled", false);
+                console.error('Error parsing JSON response', error);
+                toastr.error('Something went wrong, please try again');
             }
         });
 
@@ -524,19 +532,36 @@
 
                 $("#leave_credits_list").empty();
                 data.forEach(it => {
-                    let tr = "<tr id='" + it.id + "'>";
-                    tr += "<td>" + it.description + "</td>";
-                    tr += "<td><input type='number' class='form-control text-center input-base' value='" + it.based_credit + "' /></td>";
-                    tr += "<td><input type='number' class='form-control text-center input-used' value='" + it.used_credit + "' /></td>";
-                    tr += "<td><input type='number' class='form-control text-center' value='" + it.balance + "' disabled /></td>";
+                    const formattedValue = formatLeaveCreditValue(it.based_credit);
+                    let tr = "<tr class='leave-credit-row' data-leave-id='" + it.id + "'>";
+                    tr += "<td><span class='leave-credit-title'>" + it.description + "</span></td>";
+                    tr += "<td><span class='leave-credit-code'>" + (it.code || "leave") + "</span></td>";
+                    tr += "<td>";
+                    tr += "<div class='leave-credit-display'><span class='leave-credit-value'>" + formattedValue + "</span></div>";
+                    tr += "<div class='input-group input-group-sm leave-credit-input-group d-none'>";
+                    tr += "<input type='number' step='0.01' min='0' class='form-control text-center leave-credit-input' value='" + formattedValue + "' data-original='" + parseFloat(it.based_credit || 0) + "' />";
+                    tr += "<button type='button' class='btn btn-success leave-credit-save-btn' disabled><i class='bi bi-check-lg'></i></button>";
+                    tr += "<button type='button' class='btn btn-outline-secondary leave-credit-cancel-btn'><i class='bi bi-x-lg'></i></button>";
+                    tr += "</div>";
+                    tr += "</td>";
+                    tr += "<td><div class='leave-credit-actions'><span class='leave-credit-status'>Current value</span><button type='button' class='btn btn-sm btn-outline-primary credit-edit-btn'><i class='bi bi-pencil-square'></i> Edit</button></div></td>";
                     tr += "</tr>";
                     $("#leave_credits_list").append(tr);
                 });
+
+                if (data.length === 0) {
+                    $("#leave_credits_list").append("<tr><td colspan='4' class='leave-credit-empty py-4'>No leave credit records found.</td></tr>");
+                }
             })
             .catch(error => {
                 console.error("Error fetching leave credits:", error);
                 toastr.error("Something went wrong, please try again");
             });
+    }
+
+    function formatLeaveCreditValue(value) {
+        const numericValue = parseFloat(value || 0);
+        return numericValue.toFixed(2);
     }
 
     function editService(id) {

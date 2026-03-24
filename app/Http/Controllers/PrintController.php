@@ -37,7 +37,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use setasign\Fpdi\Fpdi;
 
 class PrintController extends Controller
 {
@@ -187,6 +186,55 @@ class PrintController extends Controller
         return $title;
     }
 
+    private function getLeaveTypeOptions(): array
+    {
+        return [
+            ['id' => 2, 'label' => 'Vacation Leave'],
+            ['id' => 8, 'label' => 'Mandatory/Forced Leave'],
+            ['id' => 1, 'label' => 'Sick Leave'],
+            ['id' => 9, 'label' => 'Maternity Leave'],
+            ['id' => 3, 'label' => 'Paternity Leave'],
+            ['id' => 10, 'label' => 'Special Privilege Leave'],
+            ['id' => 4, 'label' => 'Solo Parent Leave'],
+            ['id' => 11, 'label' => 'Study Leave'],
+            ['id' => 5, 'label' => '10-Day VAWC Leave'],
+            ['id' => 12, 'label' => 'Rehabilitation Privilege'],
+            ['id' => 6, 'label' => 'Special Leave Benefits for Women'],
+            ['id' => 13, 'label' => 'Special Emergency (Calamity) Leave'],
+            ['id' => 7, 'label' => 'Adoption Leave'],
+        ];
+    }
+
+    private function getLeaveDetailGroups(): array
+    {
+        return [
+            [
+                'title' => 'In case of vacation/special privilege leave',
+                'items' => [
+                    'Within the Philippines',
+                    'Abroad (Specify)',
+                ],
+            ],
+            [
+                'title' => 'In case of sick leave',
+                'items' => [
+                    'In Hospital (Specify Illness)',
+                    'Out Patient (Specify Illness)',
+                ],
+            ],
+            [
+                'title' => 'Other details',
+                'items' => [
+                    "In case of Special Leave Benefits for Women",
+                    "Completion of Master's Degree",
+                    'BAR/Board Examination Review',
+                    'Monetization of Leave Credits',
+                    'Terminal Leave',
+                ],
+            ],
+        ];
+    }
+
     public function printLeaveForm(Request $request)
     {
         $leave_application = DB::table('hris.leave_applications as l')
@@ -195,95 +243,60 @@ class PrintController extends Controller
             ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
             ->join('tdh_user.division as di', 'u.division', '=', 'di.id')
             ->join('tdh_user.section as s', 'u.section', '=', 's.id')
+            ->leftJoin('hris.leave_types as lt', 'lt.id', '=', 'l.leave_id')
             ->where('l.id', '=', $request->id)
-            ->get(['p.basic_salary', 'di.code as division', 's.code as section', 'u.fname', 'u.mname', 'u.lname', 'l.created_at', 'd.description as designation', 'l.leave_id', 'l.detail', 'l.extra', 'u.division as division_id', 'l.commutation', 'l.id', 'l.created_at'])
+            ->get([
+                'p.basic_salary',
+                'di.code as division',
+                'di.description as division_name',
+                's.code as section',
+                's.description as section_name',
+                'u.fname',
+                'u.mname',
+                'u.lname',
+                'l.created_at',
+                'd.description as designation',
+                'l.leave_id',
+                'l.detail',
+                'l.extra',
+                'u.division as division_id',
+                'l.commutation',
+                'l.id',
+                'lt.description as leave_type_name'
+            ])
             ->first();
 
         $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
+        $totalDays = count($dates_applied);
+        $fullName = trim(implode(' ', array_filter([
+            strtoupper($leave_application->lname ?? ''),
+            strtoupper($leave_application->fname ?? ''),
+            $leave_application->mname ? strtoupper(substr($leave_application->mname, 0, 1)) . '.' : null,
+        ])));
+        $formattedCreatedAt = Carbon::parse($leave_application->created_at)->format('M. j, Y');
+        $leaveTypeOptions = $this->getLeaveTypeOptions();
+        $leaveDetailGroups = $this->getLeaveDetailGroups();
+        $knownLeaveTypeIds = collect($leaveTypeOptions)->pluck('id')->map(function ($id) {
+            return (int) $id;
+        })->all();
+        $otherLeaveType = in_array((int) $leave_application->leave_id, $knownLeaveTypeIds, true)
+            ? null
+            : ($leave_application->leave_type_name ?: 'Other leave type');
 
-
-        $pdf = new Fpdi();
-        $pdf->AddPage();
-
-//        $pdf->setSourceFile(public_path("pdf/leave_form_mcc.pdf"));
-        switch ($leave_application->division_id) {
-            case 1:
-                $pdf->setSourceFile(public_path("pdf/leave_form_mcc.pdf"));
-                break;
-            case 2:
-                $pdf->setSourceFile(public_path("pdf/leave_form_hopss.pdf"));
-                break;
-            case 3:
-                $pdf->setSourceFile(public_path("pdf/leave_form_medical.pdf"));
-                break;
-            case 4:
-                $pdf->setSourceFile(public_path("pdf/leave_form_nursing.pdf"));
-                break;
-            case 5:
-                $pdf->setSourceFile(public_path("pdf/leave_form_finance.pdf"));
-                break;
-            case 6:
-                $pdf->setSourceFile(public_path("pdf/leave_form_qmd.pdf"));
-                break;
-        }
-
-        $tplId = $pdf->importPage(1);
-        $pdf->useTemplate($tplId, null, null, null, 210, true);
-        #OFFICE/DEPARTMENT POSITION
-        $pdf->SetFont('helvetica', 'b', 6);
-        $pdf->SetXY(20, 37);
-        $pdf->Write(0.1, strtoupper($leave_application->division . ' / ' . $leave_application->section));
-        $pdf->SetXY(70, 37);
-        $pdf->Write(0.1, strtoupper($leave_application->lname));
-        $pdf->SetXY(98, 37);
-        $pdf->Write(0.1, strtoupper($leave_application->fname));
-        $pdf->SetXY(123, 37);
-        $mname = ($leave_application->mname && $leave_application->mname != "") ? strtoupper($leave_application->mname[0]) . '.' : "";
-        $pdf->Write(0.1, $mname);
-
-        $pdf->SetXY(38, 43);
-        $pdf->Write(0.1, Carbon::createFromFormat('Y-m-d', explode(' ', $leave_application->created_at)[0])->format('M. j, Y'));
-        $pdf->SetXY(77, 43);
-        $pdf->Write(0.1, self::minifyDesignation($leave_application->designation));
-        $pdf->SetXY(123, 43);
-        $pdf->Write(0.1, 'P' . number_format($leave_application->basic_salary ?? 0, 2, '.', ','));
-
-//
-//        #DETAILS OF LEAVE
-        $leave_type = self::getTypeXY($leave_application->leave_id);
-        $leave_details = self::getDetailsXY($leave_application->detail);
-        if ($leave_details['x'] != 0) {
-            $pdf->SetFont('ZapfDingbats', "", 8);
-            $pdf->SetXY($leave_details['x'], $leave_details['y']);
-            $pdf->Write(0, chr(51));
-        }
-        $pdf->SetFont('helvetica', 'b', 6);
-        $pdf->SetXY($leave_details['z'], $leave_details['y']);
-        $pdf->Write(0.1, $leave_application->extra);
-
-        if ($leave_type['x'] == 0) {
-            $pdf->SetXY(20, 113);
-            $pdf->Write(0.1, $leave_application->leave_type);
-        }
-
-        $pdf->SetFont('ZapfDingbats', "", 8);
-        $pdf->SetXY($leave_type['x'], $leave_type['y']);
-        $pdf->Write(0, chr(51));
-
-        $pdf->SetFont('ZapfDingbats', "", 8);
-        if ($leave_application->commutation == "Not Requested")
-            $pdf->SetXY(88.5, 122);
-        else
-            $pdf->SetXY(88.5, 126);
-        $pdf->Write(0, chr(51));
-
-        $total_days = count($dates_applied);
-        $pdf->SetFont('helvetica', 'b', 6);
-        $pdf->SetXY(20, 122);
-        $pdf->Write(0.1, $total_days . " day(s) (" . ($total_days * 8) . " hrs)");
-        $pdf->SetXY(20, 130);
-        $pdf->Write(0.1, self::getInclusiveDates($dates_applied));
-        $pdf->Output('I', "Leave Form.pdf");
+        return view('print.leave_form', [
+            'leaveApplication' => $leave_application,
+            'officeLabel' => strtoupper(trim(($leave_application->division ?? '') . ' / ' . ($leave_application->section ?? ''))),
+            'fullName' => $fullName,
+            'formattedCreatedAt' => $formattedCreatedAt,
+            'designationLabel' => self::minifyDesignation($leave_application->designation),
+            'salaryLabel' => 'P' . number_format($leave_application->basic_salary ?? 0, 2, '.', ','),
+            'leaveTypeOptions' => $leaveTypeOptions,
+            'leaveDetailGroups' => $leaveDetailGroups,
+            'otherLeaveType' => $otherLeaveType,
+            'totalDays' => $totalDays,
+            'totalHours' => $totalDays * 8,
+            'inclusiveDates' => self::getInclusiveDates($dates_applied),
+        ]);
     }
 
     public function printWorkExperience(Request $request)
