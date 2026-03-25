@@ -97,7 +97,7 @@
             const input = row.find(".leave-credit-input");
             const originalValue = parseFloat(input.data("original") || 0);
 
-            input.val(originalValue.toFixed(2));
+            input.val(originalValue.toFixed(3));
             row.find(".leave-credit-save-btn").prop("disabled", true);
             row.removeClass("is-editing");
         });
@@ -539,7 +539,7 @@
                     tr += "<td>";
                     tr += "<div class='leave-credit-display'><span class='leave-credit-value'>" + formattedValue + "</span></div>";
                     tr += "<div class='input-group input-group-sm leave-credit-input-group d-none'>";
-                    tr += "<input type='number' step='0.01' min='0' class='form-control text-center leave-credit-input' value='" + formattedValue + "' data-original='" + parseFloat(it.based_credit || 0) + "' />";
+                    tr += "<input type='number' step='0.001' min='0' class='form-control text-center leave-credit-input' value='" + formattedValue + "' data-original='" + parseFloat(it.based_credit || 0) + "' />";
                     tr += "<button type='button' class='btn btn-success leave-credit-save-btn' disabled><i class='bi bi-check-lg'></i></button>";
                     tr += "<button type='button' class='btn btn-outline-secondary leave-credit-cancel-btn'><i class='bi bi-x-lg'></i></button>";
                     tr += "</div>";
@@ -561,7 +561,7 @@
 
     function formatLeaveCreditValue(value) {
         const numericValue = parseFloat(value || 0);
-        return numericValue.toFixed(2);
+        return numericValue.toFixed(3);
     }
 
     function editService(id) {

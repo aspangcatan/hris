@@ -134,10 +134,10 @@ class LeaveController extends Controller
                 $leave_credits[] = [
                     'id' => $type->id,
                     'description' => $type->description,
-                    'based_credit' => number_format($based_credit, 2),
-                    'used_credit' => number_format($used_credit, 2),
+                    'based_credit' => number_format($based_credit, 3),
+                    'used_credit' => number_format($used_credit, 3),
                     'code' => $type->code,
-                    'balance' => number_format($computed_balance, 2)
+                    'balance' => number_format($computed_balance, 3)
                 ];
             }
 

@@ -559,6 +559,10 @@
     </style>
 </head>
 <body>
+@php
+    $sectionHeadStatus = strtolower((string) ($sectionHeadApproval->status ?? ''));
+    $sectionHeadRemarks = trim((string) ($sectionHeadApproval->remarks ?? ''));
+@endphp
 <div class="print-toolbar">
     <button type="button" onclick="window.print()">Print</button>
 </div>
@@ -798,12 +802,12 @@
                 <td style="width: 50%;">
                     <div class="action-title">7.B&nbsp; RECOMMENDATION</div>
                     <div class="option-row" style="margin-top: 6px;">
-                        <span class="check"></span>
+                        <span class="check">{{ $sectionHeadStatus === 'approved' ? 'X' : '' }}</span>
                         <span class="option-copy">For approval</span>
                     </div>
                     <div class="option-row">
-                        <span class="check"></span>
-                        <span class="option-copy">For disapproval due to <span class="guide-line" style="min-width: 170px;"></span></span>
+                        <span class="check">{{ $sectionHeadStatus === 'rejected' ? 'X' : '' }}</span>
+                        <span class="option-copy">For disapproval due to <span class="guide-line" style="min-width: 170px;">{{ $sectionHeadStatus === 'rejected' ? $sectionHeadRemarks : '' }}</span></span>
                     </div>
                     <div class="recommendation-stack">
                         <span class="guide-line"></span>
@@ -811,10 +815,12 @@
                         <span class="guide-line"></span>
                     </div>
 
-                    <div class="signature-line" style="margin-top: 22px;">
+                    <div class="bottom-authority" style="margin-top: 22px;">
                         <span class="name-inline">{{ $authorizedOfficerName }}</span>
-                        <span class="caption">(Authorized Officer)</span>
+                        <div class="line"></div>
+                        <div class="caption">(Authorized Officer)</div>
                     </div>
+
                 </td>
             </tr>
             <tr class="no-bottom-border no-middle-separator">

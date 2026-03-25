@@ -7,19 +7,32 @@ use Illuminate\Support\Facades\DB;
 
 class DTRServices
 {
+    private function calculatePersonalPassSlipMinutes($date, $timeOut, $timeIn): int
+    {
+        if (empty($timeOut) || empty($timeIn)) {
+            return 0;
+        }
+
+        $start = Carbon::parse($date . ' ' . $timeOut);
+        $end = Carbon::parse($date . ' ' . $timeIn);
+
+        return $end->gt($start) ? $start->diffInMinutes($end) : 0;
+    }
+
     public function getTotalPresent($userid, $month, $year)
     {
         $workdays = $this->getAllDays($year, $month); // includes weekends
         $holidays = $this->getHolidays($month, $year); // fetch holidays
         $leaveDates = $this->getApprovedLeaveDates($userid, $month, $year); // fetch approved leave dates
         $specialDutyDates = $this->getApprovedSpecialDutyDates($userid, $month, $year); // approved H.O and OT dates
+        $approvedPassSlipDates = array_keys($this->getApprovedPassSlipDates($userid, $month, $year));
         $presentDays = [];
         $absentDays = [];
 
         // Step 1: Determine initial present/absent days
         foreach ($workdays as $date) {
             // If date is a holiday, approved leave, or approved special duty, mark as present directly
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
                 $presentDays[$date] = true;
                 unset($absentDays[$date]);
                 continue;
@@ -40,7 +53,7 @@ class DTRServices
             $dayOfWeek = Carbon::parse($date)->format('l');
 
             // Skip weekend rule processing if holiday, leave, or approved special duty
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
                 continue;
             }
 
@@ -100,7 +113,7 @@ class DTRServices
         // Step 3: Recalculate present days after weekend + holiday + leave rules
         $finalPresentCount = 0;
         foreach ($workdays as $date) {
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
                 $finalPresentCount++;
             } elseif (!isset($absentDays[$date])) {
                 $finalPresentCount++;
@@ -118,6 +131,7 @@ class DTRServices
 
         $holidays = $this->getHolidayDatesByRange($start_date, $end_date);
         $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
+        $approvedSpecialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
         $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date);
 
         $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
@@ -130,7 +144,7 @@ class DTRServices
             }
 
             // Skip approved leaves
-            if (in_array($date, $approvedLeaves)) {
+            if (in_array($date, $approvedLeaves) || in_array($date, $approvedSpecialDutyDates)) {
                 continue;
             }
 
@@ -139,19 +153,28 @@ class DTRServices
             $lastOut = $logMap[$date]['out'] ?? null;
 
             // Handle approved pass slips
-            $passSlip = $approvedPassSlips->firstWhere('slip_date', $date);
-            if ($passSlip) {
-                $type = strtolower((string) $passSlip->type);
-                if ($type === 'official') {
+            $datePassSlips = $approvedPassSlips->where('slip_date', $date);
+            if ($datePassSlips->isNotEmpty()) {
+                $hasOfficialPassSlip = $datePassSlips->contains(function ($passSlip) {
+                    return strtolower((string) ($passSlip->type ?? '')) === 'official';
+                });
+
+                if ($hasOfficialPassSlip) {
                     // Excused: no late or undertime
                     continue;
-                } elseif ($type === 'personal' && !empty($passSlip->time_out) && !empty($passSlip->time_in)) {
+                }
+
+                $personalPassSlipMinutes = $datePassSlips
+                    ->filter(function ($passSlip) {
+                        return strtolower((string) ($passSlip->type ?? '')) === 'personal';
+                    })
+                    ->sum(function ($passSlip) use ($date) {
+                        return $this->calculatePersonalPassSlipMinutes($date, $passSlip->time_out, $passSlip->time_in);
+                    });
+
+                if ($personalPassSlipMinutes > 0) {
                     // Personal pass slip hours are treated as undertime.
-                    $timeOut = Carbon::parse($date . ' ' . $passSlip->time_out);
-                    $timeIn = Carbon::parse($date . ' ' . $passSlip->time_in);
-                    if ($timeIn->gt($timeOut)) {
-                        $undertime += $timeOut->diffInMinutes($timeIn);
-                    }
+                    $undertime += $personalPassSlipMinutes;
                     continue;
                 }
             }
@@ -203,6 +226,7 @@ class DTRServices
         $holidays = $this->getHolidayDatesByRange($start_date, $end_date);
         $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
         $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
+        $approvedPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
         $logMap = $this->getDailyLogMap($userid, $start_date, $end_date);
 
         $presentDays = [];
@@ -210,7 +234,7 @@ class DTRServices
 
         // Step 1: Determine initial present/absent days
         foreach ($days as $date) {
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
                 $presentDays[$date] = true;
                 unset($absentDays[$date]);
                 continue;
@@ -230,7 +254,7 @@ class DTRServices
         foreach ($days as $date) {
             $dayOfWeek = Carbon::parse($date)->format('l');
 
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
+            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
                 continue;
             }
 
@@ -551,6 +575,21 @@ class DTRServices
         return $result;
     }
 
+    private function getApprovedPassSlipDatesByRange($userid, $startDate, $endDate)
+    {
+        return DB::table('hris.pass_slips')
+            ->where('user_id', $userid)
+            ->whereRaw('LOWER(status) = ?', ['approved'])
+            ->whereBetween('slip_date', [$startDate, $endDate])
+            ->pluck('slip_date')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
     private function getApprovedPassSlipsByRange($userid, $startDate, $endDate)
     {
         return DB::table('hris.pass_slips')
@@ -558,6 +597,71 @@ class DTRServices
             ->whereRaw('LOWER(status) = ?', ['approved'])
             ->whereBetween('slip_date', [$startDate, $endDate])
             ->get(['slip_date', 'type', 'time_out', 'time_in']);
+    }
+
+    private function getApprovedHospitalOrderDatesByRange($userid, $startDate, $endDate)
+    {
+        return DB::table('hris.hospital_order_employees')
+            ->where('userid', $userid)
+            ->where('status', 'approved')
+            ->whereBetween('filed_date', [$startDate, $endDate])
+            ->pluck('filed_date')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
+            ->unique()
+            ->values()
+            ->toArray();
+    }
+
+    private function getApprovedOvertimeMinutesByRange($userid, $startDate, $endDate): int
+    {
+        return (int) DB::table('hris.overtime_requests')
+            ->where('userid', $userid)
+            ->where('status', 'approved')
+            ->whereBetween('ot_date', [$startDate, $endDate])
+            ->get(['ot_date', 'time_from', 'time_to'])
+            ->sum(function ($overtime) {
+                if (empty($overtime->time_from) || empty($overtime->time_to)) {
+                    return 0;
+                }
+
+                $start = Carbon::parse($overtime->ot_date . ' ' . $overtime->time_from);
+                $end = Carbon::parse($overtime->ot_date . ' ' . $overtime->time_to);
+
+                return $end->gt($start) ? $start->diffInMinutes($end) : 0;
+            });
+    }
+
+    public function getCutoffBreakdown($userid, $startDate, $endDate): array
+    {
+        $result = $this->getTotalLateAbsent($userid, $startDate, $endDate);
+        $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $startDate, $endDate);
+        $approvedHospitalOrders = $this->getApprovedHospitalOrderDatesByRange($userid, $startDate, $endDate);
+        $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $startDate, $endDate);
+        $approvedOvertimeMinutes = $this->getApprovedOvertimeMinutesByRange($userid, $startDate, $endDate);
+
+        $personalPassSlipMinutes = $approvedPassSlips
+            ->filter(function ($passSlip) {
+                return strtolower((string) ($passSlip->type ?? '')) === 'personal';
+            })
+            ->sum(function ($passSlip) {
+                return $this->calculatePersonalPassSlipMinutes(
+                    $passSlip->slip_date,
+                    $passSlip->time_out,
+                    $passSlip->time_in
+                );
+            });
+
+        return [
+            'late_minutes' => (int) ($result['late_minutes'] ?? 0),
+            'undertime_minutes' => (int) ($result['undertime_minutes'] ?? 0),
+            'absences' => (int) ($result['absences'] ?? 0),
+            'approved_overtime_minutes' => $approvedOvertimeMinutes,
+            'approved_pass_slips_minutes' => (int) $personalPassSlipMinutes,
+            'approved_leave_days' => count(array_unique($approvedLeaves)),
+            'hospital_order_days' => count(array_unique($approvedHospitalOrders)),
+        ];
     }
 
 }

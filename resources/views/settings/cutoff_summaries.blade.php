@@ -208,11 +208,15 @@
                                 <th>Days Absent</th>
                                 <th>Late (mins)</th>
                                 <th>Undertime (mins)</th>
+                                <th>Hospital Orders</th>
+                                <th>Overtime (mins)</th>
+                                <th>Pass Slips (mins)</th>
+                                <th>Approved Leave</th>
                             </tr>
                             </thead>
                             <tbody id="cutoff_detail_body">
                             <tr>
-                                <td colspan="5" class="text-muted text-center">No cutoff summaries found.</td>
+                                <td colspan="9" class="text-muted text-center">No cutoff summaries found.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -221,7 +225,8 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-success btn-edit" id="btn_compute_leave_credits">
-                        Compute Leave Credits Earned
+                        <span class="btn-label">Compute Leave Credits Earned</span>
+                        <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
             </div>
@@ -261,7 +266,8 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-success btn-edit" id="btn_save_leave_credits">
-                        Save
+                        <span class="btn-label">Save</span>
+                        <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
             </div>
@@ -330,8 +336,8 @@
                 const row = `
                     <tr data-title="${title.toLowerCase()}">
                         <td>${title}</td>
-                        <td>${item.period_start ?? '-'}</td>
-                        <td>${item.period_end ?? '-'}</td>
+                        <td>${formatDisplayDate(item.period_start)}</td>
+                        <td>${formatDisplayDate(item.period_end)}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-action btn-view btn-view-cutoff"
                                 data-start="${item.period_start}" data-end="${item.period_end}" data-title="${title}"
@@ -396,7 +402,7 @@
                     data.results.forEach(emp => {
                         const middleInitial = emp.mname ? emp.mname.charAt(0) + '.' : '';
                         const suffix = emp.suffix ? ` ${emp.suffix}` : '';
-                        const fullName = `${emp.lname}, ${emp.fname} ${middleInitial}${suffix}`.trim();
+                        const fullName = formatEmployeeName(`${emp.lname}, ${emp.fname} ${middleInitial}${suffix}`);
                         const row = `
                             <tr data-name="${fullName.toLowerCase()}">
                                 <td><input type="checkbox" class="form-check-input cutoff-employee" value="${emp.user_id}"></td>
@@ -533,8 +539,8 @@
             const title = $(this).data("title");
             currentCutoffDetail = {start: start, end: end, title: title};
             $("#cutoff_detail_title").text(title);
-            $("#cutoff_detail_start").text(start || "-");
-            $("#cutoff_detail_end").text(end || "-");
+            $("#cutoff_detail_start").text(formatDisplayDate(start));
+            $("#cutoff_detail_end").text(formatDisplayDate(end));
             loadCutoffDetails(start, end);
             $("#cutoff_detail_modal").modal("show");
         });
@@ -558,14 +564,14 @@
                     const $tbody = $("#cutoff_detail_body");
                     $tbody.empty();
                     if (!data.success || !data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='5' class='text-muted text-center'>No cutoff summaries found.</td></tr>");
+                        $tbody.append("<tr><td colspan='9' class='text-muted text-center'>No cutoff summaries found.</td></tr>");
                         return;
                     }
 
                     data.data.forEach(item => {
                         const middleInitial = item.mname ? item.mname.charAt(0) + '.' : '';
                         const suffix = item.suffix ? ` ${item.suffix}` : '';
-                        const fullName = `${item.lname}, ${item.fname} ${middleInitial}${suffix}`.trim();
+                        const fullName = formatEmployeeName(`${item.lname}, ${item.fname} ${middleInitial}${suffix}`);
                         const row = `
                             <tr>
                                 <td>${fullName}</td>
@@ -573,6 +579,10 @@
                                 <td>${item.days_absent ?? 0}</td>
                                 <td>${item.late_minutes ?? 0}</td>
                                 <td>${item.undertime_minutes ?? 0}</td>
+                                <td>${item.hospital_order_days ?? 0}</td>
+                                <td>${item.approved_overtime_minutes ?? 0}</td>
+                                <td>${item.approved_pass_slips_minutes ?? 0}</td>
+                                <td>${item.approved_leave_days ?? 0}</td>
                             </tr>`;
                         $tbody.append(row);
                     });
@@ -591,6 +601,8 @@
             const params = new URLSearchParams();
             params.append("start_date", currentCutoffDetail.start);
             params.append("end_date", currentCutoffDetail.end);
+            const $button = $("#btn_compute_leave_credits");
+            setButtonLoading($button, true, "Computing...");
 
             fetch(`{{ route('previewCutoffLeaveCredits') }}?${params.toString()}`)
                 .then(res => res.json())
@@ -608,12 +620,12 @@
                     data.data.forEach(item => {
                         const row = `
                             <tr>
-                                <td>${item.name}</td>
+                                <td>${formatEmployeeName(item.name)}</td>
                                 <td>${item.total_present ?? 0}</td>
                                 <td>${item.total_late_undertime ?? 0}</td>
-                                <td>${item.earned_points ?? 0}</td>
-                                <td>${item.deducted_points ?? 0}</td>
-                                <td>${item.net_points ?? 0}</td>
+                                <td>${formatThreeDecimals(item.earned_points)}</td>
+                                <td>${formatThreeDecimals(item.deducted_points)}</td>
+                                <td>${formatThreeDecimals(item.net_points)}</td>
                             </tr>`;
                         $tbody.append(row);
                     });
@@ -623,6 +635,9 @@
                 .catch(err => {
                     console.error(err);
                     toastr.error("Failed to compute leave credits.", "Error");
+                })
+                .finally(() => {
+                    setButtonLoading($button, false, "Compute Leave Credits Earned");
                 });
         }
 
@@ -631,6 +646,9 @@
                 toastr.error("Cutoff period is not set.", "Validation");
                 return;
             }
+
+            const $button = $("#btn_save_leave_credits");
+            setButtonLoading($button, true, "Saving...");
 
             fetch(`{{ route('applyCutoffLeaveCredits') }}`, {
                 method: "POST",
@@ -656,7 +674,50 @@
                 .catch(err => {
                     console.error(err);
                     toastr.error("Failed to update leave credits.", "Error");
+                })
+                .finally(() => {
+                    setButtonLoading($button, false, "Save");
                 });
+        }
+
+        function formatDisplayDate(dateString) {
+            if (!dateString) {
+                return "-";
+            }
+
+            const date = new Date(`${dateString}T00:00:00`);
+            if (Number.isNaN(date.getTime())) {
+                return dateString;
+            }
+
+            return date.toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric"
+            });
+        }
+
+        function formatEmployeeName(name) {
+            return (name || "-").toString().trim().toUpperCase();
+        }
+
+        function formatThreeDecimals(value) {
+            const numeric = parseFloat(value ?? 0);
+            return Number.isNaN(numeric) ? "0.000" : numeric.toFixed(3);
+        }
+
+        function setButtonLoading($button, isLoading, loadingText) {
+            const $label = $button.find(".btn-label");
+            const $spinner = $button.find(".spinner-border");
+            const defaultText = $button.data("default-text") || $label.text().trim();
+
+            if (!$button.data("default-text")) {
+                $button.data("default-text", defaultText);
+            }
+
+            $button.prop("disabled", isLoading);
+            $label.text(isLoading ? loadingText : defaultText);
+            $spinner.toggleClass("d-none", !isLoading);
         }
     </script>
 @stop

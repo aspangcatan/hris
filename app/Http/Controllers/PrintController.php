@@ -360,6 +360,11 @@ class PrintController extends Controller
             ])
             ->first();
 
+        $sectionHeadApproval = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $request->id)
+            ->where('role', 'SH')
+            ->first(['status', 'remarks']);
+
         $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
         $totalDays = count($dates_applied);
         $fullName = trim(implode(' ', array_filter([
@@ -393,6 +398,7 @@ class PrintController extends Controller
             'totalDays' => $totalDays,
             'totalHours' => $totalDays * 8,
             'inclusiveDates' => self::getInclusiveDates($dates_applied),
+            'sectionHeadApproval' => $sectionHeadApproval,
         ]);
     }
 

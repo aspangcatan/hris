@@ -194,7 +194,7 @@
                 $("#credit_balances").append(`
                     <div class="col-md-6">
                         <span class="fw-bold">${it.code}:</span>
-                        <span class="ms-1 ${balanceClass}">${it.balance}</span>
+                        <span class="ms-1 ${balanceClass}">${formatLeaveCreditBalance(it.balance)}</span>
                     </div>
                 `);
                 $("#legend_list").append(`
@@ -403,5 +403,10 @@
     function clearForm() {
         $("#leave_form input").not("[type='radio']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
+    }
+
+    function formatLeaveCreditBalance(value) {
+        const numericValue = parseFloat(value || 0);
+        return Number.isNaN(numericValue) ? "0.000" : numericValue.toFixed(3);
     }
 </script>

@@ -266,9 +266,9 @@
                             <td>${log.total_present}</td>
                             <td>${log.total_lateundertime_minutes}</td>
                             <td>${log.description}</td>
-                           <td>${parseFloat(log.earned_points).toFixed(3)}</td>
-                           <td>${parseFloat(log.deducted_points).toFixed(3)}</td>
-                           <td>${(parseFloat(log.earned_points) - parseFloat(log.deducted_points)).toFixed(3)}</td>
+                           <td>${formatThreeDecimals(log.earned_points)}</td>
+                           <td>${formatThreeDecimals(log.deducted_points)}</td>
+                           <td>${formatThreeDecimals((parseFloat(log.earned_points || 0) - parseFloat(log.deducted_points || 0)))}</td>
                         </tr>
                     `;
                         $tableBody.append(row);
@@ -286,6 +286,11 @@
                 "July", "August", "September", "October", "November", "December"
             ];
             return monthNames[monthNumber - 1];
+        }
+
+        function formatThreeDecimals(value) {
+            const numeric = parseFloat(value ?? 0);
+            return Number.isNaN(numeric) ? "0.000" : numeric.toFixed(3);
         }
     </script>
 @stop

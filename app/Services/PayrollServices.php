@@ -707,7 +707,7 @@ class PayrollServices
         }
 
         $dtrService = app(DTRServices::class);
-        $result = $dtrService->getTotalLateAbsent($employeeId, $startDate, $endDate);
+        $result = $dtrService->getCutoffBreakdown($employeeId, $startDate, $endDate);
         $totalWorkingDays = $this->getTotalDaysByRange($startDate, $endDate);
         $totalPresent = $dtrService->getTotalPresentByRange($employeeId, $startDate, $endDate);
         $lateMinutes = $result['late_minutes'] ?? 0;
@@ -725,10 +725,10 @@ class PayrollServices
             'days_absent' => $absences,
             'late_minutes' => $lateMinutes,
             'undertime_minutes' => $undertimeMinutes,
-            'approved_overtime_minutes' => 0,
-            'approved_pass_slips_minutes' => 0,
-            'approved_leave_days' => 0,
-            'hospital_order_days' => 0,
+            'approved_overtime_minutes' => (int) ($result['approved_overtime_minutes'] ?? 0),
+            'approved_pass_slips_minutes' => (int) ($result['approved_pass_slips_minutes'] ?? 0),
+            'approved_leave_days' => (int) ($result['approved_leave_days'] ?? 0),
+            'hospital_order_days' => (int) ($result['hospital_order_days'] ?? 0),
             'generated_by' => $generatedBy,
             'generated_at' => now(),
             'remarks' => $master->title ?? null,
@@ -747,7 +747,7 @@ class PayrollServices
         $table = $this->resolveCutoffSummaryTable();
         $master = $this->getOrCreateCutoffMaster($startDate, $endDate, $title, $generatedBy);
         $dtrService = app(DTRServices::class);
-        $result = $dtrService->getTotalLateAbsent($employeeId, $startDate, $endDate);
+        $result = $dtrService->getCutoffBreakdown($employeeId, $startDate, $endDate);
         $totalWorkingDays = $this->getTotalDaysByRange($startDate, $endDate);
         $totalPresent = $dtrService->getTotalPresentByRange($employeeId, $startDate, $endDate);
         $lateMinutes = $result['late_minutes'] ?? 0;
@@ -765,10 +765,10 @@ class PayrollServices
             'days_absent' => $absences,
             'late_minutes' => $lateMinutes,
             'undertime_minutes' => $undertimeMinutes,
-            'approved_overtime_minutes' => 0,
-            'approved_pass_slips_minutes' => 0,
-            'approved_leave_days' => 0,
-            'hospital_order_days' => 0,
+            'approved_overtime_minutes' => (int) ($result['approved_overtime_minutes'] ?? 0),
+            'approved_pass_slips_minutes' => (int) ($result['approved_pass_slips_minutes'] ?? 0),
+            'approved_leave_days' => (int) ($result['approved_leave_days'] ?? 0),
+            'hospital_order_days' => (int) ($result['hospital_order_days'] ?? 0),
             'generated_by' => $generatedBy,
             'generated_at' => now(),
             'remarks' => $master->title ?? $title,
