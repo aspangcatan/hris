@@ -452,10 +452,9 @@ class ScheduleController extends Controller
                 'code' => [
                     'required',
                     'string',
-                    'max:10',
-                    Rule::unique('hris.schedule_master_lists', 'code')->ignore($entryId)
+                    'max:10'
                 ],
-                'type' => ['required', Rule::in(['FIXED', 'GLIDING'])],
+                'type' => ['required'],
                 'time_in' => 'required|date_format:H:i',
                 'time_in_latest' => 'required|date_format:H:i',
                 'time_out' => 'required|date_format:H:i',
