@@ -21,106 +21,9 @@ class DTRServices
 
     public function getTotalPresent($userid, $month, $year)
     {
-        $workdays = $this->getAllDays($year, $month); // includes weekends
-        $holidays = $this->getHolidays($month, $year); // fetch holidays
-        $leaveDates = $this->getApprovedLeaveDates($userid, $month, $year); // fetch approved leave dates
-        $specialDutyDates = $this->getApprovedSpecialDutyDates($userid, $month, $year); // approved H.O and OT dates
-        $approvedPassSlipDates = array_keys($this->getApprovedPassSlipDates($userid, $month, $year));
-        $presentDays = [];
-        $absentDays = [];
-
-        // Step 1: Determine initial present/absent days
-        foreach ($workdays as $date) {
-            // If date is a holiday, approved leave, or approved special duty, mark as present directly
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
-                $presentDays[$date] = true;
-                unset($absentDays[$date]);
-                continue;
-            }
-
-            $firstIn = $this->getFirstInLog($userid, $date);
-            $lastOut = $this->getLastOutLog($userid, $date);
-
-            if ($firstIn && $lastOut) {
-                $presentDays[$date] = true;
-            } else {
-                $absentDays[$date] = true;
-            }
-        }
-
-        // Step 2: Apply weekend rules
-        foreach ($workdays as $date) {
-            $dayOfWeek = Carbon::parse($date)->format('l');
-
-            // Skip weekend rule processing if holiday, leave, or approved special duty
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
-                continue;
-            }
-
-            if ($dayOfWeek === 'Saturday') {
-                $friday = Carbon::parse($date)->copy()->subDay()->toDateString();
-                $sunday = Carbon::parse($date)->copy()->addDay()->toDateString();
-                $monday = Carbon::parse($date)->copy()->addDays(2)->toDateString();
-
-                // Rule 1: Absent Friday + Present Monday => Sat & Sun Absent
-                if (isset($absentDays[$friday]) && isset($presentDays[$monday])) {
-                    $absentDays[$date] = true; // Saturday
-                    $absentDays[$sunday] = true; // Sunday
-                    unset($presentDays[$date], $presentDays[$sunday]);
-                }
-                // Rule 2: Present Friday + Absent Monday => Sat Absent (if no entry)
-                elseif (isset($presentDays[$friday]) && isset($absentDays[$monday])) {
-                    if (!isset($presentDays[$date])) {
-                        $absentDays[$date] = true; // Saturday only
-                        unset($presentDays[$date]);
-                    }
-                }
-                // Rule 3: Absent Friday + Absent Monday => Sat & Sun Absent
-                elseif (isset($absentDays[$friday]) && isset($absentDays[$monday])) {
-                    $absentDays[$date] = true; // Saturday
-                    $absentDays[$sunday] = true; // Sunday
-                    unset($presentDays[$date], $presentDays[$sunday]);
-                }
-                // Rule 4: Present Friday + Present Monday => Sat & Sun Present
-                elseif (isset($presentDays[$friday]) && isset($presentDays[$monday])) {
-                    $presentDays[$date] = true; // Saturday
-                    $presentDays[$sunday] = true; // Sunday
-                    unset($absentDays[$date], $absentDays[$sunday]);
-                }
-            }
-        }
-
-        // Step 2.5: Handle month boundary weekends
         $startDate = Carbon::createFromDate($year, $month, 1)->toDateString();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
-
-        if (Carbon::parse($startDate)->isSunday()) {
-            $monday = Carbon::parse($startDate)->copy()->addDay()->toDateString();
-            if (isset($presentDays[$monday])) {
-                $presentDays[$startDate] = true;
-                unset($absentDays[$startDate]);
-            }
-        }
-
-        if (Carbon::parse($endDate)->isSaturday()) {
-            $friday = Carbon::parse($endDate)->copy()->subDay()->toDateString();
-            if (isset($presentDays[$friday])) {
-                $presentDays[$endDate] = true;
-                unset($absentDays[$endDate]);
-            }
-        }
-
-        // Step 3: Recalculate present days after weekend + holiday + leave rules
-        $finalPresentCount = 0;
-        foreach ($workdays as $date) {
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
-                $finalPresentCount++;
-            } elseif (!isset($absentDays[$date])) {
-                $finalPresentCount++;
-            }
-        }
-
-        return $finalPresentCount;
+        return $this->getTotalPresentByRange($userid, $startDate, $endDate);
     }
 
     public function getTotalLateAbsent($userid, $start_date, $end_date)
@@ -135,7 +38,11 @@ class DTRServices
         $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date);
 
         $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
-        $logMap = $this->getDailyLogMap($userid, $start_date, $end_date);
+        $logs = $this->getLogsByRange(
+            $userid,
+            Carbon::parse($start_date)->copy()->subDay()->toDateString(),
+            Carbon::parse($end_date)->copy()->addDay()->toDateString()
+        );
 
         foreach ($schedules as $date => $schedule) {
             // Skip weekends and holidays
@@ -148,9 +55,7 @@ class DTRServices
                 continue;
             }
 
-            // Get logs
-            $firstIn = $logMap[$date]['in'] ?? null;
-            $lastOut = $logMap[$date]['out'] ?? null;
+            [$firstIn, $lastOut] = $this->resolveAttendanceLogs($logs, $schedules, $date);
 
             // Handle approved pass slips
             $datePassSlips = $approvedPassSlips->where('slip_date', $date);
@@ -227,7 +132,12 @@ class DTRServices
         $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
         $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
         $approvedPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
-        $logMap = $this->getDailyLogMap($userid, $start_date, $end_date);
+        $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
+        $logs = $this->getLogsByRange(
+            $userid,
+            Carbon::parse($start_date)->copy()->subDay()->toDateString(),
+            Carbon::parse($end_date)->copy()->addDay()->toDateString()
+        );
 
         $presentDays = [];
         $absentDays = [];
@@ -240,8 +150,7 @@ class DTRServices
                 continue;
             }
 
-            $firstIn = $logMap[$date]['in'] ?? null;
-            $lastOut = $logMap[$date]['out'] ?? null;
+            [$firstIn, $lastOut] = $this->resolveAttendanceLogs($logs, $schedules, $date);
 
             if ($firstIn && $lastOut) {
                 $presentDays[$date] = true;
@@ -379,6 +288,13 @@ class DTRServices
         $expectedInLatest = $shift['time_in_latest'] ? Carbon::parse("$date {$shift['time_in_latest']}")->startOfMinute() : $expectedIn;
         $expectedOut = Carbon::parse("$date {$shift['time_out']}")->startOfMinute();
 
+        if ($expectedInLatest->lt($expectedIn)) {
+            $expectedInLatest->addDay();
+        }
+        if ($expectedOut->lte($expectedIn)) {
+            $expectedOut->addDay();
+        }
+
         $actualIn = Carbon::parse($firstIn)->startOfMinute();
 
         // Handle late check-in
@@ -484,6 +400,73 @@ class DTRServices
         }
 
         return $map;
+    }
+
+    private function getLogsByRange($userid, $startDate, $endDate)
+    {
+        return DB::table('hris.dtr_logs')
+            ->where('userid', $userid)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->orderBy('created_at', 'asc')
+            ->get(['created_at', 'status']);
+    }
+
+    private function resolveAttendanceLogs($logs, array $schedules, string $date): array
+    {
+        $schedule = $schedules[$date] ?? null;
+        if (!$schedule) {
+            return $this->resolveDailyLogs($logs, $date);
+        }
+
+        return $this->resolveScheduledLogs($logs, $date, $schedule);
+    }
+
+    private function resolveDailyLogs($logs, string $date): array
+    {
+        $dayLogs = $logs->filter(function ($log) use ($date) {
+            return Carbon::parse($log->created_at)->toDateString() === $date;
+        });
+
+        return [
+            $dayLogs->where('status', 'IN')->min('created_at'),
+            $dayLogs->where('status', 'OUT')->max('created_at'),
+        ];
+    }
+
+    private function resolveScheduledLogs($logs, string $date, array $shift): array
+    {
+        $scheduleIn = Carbon::parse("$date {$shift['time_in']}")->startOfMinute();
+        $scheduleOut = Carbon::parse("$date {$shift['time_out']}")->startOfMinute();
+
+        if ($scheduleOut->lte($scheduleIn)) {
+            $scheduleOut->addDay();
+        }
+
+        // Match the controller behavior so overnight next-day OUT logs are
+        // tied back to the scheduled shift date without changing tardiness rules.
+        $windowStart = $scheduleIn->copy()->subHours(6);
+        $windowEnd = $scheduleOut->copy()->addHours(8);
+
+        $relevantLogs = $logs->filter(function ($log) use ($windowStart, $windowEnd) {
+            $logTime = Carbon::parse($log->created_at);
+            return $logTime->gte($windowStart) && $logTime->lte($windowEnd);
+        });
+
+        $firstIn = $relevantLogs->where('status', 'IN')->min('created_at');
+        if (!$firstIn) {
+            return [null, null];
+        }
+
+        $firstInTime = Carbon::parse($firstIn)->startOfMinute();
+        $lastOut = $relevantLogs
+            ->where('status', 'OUT')
+            ->pluck('created_at')
+            ->filter(function ($out) use ($firstInTime) {
+                return Carbon::parse($out)->startOfMinute()->gte($firstInTime);
+            })
+            ->max();
+
+        return [$firstIn, $lastOut];
     }
 
     private function getApprovedLeaveDates($userid, $month, $year)

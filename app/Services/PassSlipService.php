@@ -5,9 +5,19 @@ namespace App\Services;
 use App\Models\PassSlip;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PassSlipService
 {
+    private function getManagedSectionIds(): array
+    {
+        return DB::table('tdh_user.section')
+            ->where('head', Auth::id())
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
     private function isAdmin(): bool
     {
         return in_array(session('access_rights'), ['admin'], true);
@@ -45,8 +55,7 @@ class PassSlipService
     public function getPendingSlips(string $search = '', int $perPage = 10)
     {
         $isAdmin = $this->isAdmin();
-        $user = Auth::user();
-        $sectionId = $user->section ?? null;
+        $managedSectionIds = $this->getManagedSectionIds();
 
         if ($isAdmin && $search === '') {
             return PassSlip::with('user')
@@ -57,10 +66,10 @@ class PassSlipService
 
         $userQuery = User::query();
         if (!$isAdmin) {
-            if (empty($sectionId)) {
+            if (empty($managedSectionIds)) {
                 return PassSlip::query()->whereRaw('1 = 0')->paginate($perPage);
             }
-            $userQuery->where('section', $sectionId);
+            $userQuery->whereIn('section', $managedSectionIds);
         }
 
         if ($search !== '') {
@@ -100,10 +109,8 @@ class PassSlipService
             return $slip;
         }
 
-        $user = Auth::user();
-        $sectionId = $user->section ?? null;
-
-        if (empty($sectionId)) {
+        $managedSectionIds = $this->getManagedSectionIds();
+        if (empty($managedSectionIds)) {
             return null;
         }
 
@@ -113,7 +120,7 @@ class PassSlipService
         }
 
         $slipOwner = User::query()->select('id', 'section')->find($slip->user_id);
-        if (!$slipOwner || (int) $slipOwner->section !== (int) $sectionId) {
+        if (!$slipOwner || !in_array((int) $slipOwner->section, $managedSectionIds, true)) {
             return null;
         }
 

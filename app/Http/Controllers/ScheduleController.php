@@ -239,6 +239,10 @@ class ScheduleController extends Controller
                     u.suffix,
                     COALESCE(d.description, 'No Designation') AS designation
                 ")
+                ->where(function ($query) {
+                    $query->whereNull('u.employee_type')
+                        ->orWhere('u.employee_type', '!=', 'Resigned');
+                })
                 ->orderBy('u.lname', 'asc')
                 ->orderBy('u.fname', 'asc');
 

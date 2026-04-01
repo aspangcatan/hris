@@ -724,15 +724,129 @@ class DTRController extends Controller
                             }
                         }
 
+                        $previousDay = Carbon::parse($currentDay)->subDay()->toDateString();
+                        $prevSched = $schedules[$previousDay] ?? null;
+                        $prevSchedIn = null;
+                        $prevSchedOut = null;
+                        $previousDayIsOvernightSchedule = false;
+                        if ($prevSched) {
+                            $prevSchedIn = Carbon::parse($previousDay . ' ' . $prevSched->time_in);
+                            $prevSchedOut = Carbon::parse($previousDay . ' ' . $prevSched->time_out);
+                            $previousDayIsOvernightSchedule = $prevSchedOut->lte($prevSchedIn);
+                            if ($previousDayIsOvernightSchedule) {
+                                $prevSchedOut->addDay();
+                            }
+                        }
+
+                        $scheduleMatchedAm = false;
+                        $scheduleMatchedPm = false;
+                        $firstIn = null;
+                        $lastOut = null;
+
+                        if ($rawSched && !$isOffSchedule) {
+                            if ($isOvernightSchedule) {
+                                $nextDay = Carbon::parse($currentDay)->addDay()->toDateString();
+
+                                $currentDayLogs = $logs->filter(function ($log) use ($currentDay) {
+                                    return Carbon::parse($log->created_at)->toDateString() === $currentDay;
+                                });
+                                $nextDayLogs = $logs->filter(function ($log) use ($nextDay) {
+                                    return Carbon::parse($log->created_at)->toDateString() === $nextDay;
+                                });
+
+                                $schedInWindowStart = Carbon::parse($currentDay . ' ' . $rawSched->time_in)->subHours(6);
+                                $schedInWindowEnd = Carbon::parse($currentDay . ' 23:59:59');
+                                $firstIn = $currentDayLogs
+                                    ->where('status', 'IN')
+                                    ->pluck('created_at')
+                                    ->filter(function ($createdAt) use ($schedInWindowStart, $schedInWindowEnd) {
+                                        $logTime = Carbon::parse($createdAt);
+                                        return $logTime->gte($schedInWindowStart) && $logTime->lte($schedInWindowEnd);
+                                    })
+                                    ->min();
+
+                                if ($firstIn) {
+                                    $firstInTime = Carbon::parse($firstIn)->startOfMinute();
+                                    $schedOutWindowStart = $firstInTime->copy();
+                                    $schedOutWindowEnd = Carbon::parse($nextDay . ' ' . $rawSched->time_out)->addHours(8);
+
+                                    $lastOut = $nextDayLogs
+                                        ->where('status', 'OUT')
+                                        ->pluck('created_at')
+                                        ->filter(function ($createdAt) use ($schedOutWindowStart, $schedOutWindowEnd) {
+                                            $logTime = Carbon::parse($createdAt);
+                                            return $logTime->gte($schedOutWindowStart) && $logTime->lte($schedOutWindowEnd);
+                                        })
+                                        ->max();
+
+                                    $scheduleMatchedPm = true;
+                                    $scheduleMatchedAm = (bool) $lastOut;
+                                }
+                            } else {
+                                $calcSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
+                                $calcSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
+                                if ($calcSchedOut->lte($calcSchedIn)) {
+                                    $calcSchedOut->addDay();
+                                }
+
+                                // Anchor matching to the plotted schedule first so spillover
+                                // logs from a previous overnight shift do not drive today's
+                                // half-day or tardiness logic.
+                                $windowStart = $calcSchedIn->copy()->subHours(6);
+                                $windowEnd = $calcSchedOut->copy()->addHours(8);
+
+                                $scheduleMatchedLogs = $logs->filter(function ($log) use ($windowStart, $windowEnd) {
+                                    $logTime = Carbon::parse($log->created_at);
+                                    return $logTime->gte($windowStart) && $logTime->lte($windowEnd);
+                                });
+
+                                $firstIn = $scheduleMatchedLogs->where('status', 'IN')->min('created_at');
+                                if ($firstIn) {
+                                    $firstInTime = Carbon::parse($firstIn)->startOfMinute();
+                                    $lastOut = $scheduleMatchedLogs
+                                        ->where('status', 'OUT')
+                                        ->pluck('created_at')
+                                        ->filter(fn($out) => Carbon::parse($out)->startOfMinute()->gte($firstInTime))
+                                        ->max();
+
+                                    $pairedLogs = $scheduleMatchedLogs->filter(function ($log) use ($firstInTime, $lastOut) {
+                                        $logTime = Carbon::parse($log->created_at)->startOfMinute();
+                                        if ($logTime->lt($firstInTime)) {
+                                            return false;
+                                        }
+                                        if ($lastOut) {
+                                            return $logTime->lte(Carbon::parse($lastOut)->startOfMinute());
+                                        }
+                                        return true;
+                                    });
+
+                                    $scheduleMatchedAm = $pairedLogs->contains(function ($log) {
+                                        return Carbon::parse($log->created_at)->format('H:i:s') < '12:00:00';
+                                    });
+                                    $scheduleMatchedPm = $pairedLogs->contains(function ($log) {
+                                        return Carbon::parse($log->created_at)->format('H:i:s') >= '12:00:00';
+                                    });
+                                }
+                            }
+                        }
+
                         // 1. Determine if logs exist in each period
-                        $hasAm = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
-                        $hasPm = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
+                        $hasAm = $rawSched ? $scheduleMatchedAm : ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
+                        $hasPm = $rawSched ? $scheduleMatchedPm : ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
+                        $hasTodayIn = ($data['date_timein_am'] !== '' || $data['date_timein_pm'] !== '');
+                        $hasTodayOut = ($data['date_timeout_am'] !== '' || $data['date_timeout_pm'] !== '');
+                        $isOvernightSpilloverOnly =
+                            !$hasTodayIn &&
+                            $hasTodayOut &&
+                            $data['date_timeout_am'] !== '' &&
+                            $data['date_timeout_pm'] === '' &&
+                            $previousDayIsOvernightSchedule;
 
                         // 2. Identify Half-Day:
                         // Only apply half-day logic when the plotted schedule actually spans AM and PM.
                         // This avoids false half-day tagging for shifts like 2PM-10PM.
                         $supportsHalfDay = false;
-                        if ($rawSched && !$isOvernightSchedule && $rawSchedIn && $rawSchedOut) {
+                        if (!$isOvernightSpilloverOnly && $rawSched && !$isOvernightSchedule && $rawSchedIn && $rawSchedOut) {
                             $noon = Carbon::parse($currentDay . ' 12:00:00');
                             $supportsHalfDay = $rawSchedIn->lt($noon) && $rawSchedOut->gt($noon);
                         }
@@ -740,7 +854,9 @@ class DTRController extends Controller
 
                         // 3. Define the calculation schedule
                         $calcSched = null;
-                        if ($isHalfDay) {
+                        if ($isOvernightSpilloverOnly) {
+                            $calcSched = null;
+                        } elseif ($isHalfDay) {
                             // Strictly 08:00 AM - 12:00 NN (Morning) or 01:00 PM - 05:00 PM (Afternoon)
                             $calcSched = new \stdClass();
                             $calcSched->type = 'FIXED'; // Half-day override is always fixed duration
@@ -758,10 +874,7 @@ class DTRController extends Controller
                             $calcSched = $rawSched;
                         }
 
-                        $firstIn = null;
-                        $lastOut = null;
-
-                        if ($calcSched && !$isOffSchedule) {
+                        if ($calcSched && !$isOffSchedule && (!$rawSched || $isHalfDay)) {
                             $calcSchedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
                             $calcSchedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
                             if ($calcSchedOut->lte($calcSchedIn)) {

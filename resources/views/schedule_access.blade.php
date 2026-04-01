@@ -80,11 +80,58 @@
             font-weight: 700;
         }
 
-        #scheduleAccessModal .search-line {
+        #scheduleAccessModal .modal-toolbar {
+            display: grid;
+            grid-template-columns: minmax(220px, 320px) auto;
+            gap: .75rem;
+            align-items: start;
+        }
+
+        #scheduleAccessModal .modal-toolbar-actions {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        #scheduleAccessModal .toolbar-input {
             border: 1px solid #e5ebf3;
             border-radius: 12px;
             padding: .4rem .65rem;
             background: #fff;
+            width: 100%;
+            min-width: 0;
+        }
+
+        #scheduleAccessModal .btn-toolbar-action {
+            width: auto;
+            min-width: 124px;
+            height: 42px;
+            padding: .55rem .9rem;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            font-size: .92rem;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        #scheduleAccessModal .btn-toolbar-action i {
+            font-size: .95rem;
+        }
+
+        #scheduleAccessModal .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+
+        #scheduleAccessModal .modal-footer .btn {
+            min-width: 132px;
+            justify-content: center;
         }
 
         #scheduleAccessModal .section-box {
@@ -111,6 +158,20 @@
             text-transform: uppercase;
             letter-spacing: .65px;
             margin-bottom: .55rem;
+        }
+
+        @media (max-width: 991.98px) {
+            #scheduleAccessModal .modal-toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            #scheduleAccessModal .modal-toolbar-actions {
+                justify-content: stretch;
+            }
+
+            #scheduleAccessModal .btn-toolbar-action {
+                flex: 1 1 160px;
+            }
         }
     </style>
 
@@ -161,18 +222,29 @@
                         <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
-                            <input type="text" class="form-control search-line" id="section_search" placeholder="Search section or division..." style="max-width: 320px;">
-                            <input class="form-control" id="quick_section_search" list="quick_section_list" placeholder="Quick find section..." style="max-width: 360px;">
-                            <datalist id="quick_section_list"></datalist>
-                            <button class="btn btn-action btn-view btn-sm" id="btn_select_visible" type="button">Select Visible</button>
-                            <button class="btn btn-action btn-delete btn-sm" id="btn_clear_visible" type="button">Clear Visible</button>
+                        <div class="modal-toolbar mb-3">
+                            <select class="form-select toolbar-input" id="division_filter">
+                                <option value="">All divisions</option>
+                            </select>
+                            <div class="modal-toolbar-actions">
+                                <button class="btn btn-action btn-view btn-toolbar-action" id="btn_select_visible" type="button">
+                                    <i class="bi bi-check2-square"></i>
+                                    <span>Select Visible</span>
+                                </button>
+                                <button class="btn btn-action btn-delete btn-toolbar-action" id="btn_clear_visible" type="button">
+                                    <i class="bi bi-eraser"></i>
+                                    <span>Clear Visible</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="section-box" id="modal_section_list"></div>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-light" data-bs-dismiss="modal" type="button">Cancel</button>
-                        <button class="btn btn-action btn-edit" id="btn_save_modal_sections" type="button">Save Sections</button>
+                        <button class="btn btn-action btn-edit btn-toolbar-action" id="btn_save_modal_sections" type="button">
+                            <i class="bi bi-save2"></i>
+                            <span>Save Sections</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -196,29 +268,8 @@
                     openAssignModal(Number($(this).data("user-id")));
                 });
 
-                $("#section_search").on("input", function () {
+                $("#division_filter").on("change", function () {
                     renderSectionChecklist(currentManagerId, $(this).val());
-                });
-
-                $("#quick_section_search").on("change", function () {
-                    const selectedValue = String($(this).val() || "");
-                    const sectionId = Number(selectedValue.split("||")[0] || 0);
-                    if (!sectionId) {
-                        return;
-                    }
-
-                    const checkbox = $(`#modal_section_list input[type='checkbox'][value='${sectionId}']`);
-                    if (!checkbox.length) {
-                        return;
-                    }
-
-                    checkbox.prop("checked", true);
-                    const item = checkbox.closest(".section-item");
-                    if (item.length) {
-                        item[0].scrollIntoView({ behavior: "smooth", block: "center" });
-                        item.addClass("bg-warning-subtle");
-                        setTimeout(() => item.removeClass("bg-warning-subtle"), 900);
-                    }
                 });
 
                 $("#btn_select_visible").on("click", function () {
@@ -344,49 +395,58 @@
 
                 currentManagerId = userId;
                 $("#modal_manager_label").text(`${manager.name} - ${manager.designation}`);
-                $("#section_search").val("");
-                renderQuickSectionOptions();
+                populateDivisionFilter();
+                $("#division_filter").val("");
                 renderSectionChecklist(userId, "");
                 scheduleAccessModal.show();
             }
 
-            function renderQuickSectionOptions() {
-                const list = $("#quick_section_list");
-                list.empty();
-                $("#quick_section_search").val("");
+            function populateDivisionFilter() {
+                const select = $("#division_filter");
+                const currentValue = String(select.val() || "");
+                const divisions = [...new Set(
+                    allManagerSections
+                        .map(section => String(section.division_description || "").trim())
+                        .filter(Boolean)
+                )].sort((a, b) => a.localeCompare(b));
 
-                allManagerSections.forEach(section => {
-                    const label = `${section.division_description} - ${section.description}`;
-                    list.append(`<option value="${section.id}||${label}"></option>`);
+                select.html(`<option value="">All divisions</option>`);
+                divisions.forEach(division => {
+                    select.append($("<option>", {
+                        value: division,
+                        text: division
+                    }));
                 });
+
+                select.val(divisions.includes(currentValue) ? currentValue : "");
             }
 
-            function renderSectionChecklist(userId, keyword) {
+            function renderSectionChecklist(userId, divisionFilter) {
                 const manager = managersById[userId];
                 if (!manager) {
                     $("#modal_section_list").html("");
                     return;
                 }
 
-                const q = String(keyword || "").toLowerCase().trim();
+                const selectedDivision = String(divisionFilter || "").trim().toLowerCase();
                 const assigned = new Set((manager.assigned_section_ids || []).map(id => Number(id)));
                 const grouped = {};
 
                 allManagerSections.forEach(section => {
-                    const label = `${section.division_description} ${section.description}`.toLowerCase();
-                    if (q && !label.includes(q)) {
+                    const divisionName = String(section.division_description || "").trim();
+                    if (selectedDivision && divisionName.toLowerCase() !== selectedDivision) {
                         return;
                     }
 
-                    if (!grouped[section.division_description]) {
-                        grouped[section.division_description] = [];
+                    if (!grouped[divisionName]) {
+                        grouped[divisionName] = [];
                     }
-                    grouped[section.division_description].push(section);
+                    grouped[divisionName].push(section);
                 });
 
                 const divisions = Object.keys(grouped);
                 if (!divisions.length) {
-                    $("#modal_section_list").html(`<div class="text-muted">No sections match your search.</div>`);
+                    $("#modal_section_list").html(`<div class="text-muted">No sections found for the selected division.</div>`);
                     return;
                 }
 
