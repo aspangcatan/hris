@@ -229,6 +229,7 @@ class ScheduleController extends Controller
 
             $employeesQuery = DB::table('tdh_user.users as u')
                 ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->join('hris.employees as e', 'u.id', '=', 'e.user_id')
                 ->selectRaw("
                     u.id as employee_id,
                     u.section as section_id,
@@ -240,8 +241,8 @@ class ScheduleController extends Controller
                     COALESCE(d.description, 'No Designation') AS designation
                 ")
                 ->where(function ($query) {
-                    $query->whereNull('u.employee_type')
-                        ->orWhere('u.employee_type', '!=', 'Resigned');
+                    $query->whereNull('e.employee_type')
+                        ->orWhere('e.employee_type', '!=', 'Resigned');
                 })
                 ->orderBy('u.lname', 'asc')
                 ->orderBy('u.fname', 'asc');
