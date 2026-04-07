@@ -35,7 +35,7 @@ class PromotionWorkController extends Controller
             $results = PromotionWork::where(function ($query) use ($search) {
                 $query->where('user_id', '=', Auth::id());
                 if ($search != "") {
-                    $query->where('', 'LIKE', '%' . $search . '%');
+                    $query->where('position_applied', 'LIKE', '%' . $search . '%');
                 }
             })->get();
             return response(['code' => 200, 'results' => $results]);

@@ -192,46 +192,4 @@ class EmployeeController extends Controller
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
-
-    public function deleteEmployee(Request $request)
-    {
-        return response(['code' => 200, 'message' => 'Employee account permanently deleted.']);
-
-        $request->validate([
-            'user_id' => 'required|integer',
-        ]);
-
-        $userId = (int) $request->user_id;
-
-        try {
-            if ($userId === (int) Auth::id()) {
-                return response(['code' => 500, 'message' => 'You cannot delete your own account.']);
-            }
-
-            $user = DB::connection('users')->table('users')->where('id', $userId)->first();
-            if (!$user) {
-                return response(['code' => 404, 'message' => 'User not found.']);
-            }
-
-            if (isset($user->username) && strtolower((string) $user->username) === 'admin') {
-                return response(['code' => 500, 'message' => 'Admin account cannot be deleted.']);
-            }
-
-            DB::connection('mysql')->beginTransaction();
-            DB::connection('users')->beginTransaction();
-
-            DB::table('hris.employees')->where('user_id', $userId)->delete();
-            DB::connection('users')->table('users')->where('id', $userId)->delete();
-
-            DB::connection('users')->commit();
-            DB::connection('mysql')->commit();
-
-            return response(['code' => 200, 'message' => 'Employee account permanently deleted.']);
-        } catch (\Exception $exception) {
-            DB::connection('users')->rollBack();
-            DB::connection('mysql')->rollBack();
-            return response(['code' => 500, 'message' => $exception->getMessage()]);
-        }
-    }
-
 }

@@ -578,7 +578,7 @@ class SalnController extends Controller
         }
     }
 
-    function getSpouseRealProperties(Request $request)
+    public function getSpouseRealProperties(Request $request)
     {
         try {
             $query = SpouseRealProperties::where('user_id', Auth::id());

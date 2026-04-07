@@ -17,7 +17,7 @@ class DTRController extends Controller
     private function canManageRawTimelog(): bool
     {
         $accessRights = strtolower((string) session('access_rights'));
-        return in_array($accessRights, ['admin', 'it','DH'], true);
+        return in_array($accessRights, ['admin', 'it','dh'], true);
     }
 
     public function store(Request $request)
@@ -1113,8 +1113,7 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
         }
     }
 
-    public
-    function getInCharged($division)
+    public function getInCharged($division)
     {
         return DB::table('tdh_user.division as d')
             ->join('tdh_user.users as u', 'd.head', '=', 'u.id')
@@ -1122,16 +1121,14 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
             ->first();
     }
 
-    public
-    function checkIfDivisionHead($id)
+    public function checkIfDivisionHead($id)
     {
         return DB::table('tdh_user.division')
             ->where('head', '=', $id)
             ->exists();
     }
 
-    public
-    function getDivisionByUser($id)
+    public function getDivisionByUser($id)
     {
         return DB::table('tdh_user.users')
             ->where('id', '=', $id)

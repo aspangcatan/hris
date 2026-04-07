@@ -298,7 +298,6 @@ Route::group(['middleware' => 'auth'], function () {
     #EMPLOYEE
     Route::get('/employee/get', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeDetails'])->name('getEmployeeDetails');
     Route::get('/employee/get/list', [\App\Http\Controllers\EmployeeController::class, 'getEmployee'])->name('getEmployee');
-    Route::delete('/employee/delete', [\App\Http\Controllers\EmployeeController::class, 'deleteEmployee'])->name('deleteEmployee');
     Route::post('/employee/update', [\App\Http\Controllers\EmployeeController::class, 'insertUpdateEmployee'])->name('insertUpdateEmployee');
     Route::post('/employee/update/status', [\App\Http\Controllers\EmployeeController::class, 'updateEmployeeStatus'])->name('updateEmployeeStatus');
 #ADDRESS
