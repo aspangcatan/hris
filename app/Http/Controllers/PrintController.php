@@ -171,7 +171,8 @@ class PrintController extends Controller
     public function minifyDesignation($texts)
     {
         $text_array = explode(" ", $texts);
-        if (count($text_array) < 4) return strtoupper($texts);
+        if (count($text_array) < 4)
+            return strtoupper($texts);
 
         $title = '';
         for ($i = 0; $i < count($text_array); $i++) {
@@ -462,7 +463,7 @@ class PrintController extends Controller
             }
 
             $declarant = DB::table('tdh_user.users as u')
-                ->leftJoin('hris.saln_declarant as d', function($join) use ($complianceFor) {
+                ->leftJoin('hris.saln_declarant as d', function ($join) use ($complianceFor) {
                     $join->on('u.id', '=', 'd.user_id');
                     if (!empty($complianceFor)) {
                         if (strlen($complianceFor) === 4) {
@@ -503,7 +504,7 @@ class PrintController extends Controller
                 ->first();
 
             $spouse = DB::table('hris.family_backgrounds as f')
-                ->leftJoin('hris.saln_spouse as d', function($join) use ($complianceFor) {
+                ->leftJoin('hris.saln_spouse as d', function ($join) use ($complianceFor) {
                     $join->on('f.user_id', '=', 'd.user_id');
                     if (!empty($complianceFor)) {
                         if (strlen($complianceFor) === 4) {
@@ -514,8 +515,18 @@ class PrintController extends Controller
                     }
                 })
                 ->where('f.user_id', '=', $user_id)
-                ->get(['f.spouse_fname', 'f.spouse_mname', 'f.spouse_lname', 'f.spouse_ext_name', 'd.position', 'd.agency',
-                    'd.office', 'd.government_id_issued', 'd.government_id_no', 'd.date_issued'])
+                ->get([
+                    'f.spouse_fname',
+                    'f.spouse_mname',
+                    'f.spouse_lname',
+                    'f.spouse_ext_name',
+                    'd.position',
+                    'd.agency',
+                    'd.office',
+                    'd.government_id_issued',
+                    'd.government_id_no',
+                    'd.date_issued'
+                ])
                 ->first();
 
 
@@ -702,7 +713,7 @@ class PrintController extends Controller
             $all_real_properties = $realPropQuery->get();
 
             foreach ($all_real_properties as $i => $prop) {
-                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $cost = (double) str_replace(',', '', $prop->acquisition_cost);
                 $entry = [
                     'description' => $prop->description,
                     'kind' => $prop->kind,
@@ -741,7 +752,7 @@ class PrintController extends Controller
             $spouse_real_properties_db = $spouseRealPropQuery->get();
 
             foreach ($spouse_real_properties_db as $i => $prop) {
-                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $cost = (double) str_replace(',', '', $prop->acquisition_cost);
                 $entry = [
                     'description' => $prop->description,
                     'kind' => $prop->kind,
@@ -775,7 +786,7 @@ class PrintController extends Controller
             $all_personal_properties = $personalPropQuery->get();
 
             foreach ($all_personal_properties as $i => $prop) {
-                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $cost = (double) str_replace(',', '', $prop->acquisition_cost);
                 $entry = [
                     'gadget' => $prop->gadget,
                     'various_years' => $prop->various_years,
@@ -809,7 +820,7 @@ class PrintController extends Controller
             $spouse_personal_properties_db = $spousePersonalPropQuery->get();
 
             foreach ($spouse_personal_properties_db as $i => $prop) {
-                $cost = (double)str_replace(',', '', $prop->acquisition_cost);
+                $cost = (double) str_replace(',', '', $prop->acquisition_cost);
                 $entry = [
                     'gadget' => $prop->gadget,
                     'various_years' => $prop->various_years,
@@ -838,7 +849,7 @@ class PrintController extends Controller
             $all_liabilities = $liabilitiesQuery->get();
 
             foreach ($all_liabilities as $i => $lib) {
-                $bal = (double)str_replace(',', '', $lib->outstanding_balance);
+                $bal = (double) str_replace(',', '', $lib->outstanding_balance);
                 $entry = [
                     'nature' => $lib->nature,
                     'creditors_name' => $lib->creditors_name,
@@ -872,7 +883,7 @@ class PrintController extends Controller
             $spouse_liabilities_db = $spouseLiabilitiesQuery->get();
 
             foreach ($spouse_liabilities_db as $i => $lib) {
-                $bal = (double)str_replace(',', '', $lib->outstanding_balance);
+                $bal = (double) str_replace(',', '', $lib->outstanding_balance);
                 $entry = [
                     'nature' => $lib->nature,
                     'creditors_name' => $lib->creditors_name,
@@ -1180,7 +1191,8 @@ class PrintController extends Controller
             $survey = Survey::where('user_id', $user_id)->get();
             $reference = Reference::where('user_id', $user_id)->get();
 
-            if (count($survey) > 0) $surveys = $survey;
+            if (count($survey) > 0)
+                $surveys = $survey;
 
             for ($i = 0; $i < 13; $i++) {
                 $name = "N/A";
@@ -1282,7 +1294,17 @@ class PrintController extends Controller
                     $eligibility_column_2 = $eligiblity[$i]->rating;
 
                     if ($eligiblity[$i]->examination_end_date) {
-                        $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date)) . "-" . date('m/d/Y', strtotime($eligiblity[$i]->examination_end_date));
+                        if (
+                            date('Y-m-d', strtotime($eligiblity[$i]->examination_date)) ===
+                            date('Y-m-d', strtotime($eligiblity[$i]->examination_end_date))
+                        ) {
+                            $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date));
+                        } else {
+                            $eligibility_column_3 =
+                                date('m/d/Y', strtotime($eligiblity[$i]->examination_date)) .
+                                " - " .
+                                date('m/d/Y', strtotime($eligiblity[$i]->examination_end_date));
+                        }
                     } else {
                         $eligibility_column_3 = date('m/d/Y', strtotime($eligiblity[$i]->examination_date));
                     }
@@ -1296,9 +1318,14 @@ class PrintController extends Controller
                     if ($eligiblity[$i]->license_expiry)
                         $eligibility_column_6 = date('d/m/Y', strtotime($eligiblity[$i]->license_expiry));
                 }
-                $eligibilities[$i] = ['career_service' => $eligibility_column_1, 'rating' => $eligibility_column_2,
-                    'examination_date' => $eligibility_column_3, 'examination_place' => $eligibility_column_4,
-                    'license_no' => $eligibility_column_5, 'license_expiry' => $eligibility_column_6];
+                $eligibilities[$i] = [
+                    'career_service' => $eligibility_column_1,
+                    'rating' => $eligibility_column_2,
+                    'examination_date' => $eligibility_column_3,
+                    'examination_place' => $eligibility_column_4,
+                    'license_no' => $eligibility_column_5,
+                    'license_expiry' => $eligibility_column_6
+                ];
             }
 
             for ($i = 0; $i < $request->experience_rows; $i++) {
@@ -1334,10 +1361,16 @@ class PrintController extends Controller
                     $work_column_8 = ($work_experience[$i]->is_government == 1) ? "Y" : "N";
                 }
 
-                $work_experiences[$i] = ['working_from' => $work_column_1, 'working_to' => $work_column_2,
-                    'position' => $work_column_3, 'agency' => $work_column_4,
-                    'monthly_salary' => $work_column_5, 'salary_grade' => $work_column_6,
-                    'appointment_status' => $work_column_7, 'is_government' => $work_column_8];
+                $work_experiences[$i] = [
+                    'working_from' => $work_column_1,
+                    'working_to' => $work_column_2,
+                    'position' => $work_column_3,
+                    'agency' => $work_column_4,
+                    'monthly_salary' => $work_column_5,
+                    'salary_grade' => $work_column_6,
+                    'appointment_status' => $work_column_7,
+                    'is_government' => $work_column_8
+                ];
             }
 
 
@@ -1363,10 +1396,16 @@ class PrintController extends Controller
                     $work_column_7 = $work_experience[$i]->appointment_status;
                     $work_column_8 = ($work_experience[$i]->is_government == 1) ? "Y" : "N";
 
-                    $next_page_work_inner_array[$work_counter++] = ['working_from' => $work_column_1, 'working_to' => $work_column_2,
-                        'position' => $work_column_3, 'agency' => $work_column_4,
-                        'monthly_salary' => $work_column_5, 'salary_grade' => $work_column_6,
-                        'appointment_status' => $work_column_7, 'is_government' => $work_column_8];
+                    $next_page_work_inner_array[$work_counter++] = [
+                        'working_from' => $work_column_1,
+                        'working_to' => $work_column_2,
+                        'position' => $work_column_3,
+                        'agency' => $work_column_4,
+                        'monthly_salary' => $work_column_5,
+                        'salary_grade' => $work_column_6,
+                        'appointment_status' => $work_column_7,
+                        'is_government' => $work_column_8
+                    ];
 
                     #CHECK IF LAST LOOP
                     if ($i == count($work_experience) - 1) {
@@ -1404,9 +1443,13 @@ class PrintController extends Controller
                     $voluntary_column_5 = $voluntary_work[$i]->position;
                 }
 
-                $voluntary_works[$i] = ['organization_address' => $voluntary_column_1, 'working_from' => $voluntary_column_2,
-                    'working_to' => $voluntary_column_3, 'number_hours' => $voluntary_column_4,
-                    'position' => $voluntary_column_5];
+                $voluntary_works[$i] = [
+                    'organization_address' => $voluntary_column_1,
+                    'working_from' => $voluntary_column_2,
+                    'working_to' => $voluntary_column_3,
+                    'number_hours' => $voluntary_column_4,
+                    'position' => $voluntary_column_5
+                ];
             }
 
 
@@ -1438,9 +1481,14 @@ class PrintController extends Controller
                     $learning_column_6 = $learning[$i]->conducted_by;
                 }
 
-                $learnings[$i] = ['learning_title' => $learning_column_1, 'attendance_from' => $learning_column_2,
-                    'attendance_to' => $learning_column_3, 'number_hours' => $learning_column_4,
-                    'learning_type' => $learning_column_5, 'conducted_by' => $learning_column_6];
+                $learnings[$i] = [
+                    'learning_title' => $learning_column_1,
+                    'attendance_from' => $learning_column_2,
+                    'attendance_to' => $learning_column_3,
+                    'number_hours' => $learning_column_4,
+                    'learning_type' => $learning_column_5,
+                    'conducted_by' => $learning_column_6
+                ];
             }
 
             $next_page_learning_outer_array = [];
@@ -1463,9 +1511,14 @@ class PrintController extends Controller
                     $learning_column_5 = $learning[$i]->learning_type;
                     $learning_column_6 = $learning[$i]->conducted_by;
 
-                    $next_page_learning_inner_array[$counter++] = ['learning_title' => $learning_column_1, 'attendance_from' => $learning_column_2,
-                        'attendance_to' => $learning_column_3, 'number_hours' => $learning_column_4,
-                        'learning_type' => $learning_column_5, 'conducted_by' => $learning_column_6];
+                    $next_page_learning_inner_array[$counter++] = [
+                        'learning_title' => $learning_column_1,
+                        'attendance_from' => $learning_column_2,
+                        'attendance_to' => $learning_column_3,
+                        'number_hours' => $learning_column_4,
+                        'learning_type' => $learning_column_5,
+                        'conducted_by' => $learning_column_6
+                    ];
 
                     #CHECK IF LAST LOOP
                     if ($i == count($learning) - 1) {
@@ -1520,11 +1573,26 @@ class PrintController extends Controller
                 $references[$i] = ['name' => $name, 'address' => $address, 'contact_no' => $contact_no];
             }
 
-            $pdf = Pdf::loadView('pdf.new.pds', ['user' => $user, 'employee' => $employee,
-                'residential' => $residential, 'permanent' => $permanent, 'family' => $family, 'childrens' => $childrens,
-                'educations' => $educations, 'eligibility' => $eligibilities, 'work_experience' => $work_experiences, 'next_page_work' => $next_page_work_outer_array,
-                'voluntary_work' => $voluntary_works, 'learning' => $learnings, 'next_page_learning' => $next_page_learning_outer_array, 'skill' => $skills, 'survey' => $surveys,
-                'reference' => $references, 'pds_date' => $request->pds_date, 'sworn_date' => $request->sworn_date]);
+            $pdf = Pdf::loadView('pdf.new.pds', [
+                'user' => $user,
+                'employee' => $employee,
+                'residential' => $residential,
+                'permanent' => $permanent,
+                'family' => $family,
+                'childrens' => $childrens,
+                'educations' => $educations,
+                'eligibility' => $eligibilities,
+                'work_experience' => $work_experiences,
+                'next_page_work' => $next_page_work_outer_array,
+                'voluntary_work' => $voluntary_works,
+                'learning' => $learnings,
+                'next_page_learning' => $next_page_learning_outer_array,
+                'skill' => $skills,
+                'survey' => $surveys,
+                'reference' => $references,
+                'pds_date' => $request->pds_date,
+                'sworn_date' => $request->sworn_date
+            ]);
 
             $pdf->setPaper('A4', 'landscape');
 

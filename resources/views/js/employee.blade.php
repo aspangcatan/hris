@@ -369,7 +369,12 @@
                 $("#service_from").addClass("is-invalid");
             }
 
-        
+            if (date_to == "") {
+                is_valid = false;
+                $(".error_list").append("<li>Date to is required</li>");
+                $("#service_to").addClass("is-invalid");
+            }
+
             if (designation == "") {
                 is_valid = false;
                 $(".error_list").append("<li>Designation is required</li>");
