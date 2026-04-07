@@ -553,7 +553,18 @@ class DTRController extends Controller
                     ->where('s.employee_id', $employee->id)
                     ->whereMonth('s.schedule_date', $month)
                     ->whereYear('s.schedule_date', $year)
-                    ->select('s.schedule_date', 'sml.time_in', 'sml.time_in_latest', 'sml.time_out', 'sml.time_out_latest', 'sml.type', 'sml.code', 'sml.label')
+                    ->select(
+                        's.schedule_date',
+                        'sml.time_in',
+                        'sml.time_in_latest',
+                        'sml.time_out',
+                        'sml.time_out_latest',
+                        'sml.break_out',
+                        'sml.break_in',
+                        'sml.type',
+                        'sml.code',
+                        'sml.label'
+                    )
                     ->get();
 
                 $schedules = [];
@@ -600,6 +611,41 @@ class DTRController extends Controller
                         return $mins . 'm';
                     };
 
+                    $getScheduledBreakMinutes = function ($schedule, string $scheduleDate) {
+                        if (
+                            !$schedule ||
+                            empty($schedule->break_out) ||
+                            empty($schedule->break_in)
+                        ) {
+                            return 0;
+                        }
+
+                        $scheduleIn = Carbon::parse($scheduleDate . ' ' . $schedule->time_in);
+                        $scheduleOut = Carbon::parse($scheduleDate . ' ' . $schedule->time_out);
+                        if ($scheduleOut->lte($scheduleIn)) {
+                            $scheduleOut->addDay();
+                        }
+
+                        $breakOut = Carbon::parse($scheduleDate . ' ' . $schedule->break_out);
+                        $breakIn = Carbon::parse($scheduleDate . ' ' . $schedule->break_in);
+
+                        if ($breakOut->lt($scheduleIn)) {
+                            $breakOut->addDay();
+                        }
+                        if ($breakIn->lte($breakOut)) {
+                            $breakIn->addDay();
+                        }
+
+                        $effectiveBreakStart = $breakOut->copy()->max($scheduleIn);
+                        $effectiveBreakEnd = $breakIn->copy()->min($scheduleOut);
+
+                        if ($effectiveBreakEnd->lte($effectiveBreakStart)) {
+                            return 0;
+                        }
+
+                        return $effectiveBreakStart->diffInMinutes($effectiveBreakEnd);
+                    };
+
                     $currentDay = Carbon::createFromDate($year, $month, $day)->toDateString();
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                     $isHoliday = array_key_exists($currentDay, $holidays);
@@ -617,6 +663,7 @@ class DTRController extends Controller
                         'day_marker' => '',
                         'off_label' => '',
                         'planned_schedule' => '',
+                        'rendered_minutes' => 0,
 
                         'date_timein_am' => '',
                         'date_timeout_am' => '',
@@ -656,6 +703,15 @@ class DTRController extends Controller
                             }
 
                             $data['planned_schedule'] = $in . "\n" . $out;
+
+                            $scheduledBreakMinutes = $getScheduledBreakMinutes($sched, $currentDay);
+                            $scheduledSpanMinutes = Carbon::parse($currentDay . ' ' . $sched->time_in)
+                                ->diffInMinutes(
+                                    Carbon::parse($currentDay . ' ' . $sched->time_out)->lte(Carbon::parse($currentDay . ' ' . $sched->time_in))
+                                        ? Carbon::parse($currentDay . ' ' . $sched->time_out)->addDay()
+                                        : Carbon::parse($currentDay . ' ' . $sched->time_out)
+                                );
+                            $data['rendered_minutes'] = max($scheduledSpanMinutes - $scheduledBreakMinutes, 0);
                         }
                     }
 
@@ -842,6 +898,11 @@ class DTRController extends Controller
                             $data['date_timeout_pm'] === '' &&
                             $previousDayIsOvernightSchedule;
 
+                        if ($isOvernightSpilloverOnly) {
+                            $data['date_timeout_am'] = '';
+                            $data['isEmpty'] = true;
+                        }
+
                         // 2. Identify Half-Day:
                         // Only apply half-day logic when the plotted schedule actually spans AM and PM.
                         // This avoids false half-day tagging for shifts like 2PM-10PM.
@@ -899,6 +960,38 @@ class DTRController extends Controller
                                     ->pluck('created_at')
                                     ->filter(fn($out) => Carbon::parse($out)->startOfMinute()->gte($firstInTime))
                                     ->max();
+                            }
+                        }
+
+                        $hasIncompleteScheduledLogs =
+                            $rawSched &&
+                            !$isOffSchedule &&
+                            !$isOvernightSpilloverOnly &&
+                            ($hasTodayIn || $hasTodayOut || $firstIn || $lastOut) &&
+                            !($firstIn && $lastOut);
+
+                        if ($hasIncompleteScheduledLogs) {
+                            $firstIn = null;
+                            $lastOut = null;
+
+                            $absentUndertimeMinutes = 0;
+                            if ($rawSched) {
+                                $absentSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
+                                $absentSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
+                                if ($absentSchedOut->lte($absentSchedIn)) {
+                                    $absentSchedOut->addDay();
+                                }
+
+                                $absentUndertimeMinutes = $data['rendered_minutes'] > 0
+                                    ? (int) $data['rendered_minutes']
+                                    : $absentSchedIn->diffInMinutes($absentSchedOut);
+                            }
+
+                            if ($absentUndertimeMinutes > 0) {
+                                $undertimeCount++;
+                                $undertimeTotalMinutes += $absentUndertimeMinutes;
+                                $data['undertime_hours'] = floor($absentUndertimeMinutes / 60) ?: '';
+                                $data['undertime_minutes'] = ($absentUndertimeMinutes % 60) ?: '';
                             }
                         }
 
