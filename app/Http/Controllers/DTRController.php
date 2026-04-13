@@ -448,15 +448,8 @@ class DTRController extends Controller
             $employees = DB::table('tdh_user.users')->where('id', $userid)->get();
 
             $dtrData = [];
-            $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');
-
-            // Get in-charged
-            if (self::checkIfDivisionHead($userid)) {
-                $division_id = 1;
-            } else {
-                $division_id = self::getDivisionByUser($userid);
-            }
-
+            $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');  
+            $division_id = self::getDivisionByUser($userid);
             $in_charged = collect(self::getInCharged($division_id))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
             $fname = $in_charged['fname'] ?? '';
             $mname = !empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '';
@@ -650,9 +643,12 @@ class DTRController extends Controller
                     $dayName = Carbon::createFromDate($year, $month, $day)->format('l');
                     $isHoliday = array_key_exists($currentDay, $holidays);
                     $hasLeave = array_key_exists($currentDay, $leaves);
+                    $hasHospitalOrder = !empty($hospitalOrders[$currentDay]);
                     $hasApprovedOvertime = !empty($overtimeRequests[$currentDay]);
                     $hasApprovedPassSlip = !empty($approvedPassSlips[$currentDay]);
                     $hasOfficialPassSlip = !empty($officialPassSlips[$currentDay]);
+                    $hasExcusedRecord = $hasLeave || $hasHospitalOrder || $hasApprovedPassSlip;
+                    $hasComputationExemption = $hasExcusedRecord || $isHoliday;
 
                     $data = [
                         'day' => $day,
@@ -765,6 +761,10 @@ class DTRController extends Controller
                         if (!empty($amIns) || !empty($pmIns) || !empty($amOuts) || !empty($pmOuts)) {
                             $data['isEmpty'] = false;
                         }
+
+                        // Skip late/undertime computation when there is a timelog and the day
+                        // is also covered by an approved leave/H.O/pass slip/holiday.
+                        $skipLateUndertimeComputation = $hasComputationExemption;
 
                         // Calculate Late and Undertime (skip when OFF)
                         $rawSched = $schedules[$currentDay] ?? null;
@@ -970,7 +970,7 @@ class DTRController extends Controller
                             ($hasTodayIn || $hasTodayOut || $firstIn || $lastOut) &&
                             !($firstIn && $lastOut);
 
-                        if ($hasIncompleteScheduledLogs) {
+                        if (!$skipLateUndertimeComputation && $hasIncompleteScheduledLogs) {
                             $firstIn = null;
                             $lastOut = null;
 
@@ -997,7 +997,7 @@ class DTRController extends Controller
 
                         // Do not compute late/undertime for days without an IN log.
                         // This avoids false penalties when an AM OUT is just a spillover from a previous day.
-                        if ($calcSched && !$hasApprovedPassSlip && $firstIn) {
+                        if (!$skipLateUndertimeComputation && $calcSched && !$hasApprovedPassSlip && $firstIn) {
                             $lateMinutes = 0;
                             $undertimeMinutes = 0;
 
@@ -1114,15 +1114,22 @@ class DTRController extends Controller
 
                     // Keep timelog fields as pure times; render OB/OT as separate marker in the PDF.
                     // Priority: OB (official pass slip) over OT.
-                    if (!$data['isEmpty'] && ($hasOfficialPassSlip || $hasApprovedOvertime)) {
-                        if ($hasOfficialPassSlip) {
-                            $data['day_marker'] = 'OB';
-                        } else {
-                            $lateMarker = '';
-                            if (!empty($data['late_minutes']) && (int)$data['late_minutes'] > 0) {
-                                $lateMarker = 'L: ' . $formatMinutes((int)$data['late_minutes']) . ' ';
+                    if (!$data['isEmpty']) {
+                        if ($isHoliday) {
+                            $holiday = $holidays[$currentDay];
+                            $data['day_marker'] = $holiday['type'] != 'Regular' ? strtoupper($holiday['description']) : 'HOLIDAY';
+                        } elseif (!$hasExcusedRecord && ($hasOfficialPassSlip || $hasApprovedOvertime)) {
+                            if ($hasOfficialPassSlip) {
+                                $data['day_marker'] = 'OB';
+                            } else {
+                                $lateMarker = '';
+                                if (!empty($data['late_minutes']) && (int)$data['late_minutes'] > 0) {
+                                    $lateMarker = 'L: ' . $formatMinutes((int)$data['late_minutes']) . ' ';
+                                }
+                                $data['day_marker'] = $lateMarker . $overtimeRequests[$currentDay];
                             }
-                            $data['day_marker'] = $lateMarker . $overtimeRequests[$currentDay];
+                        } else {
+                            $data['day_marker'] = '';
                         }
                     }
 
@@ -1130,7 +1137,7 @@ class DTRController extends Controller
                     if ($data['isEmpty']) {
                         if ($hasLeave) {
                             $code = $leaves[$currentDay]['code'];
-                        } elseif (!empty($hospitalOrders[$currentDay])) {
+                        } elseif ($hasHospitalOrder) {
                             $code = $hospitalOrders[$currentDay];
                         } elseif ($hasOfficialPassSlip) {
                             $code = 'OB';
