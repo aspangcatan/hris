@@ -291,25 +291,33 @@
             inputPlaceholder: 'Enter remarks',
             showCancelButton: true,
             confirmButtonText: actionLabel,
-            confirmButtonColor: actionColor
+            confirmButtonColor: actionColor,
+            showLoaderOnConfirm: true,
+            preConfirm: (remarks) => {
+                return fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({remarks: remarks || ''})
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error || data.errors) throw data;
+                        return data;
+                    })
+                    .catch(err => {
+                        Swal.showValidationMessage(extractApiError(err, 'Failed to update status.'));
+                    });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
         }).then((result) => {
             if (!result.isConfirmed) return;
 
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({remarks: result.value || ''})
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error || data.errors) throw data;
-                    toastr.success(data.message || 'Updated.', 'Success');
-                    getFilingsForReview();
-                })
-                .catch(err => showApiError(err, 'Failed to update status.'));
+            const data = result.value || {};
+            toastr.success(data.message || 'Updated.', 'Success');
+            getFilingsForReview();
         });
     }
 
@@ -333,17 +341,18 @@
     }
 
     function showApiError(errorPayload, fallbackMessage) {
+        toastr.error(extractApiError(errorPayload, fallbackMessage), 'Error');
+    }
+
+    function extractApiError(errorPayload, fallbackMessage) {
         if (errorPayload && errorPayload.errors) {
             const firstKey = Object.keys(errorPayload.errors)[0];
-            const firstError = firstKey ? errorPayload.errors[firstKey][0] : fallbackMessage;
-            toastr.error(firstError, 'Error');
-            return;
+            return firstKey ? errorPayload.errors[firstKey][0] : fallbackMessage;
         }
         if (errorPayload && errorPayload.error) {
-            toastr.error(errorPayload.error, 'Error');
-            return;
+            return errorPayload.error;
         }
-        toastr.error(fallbackMessage, 'Error');
+        return fallbackMessage;
     }
 
     function escapeHtml(value) {

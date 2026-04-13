@@ -36,6 +36,8 @@
 .employee-foot{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-top:auto;padding-top:1rem}
 .employee-id{font-size:.95rem;color:#6b7280}
 .employee-foot .btn{padding-inline:.9rem}
+.employee-foot .btn.is-loading{pointer-events:none;opacity:.85}
+.employee-foot .btn .spinner-border{width:.9rem;height:.9rem;border-width:.14em}
 .dtr-empty{text-align:center;padding:2rem 1rem;border:1px dashed #cbd5e1;border-radius:16px;color:#64748b;background:#fbfdff}
 @media (max-width:1199.98px){.employee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:991.98px){.dtr-shell{grid-template-columns:1fr}.dtr-side{position:static}.dtr-side-grid,.dtr-actions{grid-template-columns:1fr}.employee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -134,7 +136,7 @@
 @if($canViewEmployeeDtr)
 <script>
 let userid=0,log_id=0,currentPage=1,visibleEmployeeIds=[];
-const perPage=12,accessRights=@json($accessRights),canEditRawTimelog=["admin","it","dh"].includes(accessRights),selectedEmployees=new Set();
+const perPage=12,accessRights=@json($accessRights),canEditRawTimelog=["admin","it","dh"].includes(accessRights),selectedEmployees=new Set(),defaultViewDtrButtonHtml='<i class="bi bi-eye"></i> View DTR';
 
 $(document).ready(function(){
     initDates(); initFilters(); getEmployeeDtr(1); updateSelectionSummary();
@@ -208,10 +210,26 @@ async function getEmployeeDtr(page=1){
                 visibleEmployeeIds.push(Number(it.id));
                 const image=it.picture?`https://dohcsmc.com/id/storage/crop/${it.picture}`:"assets/img/logo.png";
                 const name=`${it.fname} ${it.mname?it.mname[0]+'.':''} ${it.lname}`; const checked=selectedEmployees.has(Number(it.id)); 
-                container.append(`<article class="employee-card ${checked?'selected':''}" data-employee-id="${it.id}"><div class="employee-head"><div class="employee-profile"><img src="${image}" class="employee-avatar" alt="${name}"><div><div class="employee-name">${name}</div><div class="employee-meta employee-designation">${it.designation}</div></div></div><input class="form-check-input employee-select-toggle" type="checkbox" data-employee-id="${it.id}" ${checked?'checked':''}></div><div class="employee-foot"><span class="employee-id">ID: ${it.id}</span><button class="btn btn-success btn-view btn-sm" onclick="viewDtr(${it.id})">View DTR</button></div></article>`);
+                container.append(`<article class="employee-card ${checked?'selected':''}" data-employee-id="${it.id}"><div class="employee-head"><div class="employee-profile"><img src="${image}" class="employee-avatar" alt="${name}"><div><div class="employee-name">${name}</div><div class="employee-meta employee-designation">${it.designation}</div></div></div><input class="form-check-input employee-select-toggle" type="checkbox" data-employee-id="${it.id}" ${checked?'checked':''}></div><div class="employee-foot"><span class="employee-id">ID: ${it.id}</span><button class="btn btn-success btn-view btn-sm" onclick="viewDtr(${it.id}, this)">${defaultViewDtrButtonHtml}</button></div></article>`);
             });
             syncCardSelections(); updateSelectionSummary(); loading.hide();
         }).catch(error=>{ console.log(error); container.html(`<div class="dtr-empty"><div class="mb-2"><i class="bi bi-exclamation-octagon fs-3"></i></div><div>${error.message||'Unable to load employee records.'}</div></div>`); loading.hide(); });
+}
+
+function setViewDtrButtonLoading(button, isLoading){
+    if(!button) return;
+    const $button=$(button);
+    $button.prop("disabled",isLoading).toggleClass("is-loading",isLoading);
+    $button.html(isLoading?'<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...':defaultViewDtrButtonHtml);
+}
+
+function setModalDtrLoadingState(isLoading){
+    const loadingRow="<tr><td colspan='3' class='text-center text-muted'>Loading DTR records...</td></tr>";
+    $("#month,#year,#cutoff,#btn_print").prop("disabled",isLoading);
+    if(isLoading){
+        $("#dtr_list").html(loadingRow);
+        $("#raw_list").html(canEditRawTimelog?"<tr><td colspan='5' class='text-center text-muted'>Loading raw logs...</td></tr>":"<tr><td colspan='3' class='text-center text-muted'>Loading raw logs...</td></tr>");
+    }
 }
 
 function syncCardSelections(){ $(".employee-card").each(function(){ const id=Number($(this).data("employee-id")), selected=selectedEmployees.has(id); $(this).toggleClass("selected",selected); $(this).find(".employee-select-toggle").prop("checked",selected); }); }
@@ -248,15 +266,18 @@ function bindRawLogEvents(){
 
 function addRawLog(){ if(!canEditRawTimelog){ alert("Permission Denied"); return; } $("#log_date,#log_status,#log_time").val(""); $("#add_log_modal").modal("show"); }
 
-async function viewDtr(id){
+async function viewDtr(id, triggerButton=null){
+    if(!id){ return; }
+    setViewDtrButtonLoading(triggerButton, true);
     userid=id; let month=$("#month").val(),year=$("#year").val(); if(!month||!year){ month=moment($("#bulk_from").val()||undefined).format("M"); year=moment($("#bulk_from").val()||undefined).format("YYYY"); }
     $("#month").val(month); $("#year").val(year);
+    setModalDtrLoadingState(true);
     fetch(`{{ route('getDTRLogs') }}?month=${month}&year=${year}&userid=${id}`).then(async res=>{ const data=await res.json(); if(!res.ok) throw new Error(data.error||"Failed to load DTR logs."); return data; }).then(data=>{
         $("#dtr_modal").modal("show"); $("#dtr_list").empty(); $("#raw_list").empty();
         data.results.forEach(it=>{ const ti=it.date_timein?moment(it.date_timein).format("hh:mm A"):"", to=it.date_timeout?moment(it.date_timeout).format("hh:mm A"):"", empty='<span class="text-muted">EMPTY</span>'; $("#dtr_list").append(`<tr><td>${it.day}</td><td>${ti||(canEditRawTimelog?`<a href="#" class="empty-field" data-type="IN" data-day="${it.day}">EMPTY</a>`:empty)}</td><td>${to||(canEditRawTimelog?`<a href="#" class="empty-field" data-type="OUT" data-day="${it.day}">EMPTY</a>`:empty)}</td></tr>`); });
         if(!data.raw_data.length){ $("#raw_list").append("<tr><td class='text-center' colspan='3'>No record found</td></tr>"); return; }
         data.raw_data.forEach(it=>{ const date=moment(it.created_at).format("MM/DD/YYYY"), time=moment(it.created_at).format("hh:mm:ss A"); $("#raw_list").append(canEditRawTimelog?`<tr><td>${date}</td><td>${it.status}</td><td><a target="_blank">${time}</a></td><td><button class="btn btn-action btn-edit edit-btn" data-id="${it.id}" data-date="${date}" data-status="${it.status}" data-time="${time}" title="Edit"><i class="bi bi-pencil"></i></button></td><td><button class="btn btn-action btn-delete delete-btn" data-id="${it.id}" data-date="${date}" data-status="${it.status}" data-time="${time}" title="Delete"><i class="bi bi-trash"></i></button></td></tr>`:`<tr><td>${date}</td><td>${it.status}</td><td><a target="_blank">${time}</a></td></tr>`); });
-    }).catch(err=>{ console.log(err); toastr.error(err.message||"Unable to load DTR logs.","Error"); });
+    }).catch(err=>{ console.log(err); toastr.error(err.message||"Unable to load DTR logs.","Error"); }).finally(()=>{ setModalDtrLoadingState(false); setViewDtrButtonLoading(triggerButton, false); });
 }
 </script>
 @endif

@@ -126,6 +126,18 @@
         let currentPage = 1;
         let lastPage = 1;
 
+        function setPassSlipActionLoading(button, isLoading, loadingText = 'Processing...') {
+            if (!button) return;
+            const $button = $(button);
+            if (isLoading && !$button.data('original-html')) {
+                $button.data('original-html', $button.html());
+            }
+            $button.prop('disabled', isLoading);
+            $button.html(isLoading
+                ? `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${loadingText}`
+                : ($button.data('original-html') || $button.html()));
+        }
+
         $(document).ready(function () {
             loadPendingSlips(1);
 
@@ -209,32 +221,44 @@
 
             // Approve
             $(document).on('click', '.approve-btn', async function () {
+                const button = this;
                 const id = $(this).data('id');
                 if (!confirm('Approve this pass slip?')) return;
+                setPassSlipActionLoading(button, true, 'Approving...');
 
-                const response = await fetch(`{{ url('/pass-slip-approver/approve') }}/${id}`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
+                try {
+                    const response = await fetch(`{{ url('/pass-slip-approver/approve') }}/${id}`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    });
 
-                const result = await response.json();
-                alert(result.message);
-                loadPendingSlips(currentPage);
+                    const result = await response.json();
+                    alert(result.message);
+                    loadPendingSlips(currentPage);
+                } finally {
+                    setPassSlipActionLoading(button, false);
+                }
             });
 
             // Reject
             $(document).on('click', '.reject-btn', async function () {
+                const button = this;
                 const id = $(this).data('id');
                 if (!confirm('Reject this pass slip?')) return;
+                setPassSlipActionLoading(button, true, 'Rejecting...');
 
-                const response = await fetch(`{{ url('/pass-slip-approver/reject') }}/${id}`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                });
+                try {
+                    const response = await fetch(`{{ url('/pass-slip-approver/reject') }}/${id}`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    });
 
-                const result = await response.json();
-                alert(result.message);
-                loadPendingSlips(currentPage);
+                    const result = await response.json();
+                    alert(result.message);
+                    loadPendingSlips(currentPage);
+                } finally {
+                    setPassSlipActionLoading(button, false);
+                }
             });
         });
 

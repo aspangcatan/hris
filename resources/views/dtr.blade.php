@@ -100,6 +100,11 @@
         .dtr-panel .dtr-table-shell {
             flex: 1 1 auto;
         }
+
+        .dtr-loading-row td {
+            color: #64748b;
+            font-style: italic;
+        }
     </style>
 
     <div class="dtr-board">
@@ -220,12 +225,19 @@
             $("#print_dtr_modal").modal("show");
         }
 
+        function setDtrLoadingState(isLoading) {
+            $("#month, #year").prop("disabled", isLoading);
+            const loadingRow = "<tr class='dtr-loading-row'><td colspan='3' class='text-center'>Loading DTR records...</td></tr>";
+            $("#dtr_list").html(loadingRow);
+            $("#raw_list").html(loadingRow);
+        }
 
         async function getDtrLogs() {
             const month = $("#month").val();
             const year = $("#year").val();
 
             if (month === "" || year === "") return;
+            setDtrLoadingState(true);
 
             fetch('{{ route('getDTRLogs') }}?month=' + month + "&year=" + year, {
                 method: "GET"
@@ -272,6 +284,8 @@
 
                 }).catch(err => {
                 console.log(err);
+            }).finally(() => {
+                $("#month, #year").prop("disabled", false);
             });
         }
     </script>

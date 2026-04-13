@@ -1,5 +1,6 @@
 <script>
     let page = 1, leave_id = 0, leave_approval_last_page = 1;
+    const leaveApprovalViewButtonHtml = `<i class="bi bi-eye-fill text-success"></i>`;
 
     $(function () {
         $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
@@ -51,7 +52,7 @@
             <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
             <td>${it.description}</td>
             <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
-            <td><button class="btn btn-sm" onclick="viewApplication(${it.id})"><i class="bi bi-eye-fill text-success"></i></button></td>
+            <td><button class="btn btn-sm leave-view-btn" onclick="viewApplication(${it.id}, this)">${leaveApprovalViewButtonHtml}</button></td>
         </tr>
     `));
 
@@ -96,12 +97,23 @@
         $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
     }
 
-    function viewApplication(id) {
+    function setLeaveApprovalButtonLoading(button, isLoading) {
+        if (!button) return;
+        const $button = $(button);
+        $button.prop("disabled", isLoading);
+        $button.html(isLoading
+            ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
+            : leaveApprovalViewButtonHtml);
+    }
+
+    function viewApplication(id, triggerButton = null) {
         leave_id = id;
+        setLeaveApprovalButtonLoading(triggerButton, true);
         fetch(`{{ route('leave-applications.show', ':id') }}`.replace(':id', id))
             .then(r => r.json())
             .then(data => renderLeaveModal(data))
-            .catch(() => alert("Error loading leave application."));
+            .catch(() => alert("Error loading leave application."))
+            .finally(() => setLeaveApprovalButtonLoading(triggerButton, false));
     }
 
     function renderLeaveModal(data) {
@@ -140,6 +152,9 @@
     }
 
     function handleApproval() {
+        const button = this;
+        const originalHtml = button.innerHTML;
+        $(button).prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
         fetch('{{ route('updateApprovalStatus') }}', {
             method: "POST",
             headers: {"Content-Type": "application/json", "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")},
@@ -151,6 +166,7 @@
                 $('#viewLeaveModal').modal('hide');
                 getLeaves();
             })
-            .catch(err => toastr.error(err.message || "Error", "Oops"));
+            .catch(err => toastr.error(err.message || "Error", "Oops"))
+            .finally(() => $(button).prop("disabled", false).html(originalHtml));
     }
 </script>
