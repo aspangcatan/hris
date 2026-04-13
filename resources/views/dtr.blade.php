@@ -108,12 +108,14 @@
                 <h4>Daily Time Record</h4>
                 <span>Time Log Record Viewer</span>
             </div>
-            <div>
+            @if (Auth::user()->division != "2")
+                <div>
                 <button class="btn btn-danger" onclick="printDTR()" title="Print Individual DTR">
                     <i class="bi bi-printer"></i>
                     PRINT DTR
                 </button>
-            </div>
+            </div>                
+            @endif
         </div>
 
         <div class="dtr-filters">

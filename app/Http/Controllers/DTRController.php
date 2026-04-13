@@ -14,10 +14,169 @@ use Illuminate\Support\Facades\Storage;
 
 class DTRController extends Controller
 {
+    private function getCurrentAccessRights(): string
+    {
+        return strtolower((string) session('access_rights'));
+    }
+
+    private function getScheduleManagedSectionIds(bool $includeOwnSectionFallback = false): array
+    {
+        $managedSectionIds = DB::table('hris.schedule_user_sections')
+            ->where('user_id', Auth::id())
+            ->pluck('section_id')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($managedSectionIds) && $includeOwnSectionFallback && Auth::check() && Auth::user()->section) {
+            $managedSectionIds = [(int) Auth::user()->section];
+        }
+
+        return $managedSectionIds;
+    }
+
+    private function canAccessEmployeeDtrModule(): bool
+    {
+        $accessRights = $this->getCurrentAccessRights();
+
+        return in_array($accessRights, ['admin', 'schedule', 'dh'], true)
+            || (bool) session('is_section_head')
+            || (bool) session('is_division_head');
+    }
+
     private function canManageRawTimelog(): bool
     {
-        $accessRights = strtolower((string) session('access_rights'));
-        return in_array($accessRights, ['admin', 'it','dh'], true);
+        return in_array($this->getCurrentAccessRights(), ['admin', 'it', 'dh'], true);
+    }
+
+    private function canViewEmployeeDtrForUser(int $userId): bool
+    {
+        if (!Auth::check()) {
+            return false;
+        }
+
+        if ($userId === (int) Auth::id()) {
+            return true;
+        }
+
+        $accessRights = $this->getCurrentAccessRights();
+
+        if ($accessRights === 'admin') {
+            return true;
+        }
+
+        if ($accessRights === 'schedule') {
+            $managedSections = $this->getScheduleManagedSectionIds(false);
+            if (empty($managedSections)) {
+                return false;
+            }
+
+            return DB::table('tdh_user.users')
+                ->where('id', $userId)
+                ->whereIn('section', $managedSections)
+                ->exists();
+        }
+
+        if ((bool) session('is_division_head') || $accessRights === 'dh') {
+            return DB::table('tdh_user.users')
+                ->where('id', $userId)
+                ->where('division', Auth::user()->division)
+                ->exists();
+        }
+
+        if ((bool) session('is_section_head')) {
+            return DB::table('tdh_user.users')
+                ->where('id', $userId)
+                ->where('section', Auth::user()->section)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    private function normalizePrintableUserIds(Request $request): array
+    {
+        $requestedIds = collect();
+
+        $userIdsInput = $request->input('userids', []);
+        if (is_string($userIdsInput)) {
+            $requestedIds = $requestedIds->merge(explode(',', $userIdsInput));
+        } elseif (is_array($userIdsInput)) {
+            $requestedIds = $requestedIds->merge($userIdsInput);
+        }
+
+        if ($request->filled('userid')) {
+            $requestedIds->push($request->input('userid'));
+        }
+
+        $normalized = $requestedIds
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        return empty($normalized) ? [(int) Auth::id()] : $normalized;
+    }
+
+    private function applyEmployeeDtrScope($query, ?int $requestedDivision, ?int $requestedSection): bool
+    {
+        $accessRights = $this->getCurrentAccessRights();
+
+        if ($accessRights === 'admin') {
+            if (!is_null($requestedSection)) {
+                $query->where('u.section', $requestedSection);
+            }
+
+            if (!is_null($requestedDivision)) {
+                $query->where('u.division', $requestedDivision);
+            }
+
+            return true;
+        }
+
+        if ($accessRights === 'schedule') {
+            $managedSections = $this->getScheduleManagedSectionIds(false);
+            if (empty($managedSections)) {
+                $query->whereRaw('1 = 0');
+                return true;
+            }
+
+            if (!is_null($requestedSection)) {
+                if (!in_array($requestedSection, $managedSections, true)) {
+                    $query->whereRaw('1 = 0');
+                    return true;
+                }
+
+                $query->where('u.section', $requestedSection);
+            } else {
+                $query->whereIn('u.section', $managedSections);
+            }
+
+            if (!is_null($requestedDivision)) {
+                $query->where('u.division', $requestedDivision);
+            }
+
+            return true;
+        }
+
+        if ((bool) session('is_division_head') || $accessRights === 'dh') {
+            $query->where('u.division', Auth::user()->division);
+
+            if (!is_null($requestedSection)) {
+                $query->where('u.section', $requestedSection);
+            }
+
+            return true;
+        }
+
+        if ((bool) session('is_section_head')) {
+            $query->where('u.section', Auth::user()->section);
+            return true;
+        }
+
+        return false;
     }
 
     public function store(Request $request)
@@ -327,6 +486,10 @@ class DTRController extends Controller
                 $userid = $request->userid;
             }
 
+            if (!$this->canViewEmployeeDtrForUser((int) $userid)) {
+                return response()->json(['error' => 'Permission denied'], 403);
+            }
+
             // Get the actual number of days in the specified month
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
 
@@ -430,33 +593,67 @@ class DTRController extends Controller
     public function printDTR(Request $request)
     {
         try {
-            $month = $request->month;
-            $year = $request->year;
+            $userIds = $this->normalizePrintableUserIds($request);
+
+            foreach ($userIds as $userId) {
+                if (!$this->canViewEmployeeDtrForUser($userId)) {
+                    return response()->json(['error' => 'Permission denied'], 403);
+                }
+            }
+
+            $month = (int) $request->month;
+            $year = (int) $request->year;
             $cutoff = $request->cutoff ?? 'full';
-            $userid = $request->userid ?? Auth::id();
+            $fromDateInput = $request->input('from');
+            $toDateInput = $request->input('to');
 
             $reg_days_am = $request->reg_days_am;
             $reg_days_pm = $request->reg_days_pm;
             $sat_days_am = $request->sat_days_am;
             $sat_days_pm = $request->sat_days_pm;
 
-            $startDay = 1;
-            $endDay = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-            if ($cutoff === 'first') $endDay = 15;
-            elseif ($cutoff === 'second') $startDay = 16;
+            if (!empty($fromDateInput) && !empty($toDateInput)) {
+                $fromDate = Carbon::parse($fromDateInput)->startOfDay();
+                $toDate = Carbon::parse($toDateInput)->startOfDay();
 
-            $employees = DB::table('tdh_user.users')->where('id', $userid)->get();
+                if ($toDate->lt($fromDate)) {
+                    return response()->json(['error' => 'The end date must be on or after the start date.'], 422);
+                }
+
+                if ($fromDate->month !== $toDate->month || $fromDate->year !== $toDate->year) {
+                    return response()->json(['error' => 'Bulk DTR printing currently supports a single month only.'], 422);
+                }
+
+                $month = (int) $fromDate->month;
+                $year = (int) $fromDate->year;
+                $startDay = (int) $fromDate->day;
+                $endDay = (int) $toDate->day;
+            } else {
+                if ($month < 1 || $month > 12 || $year < 2000) {
+                    return response()->json(['error' => 'Invalid month or year.'], 422);
+                }
+
+                $startDay = 1;
+                $endDay = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+                if ($cutoff === 'first') {
+                    $endDay = 15;
+                } elseif ($cutoff === 'second') {
+                    $startDay = 16;
+                }
+            }
+
+            $employees = DB::table('tdh_user.users')
+                ->whereIn('id', $userIds)
+                ->orderBy('lname')
+                ->orderBy('fname')
+                ->get();
+
+            if ($employees->isEmpty()) {
+                return response()->json(['error' => 'No employees found for printing.'], 422);
+            }
 
             $dtrData = [];
-            $formattedDate = Carbon::parse("$year-$month-01")->format('F Y');  
-            $division_id = self::getDivisionByUser($userid);
-            $in_charged = collect(self::getInCharged($division_id))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
-            $fname = $in_charged['fname'] ?? '';
-            $mname = !empty($in_charged['mname']) ? strtoupper(substr($in_charged['mname'], 0, 1)) . '.' : '';
-            $lname = $in_charged['lname'] ?? '';
-            $suffix = !empty($in_charged['suffix']) ? ' ' . strtoupper($in_charged['suffix']) : '';
-            $title = !empty($in_charged['title']) ? ', ' . strtoupper($in_charged['title']) : '';
-            $in_charged = strtoupper(trim("$fname $mname $lname$suffix$title"));
+            $formattedDate = Carbon::createFromDate($year, $month, 1)->format('F Y');
 
             // Get holidays
             $holidaysRaw = DB::table('calendar_holidays')
@@ -472,9 +669,15 @@ class DTRController extends Controller
                 ];
             }
 
-            $division_id = 2;
             foreach ($employees as $employee) {
-                $division_id = $employee->division;
+                $divisionHead = collect(self::getInCharged($employee->division))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
+                $fname = $divisionHead['fname'] ?? '';
+                $mname = !empty($divisionHead['mname']) ? strtoupper(substr($divisionHead['mname'], 0, 1)) . '.' : '';
+                $lname = $divisionHead['lname'] ?? '';
+                $suffix = !empty($divisionHead['suffix']) ? ' ' . strtoupper($divisionHead['suffix']) : '';
+                $title = !empty($divisionHead['title']) ? ', ' . strtoupper($divisionHead['title']) : '';
+                $in_charged = strtoupper(trim("$fname $mname $lname$suffix$title"));
+
                 $monthStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
                 $monthEndPlusOne = Carbon::createFromDate($year, $month, 1)->endOfMonth()->addDay()->endOfDay();
 
@@ -1310,6 +1513,10 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
     public function getEmployeeDtr(Request $request)
     {
         try {
+            if (!$this->canAccessEmployeeDtrModule()) {
+                return response()->json(['error' => 'Permission denied'], 403);
+            }
+
             $search_division = $request->search_division;
             $search_section = $request->search_section;
             $search_fname = $request->search_fname;
@@ -1340,17 +1547,15 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                         ->orWhereNull('e.employee_type');
                 });
 
-            // Default to logged-in user's section if search_section = 0
-            if ($search_section == 0) {
-                $search_section = Auth::user()->section;
-            }
+            $searchDivision = (is_null($search_division) || $search_division === '' || $search_division === '0' || $search_division === 'null')
+                ? null
+                : (int) $search_division;
+            $searchSection = (is_null($search_section) || $search_section === '' || $search_section === '0' || $search_section === 'null')
+                ? null
+                : (int) $search_section;
 
-            if (!empty($search_section)) {
-                $employee->where('u.section', '=', $search_section);
-            }
-
-            if (!empty($search_division)) {
-                $employee->where('u.division', '=', $search_division);
+            if (!$this->applyEmployeeDtrScope($employee, $searchDivision, $searchSection)) {
+                return response()->json(['error' => 'Permission denied'], 403);
             }
 
             if (!empty($search_fname)) {

@@ -32,7 +32,7 @@
                 <span>DTR Viewer</span>
             </a>
         </li>
-        @if(in_array(session('access_rights'), ['admin']) || session('is_section_head') || session('is_division_head'))
+        @if(in_array(strtolower((string) session('access_rights')), ['admin', 'schedule', 'dh'], true) || session('is_section_head') || session('is_division_head'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee_dtr') ? '' : 'collapsed' }}"
                    href="{{ route('employee_dtr') }}">

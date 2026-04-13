@@ -1,3 +1,5 @@
+@php($rawLogManagers = in_array(strtolower((string) session('access_rights')), ['admin', 'it', 'dh'], true))
+
 <style>
     .dtr-modal-theme .modal-content {
         border: 0;
@@ -244,7 +246,7 @@
                     <div class="col-lg-6 dtr-table-col">
                         <div class="dtr-section-head">
                             <h6>Raw Data</h6>
-                            @if(in_array(strtolower((string) session('access_rights')), ['admin', 'it'], true))
+                            @if($rawLogManagers)
                                 <button class="btn btn-action btn-edit" onclick="addRawLog()" title="Add Raw Log">
                                     <i class="bi bi-plus-lg"></i>
                                 </button>
@@ -257,7 +259,9 @@
                                         <th>Date</th>
                                         <th>Status</th>
                                         <th>Time</th>
-                                        <th colspan="2"></th>
+                                        @if($rawLogManagers)
+                                            <th colspan="2"></th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody id="raw_list">
