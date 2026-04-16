@@ -861,6 +861,7 @@ class DTRController extends Controller
                         'late_minutes' => 0,
                         'day_marker' => '',
                         'off_label' => '',
+                        'suppress_off_label' => false,
                         'planned_schedule' => '',
                         'rendered_minutes' => 0,
 
@@ -1102,8 +1103,14 @@ class DTRController extends Controller
                             $previousDayIsOvernightSchedule;
 
                         if ($isOvernightSpilloverOnly) {
-                            $data['date_timeout_am'] = '';
-                            $data['isEmpty'] = true;
+                            if ($isOffSchedule) {
+                                // New rule: when an overnight shift ends on a next-day OFF,
+                                // keep the carried-over departure visible and do not show OFF.
+                                $data['suppress_off_label'] = true;
+                            } else {
+                                $data['date_timeout_am'] = '';
+                                $data['isEmpty'] = true;
+                            }
                         }
 
                         // 2. Identify Half-Day:
@@ -1487,8 +1494,6 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
             } else {
                 $employee->where('u.section', '=', $search_section);
             }
-
-
 
             if (!empty($search_division)) {
                 $employee->where('u.division', '=', $search_division);

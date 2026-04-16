@@ -62,18 +62,39 @@
             font-weight: bold;
         }
 
-        .page-divider {
-            position: fixed;
+        table.employee-sheet {
+            width: 100%;
+            height: 282mm;
+            table-layout: fixed;
+        }
+
+        table.employee-sheet > tbody > tr {
+            height: 100%;
+        }
+
+        table.employee-sheet > tbody > tr > td {
+            height: 100%;
+        }
+
+        .cut-divider-cell {
+            width: 8%;
+            padding: 0;
+            position: relative;
+        }
+
+        .cut-divider-cell::before {
+            content: '';
+            position: absolute;
             top: 0;
             bottom: 0;
-            left: 50%; /* center of the page */
-            width: 0;
+            left: 50%;
             border-left: 2px dashed black;
+            transform: translateX(-50%);
         }
+
     </style>
 </head>
 <body>
-<div class="page-divider"></div>
 @foreach($employees as $employee)
     @php
         $formatDuration = function ($minutes) {
@@ -103,7 +124,7 @@
             return preg_replace('/\s*,\s*/', "\n", $value);
         };
     @endphp
-    <table>
+    <table class="employee-sheet">
         <tr> <!-- First Column -->
             <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
@@ -198,7 +219,7 @@
                             </td>
 
                             <!-- UNDERTIME (same rule as before) -->
-                            @if(!empty($dtr['off_label']))
+                            @if(!empty($dtr['off_label']) && empty($dtr['suppress_off_label']))
                                 <td style="font-size: 11px; font-weight: bold; line-height: 1.1;" colspan="2">
                                     {{ $dtr['off_label'] }}
                                 </td>
@@ -263,7 +284,7 @@
                     </table>
                 </div>
             </td>
-            <td style="width: 8%;"></td>
+            <td class="cut-divider-cell"></td>
             <td style="width: 46%; vertical-align: top; padding: 0; border: 1px solid black;">
                 <div class="dtr-container">
                     <div class="form-title">Civil Service Form 48</div>
@@ -357,7 +378,7 @@
                             </td>
 
                             <!-- UNDERTIME (same rule as before) -->
-                            @if(!empty($dtr['off_label']))
+                            @if(!empty($dtr['off_label']) && empty($dtr['suppress_off_label']))
                                 <td style="font-size: 11px; font-weight: bold; line-height: 1.1;" colspan="2">
                                     {{ $dtr['off_label'] }}
                                 </td>
@@ -422,5 +443,6 @@
                 </div>
             </td>
         </tr>
-    </table> @endforeach </body>
+    </table>
+@endforeach </body>
 </html>
