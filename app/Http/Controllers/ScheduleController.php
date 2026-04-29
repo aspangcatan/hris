@@ -84,6 +84,36 @@ class ScheduleController extends Controller
         return trim($user->lname . ', ' . $user->fname . $mInitial . $suffix);
     }
 
+    private function getSectionHeadForPreparedBy(?int $sectionId)
+    {
+        if (empty($sectionId)) {
+            return null;
+        }
+
+        $section = DB::table('tdh_user.section')
+            ->where('id', $sectionId)
+            ->first(['id', 'head', 'subsection']);
+
+        if (!$section || empty($section->head)) {
+            return null;
+        }
+
+        $sectionHeadUser = DB::table('tdh_user.users')
+            ->where('id', $section->head)
+            ->first(['id', 'section']);
+
+        if (!$sectionHeadUser || empty($sectionHeadUser->section)) {
+            return null;
+        }
+
+        return DB::table('tdh_user.section as s')
+            ->join('tdh_user.users as u', 's.head', '=', 'u.id')
+            ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
+            ->where('s.id', $sectionHeadUser->section)
+            ->select('u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.title', 'de.description as designation')
+            ->first();
+    }
+
     private function isLockedScheduleDate(string $date): bool
     {
         return false;        
@@ -366,12 +396,7 @@ class ScheduleController extends Controller
             }
 
             if (!is_null($preparedSectionId)) {
-                $sectionHead = DB::table('tdh_user.section as s')
-                    ->join('tdh_user.users as u', 's.head', '=', 'u.id')
-                    ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
-                    ->where('s.id', $preparedSectionId)
-                    ->select('u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.title', 'de.description as designation')
-                    ->first();
+                $sectionHead = $this->getSectionHeadForPreparedBy($preparedSectionId);
 
                 $preparedName = $this->formatName($sectionHead);
                 $preparedTitle = $sectionHead->designation ?? '';

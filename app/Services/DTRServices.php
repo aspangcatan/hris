@@ -109,30 +109,19 @@ class DTRServices
 
     public function getTotalPresentByRange($userid, $start_date, $end_date)
     {
-        [$presentDays, $absentDays, $days, $holidays, $leaveDates, $specialDutyDates] =
-            $this->buildPresentAbsentByRange($userid, $start_date, $end_date);
+        [$presentDays] = $this->buildPresentAbsentByRange($userid, $start_date, $end_date);
 
-        // Step 3: Recalculate present days after weekend + holiday + leave rules
-        $finalPresentCount = 0;
-        foreach ($days as $date) {
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates)) {
-                $finalPresentCount++;
-            } elseif (!isset($absentDays[$date])) {
-                $finalPresentCount++;
-            }
-        }
-
-        return $finalPresentCount;
+        return count($presentDays);
     }
 
     private function buildPresentAbsentByRange($userid, $start_date, $end_date)
     {
-        $days = $this->getAllDaysByRange($start_date, $end_date); // includes weekends
         $holidays = $this->getHolidayDatesByRange($start_date, $end_date);
         $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
         $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
-        $approvedPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
+        $officialPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
         $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
+        $expectedDates = $this->resolveExpectedWorkDates($schedules, $start_date, $end_date, $holidays);
         $logs = $this->getLogsByRange(
             $userid,
             Carbon::parse($start_date)->copy()->subDay()->toDateString(),
@@ -142,11 +131,9 @@ class DTRServices
         $presentDays = [];
         $absentDays = [];
 
-        // Step 1: Determine initial present/absent days
-        foreach ($days as $date) {
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
+        foreach ($expectedDates as $date) {
+            if (in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $officialPassSlipDates)) {
                 $presentDays[$date] = true;
-                unset($absentDays[$date]);
                 continue;
             }
 
@@ -159,61 +146,7 @@ class DTRServices
             }
         }
 
-        // Step 2: Apply weekend rules (same as monthly logic)
-        foreach ($days as $date) {
-            $dayOfWeek = Carbon::parse($date)->format('l');
-
-            if (in_array($date, $holidays) || in_array($date, $leaveDates) || in_array($date, $specialDutyDates) || in_array($date, $approvedPassSlipDates)) {
-                continue;
-            }
-
-            if ($dayOfWeek === 'Saturday') {
-                $friday = Carbon::parse($date)->copy()->subDay()->toDateString();
-                $sunday = Carbon::parse($date)->copy()->addDay()->toDateString();
-                $monday = Carbon::parse($date)->copy()->addDays(2)->toDateString();
-
-                if (isset($absentDays[$friday]) && isset($presentDays[$monday])) {
-                    $absentDays[$date] = true;
-                    $absentDays[$sunday] = true;
-                    unset($presentDays[$date], $presentDays[$sunday]);
-                } elseif (isset($presentDays[$friday]) && isset($absentDays[$monday])) {
-                    if (!isset($presentDays[$date])) {
-                        $absentDays[$date] = true;
-                        unset($presentDays[$date]);
-                    }
-                } elseif (isset($absentDays[$friday]) && isset($absentDays[$monday])) {
-                    $absentDays[$date] = true;
-                    $absentDays[$sunday] = true;
-                    unset($presentDays[$date], $presentDays[$sunday]);
-                } elseif (isset($presentDays[$friday]) && isset($presentDays[$monday])) {
-                    $presentDays[$date] = true;
-                    $presentDays[$sunday] = true;
-                    unset($absentDays[$date], $absentDays[$sunday]);
-                }
-            }
-        }
-
-        // Step 2.5: Handle range boundary weekends
-        $rangeStart = Carbon::parse($start_date)->toDateString();
-        $rangeEnd = Carbon::parse($end_date)->toDateString();
-
-        if (Carbon::parse($rangeStart)->isSunday()) {
-            $monday = Carbon::parse($rangeStart)->copy()->addDay()->toDateString();
-            if (isset($presentDays[$monday])) {
-                $presentDays[$rangeStart] = true;
-                unset($absentDays[$rangeStart]);
-            }
-        }
-
-        if (Carbon::parse($rangeEnd)->isSaturday()) {
-            $friday = Carbon::parse($rangeEnd)->copy()->subDay()->toDateString();
-            if (isset($presentDays[$friday])) {
-                $presentDays[$rangeEnd] = true;
-                unset($absentDays[$rangeEnd]);
-            }
-        }
-
-        return [$presentDays, $absentDays, $days, $holidays, $leaveDates, $specialDutyDates];
+        return [$presentDays, $absentDays, $expectedDates, $holidays, $leaveDates, $specialDutyDates];
     }
 
     public function getHolidays($month, $year)
@@ -250,6 +183,7 @@ class DTRServices
         $scheduleMap = [];
         foreach ($plottedSchedules as $schedule) {
             $scheduleMap[$schedule->schedule_date] = [
+                'type' => $schedule->type ?? 'FIXED',
                 'time_in' => $schedule->time_in,
                 'time_out' => $schedule->time_out,
                 'time_in_latest' => $schedule->time_in_latest,
@@ -257,6 +191,26 @@ class DTRServices
             ];
         }
         return $scheduleMap;
+    }
+
+    private function resolveExpectedWorkDates(array $schedules, $startDate, $endDate, array $holidays): array
+    {
+        if (!empty($schedules)) {
+            return collect(array_keys($schedules))
+                ->reject(function ($date) use ($holidays) {
+                    return in_array($date, $holidays, true);
+                })
+                ->values()
+                ->all();
+        }
+
+        return collect($this->getAllDaysByRange($startDate, $endDate))
+            ->filter(function ($date) use ($holidays) {
+                $day = Carbon::parse($date);
+                return $day->isWeekday() && !in_array($date, $holidays, true);
+            })
+            ->values()
+            ->all();
     }
 
     private function getFirstInLog($userid, $date)
@@ -287,12 +241,16 @@ class DTRServices
         $expectedIn = Carbon::parse("$date {$shift['time_in']}")->startOfMinute();
         $expectedInLatest = $shift['time_in_latest'] ? Carbon::parse("$date {$shift['time_in_latest']}")->startOfMinute() : $expectedIn;
         $expectedOut = Carbon::parse("$date {$shift['time_out']}")->startOfMinute();
+        $expectedOutLatest = $shift['time_out_latest'] ? Carbon::parse("$date {$shift['time_out_latest']}")->startOfMinute() : $expectedOut;
 
         if ($expectedInLatest->lt($expectedIn)) {
             $expectedInLatest->addDay();
         }
         if ($expectedOut->lte($expectedIn)) {
             $expectedOut->addDay();
+        }
+        if ($expectedOutLatest->lte($expectedOut)) {
+            $expectedOutLatest->addDay();
         }
 
         $actualIn = Carbon::parse($firstIn)->startOfMinute();
@@ -302,8 +260,18 @@ class DTRServices
             $lateMinutes = $actualIn->diffInMinutes($expectedInLatest);
         }
 
-        $shiftDuration = $expectedOut->diffInMinutes($expectedIn);
-        $requiredOut = $actualIn->copy()->addMinutes($shiftDuration);
+        $requiredOut = $expectedOut->copy();
+        $scheduleType = strtoupper((string) ($shift['type'] ?? 'FIXED'));
+        if ($scheduleType === 'GLIDING') {
+            if ($actualIn->gt($expectedIn) && $actualIn->lte($expectedInLatest)) {
+                $requiredOut = $expectedOut->copy()->addMinutes($expectedIn->diffInMinutes($actualIn));
+                if ($requiredOut->gt($expectedOutLatest)) {
+                    $requiredOut = $expectedOutLatest->copy();
+                }
+            } elseif ($actualIn->gt($expectedInLatest)) {
+                $requiredOut = $expectedOutLatest->copy();
+            }
+        }
 
         // Handle undertime if the employee checks out early
         if ($lastOut) {
@@ -563,6 +531,7 @@ class DTRServices
         return DB::table('hris.pass_slips')
             ->where('user_id', $userid)
             ->whereRaw('LOWER(status) = ?', ['approved'])
+            ->whereRaw('LOWER(type) = ?', ['official'])
             ->whereBetween('slip_date', [$startDate, $endDate])
             ->pluck('slip_date')
             ->map(function ($date) {

@@ -396,6 +396,7 @@ class PayrollServices
 
         // ---- Basic Salary & Rates ----
         $basic_salary = $salary->basic_salary ?? 0.00;
+        $totalWorkingDays = max((int) $totalWorkingDays, 1);
         $daily_rate = $basic_salary / $totalWorkingDays;
         $hourly_rate = $daily_rate / 8;
         $minute_rate = $hourly_rate / 60;
@@ -708,7 +709,7 @@ class PayrollServices
 
         $dtrService = app(DTRServices::class);
         $result = $dtrService->getCutoffBreakdown($employeeId, $startDate, $endDate);
-        $totalWorkingDays = $this->getTotalDaysByRange($startDate, $endDate);
+        $totalWorkingDays = $this->getWorkingDaysByRange($startDate, $endDate);
         $totalPresent = $dtrService->getTotalPresentByRange($employeeId, $startDate, $endDate);
         $lateMinutes = $result['late_minutes'] ?? 0;
         $undertimeMinutes = $result['undertime_minutes'] ?? 0;
@@ -748,7 +749,7 @@ class PayrollServices
         $master = $this->getOrCreateCutoffMaster($startDate, $endDate, $title, $generatedBy);
         $dtrService = app(DTRServices::class);
         $result = $dtrService->getCutoffBreakdown($employeeId, $startDate, $endDate);
-        $totalWorkingDays = $this->getTotalDaysByRange($startDate, $endDate);
+        $totalWorkingDays = $this->getWorkingDaysByRange($startDate, $endDate);
         $totalPresent = $dtrService->getTotalPresentByRange($employeeId, $startDate, $endDate);
         $lateMinutes = $result['late_minutes'] ?? 0;
         $undertimeMinutes = $result['undertime_minutes'] ?? 0;

@@ -1090,9 +1090,6 @@ class DTRController extends Controller
                             }
                         }
 
-                        // 1. Determine if logs exist in each period
-                        $hasAm = $rawSched ? $scheduleMatchedAm : ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
-                        $hasPm = $rawSched ? $scheduleMatchedPm : ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
                         $hasTodayIn = ($data['date_timein_am'] !== '' || $data['date_timein_pm'] !== '');
                         $hasTodayOut = ($data['date_timeout_am'] !== '' || $data['date_timeout_pm'] !== '');
                         $isOvernightSpilloverOnly =
@@ -1113,64 +1110,11 @@ class DTRController extends Controller
                             }
                         }
 
-                        // 2. Identify Half-Day:
-                        // Only apply half-day logic when the plotted schedule actually spans AM and PM.
-                        // This avoids false half-day tagging for shifts like 2PM-10PM.
-                        $supportsHalfDay = false;
-                        if (!$isOvernightSpilloverOnly && $rawSched && !$isOvernightSchedule && $rawSchedIn && $rawSchedOut) {
-                            $noon = Carbon::parse($currentDay . ' 12:00:00');
-                            $supportsHalfDay = $rawSchedIn->lt($noon) && $rawSchedOut->gt($noon);
-                        }
-                        $isHalfDay = $supportsHalfDay && ($hasAm xor $hasPm);
-
-                        // 3. Define the calculation schedule
                         $calcSched = null;
                         if ($isOvernightSpilloverOnly) {
                             $calcSched = null;
-                        } elseif ($isHalfDay) {
-                            // Strictly 08:00 AM - 12:00 NN (Morning) or 01:00 PM - 05:00 PM (Afternoon)
-                            $calcSched = new \stdClass();
-                            $calcSched->type = 'FIXED'; // Half-day override is always fixed duration
-                            if ($hasAm) { // Morning shift
-                                $calcSched->time_in = '08:00:00';
-                                $calcSched->time_in_latest = '08:00:00';
-                                $calcSched->time_out = '12:00:00';
-                            } else { // Afternoon shift
-                                $calcSched->time_in = '13:00:00';
-                                $calcSched->time_in_latest = '13:00:00';
-                                $calcSched->time_out = '17:00:00';
-                            }
-                        } else if ($rawSched) {
-                            // Only use plotted schedule if it's a full day
+                        } elseif ($rawSched) {
                             $calcSched = $rawSched;
-                        }
-
-                        if ($calcSched && !$isOffSchedule && (!$rawSched || $isHalfDay)) {
-                            $calcSchedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
-                            $calcSchedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
-                            if ($calcSchedOut->lte($calcSchedIn)) {
-                                $calcSchedOut->addDay();
-                            }
-
-                            // Keep matching logs near the schedule window so overnight next-day logs
-                            // are considered, but unrelated logs are ignored.
-                            $windowStart = $calcSchedIn->copy()->subHours(6);
-                            $windowEnd = $calcSchedOut->copy()->addHours(8);
-
-                            $relevantLogs = $logs->filter(function ($log) use ($windowStart, $windowEnd) {
-                                $logTime = Carbon::parse($log->created_at);
-                                return $logTime->gte($windowStart) && $logTime->lte($windowEnd);
-                            });
-
-                            $firstIn = $relevantLogs->where('status', 'IN')->min('created_at');
-                            if ($firstIn) {
-                                $firstInTime = Carbon::parse($firstIn)->startOfMinute();
-                                $lastOut = $relevantLogs
-                                    ->where('status', 'OUT')
-                                    ->pluck('created_at')
-                                    ->filter(fn($out) => Carbon::parse($out)->startOfMinute()->gte($firstInTime))
-                                    ->max();
-                            }
                         }
 
                         $hasIncompleteScheduledLogs =
@@ -1211,17 +1155,6 @@ class DTRController extends Controller
                             $lateMinutes = 0;
                             $undertimeMinutes = 0;
 
-                            // Half-day classification:
-                            // AM only  -> undertime base 4 hours
-                            // PM only  -> late base 4 hours
-                            if ($isHalfDay) {
-                                if ($hasAm && !$hasPm) {
-                                    $undertimeMinutes = 240;
-                                } elseif ($hasPm && !$hasAm) {
-                                    $lateMinutes = 240;
-                                }
-                            }
-
                             if ($firstIn) {
                                 $firstInTime = Carbon::parse($firstIn)->startOfMinute();
                                 $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
@@ -1232,79 +1165,55 @@ class DTRController extends Controller
 
                                 if ($firstInTime->gt($schedInLatest)) {
                                     $lateDiffMinutes = $schedInLatest->diffInMinutes($firstInTime);
-
-                                    // Keep half-day buckets exclusive for monthly counters:
-                                    // AM-only => undertime bucket, PM-only => late bucket.
-                                    if ($isHalfDay && $hasAm && !$hasPm) {
-                                        $undertimeMinutes += $lateDiffMinutes;
-                                    } elseif (!$isHalfDay || ($hasPm && !$hasAm)) {
-                                        $lateMinutes += $lateDiffMinutes;
-                                    }
+                                    $lateMinutes += $lateDiffMinutes;
                                 }
                             }
 
                             if ($lastOut) {
                                 $lastOutTime = Carbon::parse($lastOut)->startOfMinute();
-                                
-                                if ($isHalfDay) {
-                                    $halfDayRequiredOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
-                                    if ($halfDayRequiredOut->lte(Carbon::parse($currentDay . ' ' . $calcSched->time_in))) {
-                                        $halfDayRequiredOut->addDay();
+
+                                // Normal Full Day Schedule Logic
+                                $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
+                                $schedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
+                                if ($schedOut->lte($schedIn)) {
+                                    // Night shift: schedule out is on the next day.
+                                    $schedOut->addDay();
+                                }
+                                $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
+
+                                if ($isGliding && $firstIn) {
+                                    $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
+                                    $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
+                                    $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
+                                    if ($schedInLatest->lt($schedIn)) {
+                                        $schedInLatest->addDay();
+                                    }
+                                    if ($schedOutLatest->lt($schedOut)) {
+                                        $schedOutLatest->addDay();
                                     }
 
-                                    if ($lastOutTime->lt($halfDayRequiredOut)) {
-                                        $shortMinutes = $lastOutTime->diffInMinutes($halfDayRequiredOut);
-                                        if ($hasAm) {
-                                            $undertimeMinutes += $shortMinutes;
-                                        } elseif ($hasPm) {
-                                            // PM half-day is counted under "late" bucket per business rule
-                                            $lateMinutes += $shortMinutes;
-                                        }
-                                    }
-                                } else {
-                                    // Normal Full Day Schedule Logic
-                                    $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
-                                    $schedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
-                                    if ($schedOut->lte($schedIn)) {
-                                        // Night shift: schedule out is on the next day.
-                                        $schedOut->addDay();
-                                    }
-                                    $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
-                                    
-                                    if ($isGliding && $firstIn) {
-                                        $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
-                                        $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
-                                        $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
-                                        if ($schedInLatest->lt($schedIn)) {
-                                            $schedInLatest->addDay();
-                                        }
-                                        if ($schedOutLatest->lt($schedOut)) {
-                                            $schedOutLatest->addDay();
-                                        }
-
-                                        // Gliding rule:
-                                        // - IN within allowed window shifts required OUT within OUT window.
-                                        // - IN beyond latest IN is already "late"; cap required OUT to latest OUT
-                                        //   to avoid double-penalizing the same overage as both late and undertime.
-                                        if ($effectiveIn->lte($schedIn)) {
-                                            $requiredOut = $schedOut->copy();
-                                        } elseif ($effectiveIn->lte($schedInLatest)) {
-                                            $offsetMinutes = $schedIn->diffInMinutes($effectiveIn);
-                                            $requiredOut = $schedOut->copy()->addMinutes($offsetMinutes);
-                                            if ($requiredOut->gt($schedOutLatest)) {
-                                                $requiredOut = $schedOutLatest->copy();
-                                            }
-                                        } else {
+                                    // Gliding rule:
+                                    // - IN within allowed window shifts required OUT within OUT window.
+                                    // - IN beyond latest IN is already "late"; cap required OUT to latest OUT
+                                    //   to avoid double-penalizing the same overage as both late and undertime.
+                                    if ($effectiveIn->lte($schedIn)) {
+                                        $requiredOut = $schedOut->copy();
+                                    } elseif ($effectiveIn->lte($schedInLatest)) {
+                                        $offsetMinutes = $schedIn->diffInMinutes($effectiveIn);
+                                        $requiredOut = $schedOut->copy()->addMinutes($offsetMinutes);
+                                        if ($requiredOut->gt($schedOutLatest)) {
                                             $requiredOut = $schedOutLatest->copy();
                                         }
                                     } else {
-                                        // Fixed: undertime is based on plotted schedule out, not on late arrival.
-                                        $requiredOut = $schedOut;
+                                        $requiredOut = $schedOutLatest->copy();
                                     }
+                                } else {
+                                    // Fixed: undertime is based on plotted schedule out, not on late arrival.
+                                    $requiredOut = $schedOut;
+                                }
 
-                                    if ($lastOutTime->lt($requiredOut)) {
-                                        $undertimeMinutes = $lastOutTime->diffInMinutes($requiredOut);
-                                    }
+                                if ($lastOutTime->lt($requiredOut)) {
+                                    $undertimeMinutes = $lastOutTime->diffInMinutes($requiredOut);
                                 }
                             }
 
