@@ -90,28 +90,44 @@ class ScheduleController extends Controller
             return null;
         }
 
-        $section = DB::table('tdh_user.section')
-            ->where('id', $sectionId)
-            ->first(['id', 'head', 'subsection']);
+        $section = $this->getOutermostSectionById($sectionId);
 
         if (!$section || empty($section->head)) {
             return null;
         }
 
-        $sectionHeadUser = DB::table('tdh_user.users')
-            ->where('id', $section->head)
-            ->first(['id', 'section']);
+        return DB::table('tdh_user.users as u')
+            ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
+            ->where('u.id', $section->head)
+            ->select('u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.title', 'de.description as designation')
+            ->first();
+    }
 
-        if (!$sectionHeadUser || empty($sectionHeadUser->section)) {
+    private function getOutermostSectionById(?int $sectionId)
+    {
+        if (empty($sectionId)) {
             return null;
         }
 
-        return DB::table('tdh_user.section as s')
-            ->join('tdh_user.users as u', 's.head', '=', 'u.id')
-            ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
-            ->where('s.id', $sectionHeadUser->section)
-            ->select('u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.title', 'de.description as designation')
-            ->first();
+        $currentSectionId = (int) $sectionId;
+        $visitedSectionIds = [];
+        $section = null;
+
+        while (!empty($currentSectionId) && !in_array($currentSectionId, $visitedSectionIds, true)) {
+            $visitedSectionIds[] = $currentSectionId;
+
+            $section = DB::table('tdh_user.section')
+                ->where('id', $currentSectionId)
+                ->first(['id', 'division', 'head', 'subsection']);
+
+            if (!$section || empty($section->subsection)) {
+                break;
+            }
+
+            $currentSectionId = (int) $section->subsection;
+        }
+
+        return $section;
     }
 
     private function getSectionLabelByIds(array $sectionIds, ?int $divisionId = null): string
