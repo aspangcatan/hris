@@ -114,6 +114,70 @@ class ScheduleController extends Controller
             ->first();
     }
 
+    private function getSectionLabelByIds(array $sectionIds, ?int $divisionId = null): string
+    {
+        $sectionIds = collect($sectionIds)
+            ->filter(fn($id) => !is_null($id) && $id !== '')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($sectionIds)) {
+            return '';
+        }
+
+        $query = DB::table('tdh_user.section')
+            ->whereIn('id', $sectionIds);
+
+        if (!is_null($divisionId)) {
+            $query->where('division', $divisionId);
+        }
+
+        return $query
+            ->orderBy('description')
+            ->pluck('description')
+            ->filter()
+            ->implode('/ ');
+    }
+
+    private function getSectionLabelByDivisionId(?int $divisionId): string
+    {
+        if (is_null($divisionId)) {
+            return '';
+        }
+
+        return DB::table('tdh_user.section')
+            ->where('division', $divisionId)
+            ->orderBy('description')
+            ->pluck('description')
+            ->filter()
+            ->implode('/ ');
+    }
+
+    private function getDivisionLabelBySectionIds(array $sectionIds): string
+    {
+        $sectionIds = collect($sectionIds)
+            ->filter(fn($id) => !is_null($id) && $id !== '')
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($sectionIds)) {
+            return '';
+        }
+
+        return DB::table('tdh_user.section as s')
+            ->join('tdh_user.division as d', 's.division', '=', 'd.id')
+            ->whereIn('s.id', $sectionIds)
+            ->orderBy('d.description')
+            ->pluck('d.description')
+            ->unique()
+            ->filter()
+            ->implode('/ ');
+    }
+
     private function isLockedScheduleDate(string $date): bool
     {
         return false;        
@@ -367,12 +431,15 @@ class ScheduleController extends Controller
                     ->select('description')
                     ->first();
                 $divisionLabel = $divisionInfo->description ?? '';
-                $sectionLabel = 'ALL SECTIONS';
+                $sectionLabel = $this->getSectionLabelByDivisionId($requestedDivision);
                 $divisionId = $requestedDivision;
             } else {
                 if ($accessRights === 'schedule') {
-                    $divisionLabel = 'ASSIGNED DIVISIONS';
-                    $sectionLabel = 'ALL ALLOWED SECTIONS';
+                    $managedSectionLabel = $this->getSectionLabelByIds($managedSections, $requestedDivision);
+                    $managedDivisionLabel = $this->getDivisionLabelBySectionIds($managedSections);
+
+                    $divisionLabel = $managedDivisionLabel;
+                    $sectionLabel = $managedSectionLabel;
                     $divisionId = Auth::user()->division ?? null;
                 } else {
                     $sectionInfo = DB::table('tdh_user.section as s')
