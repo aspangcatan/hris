@@ -853,7 +853,9 @@ class DTRController extends Controller
                     $hasApprovedPassSlip = !empty($approvedPassSlips[$currentDay]);
                     $hasOfficialPassSlip = !empty($officialPassSlips[$currentDay]);
                     $hasExcusedRecord = $hasLeave || $hasHospitalOrder || $hasApprovedPassSlip;
-                    $hasComputationExemption = $hasExcusedRecord || $isHoliday;
+                    // Holidays should still compute late/undertime when there are actual timelogs.
+                    // Only approved leave, hospital order, and pass slips waive the computation.
+                    $hasComputationExemption = $hasExcusedRecord;
 
                     $data = [
                         'day' => $day,
@@ -968,8 +970,8 @@ class DTRController extends Controller
                             $data['isEmpty'] = false;
                         }
 
-                        // Skip late/undertime computation when there is a timelog and the day
-                        // is also covered by an approved leave/H.O/pass slip/holiday.
+                        // Skip late/undertime computation only for excused records.
+                        // Holidays with timelogs should still be evaluated.
                         $skipLateUndertimeComputation = $hasComputationExemption;
 
                         // Calculate Late and Undertime (skip when OFF)
@@ -1234,11 +1236,27 @@ class DTRController extends Controller
                     }
 
                     // Keep timelog fields as pure times; render OB/OT as separate marker in the PDF.
-                    // Priority: OB (official pass slip) over OT.
+                    // Holiday tuning:
+                    // - Worked holiday on a full-day schedule: hide HOLIDAY.
+                    // - Worked holiday on a half-day schedule: keep HOLIDAY unless there is late/undertime.
+                    // Priority for worked days: HOLIDAY (half-day only, no penalty), then OB, then OT.
                     if (!$data['isEmpty']) {
+                        $hasLateOrUndertime =
+                            (int) ($data['late_minutes'] ?? 0) > 0 ||
+                            (int) ($data['undertime_hours'] ?: 0) > 0 ||
+                            (int) ($data['undertime_minutes'] ?: 0) > 0;
+                        $isHalfDaySchedule =
+                            !$isOffSchedule &&
+                            (int) ($data['rendered_minutes'] ?? 0) > 0 &&
+                            (int) ($data['rendered_minutes'] ?? 0) <= 240;
+
                         if ($isHoliday) {
-                            $holiday = $holidays[$currentDay];
-                            $data['day_marker'] = $holiday['type'] != 'Regular' ? strtoupper($holiday['description']) : 'HOLIDAY';
+                            if ($isHalfDaySchedule && !$hasLateOrUndertime) {
+                                $holiday = $holidays[$currentDay];
+                                $data['day_marker'] = $holiday['type'] != 'Regular' ? strtoupper($holiday['description']) : 'HOLIDAY';
+                            } else {
+                                $data['day_marker'] = '';
+                            }
                         } elseif (!$hasExcusedRecord && ($hasOfficialPassSlip || $hasApprovedOvertime)) {
                             if ($hasOfficialPassSlip) {
                                 $data['day_marker'] = 'OB';
