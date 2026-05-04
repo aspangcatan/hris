@@ -670,12 +670,14 @@ class DTRController extends Controller
             }
 
             foreach ($employees as $employee) {
-                $divisionHead = collect(self::getInCharged($employee->division))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
+                $inChargedDivision = $this->checkIfDivisionHead($employee->id) ? 1 : $employee->division;
+                $divisionHead = collect(self::getInCharged($inChargedDivision))->only(['fname', 'mname', 'lname', 'suffix', 'title']);
                 $fname = $divisionHead['fname'] ?? '';
                 $mname = !empty($divisionHead['mname']) ? strtoupper(substr($divisionHead['mname'], 0, 1)) . '.' : '';
                 $lname = $divisionHead['lname'] ?? '';
                 $suffix = !empty($divisionHead['suffix']) ? ' ' . strtoupper($divisionHead['suffix']) : '';
                 $title = !empty($divisionHead['title']) ? ', ' . strtoupper($divisionHead['title']) : '';
+
                 $in_charged = strtoupper(trim("$fname $mname $lname$suffix$title"));
 
                 $monthStart = Carbon::createFromDate($year, $month, 1)->startOfDay();
