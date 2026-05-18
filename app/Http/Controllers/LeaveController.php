@@ -107,7 +107,7 @@ class LeaveController extends Controller
             $userid = $request->has('id') ? $request->id : Auth::id();
 
             // Fetch all leave types
-            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code', 'monthly_points_earned']);
+            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code']);
 
             // Initialize leave credits array
             $leave_credits = [];

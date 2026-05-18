@@ -77,6 +77,13 @@
                 <div class="dtr-stat-label">Selected Employees</div>
                 <input type="text" class="form-control" id="selected_count" readonly disabled>
             </div>
+            <div class="dtr-field dtr-field--full">
+                <label for="bulk_enable_automation">Enable Automation</label>
+                <select class="form-select" id="bulk_enable_automation">
+                    <option value="yes" selected>Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
             <div class="dtr-field">
                 <label for="bulk_reg_days_am">Reg Days (AM)</label>
                 <input type="text" class="form-control" id="bulk_reg_days_am">
@@ -142,7 +149,7 @@ $(document).ready(function(){
     initDates(); initFilters(); getEmployeeDtr(1); updateSelectionSummary();
     $("#month,#year").change(function(){ viewDtr(userid); });
     $("#btn_print").click(function(){
-        const p=new URLSearchParams({month:$("#month").val(),year:$("#year").val(),cutoff:$("#cutoff").val(),userid:userid,reg_days_am:$("#reg_days_am").val()||"",reg_days_pm:$("#reg_days_pm").val()||"",sat_days_am:$("#sat_days_am").val()||"",sat_days_pm:$("#sat_days_pm").val()||""});
+        const p=new URLSearchParams({month:$("#month").val(),year:$("#year").val(),cutoff:$("#cutoff").val(),userid:userid,reg_days_am:$("#reg_days_am").val()||"",reg_days_pm:$("#reg_days_pm").val()||"",sat_days_am:$("#sat_days_am").val()||"",sat_days_pm:$("#sat_days_pm").val()||"",enable_automation:$("#enable_automation").val()||"yes"});
         window.open(`{{ route('printDTR') }}?${p.toString()}`,'_blank');
     });
     $("#btn_refresh_employees").click(()=>getEmployeeDtr(1));
@@ -241,7 +248,7 @@ function bulkPrintSelected(){
     if(!from||!to){ toastr.warning("Please set both From and To dates.","Missing Date Range"); return; }
     if(moment(to).isBefore(moment(from))){ toastr.warning("The To date must not be earlier than the From date.","Invalid Date Range"); return; }
     if(!moment(from).isSame(moment(to),'month')){ toastr.warning("Bulk DTR printing currently supports one month at a time.","Invalid Date Range"); return; }
-    const p=new URLSearchParams({from:from,to:to,reg_days_am:$("#bulk_reg_days_am").val()||"",reg_days_pm:$("#bulk_reg_days_pm").val()||"",sat_days_am:$("#bulk_sat_days_am").val()||"",sat_days_pm:$("#bulk_sat_days_pm").val()||"",userids:Array.from(selectedEmployees).join(",")});
+    const p=new URLSearchParams({from:from,to:to,reg_days_am:$("#bulk_reg_days_am").val()||"",reg_days_pm:$("#bulk_reg_days_pm").val()||"",sat_days_am:$("#bulk_sat_days_am").val()||"",sat_days_pm:$("#bulk_sat_days_pm").val()||"",enable_automation:$("#bulk_enable_automation").val()||"yes",userids:Array.from(selectedEmployees).join(",")});
     window.open(`{{ route('printDTR') }}?${p.toString()}`,"_blank");
 }
 

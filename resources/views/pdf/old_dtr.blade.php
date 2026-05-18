@@ -123,6 +123,8 @@
             if ($value === '') return '';
             return preg_replace('/\s*,\s*/', "\n", $value);
         };
+
+        $noAutomation = ($employee['enable_automation'] ?? 'yes') === 'no';
     @endphp
     <table class="employee-sheet">
         <tr> <!-- First Column -->
@@ -242,20 +244,31 @@
                         </tr>
                     @endforeach
 
+                    
+                    
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
-                        <td style="font-weight: bold">{{ max($tableTotalHours, 0) }}</td>
-                        <td style="font-weight: bold">{{ max($tableTotalMinutes, 0) }}</td>
+                        <td style="font-weight: bold">
+                            @if(!$noAutomation)
+                            {{ max($tableTotalHours, 0) }}
+                            @endif
+                        </td>
+                        <td style="font-weight: bold">
+                            @if(!$noAutomation)
+                            {{ max($tableTotalMinutes, 0) }}
+                            @endif
+                        </td>
                     </tr>
+                    
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
+                    @if(!$noAutomation && $employee['division'] == '2')
                     <div style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
-                          @if($employee['division'] == '2')
-                                <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
-                                <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
-                          @endif
+                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
+                        <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
                     </div>
+                    @endif
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>
@@ -400,20 +413,30 @@
                             @endif
                         </tr>
                     @endforeach
+                    
                     <tr>
                         <td style="border: none" colspan="4"></td>
                         <td style="border: none">TOTAL</td>
-                        <td style="font-weight: bold">{{ max($tableTotalHours, 0) }}</td>
-                        <td style="font-weight: bold">{{ max($tableTotalMinutes, 0) }}</td>
+                        <td style="font-weight: bold">
+                            @if(!$noAutomation)
+                            {{ max($tableTotalHours, 0) }}
+                            @endif
+                        </td>
+                        <td style="font-weight: bold">
+                            @if(!$noAutomation)
+                            {{ max($tableTotalMinutes, 0) }}
+                            @endif
+                        </td>
                     </tr>
+                    
                 </table>
                 <div style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
+                    @if(!$noAutomation && $employee['division'] == '2')
                     <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: start;">
-                         @if($employee['division'] == '2')
                         <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
-                        @endif
                     </div>
+                    @endif
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>

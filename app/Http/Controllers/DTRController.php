@@ -191,7 +191,8 @@ class DTRController extends Controller
                 [
                     'absent' => $request->absent,
                     'late' => $request->late
-                ]);
+                ]
+            );
             return response()->json(['message' => "DTR stored successfully"]);
         } catch (\Exception $exception) {
             return response()->json($exception->getMessage(), 500);
@@ -220,7 +221,7 @@ class DTRController extends Controller
                     'designation.description as designation',
                     'division.description as division'
                 )
-                ->where('employees.employee_no', '=', (int)$request->employee_no)
+                ->where('employees.employee_no', '=', (int) $request->employee_no)
                 ->first();
 
             if (!$user) {
@@ -589,7 +590,7 @@ class DTRController extends Controller
         }
     }
 
-//PRINT DTR
+    //PRINT DTR
     public function printDTR(Request $request)
     {
         try {
@@ -611,6 +612,8 @@ class DTRController extends Controller
             $reg_days_pm = $request->reg_days_pm;
             $sat_days_am = $request->sat_days_am;
             $sat_days_pm = $request->sat_days_pm;
+            $enableAutomation = strtolower($request->input('enable_automation', 'yes'));
+            $skipAllAutomation = ($enableAutomation === 'no');
 
             if (!empty($fromDateInput) && !empty($toDateInput)) {
                 $fromDate = Carbon::parse($fromDateInput)->startOfDay();
@@ -696,7 +699,7 @@ class DTRController extends Controller
                     ->where('la.user_id', $employee->id)
                     ->whereMonth('lda.date_applied', $month)
                     ->whereYear('lda.date_applied', $year)
-                    ->where('la.status','Approved')
+                    ->where('la.status', 'Approved')
                     ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code', 'lda.hours')
                     ->get();
 
@@ -795,17 +798,20 @@ class DTRController extends Controller
                 $undertimeCount = 0;
                 $lateTotalMinutes = 0;
                 $undertimeTotalMinutes = 0;
-                
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $approvedPassSlips, $officialPassSlips, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
+
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $approvedPassSlips, $officialPassSlips, $skipAllAutomation, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
                     $formatMinutes = function ($minutes) {
                         $minutes = (int) $minutes;
-                        if ($minutes <= 0) return '0m';
+                        if ($minutes <= 0)
+                            return '0m';
 
                         $hours = intdiv($minutes, 60);
                         $mins = $minutes % 60;
 
-                        if ($hours > 0 && $mins > 0) return $hours . 'h ' . $mins . 'm';
-                        if ($hours > 0) return $hours . 'h';
+                        if ($hours > 0 && $mins > 0)
+                            return $hours . 'h ' . $mins . 'm';
+                        if ($hours > 0)
+                            return $hours . 'h';
                         return $mins . 'm';
                     };
 
@@ -888,10 +894,11 @@ class DTRController extends Controller
                             $data['off_label'] = $scheduleLabel !== '' ? $scheduleLabel : $scheduleCode;
                         }
 
-                        $formatTime = function($time, $showAmpm = true) {
+                        $formatTime = function ($time, $showAmpm = true) {
                             $c = Carbon::parse($time);
                             $format = ($c->format('i') === '00') ? 'g' : 'g:i';
-                            if ($showAmpm) $format .= 'A';
+                            if ($showAmpm)
+                                $format .= 'A';
                             return $c->format($format);
                         };
 
@@ -912,17 +919,19 @@ class DTRController extends Controller
                             $scheduledSpanMinutes = Carbon::parse($currentDay . ' ' . $sched->time_in)
                                 ->diffInMinutes(
                                     Carbon::parse($currentDay . ' ' . $sched->time_out)->lte(Carbon::parse($currentDay . ' ' . $sched->time_in))
-                                        ? Carbon::parse($currentDay . ' ' . $sched->time_out)->addDay()
-                                        : Carbon::parse($currentDay . ' ' . $sched->time_out)
+                                    ? Carbon::parse($currentDay . ' ' . $sched->time_out)->addDay()
+                                    : Carbon::parse($currentDay . ' ' . $sched->time_out)
                                 );
                             $data['rendered_minutes'] = max($scheduledSpanMinutes - $scheduledBreakMinutes, 0);
                         }
                     }
 
-                    if (!$data['isInsideCutoff']) return $data;
+                    if (!$data['isInsideCutoff'])
+                        return $data;
 
                     // Get logs of the day
-                    $dayLogs = $logs->filter(fn($log) =>
+                    $dayLogs = $logs->filter(
+                        fn($log) =>
                         Carbon::parse($log->created_at)->toDateString() === $currentDay
                     );
 
@@ -959,12 +968,16 @@ class DTRController extends Controller
                         }
 
                         // AM
-                        if (!empty($amIns)) $data['date_timein_am'] = min($amIns);
-                        if (!empty($amOuts)) $data['date_timeout_am'] = max($amOuts);
+                        if (!empty($amIns))
+                            $data['date_timein_am'] = min($amIns);
+                        if (!empty($amOuts))
+                            $data['date_timeout_am'] = max($amOuts);
 
                         // PM
-                        if (!empty($pmIns)) $data['date_timein_pm'] = min($pmIns);
-                        if (!empty($pmOuts)) $data['date_timeout_pm'] = max($pmOuts);
+                        if (!empty($pmIns))
+                            $data['date_timein_pm'] = min($pmIns);
+                        if (!empty($pmOuts))
+                            $data['date_timeout_pm'] = max($pmOuts);
 
                         if (!empty($amIns) || !empty($pmIns) || !empty($amOuts) || !empty($pmOuts)) {
                             $data['isEmpty'] = false;
@@ -972,7 +985,8 @@ class DTRController extends Controller
 
                         // Skip late/undertime computation only for excused records.
                         // Holidays with timelogs should still be evaluated.
-                        $skipLateUndertimeComputation = $hasComputationExemption;
+                        // When automation is disabled globally, skip computation for all days.
+                        $skipLateUndertimeComputation = $hasComputationExemption || $skipAllAutomation;
 
                         // Calculate Late and Undertime (skip when OFF)
                         $rawSched = $schedules[$currentDay] ?? null;
@@ -1221,8 +1235,10 @@ class DTRController extends Controller
                                 }
                             }
 
-                            if ($lateMinutes > 0) $lateCount++;
-                            if ($undertimeMinutes > 0) $undertimeCount++;
+                            if ($lateMinutes > 0)
+                                $lateCount++;
+                            if ($undertimeMinutes > 0)
+                                $undertimeCount++;
                             $lateTotalMinutes += $lateMinutes;
                             $undertimeTotalMinutes += $undertimeMinutes;
                             $data['late_minutes'] = $lateMinutes;
@@ -1262,8 +1278,8 @@ class DTRController extends Controller
                                 $data['day_marker'] = 'OB';
                             } else {
                                 $lateMarker = '';
-                                if (!empty($data['late_minutes']) && (int)$data['late_minutes'] > 0) {
-                                    $lateMarker = 'L: ' . $formatMinutes((int)$data['late_minutes']) . ' ';
+                                if (!empty($data['late_minutes']) && (int) $data['late_minutes'] > 0) {
+                                    $lateMarker = 'L: ' . $formatMinutes((int) $data['late_minutes']) . ' ';
                                 }
                                 $data['day_marker'] = $lateMarker . $overtimeRequests[$currentDay];
                             }
@@ -1312,26 +1328,13 @@ class DTRController extends Controller
                     'reg_days_pm' => $reg_days_pm,
                     'sat_days_am' => $sat_days_am,
                     'sat_days_pm' => $sat_days_pm,
-                    'division'=>$employee->division
+                    'division' => $employee->division,
+                    'enable_automation' => $enableAutomation,
                 ];
             }
 
-            // if($division_id == "2"){
-                if(false){
-$pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
-                ->setPaper('A4', 'portrait')
-                ->setOption('margin-top', 0)
-                ->setOption('margin-bottom', 0)
-                ->setOption('margin-left', 0)
-                ->setOption('margin-right', 0)
-                ->setOption('enable-smart-shrinking', true)
-                ->setOption('no-images', false)
-                ->setOption('disable-javascript', true)
-                ->setOption('load-error-handling', 'ignore')
-                ->setOption('dpi', 96);
-            }
-            else{
-                $pdf = SnappyPdf::loadView('pdf.old_dtr', ['employees' => $dtrData])
+
+            $pdf = SnappyPdf::loadView('pdf.old_dtr', ['employees' => $dtrData])
                 ->setPaper('A4', 'portrait')
                 ->setOption('margin-top', 5)
                 ->setOption('margin-bottom', 5)
@@ -1342,11 +1345,9 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
                 ->setOption('disable-javascript', true)
                 ->setOption('load-error-handling', 'ignore')
                 ->setOption('dpi', 96);
-            }
-            
+
 
             return $pdf->inline('DTR.pdf');
-
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
@@ -1374,9 +1375,10 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
             ->value('division');
     }
 
-     public
-    function getEmployeeDtrV2(Request $request)
-    {
+    public
+        function getEmployeeDtrV2(
+        Request $request
+    ) {
         try {
             $search_division = $request->search_division;
             $search_section = $request->search_section;
@@ -1510,8 +1512,8 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
 
 
     public
-    function getDivisionList()
-    {
+        function getDivisionList(
+    ) {
         try {
             $list = DB::table('tdh_user.division')
                 ->get(['id', 'description']);
@@ -1523,8 +1525,9 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
     }
 
     public
-    function getSectionList(Request $request)
-    {
+        function getSectionList(
+        Request $request
+    ) {
         try {
             $list = DB::table('tdh_user.section')
                 ->where('division', '=', $request->division)
@@ -1537,8 +1540,9 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
     }
 
     public
-    function getLatestLog(Request $request)
-    {
+        function getLatestLog(
+        Request $request
+    ) {
         try {
             $request->validate([
                 'userid' => 'required|integer',
@@ -1558,8 +1562,9 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
     }
 
     public
-    function getRecentLogs(Request $request)
-    {
+        function getRecentLogs(
+        Request $request
+    ) {
         try {
             $request->validate([
                 'userid' => 'required|integer',
@@ -1578,8 +1583,9 @@ $pdf = SnappyPdf::loadView('pdf.dtr', ['employees' => $dtrData])
     }
 
     public
-    function getInOutLogs(Request $request): JsonResponse
-    {
+        function getInOutLogs(
+        Request $request
+    ): JsonResponse {
         try {
             // Validate userid
             $request->validate([

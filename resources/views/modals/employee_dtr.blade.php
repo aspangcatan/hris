@@ -197,6 +197,15 @@
 
                 <div class="dtr-card dtr-controls mb-4">
                     <div class="row g-3">
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <select class="form-select" id="enable_automation" name="enable_automation">
+                                    <option value="yes" selected>Yes</option>
+                                    <option value="no">No</option>
+                                </select>
+                                <label for="enable_automation">Enable Automation</label>
+                            </div>
+                        </div>
                         <div class="col-md-3">
                             <div class="form-floating">
                                 <input type="text" class="form-control" id="reg_days_am" name="reg_days_am">
