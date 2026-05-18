@@ -5,6 +5,30 @@
     const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
     const LEAVE_TYPES = [];
 
+    // Maps leave type description keywords to their detail group element ID
+    const LEAVE_DETAIL_MAP = [
+        { keywords: ['vacation leave', 'special privilege'], group: '#detail_vacation' },
+        { keywords: ['sick leave'],                          group: '#detail_sick' },
+        { keywords: ['special leave benefits for women'],    group: '#detail_special_women' },
+        { keywords: ['study leave'],                         group: '#detail_study' },
+    ];
+
+    function resetDetailsSection() {
+        $('#details_leave .detail-group').css({ opacity: '0.4', 'pointer-events': 'none' });
+        $('#details_leave input').prop('disabled', true).prop('checked', false).val('');
+    }
+
+    function onLeaveTypeChange(description) {
+        resetDetailsSection();
+        const desc = description.toLowerCase().trim();
+        const match = LEAVE_DETAIL_MAP.find(entry => entry.keywords.some(kw => desc.includes(kw)));
+        if (match) {
+            const $group = $(match.group);
+            $group.css({ opacity: '1', 'pointer-events': '' });
+            $group.find('input').prop('disabled', false);
+        }
+    }
+
     $(document).ready(function () {
         $('.datepicker').datepicker({multidate: true});
 
@@ -12,7 +36,14 @@
         $("#btn_file_leave").click(function (){
             $("#dates_table_body").empty();
             addRow();
+            resetDetailsSection();
             file_leave_modal.toggle()
+        });
+
+        // Enable only the relevant details group when a leave type is chosen
+        $(document).on('change', "input[name='leave_type']", function () {
+            const description = $(this).closest('.form-check').find('label').text().trim();
+            onLeaveTypeChange(description);
         });
         $("#btn_reload").click(init_leave);
         $("#btn_search").click(() => {
@@ -89,7 +120,8 @@
             is_valid = false;
             toastr.error("Please select leave type", "Required");
         }
-        if (!leave_details) {
+        const detailsRequired = $('#details_leave input[name="leave_details"]').not(':disabled').length > 0;
+        if (detailsRequired && !leave_details) {
             is_valid = false;
             toastr.error("Please provide leave details", "Required");
         }
@@ -403,6 +435,7 @@
     function clearForm() {
         $("#leave_form input").not("[type='radio']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
+        resetDetailsSection();
     }
 
     function formatLeaveCreditBalance(value) {

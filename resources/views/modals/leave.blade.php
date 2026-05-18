@@ -50,51 +50,60 @@
                     <!-- B. Details of Leave -->
                     <div id="details_leave">
                         <div class="fw-bold mt-4">B. Details of leave</div>
-                        <div class="mt-2">In case of Vacation/Special Privilege Leave:</div>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input me-2" type="radio" name="leave_details">
-                                    <label class="form-check-label me-2">Within the Philippines</label>
-                                    <input class="form-control w-50" type="text" id="within_philippines"/>
+
+                        <div id="detail_vacation" class="detail-group">
+                            <div class="mt-2">In case of Vacation/Special Privilege Leave:</div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input me-2" type="radio" name="leave_details">
+                                        <label class="form-check-label me-2">Within the Philippines</label>
+                                        <input class="form-control w-50" type="text" id="within_philippines"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-12 mt-2">
+                                    <div class="form-check d-flex align-items-center">
+                                        <input class="form-check-input me-2" type="radio" name="leave_details">
+                                        <label class="form-check-label me-2">Abroad (Specify)</label>
+                                        <input class="form-control w-50" type="text" id="abroad"/>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-12 mt-2">
-                                <div class="form-check d-flex align-items-center">
-                                    <input class="form-check-input me-2" type="radio" name="leave_details">
-                                    <label class="form-check-label me-2">Abroad (Specify)</label>
-                                    <input class="form-control w-50" type="text" id="abroad"/>
-                                </div>
+                        </div>
+
+                        <div id="detail_sick" class="detail-group">
+                            <div class="mt-3">In case of Sick Leave:</div>
+                            <div class="form-check d-flex align-items-center mt-1">
+                                <input class="form-check-input me-2" type="radio" name="leave_details">
+                                <label class="form-check-label me-2">In Hospital (Specify Illness)</label>
+                                <input class="form-control w-50" type="text" id="in_hospital"/>
+                            </div>
+                            <div class="form-check d-flex align-items-center mt-2">
+                                <input class="form-check-input me-2" type="radio" name="leave_details">
+                                <label class="form-check-label me-2">Out Patient (Specify Illness)</label>
+                                <input class="form-control w-50" type="text" id="out_hospital"/>
                             </div>
                         </div>
 
-                        <div class="mt-3">In case of Sick Leave:</div>
-                        <div class="form-check d-flex align-items-center mt-1">
-                            <input class="form-check-input me-2" type="radio" name="leave_details">
-                            <label class="form-check-label me-2">In Hospital (Specify Illness)</label>
-                            <input class="form-control w-50" type="text" id="in_hospital"/>
-                        </div>
-                        <div class="form-check d-flex align-items-center mt-2">
-                            <input class="form-check-input me-2" type="radio" name="leave_details">
-                            <label class="form-check-label me-2">Out Patient (Specify Illness)</label>
-                            <input class="form-control w-50" type="text" id="out_hospital"/>
+                        <div id="detail_special_women" class="detail-group">
+                            <div class="mt-3">In case of Special Leave Benefits for Women:</div>
+                            <div class="d-flex align-items-center mt-1">
+                                <input class="form-check-input me-2" type="radio" name="leave_details">
+                                <label class="form-check-label me-2">(Specify Illness)</label>
+                                <input class="form-control w-75" type="text" id="special_leave"/>
+                            </div>
                         </div>
 
-                        <div class="mt-3">In case of Special Leave Benefits for Women:</div>
-                        <div class="d-flex align-items-center mt-1">
-                            <input class="form-check-input me-2" type="radio" name="leave_details">
-                            <label class="form-check-label me-2">(Specify Illness)</label>
-                            <input class="form-control w-75" type="text" id="special_leave"/>
-                        </div>
-
-                        <div class="mt-3">In case of Study Leave:</div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="leave_details">
-                            <label class="form-check-label">Completion of Master's Degree</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="leave_details">
-                            <label class="form-check-label">BAR/Board Examination Review</label>
+                        <div id="detail_study" class="detail-group">
+                            <div class="mt-3">In case of Study Leave:</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="leave_details">
+                                <label class="form-check-label">Completion of Master's Degree</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="leave_details">
+                                <label class="form-check-label">BAR/Board Examination Review</label>
+                            </div>
                         </div>
                     </div>
 

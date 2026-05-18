@@ -1232,6 +1232,24 @@ class DTRController extends Controller
 
                                 if ($lastOutTime->lt($requiredOut)) {
                                     $undertimeMinutes = $lastOutTime->diffInMinutes($requiredOut);
+
+                                    // Subtract any scheduled break that falls within the [lastOut, requiredOut] window.
+                                    // This prevents penalizing an employee for break time they never consumed
+                                    // (e.g. leaving at 12:09 PM on a 12:00–1:00 PM break should not add 51 min of undertime).
+                                    if (!empty($calcSched->break_out) && !empty($calcSched->break_in)) {
+                                        $breakOutTime = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
+                                        $breakInTime  = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
+                                        if ($breakInTime->lte($breakOutTime)) {
+                                            $breakInTime->addDay();
+                                        }
+
+                                        $overlapStart = $lastOutTime->copy()->max($breakOutTime);
+                                        $overlapEnd   = $requiredOut->copy()->min($breakInTime);
+
+                                        if ($overlapEnd->gt($overlapStart)) {
+                                            $undertimeMinutes = max(0, $undertimeMinutes - $overlapStart->diffInMinutes($overlapEnd));
+                                        }
+                                    }
                                 }
                             }
 
