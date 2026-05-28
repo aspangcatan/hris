@@ -42,84 +42,16 @@
                 </div>
 
                 <div class="mt-4" id="leave_form">
-                    <!-- A. Type of Leave -->
-                    <div class="fw-bold">A. Type of Leave to be availed of</div>
-                    <div class="row mt-2" id="leave_list"></div>
-
-                    <hr/>
-                    <!-- B. Details of Leave -->
-                    <div id="details_leave">
-                        <div class="fw-bold mt-4">B. Details of leave</div>
-
-                        <div id="detail_vacation" class="detail-group">
-                            <div class="mt-2">In case of Vacation/Special Privilege Leave:</div>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="form-check d-flex align-items-center">
-                                        <input class="form-check-input me-2" type="radio" name="leave_details">
-                                        <label class="form-check-label me-2">Within the Philippines</label>
-                                        <input class="form-control w-50" type="text" id="within_philippines"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-12 mt-2">
-                                    <div class="form-check d-flex align-items-center">
-                                        <input class="form-check-input me-2" type="radio" name="leave_details">
-                                        <label class="form-check-label me-2">Abroad (Specify)</label>
-                                        <input class="form-control w-50" type="text" id="abroad"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="detail_sick" class="detail-group">
-                            <div class="mt-3">In case of Sick Leave:</div>
-                            <div class="form-check d-flex align-items-center mt-1">
-                                <input class="form-check-input me-2" type="radio" name="leave_details">
-                                <label class="form-check-label me-2">In Hospital (Specify Illness)</label>
-                                <input class="form-control w-50" type="text" id="in_hospital"/>
-                            </div>
-                            <div class="form-check d-flex align-items-center mt-2">
-                                <input class="form-check-input me-2" type="radio" name="leave_details">
-                                <label class="form-check-label me-2">Out Patient (Specify Illness)</label>
-                                <input class="form-control w-50" type="text" id="out_hospital"/>
-                            </div>
-                        </div>
-
-                        <div id="detail_special_women" class="detail-group">
-                            <div class="mt-3">In case of Special Leave Benefits for Women:</div>
-                            <div class="d-flex align-items-center mt-1">
-                                <input class="form-check-input me-2" type="radio" name="leave_details">
-                                <label class="form-check-label me-2">(Specify Illness)</label>
-                                <input class="form-control w-75" type="text" id="special_leave"/>
-                            </div>
-                        </div>
-
-                        <div id="detail_study" class="detail-group">
-                            <div class="mt-3">In case of Study Leave:</div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="leave_details">
-                                <label class="form-check-label">Completion of Master's Degree</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="leave_details">
-                                <label class="form-check-label">BAR/Board Examination Review</label>
-                            </div>
-                        </div>
-                    </div>
-
-
-                    <hr/>
-
-                    <!-- C. Leave Dates -->
+                    <!-- Date Applied for Leave -->
                     <div class="d-flex align-items-center justify-content-between mt-4">
-                        <div class="fw-bold">C. Date applied for leave</div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date
-                        </button>
+                        <div class="fw-bold">Date applied for leave</div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date</button>
                     </div>
 
                     <table class="table table-bordered table-sm mt-2" id="dates_table">
                         <thead>
                         <tr>
+                            <th>Leave Type</th>
                             <th>Date</th>
                             <th>Duration (hrs)</th>
                             <th style="width: 5%">Action</th>
@@ -131,19 +63,38 @@
 
                     <hr/>
 
-                    <!-- D. Commutation -->
-                    <div class="fw-bold mt-4">D. Commutation</div>
+                    <!-- Details of Leave (groups rendered dynamically by JS from LEAVE_DETAIL_CONFIG) -->
+                    <div id="details_leave">
+                        <div class="fw-bold mt-4">Details of leave</div>
+                        <div id="detail_groups_container"></div>
+                    </div>
+
+                    <!-- Attachment — required for Maternity / Paternity Leave -->
+                    <div id="attachment_section" style="display:none;">
+                        <hr/>
+                        <div class="fw-bold mt-4">Attachment
+                            <small class="text-muted fw-normal">(Required for Maternity/Paternity Leave — PDF, JPG, or PNG, max 5 MB)</small>
+                        </div>
+                        <div class="mt-2">
+                            <input type="file" class="form-control" id="leave_attachment"
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                    </div>
+
+                    <hr/>
+                    <!-- Commutation — auto-set from leave type; read-only -->
+                    <div class="fw-bold mt-4">Commutation</div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="commutation">
-                                <label class="form-check-label">Not Requested</label>
+                                <input class="form-check-input" type="radio" name="commutation" id="commutation_not_requested" disabled>
+                                <label class="form-check-label" for="commutation_not_requested">Not Requested</label>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="commutation">
-                                <label class="form-check-label">Requested</label>
+                                <input class="form-check-input" type="radio" name="commutation" id="commutation_requested" disabled>
+                                <label class="form-check-label" for="commutation_requested">Requested</label>
                             </div>
                         </div>
                     </div>
@@ -194,25 +145,27 @@
                     <p class="mt-3"><strong>Commutation:</strong> <span id="leave_commutation"></span></p>
                 </div>
 
+                <!-- Attachment -->
+                <div id="view_attachment_row" class="mt-3" style="display:none;">
+                    <p><strong>Attachment:</strong>
+                        <a id="view_attachment_link" href="#" target="_blank" class="ms-1">
+                            <i class="bi bi-paperclip"></i> View File
+                        </a>
+                    </p>
+                </div>
+
                 <!-- Dates Applied -->
                 <div class="mt-3">
                     <p><strong>Dates Applied:</strong></p>
                     <table class="table table-bordered mb-0">
                         <thead class="table-light">
                         <tr>
+                            <th>Leave Type</th>
                             <th style="width: 30%;">Date</th>
                             <th style="width: 25%;">Duration</th>
                         </tr>
                         </thead>
                         <tbody id="dates_applied_body">
-                        <tr>
-                            <td>2025-09-15</td>
-                            <td>8 hours</td>
-                        </tr>
-                        <tr>
-                            <td>2025-09-16</td>
-                            <td>4 hours</td>
-                        </tr>
                         </tbody>
                     </table>
                 </div>
@@ -222,10 +175,8 @@
                     <label class="form-label"><strong>Remarks History:</strong></label>
                     <div id="remarks_history" class="border rounded p-3 mb-3 bg-light"
                          style="max-height: 200px; overflow-y: auto;">
-                        <!-- Remarks will be injected here -->
                     </div>
 
-                    <!-- Only for approvers -->
                     @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
                         <label for="leave_remarks" class="form-label"><strong>Add Your Remark:</strong></label>
                         <textarea id="leave_remarks"
@@ -236,9 +187,13 @@
                 </div>
             </div>
 
-            <!-- Footer with action buttons -->
             @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
-                <div class="modal-footer border-top-0 d-flex justify-content-end">
+                <div class="modal-footer border-top-0 d-flex justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-warning" id="undoApprovalBtn" style="display:none;">
+                            <i class="bi bi-arrow-counterclockwise"></i> Undo Approval
+                        </button>
+                    </div>
                     <div>
                         <button type="button" class="btn btn-danger" id="rejectLeaveBtn" value="Rejected">
                             <i class="bi bi-x-circle"></i> Reject
@@ -252,6 +207,3 @@
         </div>
     </div>
 </div>
-
-
-

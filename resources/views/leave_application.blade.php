@@ -43,9 +43,7 @@
                         <thead>
                         <tr>
                             <th>Leave Type</th>
-                            <th>Details</th>
-                            <th>Specific</th>
-                            <th>Dates applied</th>
+                            <th>Dates Applied</th>
                             <th>Status</th>
                             <th style="width: 4%"></th>
                         </tr>

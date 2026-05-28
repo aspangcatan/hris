@@ -1,9 +1,18 @@
 <script>
-    let page = 1, leave_id = 0, leave_approval_last_page = 1;
+    let page = 1, leave_id = 0, leave_approval_last_page = 1, activeFilter = 'pending';
     const leaveApprovalViewButtonHtml = `<i class="bi bi-eye-fill text-success"></i>`;
 
     $(function () {
         $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
+        $("#undoApprovalBtn").click(handleUndoApproval);
+
+        $("[data-filter]").on("click", function () {
+            $("[data-filter]").removeClass("active");
+            $(this).addClass("active");
+            activeFilter = $(this).data("filter");
+            page = 1;
+            getLeaves();
+        });
 
         $("#search_employee").on("keydown", function (e) {
             if (e.key === "Enter") {
@@ -28,7 +37,7 @@
         const search_employee = $("#search_employee").val().trim();
         $("#leave_approval_list").html("<tr><td colspan='5'>Loading...</td></tr>");
 
-        fetch(`{{ route('getLeaveForApproval') }}?page=${page}&search_employee=${search_employee}`)
+        fetch(`{{ route('getLeaveForApproval') }}?page=${page}&search_employee=${search_employee}&filter=${activeFilter}`)
             .then(r => r.json())
             .then(resp => renderLeaves(resp.data, resp.pagination))
             .catch(() => $("#leave_approval_list").html("<tr><td colspan='5'>Error</td></tr>"));
@@ -122,6 +131,13 @@
         $('#leave_commutation').text(data.commutation);
         $('#leave_details').val((data.details || '') + ':' + (data.extra || ''));
 
+        if (data.attachment_url) {
+            $('#view_attachment_link').attr('href', data.attachment_url);
+            $('#view_attachment_row').show();
+        } else {
+            $('#view_attachment_row').hide();
+        }
+
         $('#dates_applied_body').html(data.dates.map(d =>
             `<tr><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`
         ).join(""));
@@ -142,6 +158,10 @@
         }).join("") || `<p class="text-muted">No remarks yet.</p>`;
 
         $('#remarks_history').html(remarks);
+        const canAct = activeFilter === 'pending';
+        $('#approveLeaveBtn, #rejectLeaveBtn').toggle(canAct);
+        $('#undoApprovalBtn').toggle(!!data.can_undo);
+
         $('#viewLeaveModal').modal('show');
     }
 
@@ -162,6 +182,27 @@
         })
             .then(r => r.json())
             .then(data => {
+                toastr.success(data.message, "Info");
+                $('#viewLeaveModal').modal('hide');
+                getLeaves();
+            })
+            .catch(err => toastr.error(err.message || "Error", "Oops"))
+            .finally(() => $(button).prop("disabled", false).html(originalHtml));
+    }
+
+    function handleUndoApproval() {
+        if (!confirm("Are you sure you want to undo your approval? The application will be returned to pending status.")) return;
+        const button = this;
+        const originalHtml = button.innerHTML;
+        $(button).prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Undoing...');
+        fetch('{{ route('undoApproval') }}', {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")},
+            body: JSON.stringify({id: leave_id})
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
                 toastr.success(data.message, "Info");
                 $('#viewLeaveModal').modal('hide');
                 getLeaves();

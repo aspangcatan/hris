@@ -653,7 +653,7 @@
                     <div class="subsection-title">6.A TYPE OF LEAVE TO BE AVAILED OF</div>
                     @foreach($leaveTypeOptions as $option)
                         <div class="option-row">
-                            <span class="check">{{ (int) $leaveApplication->leave_id === (int) $option['id'] ? 'X' : '' }}</span>
+                            <span class="check">{{ in_array((int) $option['id'], $selectedLeaveIds) ? 'X' : '' }}</span>
                             <span class="option-copy">
                                 {{ $option['label'] }}
                                 @if($option['id'] === 2)
@@ -695,44 +695,44 @@
 
                     <div class="detail-note">In case of Vacation/Special Privilege Leave:</div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'Within the Philippines' ? 'X' : '' }}</span>
-                        <span class="option-copy">Within the Philippines <span class="detail-guide">{{ $leaveApplication->detail === 'Within the Philippines' ? $leaveApplication->extra : '' }}</span></span>
+                        <span class="check">{{ isset($detailExtraMap['Within the Philippines']) ? 'X' : '' }}</span>
+                        <span class="option-copy">Within the Philippines <span class="detail-guide">{{ $detailExtraMap['Within the Philippines'] ?? '' }}</span></span>
                     </div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'Abroad (Specify)' ? 'X' : '' }}</span>
-                        <span class="option-copy">Abroad (Specify) <span class="detail-guide">{{ $leaveApplication->detail === 'Abroad (Specify)' ? $leaveApplication->extra : '' }}</span></span>
+                        <span class="check">{{ isset($detailExtraMap['Abroad (Specify)']) ? 'X' : '' }}</span>
+                        <span class="option-copy">Abroad (Specify) <span class="detail-guide">{{ $detailExtraMap['Abroad (Specify)'] ?? '' }}</span></span>
                     </div>
 
                     <div class="detail-note" style="margin-top: 8px;">In case of Sick Leave:</div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'In Hospital (Specify Illness)' ? 'X' : '' }}</span>
-                        <span class="option-copy">In Hospital (Specify Illness) <span class="detail-guide">{{ $leaveApplication->detail === 'In Hospital (Specify Illness)' ? $leaveApplication->extra : '' }}</span></span>
+                        <span class="check">{{ isset($detailExtraMap['In Hospital (Specify Illness)']) ? 'X' : '' }}</span>
+                        <span class="option-copy">In Hospital (Specify Illness) <span class="detail-guide">{{ $detailExtraMap['In Hospital (Specify Illness)'] ?? '' }}</span></span>
                     </div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'Out Patient (Specify Illness)' ? 'X' : '' }}</span>
-                        <span class="option-copy">Out Patient (Specify Illness) <span class="detail-guide">{{ $leaveApplication->detail === 'Out Patient (Specify Illness)' ? $leaveApplication->extra : '' }}</span></span>
+                        <span class="check">{{ isset($detailExtraMap['Out Patient (Specify Illness)']) ? 'X' : '' }}</span>
+                        <span class="option-copy">Out Patient (Specify Illness) <span class="detail-guide">{{ $detailExtraMap['Out Patient (Specify Illness)'] ?? '' }}</span></span>
                     </div>
 
                     <div class="detail-note" style="margin-top: 8px;">In case of Special Leave Benefits for Women:</div>
-                    <div class="indent">(Specify Illness) <span class="detail-guide">{{ $leaveApplication->detail === 'In case of Special Leave Benefits for Women' ? $leaveApplication->extra : '' }}</span></div>
+                    <div class="indent">(Specify Illness) <span class="detail-guide">{{ $detailExtraMap['(Specify Illness)'] ?? '' }}</span></div>
 
                     <div class="detail-note" style="margin-top: 8px;">In case of Study Leave:</div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === "Completion of Master's Degree" ? 'X' : '' }}</span>
+                        <span class="check">{{ isset($detailExtraMap["Completion of Master's Degree"]) ? 'X' : '' }}</span>
                         <span class="option-copy">Completion of Master's Degree</span>
                     </div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'BAR/Board Examination Review' ? 'X' : '' }}</span>
+                        <span class="check">{{ isset($detailExtraMap['BAR/Board Examination Review']) ? 'X' : '' }}</span>
                         <span class="option-copy">BAR/Board Examination Review</span>
                     </div>
 
                     <div class="detail-note" style="margin-top: 8px;">Other purpose:</div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'Monetization of Leave Credits' ? 'X' : '' }}</span>
+                        <span class="check">{{ isset($detailExtraMap['Monetization of Leave Credits']) ? 'X' : '' }}</span>
                         <span class="option-copy">Monetization of Leave Credits</span>
                     </div>
                     <div class="option-row">
-                        <span class="check">{{ $leaveApplication->detail === 'Terminal Leave' ? 'X' : '' }}</span>
+                        <span class="check">{{ isset($detailExtraMap['Terminal Leave']) ? 'X' : '' }}</span>
                         <span class="option-copy">Terminal Leave</span>
                     </div>
                 </td>

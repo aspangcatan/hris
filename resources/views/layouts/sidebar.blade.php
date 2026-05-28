@@ -161,6 +161,31 @@
                 </a>
             </li>
         @endif
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('leave_cancellation') ? '' : 'collapsed' }}"
+               href="{{ route('leave_cancellation') }}">
+                <i class="bi bi-calendar-x"></i>
+                <span>Leave Cancellation</span>
+            </a>
+        </li>
+        @if(in_array(session('access_rights'), ['admin', 'HRH', 'SH', 'DH', 'hr']))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('cancellation_approval') ? '' : 'collapsed' }}"
+                   href="{{ route('cancellation_approval') }}">
+                    <i class="bi bi-check2-circle"></i>
+                    <span>Cancellation Approval</span>
+                </a>
+            </li>
+        @endif
+        @if(in_array(session('access_rights'), ['admin', 'HRH', 'hr']))
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('admin_cancellations') ? '' : 'collapsed' }}"
+                   href="{{ route('admin_cancellations') }}">
+                    <i class="bi bi-list-check"></i>
+                    <span>All Cancellations</span>
+                </a>
+            </li>
+        @endif
 
         {{-- HR MANAGEMENT --}}
         @if(in_array(session('access_rights'), ['hr','HRH','admin']))
@@ -216,6 +241,18 @@
                         Adjustments
                         <span class="badge bg-danger text-white ms-1">Soon</span>
                     </span>
+                </a>
+            </li>
+        @endif
+
+        {{-- REPORTS --}}
+        @if(in_array(session('access_rights'), ['hr','HRH','admin']))
+            <li class="nav-heading">Reports</li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('report.quarterly_leave_balance') ? '' : 'collapsed' }}"
+                   href="{{ route('report.quarterly_leave_balance') }}">
+                    <i class="bi bi-calendar3"></i>
+                    <span>Quarterly Leave Balances</span>
                 </a>
             </li>
         @endif

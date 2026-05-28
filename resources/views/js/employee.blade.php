@@ -89,6 +89,12 @@
             const currentValue = parseFloat(input.val() || 0);
             const originalValue = parseFloat(input.data("original") || 0);
 
+            if (currentValue < 0) {
+                input.addClass("is-invalid");
+                saveButton.prop("disabled", true);
+                return;
+            }
+            input.removeClass("is-invalid");
             saveButton.prop("disabled", currentValue === originalValue);
         });
 
@@ -108,6 +114,11 @@
             const input = row.find(".leave-credit-input");
             const leaveId = row.data("leaveId");
             const value = parseFloat(input.val() || 0);
+
+            if (value < 0) {
+                toastr.error("Credit value cannot be negative.", "Invalid");
+                return;
+            }
 
             button.prop("disabled", true);
 

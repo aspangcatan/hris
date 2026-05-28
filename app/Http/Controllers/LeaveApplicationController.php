@@ -3,18 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeaveApplication;
-
 use App\Services\LeaveApplicationService;
 use App\Services\LeaveApprovalService;
 use App\Services\LeaveLogsService;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LeaveApplicationController extends Controller
 {
-    protected $leaveLogService, $leaveApplicationService, $leaveApprovalService;
+    protected LeaveLogsService $leaveLogService;
+    protected LeaveApplicationService $leaveApplicationService;
+    protected LeaveApprovalService $leaveApprovalService;
 
     public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService, LeaveApprovalService $leaveApprovalService)
     {
@@ -23,76 +23,81 @@ class LeaveApplicationController extends Controller
         $this->leaveApprovalService = $leaveApprovalService;
     }
 
-//    public function store(Request $request)
-//    {
-//        try {
-//            $model = new LeaveApplication();
-//            $model->user_id = Auth::id();
-//            $model->leave_id = $request->leave_id;
-//            $model->detail = $request->detail;
-//            $model->extra = $request->extra;
-//            $model->status = 'FOR APPROVAL';
-//            $model->commutation = $request->commutation;
-//            $model->save();
-//
-//            $leave_id = $model->id;
-//            $date_applied = $request->date_applied;
-//            for ($i = 0; $i < count($date_applied); $i++) {
-//                DB::table('leave_date_applied')->insert([
-//                    'leave_application_id' => $leave_id,
-//                    'date_applied' => $date_applied[$i]["date"],
-//                    'hours' => $date_applied[$i]["hours"]
-//                ]);
-//            }
-//
-//            //TODO: INSERT LEAVE LOGS SEND TO SECTION HEAD
-//            DB::table("hris.leave_application_logs")->insert([
-//                "leave_application_id" => $leave_id,
-//                "origin" => Auth::id(),
-//                "destination" => Auth::user()->section,
-//                "type" => 1,//1 for Section Head
-//                "remarks" => "For approval",
-//                "created_at" => Carbon::now()
-//            ]);
-//
-//            return response()->json(['code' => 200, 'message' => 'Application filed successfully']);
-//        } catch (\Exception $exception) {
-//            return response()->json(['message' => $exception->getMessage()], 500);
-//        }
-//    }
-
     public function index(Request $request)
     {
         try {
             $type = $request->search_type;
-            $paginator = DB::table('leave_applications as l')
-                ->join('leave_types as t', 'l.leave_id', '=', 't.id')
-                ->where(function ($query) use ($type) {
-                    $query->where('user_id', '=', Auth::id());
-                    if ($type != "") {
-                        $query->where('leave_type', 'LIKE', '%' . $type . '%');
-                    }
-                })
-                ->orderBy('id', 'DESC')
-                ->paginate(10, ['l.id', 't.description', 'l.detail', 'l.extra', 'l.status']);
 
-            $models = collect($paginator->items());
-            foreach ($models as $model) {
-                $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $model->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
-                $model->dates_applied = $dates_applied;
+            $query = DB::table('leave_applications as la')
+                ->join('leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+                ->join('leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
+                ->where('la.user_id', Auth::id())
+                ->when($type, fn($q) => $q->where('lt.description', 'LIKE', "%{$type}%"))
+                ->orderBy('la.id', 'DESC')
+                ->select('la.id', 'la.status')
+                ->distinct()
+                ->get();
+
+            // Build one row per application with combined leave type descriptions
+            $appIds = $query->pluck('id')->unique()->values();
+
+            $rows = [];
+            foreach ($appIds as $appId) {
+                $typeDescriptions = DB::table('leave_date_applied as lda')
+                    ->join('leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
+                    ->where('lda.leave_application_id', $appId)
+                    ->select('lt.description')
+                    ->distinct()
+                    ->get();
+
+                $detailRow = DB::table('leave_details')
+                    ->where('leave_application_id', $appId)
+                    ->first(['detail', 'extra']);
+
+                // Distinct dates only — hours differ per row but history just shows which days were taken
+                $dateRows = DB::table('leave_date_applied')
+                    ->where('leave_application_id', $appId)
+                    ->orderBy('date_applied', 'ASC')
+                    ->distinct()
+                    ->get(['date_applied']);
+
+                $appRow = $query->firstWhere('id', $appId);
+
+                $shApproved = DB::table('leave_application_approvals')
+                    ->where('leave_application_id', $appId)
+                    ->where('role', 'SH')
+                    ->whereRaw('LOWER(status) = ?', ['approved'])
+                    ->exists();
+
+                $rows[] = (object) [
+                    'id'          => $appId,
+                    'description' => implode(', ', $typeDescriptions->pluck('description')->unique()->toArray()),
+                    'detail'      => $detailRow ? (string) ($detailRow->detail ?? '') : '',
+                    'extra'       => $detailRow ? (string) ($detailRow->extra ?? '') : '',
+                    'status'      => $appRow->status,
+                    'dates_applied' => $dateRows,
+                    'is_editable' => !$shApproved && strtolower($appRow->status) === 'pending',
+                ];
             }
 
+            $page       = max(1, (int) $request->input('page', 1));
+            $perPage    = 10;
+            $collection = collect($rows);
+            $total      = $collection->count();
+            $items      = $collection->forPage($page, $perPage)->values();
+            $lastPage   = max(1, (int) ceil($total / $perPage));
+
             return response()->json([
-                'results' => $models->values(),
+                'results'    => $items,
                 'pagination' => [
-                    'current_page' => $paginator->currentPage(),
-                    'last_page' => $paginator->lastPage(),
-                    'per_page' => $paginator->perPage(),
-                    'total' => $paginator->total(),
-                    'from' => $paginator->firstItem(),
-                    'to' => $paginator->lastItem(),
-                    'has_more_pages' => $paginator->hasMorePages(),
-                ]
+                    'current_page'   => $page,
+                    'last_page'      => $lastPage,
+                    'per_page'       => $perPage,
+                    'total'          => $total,
+                    'from'           => $total > 0 ? ($page - 1) * $perPage + 1 : null,
+                    'to'             => $total > 0 ? min($page * $perPage, $total) : null,
+                    'has_more_pages' => $page < $lastPage,
+                ],
             ]);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
@@ -102,7 +107,6 @@ class LeaveApplicationController extends Controller
     public function delete(Request $request)
     {
         try {
-            #BEFORE DELETING/CANCELING, CHECK IF LEAVE EXISTS
             $id = $request->id;
             $model = LeaveApplication::where(function ($query) use ($id) {
                 $query->where('id', $id);
@@ -113,9 +117,8 @@ class LeaveApplicationController extends Controller
                 return response()->json(['code' => 500, 'message' => 'Leave Application not found']);
             }
 
-            #CHECK IF APPLICATION ARE NOT ALREADY RECEIVED
             if ($model->date_section_approved) {
-                return response()->json(['code' => 500, 'message' => 'Cannot cancel/delete application, application already received'],);
+                return response()->json(['code' => 500, 'message' => 'Cannot cancel/delete application, application already received']);
             }
 
             $model->forceDelete();
@@ -130,20 +133,23 @@ class LeaveApplicationController extends Controller
         $perPage = 10;
         $page = $request->input('page', 1);
 
-        $leaves = $this->leaveApprovalService->getLeavesForApproval($request->search_employee);
+        $filter = in_array($request->input('filter'), ['pending', 'approved_by_stage', 'approved_all'], true)
+            ? $request->input('filter')
+            : 'pending';
 
-        // Paginate manually
-        $total = $leaves->count();
+        $leaves = $this->leaveApprovalService->getLeavesForApproval($request->search_employee, $filter);
+
+        $total     = $leaves->count();
         $paginated = $leaves->forPage($page, $perPage)->values();
 
         return response()->json([
             'data' => $paginated,
             'pagination' => [
                 'current_page' => $page,
-                'per_page' => $perPage,
-                'total' => $total,
-                'last_page' => ceil($total / $perPage)
-            ]
+                'per_page'     => $perPage,
+                'total'        => $total,
+                'last_page'    => ceil($total / $perPage),
+            ],
         ]);
     }
 
@@ -183,7 +189,6 @@ class LeaveApplicationController extends Controller
             }
 
             return response()->json(['message' => 'Leave successfully approved']);
-
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }
@@ -192,61 +197,73 @@ class LeaveApplicationController extends Controller
     public function getApplicationLogs(Request $request)
     {
         try {
-            // Fetch logs separately and categorize by type
             $logs = DB::table('hris.leave_application_logs')
                 ->where('leave_application_id', '=', $request->id)
-                ->select('type', 'remarks', 'remarks', 'updated_at as date_approved')
-                ->orderBy('id', 'desc') // Ensure latest logs come first
+                ->select('type', 'remarks', 'updated_at as date_approved')
+                ->orderBy('id', 'desc')
                 ->get();
-
-            // Categorize logs
-            $section = $logs->where('type', 1)->first();
-            $division = $logs->where('type', 2)->first();
-            $hr = $logs->where('type', 3)->first();
 
             return response()->json([
                 'logs' => [
-                    'section' => $section,
-                    'division' => $division,
-                    'hr' => $hr
-                ]
+                    'section'  => $logs->where('type', 1)->first(),
+                    'division' => $logs->where('type', 2)->first(),
+                    'hr'       => $logs->where('type', 3)->first(),
+                ],
             ]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
 
-    /////////////////
     public function insertLeaveApplication(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'leave_id' => 'required|integer|exists:leave_types,id',
-                'detail' => 'nullable|string',
-                'extra' => 'nullable|string',
-                'commutation' => 'nullable|string|in:Requested,Not Requested',
-                'dates' => 'required|array|min:1',
-                'dates.*.date_applied' => 'required|date',
-                'dates.*.hours' => 'required|numeric|min:0.5',
+            $request->validate([
+                'data'       => 'required|string',
+                'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             ]);
 
-            $leaveApplicationId = $this->leaveApplicationService->insertLeaveApplication($validated);
+            $params = json_decode($request->input('data'), true);
+            if (!is_array($params)) {
+                return response()->json(['success' => false, 'error' => 'Invalid request format.'], 422);
+            }
+
+            $validator = \Illuminate\Support\Facades\Validator::make($params, [
+                'details_map'               => 'nullable|array',
+                'details_map.*.detail'      => 'nullable|string',
+                'details_map.*.extra'       => 'nullable|string',
+                'commutation'               => 'nullable|string|in:Requested,Not Requested',
+                'dates'                     => 'required|array|min:1',
+                'dates.*.date_applied'      => 'required|date',
+                'dates.*.hours'             => 'required|integer|in:4,8,10,12,16,24',
+                'dates.*.leave_type_id'     => 'required|integer',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'error' => $validator->errors()->first()], 422);
+            }
+
+            if ($request->hasFile('attachment')) {
+                $params['attachment'] = $request->file('attachment')
+                    ->store('leave_attachments', 'public');
+            }
+
+            $result = $this->leaveApplicationService->insertLeaveApplication($params);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Leave application submitted successfully.',
-                'leave_application_id' => $leaveApplicationId
+                'success'              => true,
+                'message'              => 'Leave application submitted successfully.',
+                'leave_application_id' => $result['app_id'],
             ]);
         } catch (\Exception $exception) {
             return response()->json([
                 'success' => false,
-                'error' => $exception->getMessage()
-            ], 422); // 422 instead of 500 (makes it like validation error)
+                'error'   => $exception->getMessage(),
+            ], 422);
         }
     }
 
-
-    public function getLeaveApplication($id)
+    public function getLeaveApplication(int $id)
     {
         $leave = $this->leaveApplicationService->findById($id);
 
@@ -254,25 +271,84 @@ class LeaveApplicationController extends Controller
             return response()->json(['error' => 'Leave application not found'], 404);
         }
 
+        $detailsCollection = collect($leave->details ?? []);
+
         return response()->json([
-            'name' => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
-            'type' => $leave->leave_type,
-            'details' => $leave->detail,
-            'extra' => $leave->extra,
-            'commutation' => $leave->commutation,
-            'created_at' => $leave->created_at,
-            'approvals' => [
+            'name'            => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
+            'type'            => $leave->leave_type,
+            'details'         => $leave->detail,
+            'extra'           => $leave->extra,
+            'commutation'     => $leave->commutation,
+            'created_at'      => $leave->created_at,
+            'leave_ids'       => $detailsCollection->pluck('leave_id')->values(),
+            'leave_types_map' => $detailsCollection->keyBy('leave_id')->map(fn($d) => $d->leave_type)->toArray(),
+            'details_per_type' => $detailsCollection->map(fn($d) => [
+                'leave_id' => $d->leave_id,
+                'detail'   => $d->detail,
+                'extra'    => $d->extra,
+            ])->values(),
+            'approvals'       => [
                 'sh' => $leave->approvals['SH'] ?? ['status' => 'pending', 'remarks' => ''],
                 'dh' => $leave->approvals['DH'] ?? ['status' => 'pending', 'remarks' => ''],
                 'hr' => $leave->approvals['HR'] ?? ['status' => 'pending', 'remarks' => ''],
             ],
-            'dates' => collect($leave->dates)->map(function ($d) {
-                return [
-                    'date' => $d->date_applied,
-                    'duration' => $d->hours
-                ];
-            })->values()
+            'attachment_url'  => $leave->attachment ? route('leave-attachments.serve', ['filename' => basename($leave->attachment)]) : null,
+            'can_undo'        => $this->leaveApprovalService->canUndoApproval($id),
+            'dates'           => collect($leave->dates ?? [])->map(fn($d) => [
+                'date'          => $d->date_applied,
+                'duration'      => $d->hours,
+                'leave_type_id' => $d->leave_type_id ?? null,
+                'leave_type'    => $d->leave_type_name ?? '',
+            ])->values(),
         ]);
     }
 
+    public function serveAttachment(string $filename)
+    {
+        $path = storage_path('app/public/leave_attachments/' . $filename);
+
+        if (!file_exists($path)) {
+            abort(404);
+        }
+
+        return response()->file($path);
+    }
+
+    public function undoApproval(Request $request)
+    {
+        try {
+            $this->leaveApprovalService->undoApproval((int) $request->id);
+            return response()->json(['message' => 'Approval has been undone successfully.']);
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 422);
+        }
+    }
+
+    public function updateLeaveApplication(Request $request, int $id)
+    {
+        try {
+            $validated = $request->validate([
+                'details_map'                => 'nullable|array',
+                'details_map.*.detail'       => 'nullable|string',
+                'details_map.*.extra'        => 'nullable|string',
+                'commutation'                => 'nullable|string|in:Requested,Not Requested',
+                'dates'                      => 'required|array|min:1',
+                'dates.*.date_applied'       => 'required|date',
+                'dates.*.hours'              => 'required|integer|in:4,8,10,12,16,24',
+                'dates.*.leave_type_id'      => 'required|integer',
+            ]);
+
+            $this->leaveApplicationService->updateLeaveApplication($id, $validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Leave application updated successfully.',
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'error'   => $exception->getMessage(),
+            ], 422);
+        }
+    }
 }

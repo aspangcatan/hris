@@ -65,6 +65,10 @@ class LeaveController extends Controller
     public function insertUpdateBaseCredit(Request $request)
     {
         try {
+            $request->validate([
+                'based_credit' => 'required|numeric|min:0',
+            ]);
+
             DB::table('leave_credits')->updateOrInsert(
                 [
                     'user_id' => $request->employee_id,
@@ -76,6 +80,8 @@ class LeaveController extends Controller
             );
 
             return response()->json(['message' => "Base Credit is updated"]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Credit value cannot be negative.'], 422);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -106,8 +112,8 @@ class LeaveController extends Controller
             // Get the user ID from request or use the authenticated user
             $userid = $request->has('id') ? $request->id : Auth::id();
 
-            // Fetch all leave types
-            $leave_types = DB::table('leave_types')->get(['id', 'description', 'code']);
+            // Fetch all active leave types
+            $leave_types = DB::table('leave_types')->where('status', 'active')->get(['id', 'description', 'code', 'days_prior', 'commutation']);
 
             // Initialize leave credits array
             $leave_credits = [];
@@ -132,12 +138,14 @@ class LeaveController extends Controller
                 $computed_balance = $based_credit - $used_credit;
 
                 $leave_credits[] = [
-                    'id' => $type->id,
-                    'description' => $type->description,
+                    'id'           => $type->id,
+                    'description'  => $type->description,
                     'based_credit' => number_format($based_credit, 3),
-                    'used_credit' => number_format($used_credit, 3),
-                    'code' => $type->code,
-                    'balance' => number_format($computed_balance, 3)
+                    'used_credit'  => number_format($used_credit, 3),
+                    'code'         => $type->code,
+                    'days_prior'   => (int) ($type->days_prior ?? 0),
+                    'commutation'  => (int) ($type->commutation ?? 0),
+                    'balance'      => number_format($computed_balance, 3),
                 ];
             }
 

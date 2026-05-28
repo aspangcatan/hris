@@ -79,6 +79,19 @@
 
         <div class="leave-filter">
             <div class="row g-3 align-items-end">
+                <div class="col-12">
+                    <div class="btn-group" role="group" aria-label="Approval status filter">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" data-filter="pending">
+                            Pending for Approval
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="approved_by_stage">
+                            Approved by This Stage
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="approved_all">
+                            Approved in All Stages
+                        </button>
+                    </div>
+                </div>
                 <div class="col-md-4">
                     <div class="form-floating">
                         <input type="text" class="form-control form-control-sm" id="search_employee"

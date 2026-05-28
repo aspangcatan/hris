@@ -336,7 +336,6 @@ class PrintController extends Controller
             ->join('tdh_user.designation as d', 'u.designation', '=', 'd.id')
             ->join('tdh_user.division as di', 'u.division', '=', 'di.id')
             ->join('tdh_user.section as s', 'u.section', '=', 's.id')
-            ->leftJoin('hris.leave_types as lt', 'lt.id', '=', 'l.leave_id')
             ->where('l.id', '=', $request->id)
             ->get([
                 'p.basic_salary',
@@ -351,55 +350,94 @@ class PrintController extends Controller
                 'u.section as section_id',
                 'l.created_at',
                 'd.description as designation',
-                'l.leave_id',
-                'l.detail',
-                'l.extra',
                 'u.division as division_id',
                 'l.commutation',
                 'l.id',
-                'lt.description as leave_type_name'
             ])
             ->first();
+
+        // Distinct leave types from leave_date_applied (leave_id removed from leave_details)
+        $leaveTypeRows = DB::table('hris.leave_date_applied as lda')
+            ->join('hris.leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
+            ->where('lda.leave_application_id', $request->id)
+            ->select('lda.leave_type_id as leave_id', 'lt.description as leave_type_name')
+            ->distinct()
+            ->orderBy('lda.leave_type_id')
+            ->get();
+
+        $detailRows = DB::table('hris.leave_details')
+            ->where('leave_application_id', $request->id)
+            ->get(['detail', 'extra']);
+
+        // Index-match: i-th leave_details row ↔ i-th unique leave type (same insertion order)
+        $leaveDetails = $leaveTypeRows->map(function ($lt, $index) use ($detailRows) {
+            $dr = $detailRows->get($index);
+            return (object) [
+                'leave_id'        => $lt->leave_id,
+                'leave_type_name' => $lt->leave_type_name,
+                'detail'          => $dr ? $dr->detail : null,
+                'extra'           => $dr ? $dr->extra : null,
+            ];
+        });
+
+        $selectedLeaveIds = $leaveTypeRows->pluck('leave_id')->map(fn($id) => (int) $id)->toArray();
 
         $sectionHeadApproval = DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $request->id)
             ->where('role', 'SH')
             ->first(['status', 'remarks']);
 
-        $dates_applied = DB::table('leave_date_applied')->where('leave_application_id', $leave_application->id)->orderBy('date_applied', 'ASC')->get(['date_applied']);
-        $totalDays = count($dates_applied);
+        $dates_applied = DB::table('leave_date_applied')
+            ->where('leave_application_id', $leave_application->id)
+            ->orderBy('date_applied', 'ASC')
+            ->get(['date_applied', 'hours']);
+
+        $totalHours = $dates_applied->sum('hours');
+        $totalDays  = $totalHours / 8;
+
         $fullName = trim(implode(' ', array_filter([
             strtoupper($leave_application->lname ?? ''),
             strtoupper($leave_application->fname ?? ''),
             $leave_application->mname ? strtoupper(substr($leave_application->mname, 0, 1)) . '.' : null,
         ])));
         $formattedCreatedAt = Carbon::parse($leave_application->created_at)->format('M. j, Y');
-        $leaveTypeOptions = $this->getLeaveTypeOptions();
+        $leaveTypeOptions  = $this->getLeaveTypeOptions();
         $leaveDetailGroups = $this->getLeaveDetailGroups();
-        $approvers = $this->resolveLeavePrintApprovers($leave_application);
-        $knownLeaveTypeIds = collect($leaveTypeOptions)->pluck('id')->map(function ($id) {
-            return (int) $id;
-        })->all();
-        $otherLeaveType = in_array((int) $leave_application->leave_id, $knownLeaveTypeIds, true)
-            ? null
-            : ($leave_application->leave_type_name ?: 'Other leave type');
+        $approvers         = $this->resolveLeavePrintApprovers($leave_application);
+
+        $knownLeaveTypeIds = collect($leaveTypeOptions)->pluck('id')->map(fn($id) => (int) $id)->all();
+        $unknownTypes      = $leaveDetails->filter(fn($ld) => !in_array((int) $ld->leave_id, $knownLeaveTypeIds, true));
+        $otherLeaveType    = $unknownTypes->isNotEmpty()
+            ? $unknownTypes->pluck('leave_type_name')->implode(', ')
+            : null;
+
+        // Each leave_details row stores its own detail/extra — one row per leave type.
+        $detailExtraMap = [];
+        foreach ($leaveDetails as $ld) {
+            if (!empty($ld->detail)) {
+                $detailExtraMap[$ld->detail] = $ld->extra ?? '';
+            }
+        }
 
         return view('print.leave_form', [
-            'leaveApplication' => $leave_application,
-            'officeLabel' => strtoupper(trim(($leave_application->division ?? '') . ' / ' . ($leave_application->section ?? ''))),
-            'fullName' => $fullName,
-            'formattedCreatedAt' => $formattedCreatedAt,
-            'designationLabel' => self::minifyDesignation($leave_application->designation),
-            'salaryLabel' => 'P' . number_format($leave_application->basic_salary ?? 0, 2, '.', ','),
-            'leaveTypeOptions' => $leaveTypeOptions,
-            'leaveDetailGroups' => $leaveDetailGroups,
-            'authorizedOfficerName' => $approvers['authorized_officer'],
+            'leaveApplication'       => $leave_application,
+            'leaveDetails'           => $leaveDetails,
+            'selectedLeaveIds'       => $selectedLeaveIds,
+            'detailExtraMap'         => $detailExtraMap,
+            'officeLabel'            => strtoupper(trim(($leave_application->division ?? '') . ' / ' . ($leave_application->section ?? ''))),
+            'fullName'               => $fullName,
+            'formattedCreatedAt'     => $formattedCreatedAt,
+            'designationLabel'       => self::minifyDesignation($leave_application->designation),
+            'salaryLabel'            => 'P' . number_format($leave_application->basic_salary ?? 0, 2, '.', ','),
+            'leaveTypeOptions'       => $leaveTypeOptions,
+            'leaveDetailGroups'      => $leaveDetailGroups,
+            'authorizedOfficerName'  => $approvers['authorized_officer'],
             'authorizedOfficialName' => $approvers['authorized_official'],
-            'otherLeaveType' => $otherLeaveType,
-            'totalDays' => $totalDays,
-            'totalHours' => $totalDays * 8,
-            'inclusiveDates' => self::getInclusiveDates($dates_applied),
-            'sectionHeadApproval' => $sectionHeadApproval,
+            'otherLeaveType'         => $otherLeaveType,
+            'totalDays'              => $totalDays,
+            'totalHours'             => $totalHours,
+            'inclusiveDates'         => self::getInclusiveDates($dates_applied),
+            'sectionHeadApproval'    => $sectionHeadApproval,
         ]);
     }
 

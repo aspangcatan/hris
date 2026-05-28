@@ -349,6 +349,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/service_records/delete', [\App\Http\Controllers\ServiceRecordsController::class, 'deleteServiceRecords'])->name('deleteServiceRecords');
 #REPORTS
     Route::get('/reports/leave_bal', [\App\Http\Controllers\ReportController::class, 'leaveBalance'])->name('leaveBalance');
+    Route::get('/reports/quarterly-leave-balance', [\App\Http\Controllers\ReportController::class, 'quarterlyLeaveBalance'])->name('report.quarterly_leave_balance');
+    Route::get('/reports/quarterly-leave-balance/data', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalance'])->name('report.quarterly_leave_balance.data');
+    Route::get('/reports/quarterly-leave-balance/history', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalanceHistory'])->name('report.quarterly_leave_balance.history');
+    Route::get('/reports/quarterly-leave-balance/snapshot/{id}', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalanceSnapshot'])->name('report.quarterly_leave_balance.snapshot');
 #SALN
     Route::post('/insert_declarant', [\App\Http\Controllers\SalnController::class, 'updateDeclarant'])->name('updateDeclarant');
     Route::post('/insert_spouse', [\App\Http\Controllers\SalnController::class, 'updateSpouse'])->name('updateSpouse');
@@ -412,12 +416,29 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'insertLeaveApplication'])->name('insertLeaveApplication');
 
     Route::get('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveApplication'])->name('leave-applications.show');
+    Route::put('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'updateLeaveApplication'])->name('leave-applications.update');
+    Route::get('/leave-attachments/{filename}', [\App\Http\Controllers\LeaveApplicationController::class, 'serveAttachment'])->name('leave-attachments.serve');
 
 
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
     Route::post('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
     Route::post('/update/approval_status', [\App\Http\Controllers\LeaveApplicationController::class, 'updateApprovalStatus'])->name('updateApprovalStatus');
+    Route::post('/undo_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'undoApproval'])->name('undoApproval');
+
+#LEAVE CANCELLATION (Pages)
+    Route::get('/leave_cancellation', function () { return view('leave_cancellation'); })->name('leave_cancellation');
+    Route::get('/cancellation_approval', function () { return view('cancellation_approval'); })->name('cancellation_approval');
+    Route::get('/admin_cancellations', function () { return view('admin_cancellations'); })->name('admin_cancellations');
+
+#LEAVE CANCELLATION (API)
+    Route::get('/get_approved_dates', [\App\Http\Controllers\LeaveCancellationController::class, 'getApprovedDates'])->name('getApprovedDates');
+    Route::post('/file_leave_cancellation', [\App\Http\Controllers\LeaveCancellationController::class, 'store'])->name('fileLeaveCancellation');
+    Route::get('/my_cancellations', [\App\Http\Controllers\LeaveCancellationController::class, 'getMyCancellations'])->name('getMyCancellations');
+    Route::get('/leave-cancellations/{id}', [\App\Http\Controllers\LeaveCancellationController::class, 'show'])->name('leave-cancellations.show');
+    Route::get('/get_cancellation_for_approval', [\App\Http\Controllers\LeaveCancellationController::class, 'getForApproval'])->name('getCancellationForApproval');
+    Route::post('/update_cancellation_approval_status', [\App\Http\Controllers\LeaveCancellationController::class, 'updateApprovalStatus'])->name('updateCancellationApprovalStatus');
+    Route::get('/get_all_cancellations_admin', [\App\Http\Controllers\LeaveCancellationController::class, 'getAllForAdmin'])->name('getAllCancellationsAdmin');
 
 #DTR LOGS
     Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDTR'])->name('printDTR');
