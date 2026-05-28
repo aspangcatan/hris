@@ -694,8 +694,8 @@ class DTRController extends Controller
 
                 // Leave data
                 $leavesRaw = DB::table('hris.leave_applications as la')
-                    ->join('hris.leave_types as lt', 'la.leave_id', '=', 'lt.id')
                     ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+                    ->join('hris.leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
                     ->where('la.user_id', $employee->id)
                     ->whereMonth('lda.date_applied', $month)
                     ->whereYear('lda.date_applied', $year)
