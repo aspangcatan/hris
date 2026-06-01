@@ -1119,13 +1119,12 @@ class DTRController extends Controller
 
                         if ($isOvernightSpilloverOnly) {
                             if ($isOffSchedule) {
-                                // New rule: when an overnight shift ends on a next-day OFF,
-                                // keep the carried-over departure visible and do not show OFF.
+                                // Overnight shift ends on a next-day OFF — suppress the OFF label,
+                                // keep the departure visible on this calendar date.
                                 $data['suppress_off_label'] = true;
-                            } else {
-                                $data['date_timeout_am'] = '';
-                                $data['isEmpty'] = true;
                             }
+                            // Always keep the departure log visible. It belongs on this calendar date
+                            // as the end of the previous day's overnight shift.
                         }
 
                         $calcSched = null;
