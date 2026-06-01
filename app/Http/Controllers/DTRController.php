@@ -1182,6 +1182,24 @@ class DTRController extends Controller
 
                                 if ($firstInTime->gt($schedInLatest)) {
                                     $lateDiffMinutes = $schedInLatest->diffInMinutes($firstInTime);
+
+                                    // Subtract any scheduled break that falls within [schedInLatest, firstInTime]
+                                    // so the break period is not penalized as late time.
+                                    if (!empty($calcSched->break_out) && !empty($calcSched->break_in)) {
+                                        $breakOutTime = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
+                                        $breakInTime  = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
+                                        if ($breakInTime->lte($breakOutTime)) {
+                                            $breakInTime->addDay();
+                                        }
+
+                                        $overlapStart = $schedInLatest->copy()->max($breakOutTime);
+                                        $overlapEnd   = $firstInTime->copy()->min($breakInTime);
+
+                                        if ($overlapEnd->gt($overlapStart)) {
+                                            $lateDiffMinutes = max(0, $lateDiffMinutes - $overlapStart->diffInMinutes($overlapEnd));
+                                        }
+                                    }
+
                                     $lateMinutes += $lateDiffMinutes;
                                 }
                             }
