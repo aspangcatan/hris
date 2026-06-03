@@ -210,4 +210,146 @@
             .catch(err => toastr.error(err.message || "Error", "Oops"))
             .finally(() => $(button).prop("disabled", false).html(originalHtml));
     }
+
+    /** ================================================
+     *  MONETIZATION APPROVAL
+     * ================================================ */
+    let monetization_approval_page        = 1;
+    let monetization_approval_last_page   = 1;
+    let active_monetization_filter        = 'pending';
+    let current_monetization_id           = 0;
+    const monetize_approve_modal          = new bootstrap.Modal(document.getElementById('monetize_approve_modal'));
+
+    // Filter buttons
+    $("[data-monetization-filter]").on("click", function () {
+        $("[data-monetization-filter]").removeClass("active");
+        $(this).addClass("active");
+        active_monetization_filter = $(this).data("monetization-filter");
+        monetization_approval_page = 1;
+        getMonetizationApprovals();
+    });
+
+    // Search
+    $("#search_employee_monetization").on("keydown", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            monetization_approval_page = 1;
+            getMonetizationApprovals();
+        }
+    });
+
+    // Approve / Reject buttons
+    $("#btn_approve_monetization").click(function () {
+        handleMonetizationApproval('approved');
+    });
+    $("#btn_reject_monetization").click(function () {
+        handleMonetizationApproval('rejected');
+    });
+
+    // Load when tab activates
+    $('#tab-monetization-approval').on('shown.bs.tab', function () {
+        monetization_approval_page = 1;
+        getMonetizationApprovals();
+    });
+
+    function getMonetizationApprovals() {
+        const search = $("#search_employee_monetization").val().trim();
+        $("#monetization_approval_list").html("<tr><td colspan='5'>Loading...</td></tr>");
+
+        fetch(`{{ route('getMonetizationApprovals') }}?page=${monetization_approval_page}&search_employee=${search}&filter=${active_monetization_filter}`)
+            .then(r => r.json())
+            .then(resp => renderMonetizationApprovals(resp.data, resp.pagination))
+            .catch(() => $("#monetization_approval_list").html("<tr><td colspan='5'>Error loading data.</td></tr>"));
+    }
+
+    function renderMonetizationApprovals(data, pagination) {
+        $("#monetization_approval_list").empty();
+
+        if (!data || !data.length) {
+            $("#monetization_approval_list").html("<tr><td colspan='5'>No requests found.</td></tr>");
+            $("#monetization_approval_pagination_container").hide();
+            return;
+        }
+
+        $("#monetization_approval_pagination_container").show();
+
+        data.forEach(it => {
+            $("#monetization_approval_list").append(`
+            <tr>
+                <td>${it.employee}</td>
+                <td>${it.leave_type}</td>
+                <td>${it.days_requested}</td>
+                <td>${it.filed_date}</td>
+                <td>
+                    <button class="btn btn-sm" onclick="viewMonetizationRequest(${it.id}, ${JSON.stringify(it).replace(/"/g, '&quot;')})">
+                        <i class="bi bi-eye-fill text-success"></i>
+                    </button>
+                </td>
+            </tr>`);
+        });
+
+        monetization_approval_last_page = pagination.last_page;
+        const from = ((pagination.current_page - 1) * pagination.per_page) + 1;
+        const to   = from + data.length - 1;
+        $("#monetization_approval_page_items_count").text(`${from} - ${to} of ${pagination.total}`);
+        $("#monetization_approval_page_indicator").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+        renderMonetizationApprovalPaginationLinks(pagination);
+    }
+
+    function renderMonetizationApprovalPaginationLinks(pagination) {
+        const $links  = $("#monetization_approval_pagination_links");
+        if (!$links.length || !pagination) return;
+
+        const current = pagination.current_page;
+        const last    = pagination.last_page;
+        const start   = Math.max(1, current - 2);
+        const end     = Math.min(last, current + 2);
+
+        $links.empty();
+        $links.append(`<li class="page-item ${current <= 1 ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="changeMonetizationApprovalPage(${current - 1})">Prev</a></li>`);
+        for (let i = start; i <= end; i++) {
+            $links.append(`<li class="page-item ${i === current ? 'active' : ''}"><a class="page-link" href="javascript:void(0)" onclick="changeMonetizationApprovalPage(${i})">${i}</a></li>`);
+        }
+        $links.append(`<li class="page-item ${current >= last ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="changeMonetizationApprovalPage(${current + 1})">Next</a></li>`);
+    }
+
+    function changeMonetizationApprovalPage(p) {
+        if (p < 1 || p > monetization_approval_last_page) return;
+        monetization_approval_page = p;
+        getMonetizationApprovals();
+    }
+
+    function viewMonetizationRequest(id, data) {
+        current_monetization_id = id;
+        $("#ma_employee").text(data.employee);
+        $("#ma_leave_type").text(data.leave_type);
+        $("#ma_days").text(data.days_requested + ' days');
+        $("#ma_filed_date").text(data.filed_date);
+        $("#ma_remarks").val('');
+        monetize_approve_modal.show();
+    }
+
+    function handleMonetizationApproval(status) {
+        const remarks = $("#ma_remarks").val().trim();
+        const btn     = status === 'approved' ? $("#btn_approve_monetization") : $("#btn_reject_monetization");
+        btn.prop('disabled', true);
+
+        fetch("{{ route('updateMonetizationApprovalStatus') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+            },
+            body: JSON.stringify({ id: current_monetization_id, status, remarks }),
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                toastr.success(data.message || 'Status updated.', 'Success');
+                monetize_approve_modal.hide();
+                getMonetizationApprovals();
+            })
+            .catch(err => toastr.error(err.message || 'Error updating status.', 'Error'))
+            .finally(() => btn.prop('disabled', false));
+    }
 </script>

@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php artisan *)"
+      "Bash(php artisan *)",
+      "Bash(xargs grep -l \"addColumn\\\\|table->\")",
+      "Bash(xargs grep -l \"leave_types\")",
+      "Bash(xargs ls -la)"
     ]
   }
 }

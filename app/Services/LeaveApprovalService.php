@@ -282,6 +282,11 @@ class LeaveApprovalService
 
     public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null): void
     {
+        $app = DB::table('hris.leave_applications')->where('id', $leave_id)->first(['id']);
+        if (!$app) {
+            throw new \Exception('Leave application not found.');
+        }
+
         $normalizedStatus = strtolower(trim($status ?? ''));
         $allowedStatuses  = ['pending', 'approved', 'rejected'];
 

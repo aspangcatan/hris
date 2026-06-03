@@ -2,6 +2,7 @@
     // Route URLs (rendered by Blade, double-quoted to avoid JS lint false-positives)
     const ROUTE_INSERT_LEAVE   = "{{ route('insertLeaveApplication') }}";
     const ROUTE_UPDATE_LEAVE   = "{{ route('leave-applications.update', ':id') }}";
+    const ROUTE_DELETE_LEAVE   = "{{ route('leave-applications.destroy', ':id') }}";
     const ROUTE_GET_LEAVES     = "{{ route('getLeaveApplications') }}";
     const ROUTE_SHOW_LEAVE     = "{{ route('leave-applications.show', ':id') }}";
     const ROUTE_PRINT_LEAVE    = "{{ route('printLeaveForm') }}";
@@ -285,6 +286,25 @@
             toastr.error("An attachment is required for Maternity/Paternity Leave", "Required");
         }
 
+        // Guard: ensure hours filed per leave type do not exceed available balance
+        const hoursPerType = {};
+        date_applied_array.forEach(d => {
+            if (!d.leave_type_id) return;
+            hoursPerType[d.leave_type_id] = (hoursPerType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
+        });
+        for (const [typeId, totalHours] of Object.entries(hoursPerType)) {
+            const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
+            if (!lt) continue;
+            const availableHours = parseFloat(lt.balance) * 8 / 1.25;
+            if (totalHours > availableHours) {
+                is_valid = false;
+                toastr.error(
+                    `Insufficient ${lt.description} credits. You have ${availableHours.toFixed(2)} hrs available but are filing ${totalHours} hrs.`,
+                    "Insufficient Balance"
+                );
+            }
+        }
+
         if (!is_valid) return;
 
         const params = {
@@ -394,9 +414,11 @@
     }
 
     function buildLeaveTypeOptions(selectedId) {
-        return LEAVE_TYPES.map(lt =>
-            `<option value="${lt.id}" ${lt.id === selectedId ? 'selected' : ''}>${lt.description}</option>`
-        ).join('');
+        return LEAVE_TYPES
+            .filter(lt => parseFloat(lt.balance) > 0)
+            .map(lt =>
+                `<option value="${lt.id}" ${lt.id === selectedId ? 'selected' : ''}>${lt.description}</option>`
+            ).join('');
     }
 
     function addRow(selectedLeaveTypeId) {
@@ -522,6 +544,9 @@
                 const editItem = it.is_editable
                     ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="editApplication(${it.id})"><i class="bi bi-pencil-fill text-warning me-2"></i> Edit</a></li>`
                     : '';
+                const deleteItem = it.is_deletable
+                    ? `<li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelApplication(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>`
+                    : '';
 
                 $("#leave_history_list").append(`
                 <tr id="leave_id_${it.id}">
@@ -545,6 +570,7 @@
                                         <i class="bi bi-printer text-primary me-2"></i> Print
                                     </a>
                                 </li>
+                                ${deleteItem}
                             </ul>
                         </div>
                     </td>
@@ -583,6 +609,34 @@
         }
 
         $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
+    }
+
+    /** ------------------------
+     *  Delete Application
+     * ------------------------ */
+    async function cancelApplication(id) {
+        if (!confirm("Are you sure you want to delete this leave application? Credits will be restored.")) return;
+
+        try {
+            const url = ROUTE_DELETE_LEAVE.replace(':id', id);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json',
+                },
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                toastr.error(body.message || 'Failed to delete leave application.', 'Error');
+                return;
+            }
+            toastr.success(body.message || 'Leave application deleted.', 'Success');
+            getLeaves();
+            loadCreditBalance();
+        } catch {
+            toastr.error('An error occurred while deleting the leave application.', 'Error');
+        }
     }
 
     /** ------------------------
@@ -747,4 +801,228 @@
         const numericValue = parseFloat(value || 0);
         return Number.isNaN(numericValue) ? "0.000" : numericValue.toFixed(3);
     }
+
+    /** ================================================
+     *  LEAVE MONETIZATION
+     * ================================================ */
+    const ROUTE_MONETIZABLE_TYPES    = "{{ route('monetizableLeaveTypes') }}";
+    const ROUTE_GET_MONETIZATIONS    = "{{ route('getLeaveMonetizations') }}";
+    const ROUTE_STORE_MONETIZATION   = "{{ route('storeLeaveMonetization') }}";
+    const ROUTE_DELETE_MONETIZATION  = "{{ route('leave-monetizations.destroy', ':id') }}";
+
+    let monetization_page      = 1;
+    let monetization_last_page = 1;
+    let MONETIZABLE_TYPES      = [];
+    const monetize_modal       = new bootstrap.Modal(document.getElementById('monetize_leave_modal'));
+
+    // Wire buttons
+    $("#btn_file_monetization").click(function () {
+        loadMonetizableTypes().then(() => {
+            $("#monetize_leave_type").val('');
+            $("#monetize_days").val('');
+            $("#monetize_balance_hint").addClass('d-none');
+            monetize_modal.show();
+        });
+    });
+
+    $("#monetize_leave_type").on('change', function () {
+        const selectedId = parseInt($(this).val(), 10);
+        const type       = MONETIZABLE_TYPES.find(t => t.id === selectedId);
+        if (type) {
+            $("#monetize_available_days").text(parseFloat(type.balance_days).toFixed(3));
+            $("#monetize_available_credits").text(parseFloat(type.balance).toFixed(3));
+            $("#monetize_days").attr('max', parseFloat(type.balance_days));
+            $("#monetize_balance_hint").removeClass('d-none');
+        } else {
+            $("#monetize_balance_hint").addClass('d-none');
+        }
+    });
+
+    $("#btn_submit_monetization").click(handleMonetizationSubmit);
+
+    // Load monetizable leave types
+    async function loadMonetizableTypes() {
+        try {
+            const data = await fetchData(ROUTE_MONETIZABLE_TYPES);
+            MONETIZABLE_TYPES = data;
+            const $select = $("#monetize_leave_type");
+            $select.find('option:not(:first)').remove();
+            data.forEach(t => {
+                $select.append(`<option value="${t.id}">${t.description} (${parseFloat(t.balance_days).toFixed(3)} days)</option>`);
+            });
+        } catch {
+            toastr.error('Failed to load monetizable leave types.', 'Error');
+        }
+    }
+
+    // Submit monetization request
+    async function handleMonetizationSubmit() {
+        const leaveTypeId  = parseInt($("#monetize_leave_type").val(), 10);
+        const daysRequested = parseFloat($("#monetize_days").val());
+
+        if (!leaveTypeId) {
+            toastr.error('Please select a leave type.', 'Required');
+            return;
+        }
+        if (!daysRequested || daysRequested <= 0) {
+            toastr.error('Please enter the number of days to monetize.', 'Required');
+            return;
+        }
+
+        const type = MONETIZABLE_TYPES.find(t => t.id === leaveTypeId);
+        if (type && daysRequested > parseFloat(type.balance_days)) {
+            toastr.error(
+                `Insufficient balance. You have ${parseFloat(type.balance_days).toFixed(3)} days available.`,
+                'Insufficient Balance'
+            );
+            return;
+        }
+
+        const btn = $("#btn_submit_monetization");
+        btn.prop('disabled', true).text('Submitting...');
+        try {
+            const response = await fetch(ROUTE_STORE_MONETIZATION, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ leave_type_id: leaveTypeId, days_requested: daysRequested }),
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                toastr.error(body.message || 'Failed to submit monetization request.', 'Error');
+                return;
+            }
+            toastr.success(body.message || 'Monetization request submitted.', 'Success');
+            monetize_modal.hide();
+            getMonetizations();
+            loadCreditBalance();
+        } catch {
+            toastr.error('An error occurred. Please try again.', 'Error');
+        } finally {
+            btn.prop('disabled', false).text('SUBMIT');
+        }
+    }
+
+    // Fetch and render monetization history
+    async function getMonetizations() {
+        $("#monetization_history_list").html("<tr><td colspan='5'>Loading...</td></tr>");
+        try {
+            const payload    = await fetchData(`${ROUTE_GET_MONETIZATIONS}?page=${monetization_page}`);
+            const data       = payload.results    || [];
+            const pagination = payload.pagination || null;
+
+            $("#monetization_history_list").empty();
+
+            if (!data.length) {
+                $("#monetization_pagination_container").addClass("d-none");
+                $("#monetization_history_list").html("<tr><td colspan='5'>No records found.</td></tr>");
+                return;
+            }
+
+            $("#monetization_pagination_container").removeClass("d-none");
+
+            if (pagination) {
+                monetization_page      = pagination.current_page;
+                monetization_last_page = pagination.last_page;
+                $("#monetization_page_items_count").text(`${pagination.from} - ${pagination.to} of ${pagination.total}`);
+                $("#monetization_page_indicator").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+                renderMonetizationPaginationLinks(pagination);
+            }
+
+            data.forEach(it => {
+                const statusBadge = it.status === 'Approved'
+                    ? `<span class="badge bg-success">APPROVED</span>`
+                    : it.status === 'Rejected'
+                        ? `<span class="badge bg-danger">REJECTED</span>`
+                        : `<span class="badge bg-secondary">PENDING</span>`;
+
+                const deleteBtn = it.is_deletable
+                    ? `<li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMonetization(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>`
+                    : '';
+
+                $("#monetization_history_list").append(`
+                <tr id="monetization_id_${it.id}">
+                    <td>${it.leave_type}</td>
+                    <td>${it.days_requested}</td>
+                    <td>${it.filed_date}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div class="dropdown dropstart">
+                            <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: transparent">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                ${deleteBtn}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>`);
+            });
+        } catch {
+            $("#monetization_history_list").html("<tr><td colspan='5'>Error loading data.</td></tr>");
+        }
+    }
+
+    function renderMonetizationPaginationLinks(pagination) {
+        const $links  = $("#monetization_pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last    = pagination.last_page;
+        const start   = Math.max(1, current - 2);
+        const end     = Math.min(last, current + 2);
+
+        $links.empty();
+
+        $links.append(`<li class="page-item ${current === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="javascript:void(0)" onclick="changeMonetizationPage(${current - 1})">Prev</a></li>`);
+
+        for (let i = start; i <= end; i++) {
+            $links.append(`<li class="page-item ${i === current ? 'active' : ''}">
+                <a class="page-link" href="javascript:void(0)" onclick="changeMonetizationPage(${i})">${i}</a></li>`);
+        }
+
+        $links.append(`<li class="page-item ${current === last ? 'disabled' : ''}">
+            <a class="page-link" href="javascript:void(0)" onclick="changeMonetizationPage(${current + 1})">Next</a></li>`);
+    }
+
+    function changeMonetizationPage(p) {
+        if (p < 1 || p > monetization_last_page) return;
+        monetization_page = p;
+        getMonetizations();
+    }
+
+    // Delete (cancel) pending monetization request
+    async function deleteMonetization(id) {
+        if (!confirm('Are you sure you want to delete this monetization request? Credits will be restored.')) return;
+        try {
+            const url      = ROUTE_DELETE_MONETIZATION.replace(':id', id);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json',
+                },
+            });
+            const body = await response.json();
+            if (!response.ok) {
+                toastr.error(body.message || 'Failed to delete request.', 'Error');
+                return;
+            }
+            toastr.success(body.message || 'Request deleted.', 'Success');
+            getMonetizations();
+            loadCreditBalance();
+        } catch {
+            toastr.error('An error occurred.', 'Error');
+        }
+    }
+
+    // Load monetization list when tab is activated
+    $('#tab-monetizations').on('shown.bs.tab', function () {
+        monetization_page = 1;
+        getMonetizations();
+    });
 </script>

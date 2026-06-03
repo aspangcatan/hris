@@ -76,7 +76,8 @@ class LeaveApplicationController extends Controller
                     'extra'       => $detailRow ? (string) ($detailRow->extra ?? '') : '',
                     'status'      => $appRow->status,
                     'dates_applied' => $dateRows,
-                    'is_editable' => !$shApproved && strtolower($appRow->status) === 'pending',
+                    'is_editable'  => !$shApproved && strtolower($appRow->status) === 'pending',
+                    'is_deletable' => strtolower($appRow->status) !== 'approved',
                 ];
             }
 
@@ -104,25 +105,44 @@ class LeaveApplicationController extends Controller
         }
     }
 
-    public function delete(Request $request)
+    public function delete(Request $request, $id = null)
     {
         try {
-            $id = $request->id;
-            $model = LeaveApplication::where(function ($query) use ($id) {
-                $query->where('id', $id);
-                $query->where('user_id', Auth::id());
-            })->first();
+            $id = $id ?? $request->id;
+
+            $model = LeaveApplication::where('id', $id)
+                ->where('user_id', Auth::id())
+                ->first();
 
             if (!$model) {
-                return response()->json(['code' => 500, 'message' => 'Leave Application not found']);
+                return response()->json(['code' => 404, 'message' => 'Leave application not found.'], 404);
             }
 
-            if ($model->date_section_approved) {
-                return response()->json(['code' => 500, 'message' => 'Cannot cancel/delete application, application already received']);
+            if (strtolower($model->status) === 'approved') {
+                return response()->json(['code' => 422, 'message' => 'Cannot delete an approved application. Use the leave cancellation form instead.'], 422);
             }
 
-            $model->forceDelete();
-            return response()->json(['code' => 200, 'message' => 'Leave successfully cancelled']);
+            DB::transaction(function () use ($model) {
+                // Restore credits only if not already restored (rejection restores them at rejection time)
+                if (strtolower($model->status) !== 'rejected') {
+                    $dates = DB::table('leave_date_applied')
+                        ->where('leave_application_id', $model->id)
+                        ->get(['leave_type_id', 'credits_deducted']);
+
+                    $creditsByType = $dates->groupBy('leave_type_id');
+                    foreach ($creditsByType as $typeId => $rows) {
+                        if (!$typeId) continue;
+                        DB::table('leave_credits')
+                            ->where('user_id', $model->user_id)
+                            ->where('leave_id', $typeId)
+                            ->increment('based_credit', $rows->sum('credits_deducted'));
+                    }
+                }
+
+                $model->forceDelete();
+            });
+
+            return response()->json(['code' => 200, 'message' => 'Leave application successfully deleted.']);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }

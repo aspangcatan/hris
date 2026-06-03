@@ -63,10 +63,11 @@ class LeaveApplicationService
                 $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
                 $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
 
-                $available = DB::table('leave_credits')
+                $credit    = DB::table('leave_credits')
                     ->where('user_id', Auth::id())
                     ->where('leave_id', $leaveId)
-                    ->value('based_credit');
+                    ->first(['based_credit', 'used_credit']);
+                $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
 
                 $desc = $leaveTypes[$leaveId]->description;
 
@@ -214,10 +215,11 @@ class LeaveApplicationService
                 $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
                 $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
 
-                $available = DB::table('leave_credits')
+                $credit    = DB::table('leave_credits')
                     ->where('user_id', Auth::id())
                     ->where('leave_id', $leaveId)
-                    ->value('based_credit');
+                    ->first(['based_credit', 'used_credit']);
+                $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
 
                 $desc = $leaveTypes[$leaveId]->description;
 

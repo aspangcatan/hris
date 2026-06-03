@@ -418,8 +418,17 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveApplication'])->name('leave-applications.show');
     Route::put('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'updateLeaveApplication'])->name('leave-applications.update');
+    Route::delete('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'delete'])->name('leave-applications.destroy');
     Route::get('/leave-attachments/{filename}', [\App\Http\Controllers\LeaveApplicationController::class, 'serveAttachment'])->name('leave-attachments.serve');
 
+
+#LEAVE MONETIZATION
+    Route::get('/monetizable-leave-types', [\App\Http\Controllers\LeaveMonetizationController::class, 'monetizableTypes'])->name('monetizableLeaveTypes');
+    Route::get('/leave-monetizations', [\App\Http\Controllers\LeaveMonetizationController::class, 'index'])->name('getLeaveMonetizations');
+    Route::post('/leave-monetizations', [\App\Http\Controllers\LeaveMonetizationController::class, 'store'])->name('storeLeaveMonetization');
+    Route::delete('/leave-monetizations/{id}', [\App\Http\Controllers\LeaveMonetizationController::class, 'delete'])->name('leave-monetizations.destroy');
+    Route::get('/get-monetization-approvals', [\App\Http\Controllers\LeaveMonetizationApprovalController::class, 'getForApproval'])->name('getMonetizationApprovals');
+    Route::post('/update-monetization-approval-status', [\App\Http\Controllers\LeaveMonetizationApprovalController::class, 'updateApprovalStatus'])->name('updateMonetizationApprovalStatus');
 
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
