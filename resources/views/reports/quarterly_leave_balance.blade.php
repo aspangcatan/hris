@@ -49,9 +49,11 @@
         <div id="report_container" class="d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="fw-semibold text-secondary" id="report_label"></div>
-                <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
-                    <i class="bi bi-printer"></i> Print
-                </button>
+                <div class="d-flex gap-2">
+                    <a id="btn_print_pdf" href="#" target="_blank" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-file-earmark-pdf"></i> Print PDF
+                    </a>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered table-sm align-middle">
@@ -61,8 +63,6 @@
                             <th>Division</th>
                             <th>Section</th>
                             <th>Leave Type</th>
-                            <th class="text-end">Based Credit</th>
-                            <th class="text-end">Used Credit</th>
                             <th class="text-end">Balance</th>
                         </tr>
                     </thead>
@@ -120,8 +120,6 @@
                                 <th>Division</th>
                                 <th>Section</th>
                                 <th>Leave Type</th>
-                                <th class="text-end">Based Credit</th>
-                                <th class="text-end">Used Credit</th>
                                 <th class="text-end">Balance</th>
                             </tr>
                         </thead>
@@ -130,9 +128,9 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-sm btn-outline-secondary" onclick="window.print()">
-                    <i class="bi bi-printer"></i> Print
-                </button>
+                <a id="btn_snapshot_pdf" href="#" target="_blank" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-file-earmark-pdf"></i> Print PDF
+                </a>
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
@@ -147,6 +145,7 @@
     const ROUTE_REPORT     = "{{ route('report.quarterly_leave_balance.data') }}";
     const ROUTE_HISTORY    = "{{ route('report.quarterly_leave_balance.history') }}";
     const ROUTE_SNAPSHOT   = "{{ route('report.quarterly_leave_balance.snapshot', ':id') }}";
+    const ROUTE_PDF        = "{{ route('report.quarterly_leave_balance.pdf', ':id') }}";
 
     const QUARTER_LABELS = { 1: 'Q1 (Jan–Mar)', 2: 'Q2 (Apr–Jun)', 3: 'Q3 (Jul–Sep)', 4: 'Q4 (Oct–Dec)' };
 
@@ -204,12 +203,10 @@
             const $body = $('#report_body').empty();
 
             if (!rows.length) {
-                $body.html('<tr><td colspan="7" class="text-center text-muted py-3">No leave credits found for the selected filters.</td></tr>');
+                $body.html('<tr><td colspan="5" class="text-center text-muted py-3">No leave credits found for the selected filters.</td></tr>');
             } else {
                 rows.forEach(r => {
                     const name   = fullName(r);
-                    const based  = fmt(r.based_credit);
-                    const used   = fmt(r.used_credit);
                     const bal    = parseFloat(r.balance || 0);
                     const balCls = bal < 0 ? 'text-danger' : '';
                     $body.append(`
@@ -218,8 +215,6 @@
                             <td>${r.division_name || '—'}</td>
                             <td>${r.section_name  || '—'}</td>
                             <td>${r.leave_type}</td>
-                            <td class="text-end">${based}</td>
-                            <td class="text-end">${used}</td>
                             <td class="text-end ${balCls}">${fmt(bal)}</td>
                         </tr>
                     `);
@@ -229,6 +224,12 @@
             const qLabel = QUARTER_LABELS[quarter] || `Q${quarter}`;
             $('#report_label').text(`${qLabel} · ${year}`);
             $('#report_container').removeClass('d-none');
+
+            // Wire up PDF button if snapshot was saved
+            if (data.snapshot_id) {
+                const pdfUrl = ROUTE_PDF.replace(':id', data.snapshot_id);
+                $('#btn_print_pdf').attr('href', pdfUrl);
+            }
 
             toastr.success('Report saved to history.', 'Saved');
             loadHistory();
@@ -260,6 +261,7 @@
                 const qLabel = QUARTER_LABELS[h.quarter] || `Q${h.quarter}`;
                 const genBy  = h.gen_lname ? `${h.gen_lname}, ${h.gen_fname}` : '—';
                 const genAt  = h.created_at ? new Date(h.created_at).toLocaleString() : '—';
+                const pdfUrl = ROUTE_PDF.replace(':id', h.id);
                 $tbody.append(`
                     <tr>
                         <td>${h.year} · ${qLabel}</td>
@@ -268,10 +270,13 @@
                         <td>${genBy}</td>
                         <td>${genAt}</td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary py-0 px-2"
+                            <button class="btn btn-sm btn-outline-primary py-0 px-2 me-1"
                                     onclick="viewSnapshot(${h.id}, '${h.year}', ${h.quarter})">
                                 <i class="bi bi-eye"></i> View
                             </button>
+                            <a href="${pdfUrl}" target="_blank" class="btn btn-sm btn-outline-danger py-0 px-2">
+                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                            </a>
                         </td>
                     </tr>
                 `);
@@ -284,7 +289,8 @@
     async function viewSnapshot(id, year, quarter) {
         const qLabel = QUARTER_LABELS[quarter] || `Q${quarter}`;
         $('#snapshot_modal_title').text(`${year} · ${qLabel}`);
-        $('#snapshot_body').html('<tr><td colspan="7" class="text-center text-muted">Loading…</td></tr>');
+        $('#snapshot_body').html('<tr><td colspan="5" class="text-center text-muted">Loading…</td></tr>');
+        $('#btn_snapshot_pdf').attr('href', ROUTE_PDF.replace(':id', id));
         const modal = new bootstrap.Modal(document.getElementById('snapshot_modal'));
         modal.show();
 
@@ -294,7 +300,7 @@
             const data = await resp.json();
 
             if (data.error) {
-                $('#snapshot_body').html(`<tr><td colspan="7" class="text-danger">${data.error}</td></tr>`);
+                $('#snapshot_body').html(`<tr><td colspan="5" class="text-danger">${data.error}</td></tr>`);
                 return;
             }
 
@@ -302,7 +308,7 @@
             const $tbody = $('#snapshot_body').empty();
 
             if (!rows.length) {
-                $tbody.html('<tr><td colspan="7" class="text-center text-muted py-3">No data in snapshot.</td></tr>');
+                $tbody.html('<tr><td colspan="5" class="text-center text-muted py-3">No data in snapshot.</td></tr>');
                 return;
             }
 
@@ -316,14 +322,12 @@
                         <td>${r.division_name || '—'}</td>
                         <td>${r.section_name  || '—'}</td>
                         <td>${r.leave_type_name}</td>
-                        <td class="text-end">${fmt(r.based_credit)}</td>
-                        <td class="text-end">${fmt(r.used_credit)}</td>
                         <td class="text-end ${balCls}">${fmt(bal)}</td>
                     </tr>
                 `);
             });
         } catch (e) {
-            $('#snapshot_body').html('<tr><td colspan="7" class="text-danger">Failed to load snapshot.</td></tr>');
+            $('#snapshot_body').html('<tr><td colspan="5" class="text-danger">Failed to load snapshot.</td></tr>');
         }
     }
 
@@ -337,14 +341,4 @@
         return isNaN(n) ? '0.000' : n.toFixed(3);
     }
 </script>
-
-<style>
-@media print {
-    #sidebar, #header, #footer, .card-header, #btn_generate, button,
-    .card:last-child { display: none !important; }
-    .card { border: none !important; box-shadow: none !important; }
-    .table { font-size: 11px; }
-    .modal-footer { display: none !important; }
-}
-</style>
 @stop

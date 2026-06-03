@@ -353,6 +353,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/reports/quarterly-leave-balance/data', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalance'])->name('report.quarterly_leave_balance.data');
     Route::get('/reports/quarterly-leave-balance/history', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalanceHistory'])->name('report.quarterly_leave_balance.history');
     Route::get('/reports/quarterly-leave-balance/snapshot/{id}', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalanceSnapshot'])->name('report.quarterly_leave_balance.snapshot');
+    Route::get('/reports/quarterly-leave-balance/pdf/{id}', [\App\Http\Controllers\ReportController::class, 'printQuarterlyLeaveBalancePdf'])->name('report.quarterly_leave_balance.pdf');
 #SALN
     Route::post('/insert_declarant', [\App\Http\Controllers\SalnController::class, 'updateDeclarant'])->name('updateDeclarant');
     Route::post('/insert_spouse', [\App\Http\Controllers\SalnController::class, 'updateSpouse'])->name('updateSpouse');

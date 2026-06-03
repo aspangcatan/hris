@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeaveBalanceReport;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -162,6 +163,73 @@ class ReportController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    public function printQuarterlyLeaveBalancePdf(int $id)
+    {
+        $snapshot = DB::table('hris.leave_balance_snapshots')->where('id', $id)->first();
+        if (!$snapshot) {
+            abort(404, 'Snapshot not found.');
+        }
+
+        $details = DB::table('hris.leave_balance_snapshot_details')
+            ->where('snapshot_id', $id)
+            ->orderByRaw('lname, fname, leave_type_name')
+            ->get();
+
+        // Fetch leave type codes keyed by id
+        $leaveTypeIds = $details->pluck('leave_type_id')->filter()->unique();
+        $leaveTypeMeta = DB::table('hris.leave_types')
+            ->whereIn('id', $leaveTypeIds)
+            ->get(['id', 'code', 'description'])
+            ->keyBy('id');
+
+        // Build legend: unique leave types ordered by code
+        $legend = $leaveTypeMeta->sortBy('code')->map(fn($lt) => [
+            'code'        => strtoupper($lt->code),
+            'description' => $lt->description,
+        ])->values();
+
+        // Group by user_id → one row per employee with (CODE=value) balance parts
+        $employees = $details->groupBy('user_id')->map(function ($rows) use ($leaveTypeMeta) {
+            $first = $rows->first();
+            $mi    = $first->mname ? strtoupper($first->mname[0]) . '.' : '';
+            $name  = strtoupper($first->lname) . ', ' . strtoupper($first->fname) . ($mi ? ' ' . $mi : '');
+
+            $parts = $rows->map(function ($row) use ($leaveTypeMeta) {
+                $lt   = $leaveTypeMeta->get($row->leave_type_id);
+                $code = $lt ? strtoupper($lt->code) : strtoupper(substr($row->leave_type_name, 0, 6));
+                return ['code' => $code, 'value' => (float) $row->balance];
+            })->sortBy('code')->values();
+
+            return [
+                'name'     => $name,
+                'division' => $first->division_name ?? '—',
+                'section'  => $first->section_name  ?? '—',
+                'parts'    => $parts,
+            ];
+        })->sortBy('name')->values();
+
+        $quarterLabels = [
+            1 => 'Q1 (Jan–Mar)',
+            2 => 'Q2 (Apr–Jun)',
+            3 => 'Q3 (Jul–Sep)',
+            4 => 'Q4 (Oct–Dec)',
+        ];
+        $quarterLabel = $quarterLabels[$snapshot->quarter] ?? "Q{$snapshot->quarter}";
+
+        $pages = $employees->chunk(25)->values();
+
+        $pdf = Pdf::loadView('pdf.quarterly_leave_balance', [
+            'year'          => $snapshot->year,
+            'quarter_label' => $quarterLabel,
+            'division'      => $snapshot->division_name ?? 'All Divisions',
+            'section'       => $snapshot->section_name  ?? 'All Sections',
+            'pages'         => $pages,
+            'legend'        => $legend,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->stream("quarterly_leave_balance_{$snapshot->year}_Q{$snapshot->quarter}.pdf", ['Attachment' => false]);
     }
 
 }
