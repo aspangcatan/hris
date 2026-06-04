@@ -5,7 +5,7 @@
 .leave-app-info-panel{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;box-shadow:0 8px 20px rgba(15,23,42,.05)}
 .leave-app-info-panel .panel-label{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#607086;margin-bottom:.6rem}
 .leave-app-board{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:1.5rem;box-shadow:0 18px 38px rgba(15,23,42,.08)}
-.leave-app-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.leave-app-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:visible;background:#fff}
 .leave-app-table-shell table{margin-bottom:0}
 .leave-app-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .leave-app-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}

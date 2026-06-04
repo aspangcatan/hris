@@ -7,7 +7,7 @@
 .credit-mgmt-head span{font-size:.9rem;color:#64748b}
 .credit-mgmt-filter{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1.25rem}
 .credit-mgmt-filter .form-control,.credit-mgmt-filter .form-select{border-radius:12px;border:1px solid #d8e1ee;background:#fff}
-.credit-mgmt-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.credit-mgmt-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:visible;background:#fff}
 .credit-mgmt-table-shell table{margin-bottom:0}
 .credit-mgmt-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .credit-mgmt-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}

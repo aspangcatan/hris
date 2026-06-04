@@ -9,7 +9,7 @@
 .blk-filter .form-control,.blk-filter .form-select{border-radius:12px;border:1px solid #d8e1ee;background:#fff}
 .blk-step-panel{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1.25rem}
 .blk-step-label{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#607086;margin-bottom:.75rem}
-.blk-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.blk-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:visible;background:#fff}
 .blk-table-shell table{margin-bottom:0}
 .blk-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .blk-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}

@@ -5,7 +5,7 @@
 .promo-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap}
 .promo-head-title h4{margin:0;font-weight:700;color:#0f172a}
 .promo-head-title span{font-size:.9rem;color:#64748b}
-.promo-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.promo-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:visible;background:#fff}
 .promo-table-shell table{margin-bottom:0}
 .promo-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .promo-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}

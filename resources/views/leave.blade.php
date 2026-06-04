@@ -5,7 +5,7 @@
 .leave-hist-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap}
 .leave-hist-head-title h4{margin:0;font-weight:700;color:#0f172a}
 .leave-hist-head-title span{font-size:.9rem;color:#64748b}
-.leave-hist-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.leave-hist-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:visible;background:#fff}
 .leave-hist-table-shell table{margin-bottom:0}
 .leave-hist-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
 .leave-hist-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}
