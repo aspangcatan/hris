@@ -162,9 +162,10 @@ class LeaveController extends Controller
             DB::table('leave_types')->updateOrInsert([
                 'description' => $request->description,
             ], [
-                'code' => $request->code,
-                'status' => $request->status ?? 'active',
+                'code'           => $request->code,
+                'status'         => $request->status ?? 'active',
                 'monthly_earned' => $request->monthly_earned ?? 1,
+                'monetizable'    => $request->monetizable ?? 0,
             ]);
             return response()->json(['message' => 'Leave type successfully stored']);
         } catch (\Exception $exception) {

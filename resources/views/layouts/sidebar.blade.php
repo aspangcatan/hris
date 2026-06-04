@@ -289,6 +289,13 @@
                     <span>Leave Settings</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('bulk-leave-credits.*') ? '' : 'collapsed' }}"
+                   href="{{ route('bulk-leave-credits.index') }}">
+                    <i class="bi bi-credit-card-fill"></i>
+                    <span>Bulk Leave Credits</span>
+                </a>
+            </li>
         @endif
 
         {{-- MOBILE DTR --}}

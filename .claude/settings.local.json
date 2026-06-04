@@ -4,7 +4,10 @@
       "Bash(php artisan *)",
       "Bash(xargs grep -l \"addColumn\\\\|table->\")",
       "Bash(xargs grep -l \"leave_types\")",
-      "Bash(xargs ls -la)"
+      "Bash(xargs ls -la)",
+      "Bash(php -l app/Http/Controllers/LeaveBulkCreditController.php)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

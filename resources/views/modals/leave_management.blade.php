@@ -32,6 +32,13 @@
                         </select>
                         <label>Monthly Earned</label>
                     </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-control" id="monetizable">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                        <label>Monetizable</label>
+                    </div>
                 </div>
                 <div class="text-center mt-4">
                     <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>

@@ -33,12 +33,14 @@
         const code = $("#code").val();
         const status = $("#leave_status").val();
         const monthly_earned = $("#monthly_earned").val();
+        const monetizable = $("#monetizable").val();
 
         const params = {
             description: description,
             code: code,
             status: status,
-            monthly_earned: monthly_earned
+            monthly_earned: monthly_earned,
+            monetizable: monetizable
         }
 
         const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
@@ -65,16 +67,17 @@
     }
 
     function editLeave(id) {
-        const description = $("#leave_" + id + " td:eq(0)").text();
-        const code = $("#leave_" + id + " td:eq(1)").text();
-        const status = $("#leave_" + id + " td:eq(2)").data("value");
+        const description   = $("#leave_" + id + " td:eq(0)").text();
+        const code          = $("#leave_" + id + " td:eq(1)").text();
+        const status        = $("#leave_" + id + " td:eq(2)").data("value");
         const monthlyEarned = $("#leave_" + id + " td:eq(3)").data("value");
-
+        const monetizable   = $("#leave_" + id + " td:eq(4)").data("value");
 
         $("#description").val(description);
         $("#code").val(code);
         $("#leave_status").val(status || "active");
         $("#monthly_earned").val((monthlyEarned !== undefined && monthlyEarned !== null) ? monthlyEarned : "1");
+        $("#monetizable").val((monetizable !== undefined && monetizable !== null) ? monetizable : "0");
         $("#leave_type_modal").modal("show");
     }
 
@@ -136,12 +139,15 @@
                 data.forEach(it => {
                     const statusLabel = (it.status || 'active').toString();
                     const monthlyEarnedLabel = parseInt(it.monthly_earned || 0, 10) === 1 ? "Yes" : "No";
+                    const monetizableVal   = parseInt(it.monetizable ?? 0, 10);
+                    const monetizableLabel = monetizableVal === 1 ? "Yes" : "No";
                     const tr = `
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
                         <td>` + it.code + `</td>
                         <td data-value="` + statusLabel + `">` + statusLabel + `</td>
                         <td data-value="` + (it.monthly_earned ?? 0) + `">` + monthlyEarnedLabel + `</td>
+                        <td data-value="` + monetizableVal + `">` + monetizableLabel + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>

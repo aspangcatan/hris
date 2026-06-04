@@ -238,6 +238,16 @@ Route::group(['middleware' => 'auth'], function () {
         return view('settings.leave_management');
     })->name('leave_management');
 
+    Route::get('/bulk-leave-credits', function () {
+        return view('settings.bulk_leave_credits');
+    })->name('bulk-leave-credits.index');
+    Route::get('/bulk-leave-credits/divisions',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getDivisions'])->name('bulk-leave-credits.divisions');
+    Route::get('/bulk-leave-credits/sections',     [\App\Http\Controllers\LeaveBulkCreditController::class, 'getSections'])->name('bulk-leave-credits.sections');
+    Route::get('/bulk-leave-credits/employees',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getEmployees'])->name('bulk-leave-credits.employees');
+    Route::get('/bulk-leave-credits/employee-types', [\App\Http\Controllers\LeaveBulkCreditController::class, 'getEmployeeTypes'])->name('bulk-leave-credits.employee-types');
+    Route::post('/bulk-leave-credits',             [\App\Http\Controllers\LeaveBulkCreditController::class, 'store'])->name('bulk-leave-credits.store');
+    Route::get('/bulk-leave-credits/{id}/print',   [\App\Http\Controllers\LeaveBulkCreditController::class, 'printBatch'])->name('bulk-leave-credits.print');
+
     Route::get('/payroll', function () {
         return view('payroll');
     })->name('payroll');

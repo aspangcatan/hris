@@ -75,6 +75,7 @@
                     <th>Code</th>
                     <th>Status</th>
                     <th>Monthly Earned</th>
+                    <th>Monetizable</th>
                     <th colspan="2" style="width: 4%"></th>
                 </tr>
                 </thead>
