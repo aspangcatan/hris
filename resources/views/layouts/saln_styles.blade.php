@@ -457,4 +457,24 @@
 
         .fw-800 { font-weight: 800; }
         .fw-600 { font-weight: 600; }
+
+        /* Inline editing inputs */
+        .saln-inline-input {
+            font-size: .82rem;
+            padding: .25rem .45rem;
+            border: 1px solid #d8e1ee;
+            border-radius: 6px;
+            width: 100%;
+            min-width: 55px;
+            background: #fff;
+            color: #1e293b;
+            transition: border-color .15s;
+        }
+        .saln-inline-input:focus {
+            border-color: #0f766e;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(15,118,110,.12);
+        }
+        .saln-inline-input.is-invalid { border-color: #dc3545; }
+        .saln-inline-row td { vertical-align: middle; padding: .4rem .5rem; background: #f0fdf9; }
     </style>

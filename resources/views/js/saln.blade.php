@@ -198,103 +198,7 @@
             );
         });
 
-        $("#btn_add_children").click(function () {
-            children_id = 0;
-            $("#children_name").val("");
-            $("#children_birthdate").val("")
-            children_modal.toggle();
-        });
-
-        $("#btn_add_real_properties").click(function () {
-            real_properties_id = 0;
-            $("#real_description").val("");
-            $("#real_kind").val("")
-            $("#real_location").val("");
-            $('#real_assessed_value').val("");
-            $("#real_current_fair").val("");
-            $("#real_acquisition_year").val("");
-            $("#real_acquisition_mode").val("");
-            $("#real_acquisition_cost").val("");
-            real_properties_modal.toggle();
-        });
-
-        $("#spouse_btn_add_real_properties").click(function () {
-            spouse_real_properties_id = 0;
-            $("#spouse_real_description").val("");
-            $("#spouse_real_kind").val("")
-            $("#spouse_real_location").val("");
-            $('#spouse_real_assessed_value').val("");
-            $("#spouse_real_current_fair").val("");
-            $("#spouse_real_acquisition_year").val("");
-            $("#spouse_real_acquisition_mode").val("");
-            $("#spouse_real_acquisition_cost").val("");
-            spouse_real_properties_modal.toggle();
-        });
-
-        $("#btn_add_personal_properties").click(function () {
-            personal_properties_id = 0;
-            $("#personal_gadget").val("");
-            $("#personal_various_years").val("");
-            $("#personal_acquisition_cost").val("");
-            personal_properties_modal.toggle();
-        });
-
-        $("#spouse_btn_add_personal_properties").click(function () {
-            spouse_personal_properties_id = 0;
-            $("#spouse_personal_gadget").val("");
-            $("#spouse_personal_various_years").val("");
-            $("#spouse_personal_acquisition_cost").val("");
-            spouse_personal_properties_modal.toggle();
-        });
-
-        $("#btn_add_liabilities").click(function () {
-            liabilities_id = 0;
-            $("#liabilities_nature").val("");
-            $("#liabilities_creditors_name").val("");
-            $("#liabilities_outstanding_balance").val("");
-            liabilities_modal.toggle();
-        });
-
-        $("#spouse_btn_add_liabilities").click(function () {
-            spouse_liabilities_id = 0;
-            $("#spouse_liabilities_nature").val("");
-            $("#spouse_liabilities_creditors_name").val("");
-            $("#spouse_liabilities_outstanding_balance").val("");
-            spouse_liabilities_modal.toggle();
-        });
-
-        $("#btn_add_business_interest").click(function () {
-            business_interest_id = 0;
-            $("#business_enterprise").val("");
-            $("#business_address").val("");
-            $("#business_nature").val("");
-            $("#business_date_acquisition").val("");
-            business_interest_modal.toggle();
-        });
-
-        $("#spouse_btn_add_business_interest").click(function () {
-            spouse_business_interest_id = 0;
-            $("#spouse_business_enterprise").val("");
-            $("#spouse_business_address").val("");
-            $("#spouse_business_nature").val("");
-            $("#spouse_business_date_acquisition").val("");
-            spouse_business_interest_modal.toggle();
-        });
-
-        $("#btn_add_government_relative").click(function () {
-            government_relative_id = 0;
-            $("#relative_name").val("");
-            $("#relative_relationship").val("");
-            $("#relative_position").val("");
-            $("#relative_agency").val("");
-            government_relative_modal.toggle();
-        });
-
-        $("#btn_add_marriages").click(function () {
-            marriages_id = 0;
-            $("#spouse_name").val("");
-            marriages_modal.toggle();
-        });
+        // Add-button handlers registered by SALN inline engine (see bottom of this script)
 
 
         $("#btn_save_business_interest").click(function () {
@@ -1076,23 +980,7 @@
                 }
 
                 $("#children_list").empty();
-                data.results.forEach(it => {
-                    const tr = `
-                   <tr id='children_` + it.id + `'>
-                       <td>` + it.name + `</td>
-                       <td>` + moment(it.birthdate).format("MM/DD/YYYY") + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editChildren(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteChildren(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#children_list").append(tr);
-                });
+                data.results.forEach(it => $("#children_list").append(salnBuildViewRow('children', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1111,29 +999,7 @@
                 }
 
                 $("#real_properties_list").empty();
-                data.results.forEach(it => {
-                    const tr = `
-                   <tr id='real_properties_` + it.id + `'>
-                       <td>` + it.description + `</td>
-                       <td>` + it.kind + `</td>
-                       <td>` + it.exact_location + `</td>
-                       <td>` + it.assessed_value + `</td>
-                       <td>` + it.current_fair + `</td>
-                       <td>` + it.acquisition_year + `</td>
-                       <td>` + it.acquisition_mode + `</td>
-                       <td>` + it.acquisition_cost + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editRealProperties(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteRealProperties(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#real_properties_list").append(tr);
-                });
+                data.results.forEach(it => $("#real_properties_list").append(salnBuildViewRow('real', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1152,25 +1018,7 @@
                 }
 
                 $("#personal_properties_list").empty();
-                data.results.forEach(it => {
-
-                    const tr = `
-                   <tr id='personal_properties_` + it.id + `'>
-                       <td>` + it.gadget + `</td>
-                       <td>` + it.various_years + `</td>
-                       <td>` + it.acquisition_cost + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editPersonalProperties(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deletePersonalProperties(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#personal_properties_list").append(tr);
-                });
+                data.results.forEach(it => $("#personal_properties_list").append(salnBuildViewRow('personal', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1190,24 +1038,7 @@
                 }
 
                 $("#liabilities_list").empty();
-                data.results.forEach(it => {
-                    const tr = `
-                   <tr id='liabilities_` + it.id + `'>
-                       <td>` + it.nature + `</td>
-                       <td>` + it.creditors_name + `</td>
-                       <td>` + it.outstanding_balance + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editLiabilities(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteLiabilities(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#liabilities_list").append(tr);
-                });
+                data.results.forEach(it => $("#liabilities_list").append(salnBuildViewRow('liabilities', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1226,25 +1057,7 @@
                 }
 
                 $("#business_interest_list").empty();
-                data.results.forEach(it => {
-                    const tr = `
-                   <tr id='business_interest_` + it.id + `'>
-                       <td>` + it.enterprise + `</td>
-                       <td>` + it.address + `</td>
-                       <td>` + it.nature + `</td>
-                       <td>` + moment(it.date_acquisition).format("MM/DD/YYYY") + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editBusinessInterest(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteBusinessInterest(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#business_interest_list").append(tr);
-                });
+                data.results.forEach(it => $("#business_interest_list").append(salnBuildViewRow('business', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1263,25 +1076,7 @@
                 }
 
                 $("#government_relative_list").empty();
-                data.results.forEach(it => {
-                    const tr = `
-                   <tr id='government_` + it.id + `'>
-                       <td>` + it.name + `</td>
-                       <td>` + it.relationship + `</td>
-                       <td>` + it.position + `</td>
-                       <td>` + it.agency + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editGovernmentRelative(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteGovernmentRelative(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#government_relative_list").append(tr);
-                });
+                data.results.forEach(it => $("#government_relative_list").append(salnBuildViewRow('relatives', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1300,22 +1095,7 @@
                 }
 
                 $("#marriages_list").empty();
-                data.results.forEach(it => {
-                    const tr = `
-                   <tr id='marriage_` + it.id + `'>
-                       <td>` + it.spouse + `</td>
-                       <td>
-                            <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editMarriage(` + it.id + `)'>
-                                <span class="bi bi-pencil"></span>
-                            </button>
-                            <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteMarriage(` + it.id + `)'>
-                                <span class="bi bi-trash"></span>
-                            </button>
-                       </td>
-                   </tr>`;
-
-                    $("#marriages_list").append(tr);
-                });
+                data.results.forEach(it => $("#marriages_list").append(salnBuildViewRow('marriages', it)));
             }).catch(err => {
             console.log(err);
         })
@@ -1955,23 +1735,7 @@
             .then(data => {
                 if (data.code == 500) return;
                 $("#spouse_real_properties_list").empty();
-                data.results.forEach(it => {
-                    $("#spouse_real_properties_list").append(`
-                        <tr id='spouse_real_properties_${it.id}'>
-                            <td>${it.description}</td>
-                            <td>${it.kind}</td>
-                            <td>${it.exact_location}</td>
-                            <td>${it.assessed_value}</td>
-                            <td>${it.current_fair}</td>
-                            <td>${it.acquisition_year}</td>
-                            <td>${it.acquisition_mode}</td>
-                            <td>${it.acquisition_cost}</td>
-                            <td>
-                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpouseRealProperties(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpouseRealProperties(${it.id})'><span class="bi bi-trash"></span></button>
-                            </td>
-                        </tr>`);
-                });
+                data.results.forEach(it => $("#spouse_real_properties_list").append(salnBuildViewRow('spouse_real', it)));
             });
     }
 
@@ -1982,18 +1746,7 @@
             .then(data => {
                 if (data.code == 500) return;
                 $("#spouse_personal_properties_list").empty();
-                data.results.forEach(it => {
-                    $("#spouse_personal_properties_list").append(`
-                        <tr id='spouse_personal_properties_${it.id}'>
-                            <td>${it.gadget}</td>
-                            <td>${it.various_years}</td>
-                            <td>${it.acquisition_cost}</td>
-                            <td>
-                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpousePersonalProperties(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpousePersonalProperties(${it.id})'><span class="bi bi-trash"></span></button>
-                            </td>
-                        </tr>`);
-                });
+                data.results.forEach(it => $("#spouse_personal_properties_list").append(salnBuildViewRow('spouse_personal', it)));
             });
     }
 
@@ -2004,18 +1757,7 @@
             .then(data => {
                 if (data.code == 500) return;
                 $("#spouse_liabilities_list").empty();
-                data.results.forEach(it => {
-                    $("#spouse_liabilities_list").append(`
-                        <tr id='spouse_liabilities_${it.id}'>
-                            <td>${it.nature}</td>
-                            <td>${it.creditors_name}</td>
-                            <td>${it.outstanding_balance}</td>
-                            <td>
-                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpouseLiabilities(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpouseLiabilities(${it.id})'><span class="bi bi-trash"></span></button>
-                            </td>
-                        </tr>`);
-                });
+                data.results.forEach(it => $("#spouse_liabilities_list").append(salnBuildViewRow('spouse_liabilities', it)));
             });
     }
 
@@ -2026,19 +1768,347 @@
             .then(data => {
                 if (data.code == 500) return;
                 $("#spouse_business_interest_list").empty();
-                data.results.forEach(it => {
-                    $("#spouse_business_interest_list").append(`
-                        <tr id='spouse_business_interest_${it.id}'>
-                            <td>${it.enterprise}</td>
-                            <td>${it.address}</td>
-                            <td>${it.nature}</td>
-                            <td>${moment(it.date_acquisition).format("MM/DD/YYYY")}</td>
-                            <td>
-                                <button class="btn btn-action btn-edit me-1" title="Edit" onClick='editSpouseBusinessInterest(${it.id})'><span class="bi bi-pencil"></span></button>
-                                <button class="btn btn-action btn-delete ms-1" title="Delete" onClick='deleteSpouseBusinessInterest(${it.id})'><span class="bi bi-trash"></span></button>
-                            </td>
-                        </tr>`);
-                });
+                data.results.forEach(it => $("#spouse_business_interest_list").append(salnBuildViewRow('spouse_business', it)));
             });
+    }
+
+    /** ================================================
+     *  SALN INLINE EDITING ENGINE
+     * ================================================ */
+    let _salnInlineActive = false;
+
+    const SALN_INLINE_CFG = {
+        children: {
+            tbody: '#children_list', addBtn: '#btn_add_children',
+            endpoint: '{{ route("insertSalnChildren") }}',
+            deleteEndpoint: '{{ route("deleteSalnChildren") }}',
+            reload: () => getChildren(),
+            fields: [
+                { key: 'name',      label: 'Full Name',    type: 'text' },
+                { key: 'birthdate', label: 'Date of Birth', type: 'date', sendAs: 'birthday',
+                  display: v => v ? moment(v).format('MM/DD/YYYY') : '' }
+            ]
+        },
+        real: {
+            tbody: '#real_properties_list', addBtn: '#btn_add_real_properties',
+            endpoint: '{{ route("insertRealProperties") }}',
+            deleteEndpoint: '{{ route("deleteRealProperties") }}',
+            reload: () => getRealProperties(),
+            fields: [
+                { key: 'description',      label: 'Description',  type: 'text' },
+                { key: 'kind',             label: 'Kind',          type: 'text' },
+                { key: 'exact_location',   label: 'Location',      type: 'text' },
+                { key: 'assessed_value',   label: 'Assessed Val',  type: 'number', step: '0.01' },
+                { key: 'current_fair',     label: 'Market Val',    type: 'number', step: '0.01' },
+                { key: 'acquisition_year', label: 'Year',          type: 'number', min: '1900', max: '2099' },
+                { key: 'acquisition_mode', label: 'Mode',          type: 'text' },
+                { key: 'acquisition_cost', label: 'Acq. Cost',     type: 'number', step: '0.01' }
+            ]
+        },
+        personal: {
+            tbody: '#personal_properties_list', addBtn: '#btn_add_personal_properties',
+            endpoint: '{{ route("insertPersonalProperties") }}',
+            deleteEndpoint: '{{ route("deletePersonalProperties") }}',
+            reload: () => getPersonalProperties(),
+            fields: [
+                { key: 'gadget',           label: 'Gadgets/Appliances', type: 'text' },
+                { key: 'various_years',    label: 'Various Years',      type: 'text' },
+                { key: 'acquisition_cost', label: 'Acq. Cost',          type: 'number', step: '0.01' }
+            ]
+        },
+        liabilities: {
+            tbody: '#liabilities_list', addBtn: '#btn_add_liabilities',
+            endpoint: '{{ route("insertLiabilities") }}',
+            deleteEndpoint: '{{ route("deleteLiabilities") }}',
+            reload: () => getLiabilities(),
+            fields: [
+                { key: 'nature',              label: 'Nature',             type: 'text' },
+                { key: 'creditors_name',      label: 'Name of Creditors',  type: 'text' },
+                { key: 'outstanding_balance', label: 'Bal.',               type: 'number', step: '0.01' }
+            ]
+        },
+        business: {
+            tbody: '#business_interest_list', addBtn: '#btn_add_business_interest',
+            endpoint: '{{ route("insertBusinessInterest") }}',
+            deleteEndpoint: '{{ route("deleteBusinessInterest") }}',
+            reload: () => getBusinessInterest(),
+            fields: [
+                { key: 'enterprise',       label: 'Entity/Business',    type: 'text' },
+                { key: 'address',          label: 'Address',            type: 'text' },
+                { key: 'nature',           label: 'Nature of Interest', type: 'text' },
+                { key: 'date_acquisition', label: 'Acq. Date',          type: 'date',
+                  display: v => v ? moment(v).format('MM/DD/YYYY') : '' }
+            ]
+        },
+        relatives: {
+            tbody: '#government_relative_list', addBtn: '#btn_add_government_relative',
+            endpoint: '{{ route("insertGovernmentRelative") }}',
+            deleteEndpoint: '{{ route("deleteGovernmentRelative") }}',
+            reload: () => getGovernmentRelative(),
+            fields: [
+                { key: 'name',         label: 'Name of Relative', type: 'text' },
+                { key: 'relationship', label: 'Relationship',     type: 'text' },
+                { key: 'position',     label: 'Position',         type: 'text' },
+                { key: 'agency',       label: 'Agency/Address',   type: 'text' }
+            ]
+        },
+        marriages: {
+            tbody: '#marriages_list', addBtn: '#btn_add_marriages',
+            endpoint: '{{ route("insertMarriages") }}',
+            deleteEndpoint: '{{ route("deleteMarriage") }}',
+            reload: () => getMarriages(),
+            fields: [
+                { key: 'spouse', label: 'Full Name of Spouse(s)', type: 'text' }
+            ]
+        },
+        spouse_real: {
+            tbody: '#spouse_real_properties_list', addBtn: '#spouse_btn_add_real_properties',
+            endpoint: '{{ route("insertSpouseRealProperties") }}',
+            deleteEndpoint: '{{ route("deleteSpouseRealProperties") }}',
+            reload: () => getSpouseRealProperties(),
+            fields: [
+                { key: 'description',      label: 'Description',  type: 'text' },
+                { key: 'kind',             label: 'Kind',          type: 'text' },
+                { key: 'exact_location',   label: 'Location',      type: 'text' },
+                { key: 'assessed_value',   label: 'Assessed Val',  type: 'number', step: '0.01' },
+                { key: 'current_fair',     label: 'Market Val',    type: 'number', step: '0.01' },
+                { key: 'acquisition_year', label: 'Year',          type: 'number', min: '1900', max: '2099' },
+                { key: 'acquisition_mode', label: 'Mode',          type: 'text' },
+                { key: 'acquisition_cost', label: 'Acq. Cost',     type: 'number', step: '0.01' }
+            ]
+        },
+        spouse_personal: {
+            tbody: '#spouse_personal_properties_list', addBtn: '#spouse_btn_add_personal_properties',
+            endpoint: '{{ route("insertSpousePersonalProperties") }}',
+            deleteEndpoint: '{{ route("deleteSpousePersonalProperties") }}',
+            reload: () => getSpousePersonalProperties(),
+            fields: [
+                { key: 'gadget',           label: 'Gadgets/Appliances', type: 'text' },
+                { key: 'various_years',    label: 'Various Years',      type: 'text' },
+                { key: 'acquisition_cost', label: 'Acq. Cost',          type: 'number', step: '0.01' }
+            ]
+        },
+        spouse_liabilities: {
+            tbody: '#spouse_liabilities_list', addBtn: '#spouse_btn_add_liabilities',
+            endpoint: '{{ route("insertSpouseLiabilities") }}',
+            deleteEndpoint: '{{ route("deleteSpouseLiabilities") }}',
+            reload: () => getSpouseLiabilities(),
+            fields: [
+                { key: 'nature',              label: 'Nature',            type: 'text' },
+                { key: 'creditors_name',      label: 'Name of Creditors', type: 'text' },
+                { key: 'outstanding_balance', label: 'Bal.',              type: 'number', step: '0.01' }
+            ]
+        },
+        spouse_business: {
+            tbody: '#spouse_business_interest_list', addBtn: '#spouse_btn_add_business_interest',
+            endpoint: '{{ route("insertSpouseBusinessInterest") }}',
+            deleteEndpoint: '{{ route("deleteSpouseBusinessInterest") }}',
+            reload: () => getSpouseBusinessInterest(),
+            fields: [
+                { key: 'enterprise',       label: 'Entity/Business',    type: 'text' },
+                { key: 'address',          label: 'Address',            type: 'text' },
+                { key: 'nature',           label: 'Nature of Interest', type: 'text' },
+                { key: 'date_acquisition', label: 'Acq. Date',          type: 'date',
+                  display: v => v ? moment(v).format('MM/DD/YYYY') : '' }
+            ]
+        }
+    };
+
+    // Register add-button handlers via config
+    $(function () {
+        Object.keys(SALN_INLINE_CFG).forEach(cfgKey => {
+            const cfg = SALN_INLINE_CFG[cfgKey];
+            $(cfg.addBtn).off('click').on('click', function () { salnAddInlineRow(cfgKey); });
+        });
+    });
+
+    function salnAddInlineRow(cfgKey) {
+        if (_salnInlineActive) {
+            toastr.warning('Please confirm or cancel the current row first.', 'In Progress');
+            return;
+        }
+        const cfg = SALN_INLINE_CFG[cfgKey];
+        _salnInlineActive = true;
+        $(cfg.addBtn).prop('disabled', true);
+
+        const inputCells = cfg.fields.map(f => {
+            const extra  = f.step ? `step="${f.step}"` : '';
+            const minMax = f.min  ? `min="${f.min}" max="${f.max}"` : '';
+            return `<td><input class="saln-inline-input" type="${f.type}" ${extra} ${minMax} placeholder="${f.label}" data-key="${f.key}"></td>`;
+        }).join('');
+
+        const $row = $(`<tr class="saln-inline-row" data-id="0" data-cfg="${cfgKey}">
+            ${inputCells}
+            <td class="text-center" style="white-space:nowrap">
+                <button class="btn btn-action btn-edit" style="background:#0f766e;color:#fff;min-width:32px" title="Confirm"
+                    onclick="salnConfirmInline(this,'${cfgKey}',0)">
+                    <i class="bi bi-check-lg"></i>
+                </button>
+                <button class="btn btn-action btn-delete ms-1" style="min-width:32px" title="Cancel"
+                    onclick="salnCancelInline(this,0,'${cfgKey}')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </td>
+        </tr>`);
+
+        $(cfg.tbody).append($row);
+        $row.find('input').first().focus();
+    }
+
+    function salnConfirmInline(btn, cfgKey, rowId) {
+        const cfg  = SALN_INLINE_CFG[cfgKey];
+        const $row = $(btn).closest('tr');
+        const params = { compliance_for: getComplianceDate(), id: rowId };
+
+        let valid = true;
+        $row.find('input[data-key]').each(function () {
+            const key   = $(this).data('key');
+            const val   = $(this).val().trim();
+            const field = cfg.fields.find(f => f.key === key);
+            const send  = field && field.sendAs ? field.sendAs : key;
+            $(this).removeClass('is-invalid');
+            if (!val && !field.optional) {
+                if (valid) { $(this).focus(); }
+                $(this).addClass('is-invalid');
+                valid = false;
+            }
+            params[send] = val;
+        });
+
+        if (!valid) { toastr.error('Please fill in all required fields.', 'Required'); return; }
+
+        const $btn = $(btn).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+        fetch(cfg.endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            body: JSON.stringify(params)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.code == 500) {
+                toastr.error(data.message, 'Error');
+                $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i>');
+                return;
+            }
+            _salnInlineActive = false;
+            $(cfg.addBtn).prop('disabled', false);
+            cfg.reload();
+        })
+        .catch(() => {
+            toastr.error('Network error', 'Error');
+            $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i>');
+        });
+    }
+
+    function salnCancelInline(btn, rowId, cfgKey) {
+        const cfg  = SALN_INLINE_CFG[cfgKey];
+        const $row = $(btn).closest('tr');
+        _salnInlineActive = false;
+        $(cfg.addBtn).prop('disabled', false);
+
+        if (rowId == 0) {
+            $row.remove();
+        } else {
+            // Restore view mode from stored data
+            const storedData = $row.data('row');
+            if (storedData) {
+                $row.replaceWith(salnBuildViewRow(cfgKey, storedData));
+            } else {
+                cfg.reload();
+            }
+        }
+    }
+
+    function salnEditInline(btn, cfgKey) {
+        if (_salnInlineActive) {
+            toastr.warning('Please confirm or cancel the current row first.', 'In Progress');
+            return;
+        }
+        const cfg     = SALN_INLINE_CFG[cfgKey];
+        const $row    = $(btn).closest('tr');
+        const rowData = $row.data('row');
+        const rowId   = $row.data('id');
+        if (!rowData) return;
+
+        _salnInlineActive = true;
+        $(cfg.addBtn).prop('disabled', true);
+
+        const inputCells = cfg.fields.map(f => {
+            const extra  = f.step ? `step="${f.step}"` : '';
+            const minMax = f.min  ? `min="${f.min}" max="${f.max}"` : '';
+            let val = rowData[f.key] !== null && rowData[f.key] !== undefined ? rowData[f.key] : '';
+            if (f.type === 'date' && val) val = moment(val).format('YYYY-MM-DD');
+            return `<td><input class="saln-inline-input" type="${f.type}" ${extra} ${minMax} value="${String(val).replace(/"/g, '&quot;')}" data-key="${f.key}"></td>`;
+        }).join('');
+
+        $row.html(`${inputCells}
+            <td class="text-center" style="white-space:nowrap">
+                <button class="btn btn-action btn-edit" style="background:#0f766e;color:#fff;min-width:32px" title="Confirm"
+                    onclick="salnConfirmInline(this,'${cfgKey}',${rowId})">
+                    <i class="bi bi-check-lg"></i>
+                </button>
+                <button class="btn btn-action btn-delete ms-1" style="min-width:32px" title="Cancel"
+                    onclick="salnCancelInline(this,${rowId},'${cfgKey}')">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </td>`);
+
+        $row.find('input').first().focus();
+    }
+
+    function salnDeleteInline(btn, cfgKey, rowId) {
+        const cfg = SALN_INLINE_CFG[cfgKey];
+        Swal.fire({
+            title: 'Delete Entry?',
+            text: 'Are you sure you want to remove this entry?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#adb5bd',
+            confirmButtonText: 'Yes, Delete',
+            reverseButtons: true
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch(cfg.deleteEndpoint, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                body: JSON.stringify({ id: rowId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.code == 500) { toastr.error(data.message, 'Error'); return; }
+                $(btn).closest('tr').fadeOut(200, function () { $(this).remove(); });
+            })
+            .catch(() => toastr.error('Network error', 'Error'));
+        });
+    }
+
+    function salnBuildViewRow(cfgKey, data) {
+        const cfg = SALN_INLINE_CFG[cfgKey];
+        const id  = data.id || 0;
+
+        const cells = cfg.fields.map(f => {
+            let val = data[f.key] !== null && data[f.key] !== undefined ? data[f.key] : '';
+            if (f.display) val = f.display(val);
+            return `<td>${val}</td>`;
+        }).join('');
+
+        const $tr = $(`<tr data-id="${id}" data-cfg="${cfgKey}">
+            ${cells}
+            <td class="text-center" style="white-space:nowrap">
+                <button class="btn btn-action btn-edit me-1" title="Edit"
+                    onclick="salnEditInline(this,'${cfgKey}')">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-action btn-delete ms-1" title="Delete"
+                    onclick="salnDeleteInline(this,'${cfgKey}',${id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`);
+
+        $tr.data('row', data);
+        return $tr;
     }
 </script>
