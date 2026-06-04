@@ -77,6 +77,19 @@ class LeaveBulkCreditController extends Controller
         }
     }
 
+    public function getAllLeaveTypes()
+    {
+        try {
+            $types = DB::table('leave_types')
+                ->where('status', 'active')
+                ->orderBy('description')
+                ->get(['id', 'description', 'code']);
+            return response()->json($types);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
     public function getEmployeeTypes()
     {
         try {

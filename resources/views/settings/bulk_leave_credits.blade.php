@@ -147,7 +147,7 @@
     const ROUTE_SECTIONS      = "{{ route('bulk-leave-credits.sections') }}";
     const ROUTE_EMPLOYEES     = "{{ route('bulk-leave-credits.employees') }}";
     const ROUTE_EMP_TYPES     = "{{ route('bulk-leave-credits.employee-types') }}";
-    const ROUTE_LEAVE_TYPES   = "{{ route('getLeaveTypes') }}";
+    const ROUTE_LEAVE_TYPES   = "{{ route('bulk-leave-credits.leave-types') }}";
     const ROUTE_BATCHES       = "{{ route('bulk-leave-credits.batches') }}";
     const ROUTE_STORE         = "{{ route('bulk-leave-credits.store') }}";
 
@@ -196,8 +196,8 @@
     }
 
     async function loadLeaveTypes() {
-        const payload = await fetchJson(ROUTE_LEAVE_TYPES);
-        ALL_LEAVE_TYPES = (payload.results || []).filter(lt => (lt.status || '').toLowerCase() === 'active');
+        const data = await fetchJson(ROUTE_LEAVE_TYPES);
+        ALL_LEAVE_TYPES = Array.isArray(data) ? data : [];
     }
 
     async function loadEmployees() {
