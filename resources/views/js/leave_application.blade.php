@@ -441,14 +441,17 @@
             return;
         }
         attachments.forEach(a => {
+            const deleteBtn = a.id
+                ? `<button type="button" class="btn-close ms-1" style="font-size:.65rem"
+                       onclick="deleteExistingAttachment(${a.id}, this)" title="Remove"></button>`
+                : '';
             $list.append(`
             <span class="attach-chip badge bg-light text-dark border d-inline-flex align-items-center gap-1 py-2 px-2">
                 <a href="${a.url}" target="_blank" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
                     <i class="bi bi-paperclip"></i>
                     <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.original_name}</span>
                 </a>
-                <button type="button" class="btn-close ms-1" style="font-size:.65rem"
-                    onclick="deleteExistingAttachment(${a.id}, this)" title="Remove"></button>
+                ${deleteBtn}
             </span>`);
         });
         $('#existing_attachments').removeClass('d-none');
@@ -796,8 +799,12 @@
             editing_leave_id = id;
             $("#btn_save_leave").text("UPDATE");
 
-            // Populate existing attachments for edit mode
-            renderExistingAttachments(data.attachments || []);
+            // Populate existing attachments — include legacy single attachment if new table is empty
+            let existingAttachments = data.attachments || [];
+            if (existingAttachments.length === 0 && data.attachment_url) {
+                existingAttachments = [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }];
+            }
+            renderExistingAttachments(existingAttachments);
 
             file_leave_modal.toggle();
         } catch {
