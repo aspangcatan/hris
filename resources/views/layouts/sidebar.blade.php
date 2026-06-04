@@ -132,7 +132,7 @@
         @endif
 
         {{-- CREDITS MANAGEMENT --}}
-        @if(in_array(session('access_rights'), ['admin']))
+        @if(in_array(session('access_rights'), ['admin']) && false)
             <li class="nav-heading">Credits Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('credit_management') ? '' : 'collapsed' }}"
@@ -234,15 +234,6 @@
                     <span>Cutoff Summary</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#">
-                    <i class="bi bi-sliders"></i>
-                    <span>
-                        Adjustments
-                        <span class="badge bg-danger text-white ms-1">Soon</span>
-                    </span>
-                </a>
-            </li>
         @endif
 
         {{-- REPORTS --}}
@@ -275,13 +266,6 @@
                     </a>
                 </li>
             @endif
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('timetable') ? '' : 'collapsed' }}"
-                   href="{{ route('timetable') }}">
-                    <i class="bi bi-clock"></i>
-                    <span>Timetable Settings</span>
-                </a>
-            </li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_management') ? '' : 'collapsed' }}"
                    href="{{ route('leave_management') }}">

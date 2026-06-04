@@ -11,7 +11,9 @@
       "Bash(git commit *)",
       "Bash(Get-ChildItem -Path \"c:\\\\wamp64\\\\projects\\\\hris\\\\resources\\\\views\" -Filter \"*.blade.php\" -File)",
       "Bash(Select-Object -ExpandProperty Name)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(php -l app/Services/LeaveMonetizationService.php)",
+      "Bash(php -l app/Http/Controllers/LeaveMonetizationController.php)"
     ]
   }
 }

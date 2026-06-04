@@ -39,8 +39,9 @@ class LeaveMonetizationController extends Controller
     public function store(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'leave_type_id'  => 'required|integer',
-            'days_requested' => 'required|numeric|min:0.001',
+            'items'                    => 'required|array|min:1',
+            'items.*.leave_type_id'    => 'required|integer',
+            'items.*.days_requested'   => 'required|numeric|min:0.001',
         ]);
 
         if ($validator->fails()) {
@@ -48,8 +49,12 @@ class LeaveMonetizationController extends Controller
         }
 
         try {
-            $id = $this->service->store($request->only(['leave_type_id', 'days_requested']));
-            return response()->json(['message' => 'Monetization request filed successfully.', 'id' => $id]);
+            $ids = $this->service->storeMany($request->input('items'));
+            $count = count($ids);
+            $msg = $count === 1
+                ? 'Monetization request filed successfully.'
+                : "{$count} monetization requests filed successfully.";
+            return response()->json(['message' => $msg, 'ids' => $ids]);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

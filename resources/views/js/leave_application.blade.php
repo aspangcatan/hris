@@ -669,7 +669,7 @@
                                 ${opts}
                             </select>
                         </td>
-                        <td><input type="date" class="form-control form-control-sm" name="leave_dates[]" min="${minDate}" value="${d.date}"></td>
+                        <td><input type="date" class="form-control form-control-sm" name="leave_dates[]" min="${minDate}" value="${moment(d.date).format('YYYY-MM-DD')}"></td>
                         <td>
                             <select class="form-control form-control-sm" name="leave_hours[]">
                                 <option value="4"  ${d.duration == 4  ? 'selected' : ''}>4</option>
@@ -815,66 +815,108 @@
     let MONETIZABLE_TYPES      = [];
     const monetize_modal       = new bootstrap.Modal(document.getElementById('monetize_leave_modal'));
 
-    // Wire buttons
-    $("#btn_file_monetization").click(function () {
-        loadMonetizableTypes().then(() => {
-            $("#monetize_leave_type").val('');
-            $("#monetize_days").val('');
-            $("#monetize_balance_hint").addClass('d-none');
-            monetize_modal.show();
-        });
+    // Wire open button
+    $("#btn_file_monetization").click(async function () {
+        await loadMonetizableTypes();
+        $("#monetize_rows_body").empty();
+        addMonetizeRow();
+        monetize_modal.show();
     });
 
-    $("#monetize_leave_type").on('change', function () {
-        const selectedId = parseInt($(this).val(), 10);
-        const type       = MONETIZABLE_TYPES.find(t => t.id === selectedId);
-        if (type) {
-            $("#monetize_available_days").text(parseFloat(type.balance_days).toFixed(3));
-            $("#monetize_available_credits").text(parseFloat(type.balance).toFixed(3));
-            $("#monetize_days").attr('max', parseFloat(type.balance_days));
-            $("#monetize_balance_hint").removeClass('d-none');
-        } else {
-            $("#monetize_balance_hint").addClass('d-none');
-        }
-    });
-
+    $("#btn_add_monetize_row").click(addMonetizeRow);
     $("#btn_submit_monetization").click(handleMonetizationSubmit);
 
-    // Load monetizable leave types
+    // Load monetizable leave types into cache
     async function loadMonetizableTypes() {
         try {
             const data = await fetchData(ROUTE_MONETIZABLE_TYPES);
             MONETIZABLE_TYPES = data;
-            const $select = $("#monetize_leave_type");
-            $select.find('option:not(:first)').remove();
-            data.forEach(t => {
-                $select.append(`<option value="${t.id}">${t.description} (${parseFloat(t.balance_days).toFixed(3)} days)</option>`);
-            });
         } catch {
             toastr.error('Failed to load monetizable leave types.', 'Error');
         }
     }
 
-    // Submit monetization request
+    function buildMonetizeTypeOptions() {
+        return MONETIZABLE_TYPES.map(t =>
+            `<option value="${t.id}" data-days="${parseFloat(t.balance_days).toFixed(3)}">`
+            + `${t.description} — ${parseFloat(t.balance_days).toFixed(3)} days avail.`
+            + `</option>`
+        ).join('');
+    }
+
+    function addMonetizeRow() {
+        const row = $(`
+        <tr>
+            <td>
+                <select class="form-select form-select-sm monetize-type-select">
+                    <option value="">-- Select Type --</option>
+                    ${buildMonetizeTypeOptions()}
+                </select>
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm monetize-days-input"
+                       min="0.001" step="0.001" placeholder="0.000">
+            </td>
+            <td class="text-muted small monetize-avail-cell">—</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMonetizeRow(this)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </td>
+        </tr>`);
+
+        row.find('.monetize-type-select').on('change', function () {
+            const opt  = $(this).find(':selected');
+            const days = opt.val() ? opt.data('days') : '—';
+            $(this).closest('tr').find('.monetize-avail-cell').text(days ? `${days} days` : '—');
+        });
+
+        $("#monetize_rows_body").append(row);
+    }
+
+    function removeMonetizeRow(btn) {
+        if ($("#monetize_rows_body tr").length <= 1) {
+            toastr.error('At least one leave type is required.', 'Required');
+            return;
+        }
+        $(btn).closest('tr').remove();
+    }
+
+    // Submit — collects all rows, sends as array
     async function handleMonetizationSubmit() {
-        const leaveTypeId  = parseInt($("#monetize_leave_type").val(), 10);
-        const daysRequested = parseFloat($("#monetize_days").val());
+        const items = [];
+        let valid = true;
+        const usedTypeIds = new Set();
 
-        if (!leaveTypeId) {
-            toastr.error('Please select a leave type.', 'Required');
-            return;
-        }
-        if (!daysRequested || daysRequested <= 0) {
-            toastr.error('Please enter the number of days to monetize.', 'Required');
-            return;
-        }
+        $("#monetize_rows_body tr").each(function () {
+            const leaveTypeId   = parseInt($(this).find('.monetize-type-select').val(), 10);
+            const daysRequested = parseFloat($(this).find('.monetize-days-input').val());
 
-        const type = MONETIZABLE_TYPES.find(t => t.id === leaveTypeId);
-        if (type && daysRequested > parseFloat(type.balance_days)) {
-            toastr.error(
-                `Insufficient balance. You have ${parseFloat(type.balance_days).toFixed(3)} days available.`,
-                'Insufficient Balance'
-            );
+            if (!leaveTypeId || !daysRequested || daysRequested <= 0) {
+                valid = false; return false;
+            }
+            if (usedTypeIds.has(leaveTypeId)) {
+                toastr.error('Duplicate leave types detected. Each type can appear only once.', 'Error');
+                valid = false; return false;
+            }
+            usedTypeIds.add(leaveTypeId);
+
+            // Client-side balance guard
+            const type = MONETIZABLE_TYPES.find(t => t.id === leaveTypeId);
+            if (type && daysRequested > parseFloat(type.balance_days)) {
+                toastr.error(
+                    `Insufficient ${type.description} balance. You have ${parseFloat(type.balance_days).toFixed(3)} days available.`,
+                    'Insufficient Balance'
+                );
+                valid = false; return false;
+            }
+
+            items.push({ leave_type_id: leaveTypeId, days_requested: daysRequested });
+        });
+
+        if (!valid) return;
+        if (!items.length) {
+            toastr.error('Please add at least one leave type.', 'Required');
             return;
         }
 
@@ -888,7 +930,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ leave_type_id: leaveTypeId, days_requested: daysRequested }),
+                body: JSON.stringify({ items }),
             });
             const body = await response.json();
             if (!response.ok) {

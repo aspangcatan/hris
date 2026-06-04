@@ -41,6 +41,17 @@ class LeaveMonetizationService
         return $result;
     }
 
+    public function storeMany(array $items): array
+    {
+        return DB::transaction(function () use ($items) {
+            $ids = [];
+            foreach ($items as $item) {
+                $ids[] = $this->store($item);
+            }
+            return $ids;
+        });
+    }
+
     public function store(array $data): int
     {
         return DB::transaction(function () use ($data) {
