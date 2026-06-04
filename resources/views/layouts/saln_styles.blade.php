@@ -206,10 +206,24 @@
             background: #fcfdfe;
         }
 
-        #saln_form_modal .modal-header {
+        #saln_form_modal .modal-header,
+        #saln_form_modal .saln-premium-header {
             background: linear-gradient(135deg, var(--saln-primary) 0%, var(--saln-primary-dark) 100%);
-            padding: 1.5rem 2rem;
+            padding: 1.25rem 2rem;
             border: none;
+        }
+
+        .saln-premium-header-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,.18);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #fff;
+            flex-shrink: 0;
         }
 
         #saln_form_modal .modal-title {

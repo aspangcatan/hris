@@ -2,10 +2,20 @@
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="salnFormModalLabel">
-                    <i class="bi bi-file-earmark-text me-2"></i>SALN — Sworn Statement of Assets, Liabilities & Net Worth
-                </h5>
+            <div class="modal-header saln-premium-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="saln-premium-header-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title mb-0 fw-800 text-white" id="salnFormModalLabel">
+                            SALN Declaration
+                        </h5>
+                        <div class="text-white opacity-75" style="font-size:.85rem">
+                            Sworn Statement of Assets, Liabilities &amp; Net Worth
+                        </div>
+                    </div>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0 position-relative">
@@ -155,11 +165,6 @@
                                                     <label class="form-label-premium">Date Issued</label>
                                                     <input type="date" class="form-control-premium w-100" id="declarant_date_issued"/>
                                                 </div>
-                                            </div>
-                                            <div class="mt-4 text-end">
-                                                <button class="btn btn-success px-4 fw-bold" id="btn_save_declarant">
-                                                    <i class="bi bi-save me-2"></i>SAVE CHANGES
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -417,11 +422,6 @@
                                                     <input type="date" class="form-control-premium w-100" id="spouse_date_issued"/>
                                                 </div>
                                             </div>
-                                            <div class="mt-4 text-end">
-                                                <button class="btn btn-success px-4 fw-bold" id="spouse_btn_save_declarant">
-                                                    <i class="bi bi-save me-2"></i>SAVE SPOUSE INFO
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                     <!-- Spouse Real Properties -->
@@ -561,7 +561,7 @@
                     </button>
                     <button type="button" class="btn-finalize" id="btn_save_and_finalize">
                         <i class="bi bi-shield-check"></i>
-                        SAVE & FINALIZE DECLARATION
+                        SAVE DECLARATION
                     </button>
                 </div>
             </div>

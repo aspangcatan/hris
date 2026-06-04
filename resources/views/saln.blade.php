@@ -65,9 +65,8 @@
                 <h4>SALN Historical Records</h4>
                 <span>Sworn Statement of Assets, Liabilities and Net Worth</span>
             </div>
-            <button class="btn btn-edit" id="btn_open_create_saln">
-                <i class="bi bi-plus-circle"></i>
-                CREATE NEW SALN
+            <button class="btn btn-success btn-sm" id="btn_open_create_saln">
+                <i class="bi bi-plus-lg me-1"></i> Create New SALN
             </button>
         </div>
 

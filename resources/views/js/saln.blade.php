@@ -296,186 +296,6 @@
             marriages_modal.toggle();
         });
 
-        $("#btn_save_declarant").click(function () {
-            let is_valid = true;
-
-            $(".is-invalid").removeClass("is-invalid");
-
-            const declarant_position = $("#declarant_position").val().trim().toUpperCase();
-            const declarant_agency = $("#declarant_agency").val().trim().toUpperCase();
-            const declarant_office = $("#declarant_address").val().trim().toUpperCase();
-            const declarant_government_issued_id = $("#declarant_issued_id").val().trim().toUpperCase();
-            const declarant_government_id_no = $("#declarant_id_no").val().trim().toUpperCase();
-            const declarant_date_issued = $("#declarant_date_issued").val().trim().toUpperCase();
-
-            if (declarant_position == "") {
-                is_valid = false;
-                $("#declarant_position").addClass("is-invalid");
-            }
-
-            if (declarant_agency == "") {
-                is_valid = false;
-                $("#declarant_agency").addClass("is-invalid");
-            }
-
-            if (declarant_office == "") {
-                is_valid = false;
-                $("#declarant_address").addClass("is-invalid");
-            }
-
-            if (declarant_government_issued_id == "") {
-                is_valid = false;
-                $("#declarant_issued_id").addClass("is-invalid");
-            }
-
-            if (declarant_government_id_no == "") {
-                is_valid = false;
-                $("#declarant_id_no").addClass("is-invalid");
-            }
-
-
-            if (!is_valid) {
-                Swal.fire({
-                    title: 'Incomplete Information',
-                    text: 'Please fill in all the required profile information highlighted in red.',
-                    icon: 'warning',
-                    confirmButtonColor: 'var(--saln-primary)'
-                });
-                return;
-            }
-
-            const params = {
-                compliance_for: getComplianceDate(),
-                declarant_position: declarant_position,
-                declarant_agency: declarant_agency,
-                declarant_office: declarant_office,
-                declarant_government_id_issued: declarant_government_issued_id,
-                declarant_government_id_no: declarant_government_id_no,
-                declarant_date_issued: (declarant_date_issued == "") ? null : declarant_date_issued,
-            }
-
-            fetch('{{ route('updateDeclarant') }}', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                body: JSON.stringify(params)
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.code == 500) {
-                        toastr.error(data.message, "Ooops");
-                        return;
-                    }
-
-                    Swal.fire({
-                        title: 'Profile Updated',
-                        text: 'Declarant information has been successfully saved.',
-                        icon: 'success',
-                        confirmButtonColor: 'var(--saln-primary)',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    getDeclarant();
-                }).catch(err => {
-                console.log(err);
-            })
-        });
-
-        $("#spouse_btn_save_declarant").click(function () {
-            let is_valid = true;
-
-            $(".is-invalid").removeClass("is-invalid");
-
-            const spouse_fname = $("#spouse_fname").val().trim().toUpperCase();
-            const spouse_mname = $("#spouse_mname").val().trim().toUpperCase();
-            const spouse_lname = $("#spouse_lname").val().trim().toUpperCase();
-            const spouse_position = $("#spouse_position").val().trim().toUpperCase();
-            const spouse_agency = $("#spouse_agency").val().trim().toUpperCase();
-            const spouse_office = $("#spouse_address").val().trim().toUpperCase();
-            const spouse_government_issued_id = $("#spouse_issued_id").val().trim().toUpperCase();
-            const spouse_government_id_no = $("#spouse_id_no").val().trim().toUpperCase();
-            const spouse_date_issued = $("#spouse_date_issued").val().trim().toUpperCase();
-
-            // Validate Spouse Fields (Assuming similar required fields as declarant for now)
-             if (spouse_position == "") {
-                is_valid = false;
-                $("#spouse_position").addClass("is-invalid");
-            }
-
-            if (spouse_agency == "") {
-                is_valid = false;
-                $("#spouse_agency").addClass("is-invalid");
-            }
-
-            if (spouse_office == "") {
-                is_valid = false;
-                $("#spouse_address").addClass("is-invalid");
-            }
-
-            if (spouse_government_issued_id == "") {
-                is_valid = false;
-                $("#spouse_issued_id").addClass("is-invalid");
-            }
-
-             if (spouse_government_id_no == "") {
-                is_valid = false;
-                $("#spouse_id_no").addClass("is-invalid");
-            }
-
-
-            if (!is_valid) {
-                 Swal.fire({
-                    title: 'Incomplete Information',
-                    text: 'Please provide the required spouse information highlighted in red.',
-                    icon: 'warning',
-                    confirmButtonColor: 'var(--saln-primary)'
-                });
-                return;
-             }
-
-            const params = {
-                compliance_for: getComplianceDate(),
-                spouse_fname: spouse_fname,
-                spouse_mname: spouse_mname,
-                spouse_lname: spouse_lname,
-                spouse_position: spouse_position,
-                spouse_agency: spouse_agency,
-                spouse_office: spouse_office,
-                spouse_government_id_issued: spouse_government_issued_id,
-                spouse_government_id_no: spouse_government_id_no,
-                spouse_date_issued: (spouse_date_issued == "") ? null : spouse_date_issued,
-            }
-
-             fetch('{{ route('updateSpouse') }}', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                body: JSON.stringify(params)
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.code == 500) {
-                        toastr.error(data.message, "Ooops");
-                        return;
-                    }
-
-                    Swal.fire({
-                        title: 'Spouse Profile Updated',
-                        text: 'Spouse information has been successfully saved.',
-                        icon: 'success',
-                        confirmButtonColor: 'var(--saln-primary)',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    getDeclarantSpouse();
-                }).catch(err => {
-                console.log(err);
-            })
-        });
 
         $("#btn_save_business_interest").click(function () {
             const business_enterprise = $("#business_enterprise").val().trim().toUpperCase();
@@ -1096,14 +916,23 @@
             const filingType = $('input[name="filing_type"]:checked').val();
 
             Swal.fire({
-                title: 'Finalize SALN Declaration?',
-                text: "This will save and synchronize all assets, liabilities, and personal information for the year " + getComplianceYear() + ". Ensure all sub-sections are saved before finalizing.",
+                title: 'Save SALN Declaration?',
+                html: `<div class="text-start">
+                    <p class="mb-2">You are about to save your SALN declaration for <strong>${getComplianceYear()}</strong>.</p>
+                    <p class="mb-2 text-muted small">All information across all tabs will be finalized:</p>
+                    <ul class="text-muted small mb-0 ps-3">
+                        <li>Declarant Profile &amp; Government ID</li>
+                        <li>Children, Real Assets, Personal Assets</li>
+                        <li>Liabilities, Business Interests, Gov't Relatives</li>
+                        <li>Spouse Profile &amp; all Spouse data</li>
+                    </ul>
+                </div>`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: 'var(--saln-primary)',
                 cancelButtonColor: '#adb5bd',
-                confirmButtonText: '<i class="bi bi-shield-check me-2"></i>Yes, Finalize Now',
-                cancelButtonText: 'Review Again',
+                confirmButtonText: '<i class="bi bi-shield-check me-2"></i>Save Declaration',
+                cancelButtonText: 'Cancel',
                 reverseButtons: true,
                 padding: '2rem',
                 customClass: {
