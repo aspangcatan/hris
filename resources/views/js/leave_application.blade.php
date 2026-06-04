@@ -659,9 +659,11 @@
 
             // Pre-fill date rows (each row includes leave_type_id)
             (data.dates || []).forEach(d => {
-                const opts    = buildLeaveTypeOptions(d.leave_type_id || null);
-                const minDate = getMinLeaveDate();
-                $("#dates_table_body").append(`
+                const opts        = buildLeaveTypeOptions(d.leave_type_id || null);
+                const dateValue   = moment(d.date).format('YYYY-MM-DD');
+                // Build row WITHOUT value attribute — browsers clear the value when value < min.
+                // Set it via .val() after appending so the min constraint is bypassed.
+                const $row = $(`
                     <tr>
                         <td>
                             <select class="form-control form-control-sm date-leave-type" name="leave_type_ids[]">
@@ -669,7 +671,7 @@
                                 ${opts}
                             </select>
                         </td>
-                        <td><input type="date" class="form-control form-control-sm" name="leave_dates[]" min="${minDate}" value="${moment(d.date).format('YYYY-MM-DD')}"></td>
+                        <td><input type="date" class="form-control form-control-sm" name="leave_dates[]"></td>
                         <td>
                             <select class="form-control form-control-sm" name="leave_hours[]">
                                 <option value="4"  ${d.duration == 4  ? 'selected' : ''}>4</option>
@@ -683,6 +685,9 @@
                         <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)">Remove</button></td>
                     </tr>
                 `);
+                $("#dates_table_body").append($row);
+                // Set date AFTER appending — bypasses browser min-constraint clearing
+                $row.find('input[name="leave_dates[]"]').val(dateValue);
             });
 
             // Enable detail groups based on the pre-filled date row types
