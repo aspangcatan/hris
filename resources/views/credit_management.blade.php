@@ -1,12 +1,24 @@
 @extends('master')
 @section('content')
-    <div class="card shadow-sm border-0 rounded-3" style="background-color: #f8f9fa;">
-        <div class="card-header bg-white border-bottom py-3">
-            <h4 class="mb-0 fw-bold text-dark">📊 Leave Credit Management</h4>
+<style>
+.credit-mgmt-board{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:1.5rem;box-shadow:0 18px 38px rgba(15,23,42,.08)}
+.credit-mgmt-head{margin-bottom:1.25rem}
+.credit-mgmt-head h4{margin:0;font-weight:700;color:#0f172a}
+.credit-mgmt-head span{font-size:.9rem;color:#64748b}
+.credit-mgmt-filter{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1.25rem}
+.credit-mgmt-filter .form-control,.credit-mgmt-filter .form-select{border-radius:12px;border:1px solid #d8e1ee;background:#fff}
+.credit-mgmt-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.credit-mgmt-table-shell table{margin-bottom:0}
+.credit-mgmt-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+.credit-mgmt-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}
+</style>
+    <div class="credit-mgmt-board">
+        <div class="credit-mgmt-head">
+            <h4>Leave Credit Management</h4>
+            <span>Update and review monthly leave credit earnings by division and section.</span>
         </div>
-        <div class="card-body bg-white">
-            <!-- Filter Section -->
-            <div class="row g-3 align-items-end mb-4 mt-3">
+        <div class="credit-mgmt-filter">
+            <div class="row g-3 align-items-end">
                 <div class="col-md-2">
                     <div class="form-floating">
                         <select class="form-select form-control-sm" id="month">
@@ -64,37 +76,31 @@
                 </div>
 
             </div>
-
-            <!-- Divider -->
-            <hr class="my-4">
-
-            <!-- Leave Credit Earned Logs -->
-            <h5 class="fw-bold text-dark mb-3">📅 Leave Credit Earned Logs</h5>
-
-            <div class="table-responsive">
-                <table class="table table-bordered align-middle" style="background-color: #fff;">
-                    <thead class="table-light">
-                    <tr class="text-center">
-                        <th>Employee</th>
-                        <th>Month & Year</th>
-                        <th>Total Present</th>
-                        <th>Total Late/Undertime (mins)</th>
-                        <th>Leave Type</th>
-                        <th>Points Earned</th>
-                        <th>Points Deducted</th>
-                        <th>Total</th>
-                    </tr>
-                    </thead>
-                    <tbody id="employee_list">
-                    <tr>
-                        <td colspan="9" class="text-center text-muted">No records found. Please select month & year.
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-
         </div>
+
+        <div class="fw-semibold mb-2" style="color:#0f172a">Leave Credit Earned Logs</div>
+        <div class="table-responsive credit-mgmt-table-shell">
+            <table class="table table-bordered align-middle text-center">
+                <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Month &amp; Year</th>
+                    <th>Total Present</th>
+                    <th>Total Late/Undertime (mins)</th>
+                    <th>Leave Type</th>
+                    <th>Points Earned</th>
+                    <th>Points Deducted</th>
+                    <th>Total</th>
+                </tr>
+                </thead>
+                <tbody id="employee_list">
+                <tr>
+                    <td colspan="9" class="text-center text-muted">No records found. Please select month &amp; year.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
     </div>
 @stop
 

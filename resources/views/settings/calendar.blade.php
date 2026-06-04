@@ -1,12 +1,18 @@
 @extends('master')
 
 @section('content')
-    <div class="card mt-2">
-        <div class="card-body">
-            <div class="container mt-4">
-                <h2 class="text-center">Holiday Calendar</h2>
-                <div id="calendar"></div>
-            </div>
+    <style>
+    .cal-board{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:1.5rem;box-shadow:0 18px 38px rgba(15,23,42,.08)}
+    .cal-head{margin-bottom:1.25rem}
+    .cal-head h4{margin:0;font-weight:700;color:#0f172a}
+    .cal-head span{font-size:.9rem;color:#64748b}
+    </style>
+    <div class="cal-board">
+        <div class="cal-head">
+            <h4>Holiday Calendar</h4>
+            <span>Manage regular and special holidays. Click a date to add or edit.</span>
+        </div>
+        <div id="calendar"></div>
 
             <!-- Modal for Adding/Updating Holiday -->
             <div class="modal fade" id="holidayModal" tabindex="-1" aria-labelledby="holidayModalLabel" aria-hidden="true">
@@ -45,7 +51,6 @@
                 </div>
             </div>
 
-        </div>
     </div>
 
     <!-- FullCalendar & Bootstrap -->

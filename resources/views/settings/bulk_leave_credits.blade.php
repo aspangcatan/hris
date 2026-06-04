@@ -1,12 +1,29 @@
 @extends('master')
 @section('content')
-<div class="card">
-    <div class="card-body">
-        <div class="fw-bold fs-5 mb-3">Bulk Leave Credits</div>
+<style>
+.blk-board{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:1.5rem;box-shadow:0 18px 38px rgba(15,23,42,.08)}
+.blk-head{margin-bottom:1.25rem}
+.blk-head h4{margin:0;font-weight:700;color:#0f172a}
+.blk-head span{font-size:.9rem;color:#64748b}
+.blk-filter{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1.25rem}
+.blk-filter .form-control,.blk-filter .form-select{border-radius:12px;border:1px solid #d8e1ee;background:#fff}
+.blk-step-panel{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1.25rem}
+.blk-step-label{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#607086;margin-bottom:.75rem}
+.blk-table-shell{border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff}
+.blk-table-shell table{margin-bottom:0}
+.blk-table-shell thead th{background:#f8fafc;color:#0f172a;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em}
+.blk-table-shell tbody td{color:#1e293b;font-weight:500;vertical-align:middle}
+</style>
+<div class="blk-board">
+    <div class="blk-head">
+        <h4>Bulk Leave Credits</h4>
+        <span>Assign leave credits to multiple employees at once. Supports multiple leave types per batch.</span>
+    </div>
 
-        {{-- Step 1: Filters --}}
-        <div class="card border mb-3">
-            <div class="card-body">
+    {{-- Step 1: Filters --}}
+    <div class="blk-filter">
+        <div class="blk-step-label">Step 1 — Filter Employees</div>
+        <div class="row g-2 align-items-end">
                 <div class="fw-semibold mb-2">Step 1 — Filter Employees</div>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
@@ -41,21 +58,19 @@
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+    </div>
 
-        {{-- Step 2: Employee Selection --}}
-        <div class="card border mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div class="fw-semibold">Step 2 — Select Employees</div>
+    {{-- Step 2: Employee Selection --}}
+    <div class="blk-step-panel">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="blk-step-label mb-0">Step 2 — Select Employees</div>
                     <div class="form-check mb-0">
                         <input class="form-check-input" type="checkbox" id="select_all_employees">
                         <label class="form-check-label small" for="select_all_employees">Select All</label>
                     </div>
                 </div>
-                <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
-                    <table class="table table-sm table-bordered align-middle text-center">
+        <div class="table-responsive" style="max-height:350px;overflow-y:auto;">
+            <table class="table table-sm table-bordered align-middle text-center">
                         <thead class="table-light sticky-top">
                             <tr>
                                 <th style="width:3%"></th>
@@ -70,17 +85,15 @@
                         <tbody id="employee_list">
                             <tr><td colspan="7" class="text-muted">Use filters above and click Load Employees.</td></tr>
                         </tbody>
-                    </table>
-                </div>
-                <div class="mt-1 small text-muted"><span id="selected_count">0</span> employee(s) selected</div>
-            </div>
+            </table>
         </div>
+        <div class="mt-1 small text-muted"><span id="selected_count">0</span> employee(s) selected</div>
+    </div>
 
-        {{-- Step 3: Credits to Add --}}
-        <div class="card border mb-3">
-            <div class="card-body">
-                <div class="fw-semibold mb-2">Step 3 — Credits to Add</div>
-                <table class="table table-sm align-middle" id="credits_table">
+    {{-- Step 3: Credits to Add --}}
+    <div class="blk-step-panel">
+        <div class="blk-step-label">Step 3 — Credits to Add</div>
+        <table class="table table-sm align-middle" id="credits_table">
                     <thead class="table-light">
                         <tr>
                             <th>Leave Type</th>
@@ -90,53 +103,52 @@
                     </thead>
                     <tbody id="credits_table_body"></tbody>
                 </table>
-                <button class="btn btn-sm btn-outline-secondary mt-1" id="btn_add_credit_row">
-                    <i class="bi bi-plus-lg me-1"></i> Add Leave Type
-                </button>
-            </div>
-        </div>
+        <button class="btn btn-sm btn-outline-secondary mt-1" id="btn_add_credit_row">
+            <i class="bi bi-plus-lg me-1"></i> Add Leave Type
+        </button>
+    </div>
 
-        {{-- Notes --}}
-        <div class="mb-3">
-            <label class="form-label small fw-semibold">Notes <span class="text-muted">(optional)</span></label>
-            <input type="text" class="form-control form-control-sm" id="batch_notes" placeholder="e.g. Q2 2026 credit release">
-        </div>
+    {{-- Notes --}}
+    <div class="mb-3">
+        <label class="form-label small fw-semibold">Notes <span class="text-muted">(optional)</span></label>
+        <input type="text" class="form-control form-control-sm" id="batch_notes" placeholder="e.g. Q2 2026 credit release">
+    </div>
 
-        <div class="d-flex justify-content-end">
-            <button class="btn btn-success px-4" id="btn_submit_bulk">
-                <i class="bi bi-check-lg me-1"></i> Submit
-            </button>
-        </div>
+    <div class="d-flex justify-content-end">
+        <button class="btn btn-success px-4" id="btn_submit_bulk">
+            <i class="bi bi-check-lg me-1"></i> Submit
+        </button>
     </div>
 </div>
 
 {{-- Batch History --}}
-<div class="card mt-3">
-    <div class="card-body">
-        <div class="fw-bold fs-5 mb-3">Previous Batches</div>
-        <div class="table-responsive">
-            <table class="table table-sm table-bordered align-middle text-center">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>Processed By</th>
-                        <th>Employees</th>
-                        <th>Notes</th>
-                        <th style="width:80px"></th>
-                    </tr>
-                </thead>
-                <tbody id="batch_history_list">
-                    <tr><td colspan="6" class="text-muted">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div id="batch_pagination_container" class="d-none">
-            <div class="d-flex flex-column align-items-center justify-content-center gap-2 mt-2">
-                <div id="batch_page_items_count" class="small text-muted"></div>
-                <nav><ul class="pagination pagination-sm mb-0" id="batch_pagination_links"></ul></nav>
-                <div id="batch_page_indicator" class="small text-muted"></div>
-            </div>
+<div class="blk-board mt-3">
+    <div class="blk-head">
+        <h4>Previous Batches</h4>
+        <span>History of all bulk credit assignments. Click Print to re-open any batch report.</span>
+    </div>
+    <div class="table-responsive blk-table-shell">
+        <table class="table table-sm table-bordered align-middle text-center">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Processed By</th>
+                    <th>Employees</th>
+                    <th>Notes</th>
+                    <th style="width:80px"></th>
+                </tr>
+            </thead>
+            <tbody id="batch_history_list">
+                <tr><td colspan="6" class="text-muted">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div id="batch_pagination_container" class="d-none mt-3">
+        <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+            <div id="batch_page_items_count" class="small text-muted"></div>
+            <nav><ul class="pagination pagination-sm mb-0" id="batch_pagination_links"></ul></nav>
+            <div id="batch_page_indicator" class="small text-muted"></div>
         </div>
     </div>
 </div>

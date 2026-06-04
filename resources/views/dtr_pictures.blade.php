@@ -1,37 +1,54 @@
 @extends('master')
 @section('content')
-    <div class="d-flex justify-content-end mb-2">
-        @if(session('access_rights') == 'admin' || session('access_rights') == 'DH')
-            <div class="ms-2 me-1">
-                <select class="form-control" id="search_division">
-                    <option value="">Search division</option>
-                </select>
-            </div>
-            <div>
-                <select class="form-control d-none" id="search_section">
-                </select>
-            </div>
-        @endif
-        <div class="ms-2 me-1">
-            <input class="form-control" placeholder="Search by firstname" id="search_fname"/>
-        </div>
-        <div class="ms-2 me-1">
-            <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
+<style>
+.dtrpic-board{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:1.5rem;box-shadow:0 18px 38px rgba(15,23,42,.08)}
+.dtrpic-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.dtrpic-head-title h4{margin:0;font-weight:700;color:#0f172a}
+.dtrpic-head-title span{font-size:.9rem;color:#64748b}
+.dtrpic-filter{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:1rem;margin-bottom:1.25rem}
+.dtrpic-filter .form-control,.dtrpic-filter .form-select{border-radius:12px;border:1px solid #d8e1ee;background:#fff}
+</style>
+
+<div class="dtrpic-board">
+    <div class="dtrpic-head">
+        <div class="dtrpic-head-title">
+            <h4>DTR Pictures</h4>
+            <span>View employee daily time record photo entries.</span>
         </div>
     </div>
 
-    <div id="loading-message" class="text-center my-4" style="display: none;">
+    <div class="dtrpic-filter">
+        <div class="row g-2 align-items-end">
+            @if(session('access_rights') == 'admin' || session('access_rights') == 'DH')
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" id="search_division">
+                    <option value="">All Divisions</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm d-none" id="search_section"></select>
+            </div>
+            @endif
+            <div class="col-md-3">
+                <input class="form-control form-control-sm" placeholder="Search by firstname" id="search_fname"/>
+            </div>
+            <div class="col-md-3">
+                <input class="form-control form-control-sm" placeholder="Search by lastname" id="search_lname"/>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-message" class="text-center my-4" style="display:none;">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
         <p class="mt-2">Loading, please wait while we fetch the data...</p>
     </div>
 
-    <div class="row mt-5" id="employee-container">
-        <!-- DTR cards will be appended here -->
-    </div>
+    <div class="row g-3" id="employee-container"></div>
+</div>
 
-    @include('modals.employee_dtr')
+@include('modals.employee_dtr')
 @stop
 @section('js')
     <script>
