@@ -239,8 +239,9 @@ class LeaveApplicationController extends Controller
     {
         try {
             $request->validate([
-                'data'       => 'required|string',
-                'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'data'          => 'required|string',
+                'attachments'   => 'nullable|array',
+                'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
             ]);
 
             $params = json_decode($request->input('data'), true);
@@ -263,23 +264,104 @@ class LeaveApplicationController extends Controller
                 return response()->json(['success' => false, 'error' => $validator->errors()->first()], 422);
             }
 
-            if ($request->hasFile('attachment')) {
-                $params['attachment'] = $request->file('attachment')
-                    ->store('leave_attachments', 'public');
-            }
-
             $result = $this->leaveApplicationService->insertLeaveApplication($params);
+            $appId  = $result['app_id'];
+
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    $path = $file->store('leave_attachments', 'public');
+                    DB::table('leave_application_attachments')->insert([
+                        'leave_application_id' => $appId,
+                        'file_path'            => $path,
+                        'original_name'        => $file->getClientOriginalName(),
+                        'created_at'           => now(),
+                        'updated_at'           => now(),
+                    ]);
+                }
+            }
 
             return response()->json([
                 'success'              => true,
                 'message'              => 'Leave application submitted successfully.',
-                'leave_application_id' => $result['app_id'],
+                'leave_application_id' => $appId,
             ]);
         } catch (\Exception $exception) {
             return response()->json([
                 'success' => false,
                 'error'   => $exception->getMessage(),
             ], 422);
+        }
+    }
+
+    public function addAttachments(Request $request, int $id)
+    {
+        try {
+            $request->validate([
+                'attachments'   => 'required|array|min:1',
+                'attachments.*' => 'file|mimes:pdf,jpg,jpeg,png|max:5120',
+            ]);
+
+            $app = DB::table('leave_applications')
+                ->where('id', $id)
+                ->where('user_id', \Illuminate\Support\Facades\Auth::id())
+                ->first(['id', 'status']);
+
+            if (!$app) {
+                return response()->json(['error' => 'Leave application not found.'], 404);
+            }
+
+            $shApproved = DB::table('leave_application_approvals')
+                ->where('leave_application_id', $id)
+                ->where('role', 'SH')
+                ->whereRaw('LOWER(status) = ?', ['approved'])
+                ->exists();
+
+            if ($shApproved) {
+                return response()->json(['error' => 'Cannot modify attachments after supervisor approval.'], 422);
+            }
+
+            $stored = [];
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('leave_attachments', 'public');
+                $rowId = DB::table('leave_application_attachments')->insertGetId([
+                    'leave_application_id' => $id,
+                    'file_path'            => $path,
+                    'original_name'        => $file->getClientOriginalName(),
+                    'created_at'           => now(),
+                    'updated_at'           => now(),
+                ]);
+                $stored[] = [
+                    'id'            => $rowId,
+                    'url'           => route('leave-attachments.serve', ['filename' => basename($path)]),
+                    'original_name' => $file->getClientOriginalName(),
+                ];
+            }
+
+            return response()->json(['message' => 'Attachments uploaded.', 'attachments' => $stored]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteAttachment(Request $request, int $attachmentId)
+    {
+        try {
+            $row = DB::table('leave_application_attachments')
+                ->join('leave_applications', 'leave_applications.id', '=', 'leave_application_attachments.leave_application_id')
+                ->where('leave_application_attachments.id', $attachmentId)
+                ->where('leave_applications.user_id', \Illuminate\Support\Facades\Auth::id())
+                ->first(['leave_application_attachments.id', 'leave_application_attachments.file_path']);
+
+            if (!$row) {
+                return response()->json(['error' => 'Attachment not found.'], 404);
+            }
+
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($row->file_path);
+            DB::table('leave_application_attachments')->where('id', $attachmentId)->delete();
+
+            return response()->json(['message' => 'Attachment deleted.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
@@ -313,6 +395,14 @@ class LeaveApplicationController extends Controller
                 'hr' => $leave->approvals['HR'] ?? ['status' => 'pending', 'remarks' => ''],
             ],
             'attachment_url'  => $leave->attachment ? route('leave-attachments.serve', ['filename' => basename($leave->attachment)]) : null,
+            'attachments'     => DB::table('leave_application_attachments')
+                ->where('leave_application_id', $id)
+                ->get()
+                ->map(fn($a) => [
+                    'id'            => $a->id,
+                    'url'           => route('leave-attachments.serve', ['filename' => basename($a->file_path)]),
+                    'original_name' => $a->original_name ?? basename($a->file_path),
+                ])->values(),
             'can_undo'        => $this->leaveApprovalService->canUndoApproval($id),
             'dates'           => collect($leave->dates ?? [])->map(fn($d) => [
                 'date'          => $d->date_applied,

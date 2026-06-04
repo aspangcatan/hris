@@ -431,6 +431,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveApplication'])->name('leave-applications.show');
     Route::put('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'updateLeaveApplication'])->name('leave-applications.update');
     Route::delete('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'delete'])->name('leave-applications.destroy');
+    Route::post('/leave-applications/{id}/attachments', [\App\Http\Controllers\LeaveApplicationController::class, 'addAttachments'])->name('leave-applications.attachments.add');
+    Route::delete('/leave-application-attachments/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'deleteAttachment'])->name('leave-applications.attachments.delete');
     Route::get('/leave-attachments/{filename}', [\App\Http\Controllers\LeaveApplicationController::class, 'serveAttachment'])->name('leave-attachments.serve');
 
 

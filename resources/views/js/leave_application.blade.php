@@ -1,8 +1,10 @@
 <script>
     // Route URLs (rendered by Blade, double-quoted to avoid JS lint false-positives)
-    const ROUTE_INSERT_LEAVE   = "{{ route('insertLeaveApplication') }}";
-    const ROUTE_UPDATE_LEAVE   = "{{ route('leave-applications.update', ':id') }}";
-    const ROUTE_DELETE_LEAVE   = "{{ route('leave-applications.destroy', ':id') }}";
+    const ROUTE_INSERT_LEAVE        = "{{ route('insertLeaveApplication') }}";
+    const ROUTE_UPDATE_LEAVE        = "{{ route('leave-applications.update', ':id') }}";
+    const ROUTE_DELETE_LEAVE        = "{{ route('leave-applications.destroy', ':id') }}";
+    const ROUTE_ADD_ATTACHMENTS     = "{{ route('leave-applications.attachments.add', ':id') }}";
+    const ROUTE_DELETE_ATTACHMENT   = "{{ route('leave-applications.attachments.delete', ':id') }}";
     const ROUTE_GET_LEAVES     = "{{ route('getLeaveApplications') }}";
     const ROUTE_SHOW_LEAVE     = "{{ route('leave-applications.show', ':id') }}";
     const ROUTE_PRINT_LEAVE    = "{{ route('printLeaveForm') }}";
@@ -280,10 +282,17 @@
             const lt = LEAVE_TYPES.find(t => t.id === d.leave_type_id);
             return lt && ATTACHMENT_REQUIRED_KEYWORDS.some(kw => lt.description.toLowerCase().includes(kw));
         });
-        const attachFile = document.getElementById('leave_attachment') && document.getElementById('leave_attachment').files[0];
-        if (attachmentRequired && !editing_leave_id && !attachFile) {
+        const attachFiles = document.getElementById('leave_attachment')
+            ? Array.from(document.getElementById('leave_attachment').files)
+            : [];
+        const hasExistingAttachments = $('#existing_attachments_list .attach-chip').length > 0;
+        if (attachmentRequired && !editing_leave_id && attachFiles.length === 0) {
             is_valid = false;
-            toastr.error("An attachment is required for Maternity/Paternity Leave", "Required");
+            toastr.error("At least one attachment is required for Maternity/Paternity Leave", "Required");
+        }
+        if (attachmentRequired && editing_leave_id && attachFiles.length === 0 && !hasExistingAttachments) {
+            is_valid = false;
+            toastr.error("At least one attachment is required for Maternity/Paternity Leave", "Required");
         }
 
         // Guard: ensure hours filed per leave type do not exceed available balance
@@ -335,7 +344,7 @@
             } else {
                 const fd = new FormData();
                 fd.append('data', JSON.stringify(params));
-                if (attachFile) fd.append('attachment', attachFile);
+                attachFiles.forEach(f => fd.append('attachments[]', f));
                 fetchOptions = {
                     method: "POST",
                     headers: { "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr('content') },
@@ -344,6 +353,17 @@
             }
 
             const body = await fetchData(url, fetchOptions);
+
+            // For edit mode: upload any newly selected files separately
+            if (isEdit && attachFiles.length > 0) {
+                const fd2 = new FormData();
+                attachFiles.forEach(f => fd2.append('attachments[]', f));
+                await fetch(ROUTE_ADD_ATTACHMENTS.replace(':id', editing_leave_id), {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+                    body: fd2
+                });
+            }
 
             toastr.success(body.message || (isEdit ? "Leave updated successfully" : "Leave submitted successfully"), "Information");
             clearForm();
@@ -377,7 +397,61 @@
             return lt && ATTACHMENT_REQUIRED_KEYWORDS.some(kw => lt.description.toLowerCase().includes(kw));
         });
         $("#attachment_section").toggle(needsAttachment);
-        if (!needsAttachment) $("#leave_attachment").val('');
+        if (!needsAttachment) {
+            $("#leave_attachment").val('');
+            $("#new_files_preview").empty();
+        }
+    }
+
+    // Live preview of newly selected files
+    $(document).on('change', '#leave_attachment', function () {
+        const $preview = $("#new_files_preview").empty();
+        Array.from(this.files).forEach(f => {
+            $preview.append(`
+            <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 py-2 px-2">
+                <i class="bi bi-paperclip"></i>
+                <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+            </span>`);
+        });
+    });
+
+    async function deleteExistingAttachment(attachmentId, chipEl) {
+        if (!confirm('Remove this attachment?')) return;
+        try {
+            const res = await fetch(ROUTE_DELETE_ATTACHMENT.replace(':id', attachmentId), {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json'
+                }
+            });
+            const body = await res.json();
+            if (!res.ok) { toastr.error(body.error || 'Failed to delete.', 'Error'); return; }
+            $(chipEl).closest('.attach-chip').remove();
+            if ($('#existing_attachments_list .attach-chip').length === 0) {
+                $('#existing_attachments').addClass('d-none');
+            }
+        } catch { toastr.error('Network error.', 'Error'); }
+    }
+
+    function renderExistingAttachments(attachments) {
+        const $list = $('#existing_attachments_list').empty();
+        if (!attachments || attachments.length === 0) {
+            $('#existing_attachments').addClass('d-none');
+            return;
+        }
+        attachments.forEach(a => {
+            $list.append(`
+            <span class="attach-chip badge bg-light text-dark border d-inline-flex align-items-center gap-1 py-2 px-2">
+                <a href="${a.url}" target="_blank" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-paperclip"></i>
+                    <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.original_name}</span>
+                </a>
+                <button type="button" class="btn-close ms-1" style="font-size:.65rem"
+                    onclick="deleteExistingAttachment(${a.id}, this)" title="Remove"></button>
+            </span>`);
+        });
+        $('#existing_attachments').removeClass('d-none');
     }
 
     // Unique leave type IDs currently selected in any date row.
@@ -720,6 +794,10 @@
 
             editing_leave_id = id;
             $("#btn_save_leave").text("UPDATE");
+
+            // Populate existing attachments for edit mode
+            renderExistingAttachments(data.attachments || []);
+
             file_leave_modal.toggle();
         } catch {
             toastr.error("Error loading leave application for editing.", "Error");
@@ -737,9 +815,15 @@
             $('#leave_type').text(data.type);
             $('#leave_commutation').text(data.commutation);
 
-            if (data.attachment_url) {
-                $('#view_attachment_link').attr('href', data.attachment_url);
-                $('#view_attachment_row').show();
+            // Show all attachments (new multi-attachment array + legacy single)
+            const allAttachments = (data.attachments && data.attachments.length > 0)
+                ? data.attachments
+                : (data.attachment_url ? [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }] : []);
+            if (allAttachments.length > 0) {
+                const links = allAttachments.map(a =>
+                    `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${a.original_name}</a>`
+                ).join('');
+                $('#view_attachment_row').html(`<p><strong>Attachments:</strong> ${links}</p>`).show();
             } else {
                 $('#view_attachment_row').hide();
             }
@@ -797,6 +881,9 @@
         $("#leave_form input[type='radio']").prop("checked", false);
         $("#dates_table_body").empty();
         $("#leave_attachment").val('');
+        $("#new_files_preview").empty();
+        $("#existing_attachments").addClass('d-none');
+        $("#existing_attachments_list").empty();
         $("#attachment_section").hide();
         renderDetailGroups();
         refreshCommutationVisibility();

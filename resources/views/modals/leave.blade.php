@@ -2,10 +2,11 @@
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-hero">
+            <div class="modal-header d-flex align-items-center justify-content-between pe-3" style="padding:0">
+                <div class="modal-hero" style="flex:1">
                     <i class="bi bi-calendar-plus text-white" style="font-size:2.2rem"></i>
                 </div>
+                <button type="button" class="btn-close btn-close-white me-2" data-bs-dismiss="modal" aria-label="Close" style="opacity:.8"></button>
             </div>
             <div class="modal-body">
                 <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"
@@ -75,13 +76,21 @@
                     <!-- Attachment — required for Maternity / Paternity Leave -->
                     <div id="attachment_section" style="display:none;">
                         <hr/>
-                        <div class="fw-bold mt-4">Attachment
-                            <small class="text-muted fw-normal">(Required for Maternity/Paternity Leave — PDF, JPG, or PNG, max 5 MB)</small>
+                        <div class="fw-bold mt-4">Attachments
+                            <small class="text-muted fw-normal">(Required for Maternity/Paternity Leave — PDF, JPG, or PNG, max 5 MB each)</small>
                         </div>
+                        {{-- Existing attachments shown when editing --}}
+                        <div id="existing_attachments" class="mt-2 d-none">
+                            <div class="small text-muted mb-1 fw-semibold">Current Files:</div>
+                            <div id="existing_attachments_list" class="d-flex flex-wrap gap-2 mb-2"></div>
+                        </div>
+                        {{-- New file picker (multiple) --}}
                         <div class="mt-2">
                             <input type="file" class="form-control" id="leave_attachment"
-                                   accept=".pdf,.jpg,.jpeg,.png">
+                                   accept=".pdf,.jpg,.jpeg,.png" multiple>
                         </div>
+                        {{-- Client-side preview of newly selected files --}}
+                        <div id="new_files_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
                     </div>
 
                     <hr/>
@@ -192,23 +201,26 @@
                 </div>
             </div>
 
-            @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
-                <div class="modal-footer border-top-0 d-flex justify-content-between">
-                    <div>
-                        <button type="button" class="btn btn-warning" id="undoApprovalBtn" style="display:none;">
+            <div class="px-4 pb-3 @if(request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval')) d-flex justify-content-between @else d-flex justify-content-end @endif align-items-center">
+                <div>
+                    @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
+                        <button type="button" class="btn btn-warning d-none" id="undoApprovalBtn">
                             <i class="bi bi-arrow-counterclockwise"></i> Undo Approval
                         </button>
-                    </div>
-                    <div>
+                    @endif
+                </div>
+                <div class="d-flex gap-2">
+                    @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
                         <button type="button" class="btn btn-danger" id="rejectLeaveBtn" value="Rejected">
                             <i class="bi bi-x-circle"></i> Reject
                         </button>
                         <button type="button" class="btn btn-success" id="approveLeaveBtn" value="Approved">
                             <i class="bi bi-check-circle"></i> Approve
                         </button>
-                    </div>
+                    @endif
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
                 </div>
-            @endif
+            </div>
         </div>
     </div>
 </div>
