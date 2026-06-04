@@ -41,8 +41,7 @@ class LeaveBulkCreditController extends Controller
                 ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
                 ->leftJoin('tdh_user.designation as des', 'u.designation', '=', 'des.id')
                 ->leftJoin('tdh_user.division as div', 'u.division', '=', 'div.id')
-                ->leftJoin('tdh_user.section as sec', 'u.section', '=', 'sec.id')
-                ->whereNull('u.deleted_at');
+                ->leftJoin('tdh_user.section as sec', 'u.section', '=', 'sec.id');
 
             if ($request->filled('division_id')) {
                 $query->where('u.division', $request->division_id);
@@ -81,6 +80,58 @@ class LeaveBulkCreditController extends Controller
                 ->orderBy('employee_type')
                 ->pluck('employee_type');
             return response()->json($types);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getBatches(Request $request)
+    {
+        try {
+            $perPage = 10;
+            $page    = max(1, (int) $request->input('page', 1));
+
+            $rows = DB::table('leave_credit_batches as b')
+                ->join('tdh_user.users as u', 'u.id', '=', 'b.created_by')
+                ->orderBy('b.created_at', 'desc')
+                ->get([
+                    'b.id',
+                    'b.notes',
+                    'b.created_at',
+                    'u.fname as admin_fname',
+                    'u.lname as admin_lname',
+                ]);
+
+            // Attach employee count per batch
+            $counts = DB::table('leave_credit_batch_items')
+                ->selectRaw('batch_id, COUNT(DISTINCT user_id) as emp_count')
+                ->groupBy('batch_id')
+                ->pluck('emp_count', 'batch_id');
+
+            $total    = $rows->count();
+            $lastPage = max(1, (int) ceil($total / $perPage));
+            $items    = $rows->forPage($page, $perPage)->values()->map(function ($row) use ($counts) {
+                return [
+                    'id'         => $row->id,
+                    'date'       => \Carbon\Carbon::parse($row->created_at)->format('m/d/Y h:i A'),
+                    'admin'      => "{$row->admin_lname}, {$row->admin_fname}",
+                    'notes'      => $row->notes ?? '—',
+                    'emp_count'  => $counts[$row->id] ?? 0,
+                    'print_url'  => route('bulk-leave-credits.print', $row->id),
+                ];
+            });
+
+            return response()->json([
+                'results'    => $items,
+                'pagination' => [
+                    'current_page'   => $page,
+                    'last_page'      => $lastPage,
+                    'per_page'       => $perPage,
+                    'total'          => $total,
+                    'from'           => $total > 0 ? ($page - 1) * $perPage + 1 : null,
+                    'to'             => $total > 0 ? min($page * $perPage, $total) : null,
+                ],
+            ]);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }

@@ -100,6 +100,37 @@
         </div>
     </div>
 </div>
+
+{{-- Batch History --}}
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="fw-bold fs-5 mb-3">Previous Batches</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Processed By</th>
+                        <th>Employees</th>
+                        <th>Notes</th>
+                        <th style="width:80px"></th>
+                    </tr>
+                </thead>
+                <tbody id="batch_history_list">
+                    <tr><td colspan="6" class="text-muted">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div id="batch_pagination_container" class="d-none">
+            <div class="d-flex flex-column align-items-center justify-content-center gap-2 mt-2">
+                <div id="batch_page_items_count" class="small text-muted"></div>
+                <nav><ul class="pagination pagination-sm mb-0" id="batch_pagination_links"></ul></nav>
+                <div id="batch_page_indicator" class="small text-muted"></div>
+            </div>
+        </div>
+    </div>
+</div>
 @stop
 @section('js')
 <script>
@@ -108,13 +139,17 @@
     const ROUTE_EMPLOYEES     = "{{ route('bulk-leave-credits.employees') }}";
     const ROUTE_EMP_TYPES     = "{{ route('bulk-leave-credits.employee-types') }}";
     const ROUTE_LEAVE_TYPES   = "{{ route('getLeaveTypes') }}";
+    const ROUTE_BATCHES       = "{{ route('bulk-leave-credits.batches') }}";
     const ROUTE_STORE         = "{{ route('bulk-leave-credits.store') }}";
 
     let ALL_LEAVE_TYPES = [];
 
+    let batchPage = 1, batchLastPage = 1;
+
     $(async function () {
         await Promise.all([loadDivisions(), loadEmployeeTypes(), loadLeaveTypes()]);
         addCreditRow();
+        loadBatches();
 
         $('#filter_division').on('change', function () {
             loadSections($(this).val());
@@ -293,6 +328,9 @@
                 setTimeout(() => window.open(body.print_url, '_blank'), 800);
             }
 
+            batchPage = 1;
+            loadBatches();
+
             // Reset
             $('#employee_list input.emp-checkbox').prop('checked', false);
             $('#select_all_employees').prop('checked', false);
@@ -314,6 +352,65 @@
         } catch {
             return [];
         }
+    }
+
+    /** -- Batch History -- */
+    async function loadBatches() {
+        $('#batch_history_list').html('<tr><td colspan="6" class="text-muted">Loading...</td></tr>');
+        const payload = await fetchJson(`${ROUTE_BATCHES}?page=${batchPage}`);
+        const data    = payload.results    || [];
+        const pg      = payload.pagination || null;
+
+        $('#batch_history_list').empty();
+
+        if (!data.length) {
+            $('#batch_pagination_container').addClass('d-none');
+            $('#batch_history_list').html('<tr><td colspan="6" class="text-muted">No batches yet.</td></tr>');
+            return;
+        }
+
+        $('#batch_pagination_container').removeClass('d-none');
+
+        data.forEach(b => {
+            $('#batch_history_list').append(`
+            <tr>
+                <td>${b.id}</td>
+                <td>${b.date}</td>
+                <td>${b.admin}</td>
+                <td>${b.emp_count}</td>
+                <td class="text-start">${b.notes}</td>
+                <td>
+                    <a href="${b.print_url}" target="_blank" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-printer"></i> Print
+                    </a>
+                </td>
+            </tr>`);
+        });
+
+        if (pg) {
+            batchLastPage = pg.last_page;
+            $('#batch_page_items_count').text(`${pg.from} - ${pg.to} of ${pg.total}`);
+            $('#batch_page_indicator').text(`Page ${pg.current_page} of ${pg.last_page}`);
+            renderBatchPaginationLinks(pg);
+        }
+    }
+
+    function renderBatchPaginationLinks(pg) {
+        const $links  = $('#batch_pagination_links');
+        const current = pg.current_page;
+        const last    = pg.last_page;
+        $links.empty();
+        $links.append(`<li class="page-item ${current <= 1 ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="changeBatchPage(${current - 1})">Prev</a></li>`);
+        for (let i = Math.max(1, current - 2); i <= Math.min(last, current + 2); i++) {
+            $links.append(`<li class="page-item ${i === current ? 'active' : ''}"><a class="page-link" href="javascript:void(0)" onclick="changeBatchPage(${i})">${i}</a></li>`);
+        }
+        $links.append(`<li class="page-item ${current >= last ? 'disabled' : ''}"><a class="page-link" href="javascript:void(0)" onclick="changeBatchPage(${current + 1})">Next</a></li>`);
+    }
+
+    function changeBatchPage(p) {
+        if (p < 1 || p > batchLastPage) return;
+        batchPage = p;
+        loadBatches();
     }
 </script>
 @stop
