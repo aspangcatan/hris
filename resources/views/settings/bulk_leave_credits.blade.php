@@ -28,7 +28,15 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <button class="btn btn-sm btn-primary w-100" id="btn_load_employees">
+                        <label class="form-label small fw-semibold">Date Hired — From</label>
+                        <input type="date" class="form-control form-control-sm" id="filter_hired_from">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Date Hired — To</label>
+                        <input type="date" class="form-control form-control-sm" id="filter_hired_to">
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-sm btn-primary w-100 mt-3" id="btn_load_employees">
                             <i class="bi bi-search me-1"></i> Load Employees
                         </button>
                     </div>
@@ -56,10 +64,11 @@
                                 <th>Division</th>
                                 <th>Section</th>
                                 <th>Type</th>
+                                <th>Date Hired</th>
                             </tr>
                         </thead>
                         <tbody id="employee_list">
-                            <tr><td colspan="6" class="text-muted">Use filters above and click Load Employees.</td></tr>
+                            <tr><td colspan="7" class="text-muted">Use filters above and click Load Employees.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -195,11 +204,15 @@
         const divisionId   = $('#filter_division').val();
         const sectionId    = $('#filter_section').val();
         const employeeType = $('#filter_type').val();
+        const hiredFrom    = $('#filter_hired_from').val();
+        const hiredTo      = $('#filter_hired_to').val();
 
         const params = new URLSearchParams();
         if (divisionId)   params.append('division_id', divisionId);
         if (sectionId)    params.append('section_id', sectionId);
         if (employeeType) params.append('employee_type', employeeType);
+        if (hiredFrom)    params.append('hired_from', hiredFrom);
+        if (hiredTo)      params.append('hired_to', hiredTo);
 
         $('#employee_list').html('<tr><td colspan="6">Loading...</td></tr>');
         $('#select_all_employees').prop('checked', false);
@@ -207,13 +220,16 @@
         const data = await fetchJson(`${ROUTE_EMPLOYEES}?${params.toString()}`);
 
         if (!data.length) {
-            $('#employee_list').html('<tr><td colspan="6" class="text-muted">No employees found.</td></tr>');
+            $('#employee_list').html('<tr><td colspan="7" class="text-muted">No employees found.</td></tr>');
             updateSelectedCount();
             return;
         }
 
         $('#employee_list').empty();
         data.forEach(emp => {
+            const dateHired = emp.date_hired
+                ? new Date(emp.date_hired).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+                : '—';
             $('#employee_list').append(`
             <tr>
                 <td><input type="checkbox" class="form-check-input emp-checkbox" value="${emp.user_id}"></td>
@@ -222,6 +238,7 @@
                 <td>${emp.division_name ?? '—'}</td>
                 <td>${emp.section_name ?? '—'}</td>
                 <td>${emp.employee_type ?? '—'}</td>
+                <td>${dateHired}</td>
             </tr>`);
         });
         updateSelectedCount();

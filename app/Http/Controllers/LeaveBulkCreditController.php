@@ -52,6 +52,12 @@ class LeaveBulkCreditController extends Controller
             if ($request->filled('employee_type')) {
                 $query->where('e.employee_type', $request->employee_type);
             }
+            if ($request->filled('hired_from')) {
+                $query->whereDate('e.date_hired', '>=', $request->hired_from);
+            }
+            if ($request->filled('hired_to')) {
+                $query->whereDate('e.date_hired', '<=', $request->hired_to);
+            }
 
             $employees = $query->orderBy('u.lname')->orderBy('u.fname')
                 ->get([
@@ -62,6 +68,7 @@ class LeaveBulkCreditController extends Controller
                     'div.description as division_name',
                     'sec.description as section_name',
                     'e.employee_type',
+                    'e.date_hired',
                 ]);
 
             return response()->json($employees);
