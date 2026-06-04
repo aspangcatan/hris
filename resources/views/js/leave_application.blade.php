@@ -768,6 +768,7 @@
             refreshDetailsVisibility();
             updateDateInputMins();
             refreshCommutationVisibility();
+            refreshAttachmentVisibility(); // show attachment section if leave type requires it
 
             // Pre-fill detail radios using leave_id reconstructed from dates by index
             if (Array.isArray(data.details_per_type)) {
