@@ -1,11 +1,13 @@
-<div class="modal fade" id="monetize_leave_modal" tabindex="-1" aria-labelledby="monetizeLeaveModalLabel" aria-hidden="true">
+<div class="modal fade premium-modal" id="monetize_leave_modal" tabindex="-1" aria-labelledby="monetizeLeaveModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="monetizeLeaveModalLabel">Leave Monetization</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-hero">
+                    <i class="bi bi-cash-stack text-white" style="font-size:2.2rem"></i>
+                </div>
             </div>
             <div class="modal-body">
+                <div class="modal-title-text">Leave Monetization</div>
                 <p class="text-muted small mb-3">Add one or more leave types you want to monetize. Credits will be deducted on submission.</p>
 
                 <table class="table table-sm align-middle" id="monetize_rows_table">
@@ -24,9 +26,9 @@
                     <i class="bi bi-plus-lg me-1"></i> Add Leave Type
                 </button>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">CLOSE</button>
-                <button type="button" class="btn btn-success" id="btn_submit_monetization">SUBMIT</button>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">CLOSE</button>
+                <button type="button" class="btn btn-success btn-modal-save" id="btn_submit_monetization">SUBMIT</button>
             </div>
         </div>
     </div>

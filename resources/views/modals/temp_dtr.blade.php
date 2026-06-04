@@ -1,9 +1,9 @@
-<div class="modal fade" id="dtr_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
+<div class="modal fade premium-modal" id="dtr_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-calendar text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-calendar-check text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -87,8 +87,8 @@
                                         <label for="floatingInput">Late/Undertime</label>
                                     </div>
                                     <div class="text-end mt-4">
-                                        <button class="btn btn-lg btn-secondary" id="btn_cancel" onclick="cancel()">CANCEL</button>
-                                        <button class="btn btn-lg btn-success" id="btn_save" onClick="store()">SAVE</button>
+                                        <button class="btn btn-secondary btn-modal-close" id="btn_cancel" onclick="cancel()">CANCEL</button>
+                                        <button class="btn btn-success btn-modal-save" id="btn_save" onClick="store()">SAVE</button>
                                     </div>
                                 </div>
                             </div>

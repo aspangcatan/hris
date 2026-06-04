@@ -1,15 +1,15 @@
-<div class="modal fade" id="leave_type_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="leave_type_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-airplane text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-calendar-event text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="text-secondary font-weight-bold fs-4 text-center">Manage Leave Types</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Manage Leave Types</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="description" placeholder="">
                         <label>Description</label>
@@ -40,9 +40,9 @@
                         <label>Monetizable</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" onclick="store()">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" onclick="store()">SAVE</button>
                 </div>
             </div>
         </div>

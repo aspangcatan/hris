@@ -1,15 +1,15 @@
-<div class="modal fade" id="promotion_applied_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="promotion_applied_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-printer text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-award text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="text-secondary font-weight-bold fs-4 text-center">Work Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Work Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="position_applied" placeholder="">
                         <label>Position applied</label>
@@ -27,10 +27,10 @@
                     </div>
                     <div id="related_work_list"></div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_confirm_save">SAVE</button>
-                    <button class="btn btn-lg btn-danger" id="btn_print_work">PRINT</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_confirm_save">SAVE</button>
+                    <button class="btn btn-danger" id="btn_print_work">PRINT</button>
                 </div>
             </div>
         </div>
@@ -45,10 +45,10 @@
                 <div class="p-3 w-100 text-center">
                     <i class="bi bi-person-workspace text-white" style="font-size: 80px;"></i>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Work Information</div>
+                <div class="modal-title-text">Work Information</div>
             </div>
             <div class="modal-body">
-                <div class="text-secondary font-weight-bold fs-4 text-center"></div>
+                <div class="modal-title-text"></div>
                 <div class="mt-3 text-secondary">
                     <div class="row">
                         <div class="col-md-6">
@@ -104,9 +104,9 @@
                     </div>
 
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_related">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_related">SAVE</button>
                 </div>
             </div>
         </div>

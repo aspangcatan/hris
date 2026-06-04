@@ -1,10 +1,10 @@
-<div class="modal fade" id="children_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="children_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,8 +15,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Children Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Children Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="children_name" placeholder="">
                         <label>Name</label>
@@ -26,22 +26,22 @@
                         <label>Birthdate</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_children">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_children">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="real_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="real_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -52,8 +52,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Real Properties Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Real Properties Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="real_description" placeholder="">
                         <label>Description</label>
@@ -87,22 +87,22 @@
                         <label>Acquisition cost</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_real">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_real">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="spouse_real_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="spouse_real_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -113,8 +113,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Spouse Real Properties Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Spouse Real Properties Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="spouse_real_description" placeholder="">
                         <label>Description</label>
@@ -148,22 +148,22 @@
                         <label>Acquisition cost</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_spouse_real">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_spouse_real">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="personal_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="personal_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -174,8 +174,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Personal Properties Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Personal Properties Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="personal_gadget" placeholder="">
                         <label>Gadgets/Appliances</label>
@@ -189,22 +189,22 @@
                         <label>Acquisition cost</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_personal">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_personal">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="spouse_personal_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="spouse_personal_properties_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -215,8 +215,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Spouse Personal Properties Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Spouse Personal Properties Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="spouse_personal_gadget" placeholder="">
                         <label>Gadgets/Appliances</label>
@@ -230,22 +230,22 @@
                         <label>Acquisition cost</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_spouse_personal">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_spouse_personal">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="liabilities_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="liabilities_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -256,8 +256,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Liabilities Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Liabilities Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="liabilities_nature" placeholder="">
                         <label>Nature</label>
@@ -271,22 +271,22 @@
                         <label>Outstanding balance</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_liabilities">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_liabilities">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="spouse_liabilities_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="spouse_liabilities_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -297,8 +297,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Spouse Liabilities Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Spouse Liabilities Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="spouse_liabilities_nature" placeholder="">
                         <label>Nature</label>
@@ -312,22 +312,22 @@
                         <label>Outstanding balance</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_spouse_liabilities">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_spouse_liabilities">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="business_interest_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="business_interest_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -338,8 +338,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Business Interest Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Business Interest Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="business_enterprise" placeholder="">
                         <label>Business enterprise</label>
@@ -357,22 +357,22 @@
                         <label>Date of acquisition</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_business_interest">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_business_interest">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="spouse_business_interest_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="spouse_business_interest_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -383,8 +383,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Spouse Business Interest Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Spouse Business Interest Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="spouse_business_enterprise" placeholder="">
                         <label>Business enterprise</label>
@@ -402,22 +402,22 @@
                         <label>Date of acquisition</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_spouse_business_interest">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_spouse_business_interest">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="government_relative_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="government_relative_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -428,8 +428,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Government Relative Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Government Relative Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="relative_name" placeholder="">
                         <label>Name</label>
@@ -447,22 +447,22 @@
                         <label>Agency/Office & Address</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_government_relative">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_government_relative">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="marriages_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="marriages_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-fill-add text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-file-earmark-text text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -473,34 +473,34 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Spouse Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Spouse Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="spouse_name" placeholder="">
                         <label>Name</label>
                     </div>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_save_marriage">SAVE</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_marriage">SAVE</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="saln_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="saln_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-printer text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-printer text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="text-secondary font-weight-bold fs-4 text-center">PRINT SALN</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">PRINT SALN</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="date" class="form-control" id="print_date" placeholder="">
                         <label>Date</label>
@@ -517,9 +517,9 @@
                     </select>
                     <label>Can the spouse able to sign?</label>
                 </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-lg btn-secondary" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-lg btn-success" id="btn_confirm_print">PRINT</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_confirm_print">PRINT</button>
                 </div>
             </div>
         </div>

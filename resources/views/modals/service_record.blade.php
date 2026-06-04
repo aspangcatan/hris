@@ -1,10 +1,10 @@
-<div class="modal fade" id="service_records_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="service_records_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-postcard-fill text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-postcard-fill text-white" style="font-size:2.2rem"></i>
                 </div>
             </div>
             <div class="modal-body">
@@ -15,8 +15,8 @@
                     </div>
                     <ul class="error_list"></ul>
                 </div>
-                <div class="text-secondary font-weight-bold fs-4 text-center">Service Records Information</div>
-                <div class="mt-3 text-secondary fs-5">
+                <div class="modal-title-text">Service Records Information</div>
+                <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="date" class="form-control" id="service_from" placeholder="">
                         <label>Date from</label>

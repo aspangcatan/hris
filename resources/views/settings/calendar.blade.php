@@ -15,35 +15,38 @@
         <div id="calendar"></div>
 
             <!-- Modal for Adding/Updating Holiday -->
-            <div class="modal fade" id="holidayModal" tabindex="-1" aria-labelledby="holidayModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
+            <div class="modal fade premium-modal" id="holidayModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="holidayModalLabel">Add Holiday</h5>
-                            <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <div class="modal-hero">
+                                <i class="bi bi-calendar-heart text-white" style="font-size:2.2rem"></i>
+                            </div>
                         </div>
                         <div class="modal-body">
+                            <div class="modal-title-text" id="holidayModalTitle">Add Holiday</div>
                             <form id="holidayForm">
                                 @csrf
                                 <div class="mb-3">
-                                    <label for="holidayDate" class="form-label">Date</label>
+                                    <label for="holidayDate" class="form-label fw-semibold">Date</label>
                                     <input type="date" class="form-control" id="holidayDate" name="date" required readonly>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="type" class="form-label">Type</label>
+                                    <label for="type" class="form-label fw-semibold">Type</label>
                                     <select class="form-select" id="type" name="type" required>
                                         <option value="Regular">Regular</option>
                                         <option value="Special">Special</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="description" class="form-label">Description</label>
+                                    <label for="description" class="form-label fw-semibold">Description</label>
                                     <textarea rows="3" class="form-control" id="description" name="description" required></textarea>
                                 </div>
-                                <div class="d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-primary me-1" id="saveBtn">Save</button>
-                                    <button type="button" class="btn btn-success ms-1 me-1" id="updateBtn">Update</button>
-                                    <button type="button"  class="btn btn-action btn-delete ms-1" id="deleteBtn" title="Delete"><i class="bi bi-trash"></i></button>
+                                <div class="d-flex justify-content-end gap-2 mt-3">
+                                    <button type="button" class="btn btn-action btn-delete" id="deleteBtn" title="Delete" style="display:none"><i class="bi bi-trash"></i></button>
+                                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-success btn-modal-save" id="updateBtn" style="display:none">Update</button>
+                                    <button type="submit" class="btn btn-success btn-modal-save" id="saveBtn">Save</button>
                                 </div>
                             </form>
                         </div>

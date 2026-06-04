@@ -1,21 +1,24 @@
-<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+<div class="modal fade premium-modal" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="scheduleModalLabel">Update Schedule</h5>
-                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-hero">
+                    <i class="bi bi-clock text-white" style="font-size:2.2rem"></i>
+                </div>
             </div>
             <div class="modal-body">
+                <div class="modal-title-text">Update Schedule</div>
                 <input type="hidden" id="selectedEmployeeId">
                 <input type="hidden" id="selectedDay">
                 <input type="hidden" id="selectedCode">
 
-                <label for="scheduleSelect">Select Schedule:</label>
+                <label for="scheduleSelect" class="form-label fw-semibold">Select Schedule:</label>
                 <select class="form-select" id="scheduleSelect"></select>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="btn_save_schedule">Save changes</button>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success btn-modal-save" id="btn_save_schedule">Save</button>
+                </div>
             </div>
         </div>
     </div>

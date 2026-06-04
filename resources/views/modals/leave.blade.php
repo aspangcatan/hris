@@ -1,12 +1,11 @@
-<div class="modal fade" id="leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Leave Application</h5>
-                <button type="button" class="btn" data-bs-dismiss="modal" aria-label="Close"
-                        style="background: transparent">X
-                </button>
+                <div class="modal-hero">
+                    <i class="bi bi-calendar-plus text-white" style="font-size:2.2rem"></i>
+                </div>
             </div>
             <div class="modal-body">
                 <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"
@@ -25,13 +24,17 @@
     </div>
 </div>
 
-<div class="modal fade" id="file_leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="file_leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-calendar-plus text-white" style="font-size:2.2rem"></i>
+                </div>
+            </div>
             <div class="modal-body">
-
-                <h5 class="fw-bold mb-3">Leave Application</h5>
+                <div class="modal-title-text">Leave Application</div>
 
                 <div class="text-white bg-danger rounded p-2 error_container d-none">
                     <div class="d-flex align-items-center">
@@ -100,24 +103,26 @@
                     </div>
                 </div>
 
-                <div class="text-end mt-4">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">CLOSE</button>
-                    <button class="btn btn-primary" id="btn_save_leave">SUBMIT</button>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">CLOSE</button>
+                    <button class="btn btn-success btn-modal-save" id="btn_save_leave">SUBMIT</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border border-dark">
-            <div class="modal-header border-bottom-0">
-                <h5 class="modal-title" id="viewLeaveModalLabel">Leave Application</h5>
-                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-calendar-check text-white" style="font-size:2.2rem"></i>
+                </div>
             </div>
             <div class="modal-body p-4">
+                <div class="modal-title-text">Leave Application</div>
                 <!-- Steps -->
                 <div class="mb-5">
                     <div class="steps d-flex justify-content-between position-relative">
