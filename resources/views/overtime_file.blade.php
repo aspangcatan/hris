@@ -142,6 +142,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Time Range</th>
+                        <th>OT Hours</th>
                         <th>Reason</th>
                         <th>Status</th>
                         <th>Remarks</th>
@@ -149,7 +150,7 @@
                     </tr>
                     </thead>
                     <tbody id="my_filing_list">
-                    <tr><td colspan="6" class="ot-empty">Loading...</td></tr>
+                    <tr><td colspan="7" class="ot-empty">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -215,7 +216,7 @@
                 applyFilingFilter();
             })
             .catch(() => {
-                $('#my_filing_list').html('<tr><td colspan="6" class="ot-empty text-danger">Failed to load.</td></tr>');
+                $('#my_filing_list').html('<tr><td colspan="7" class="ot-empty text-danger">Failed to load.</td></tr>');
                 $('#filingPagination').empty();
                 $('#filingSummary').text('');
             });
@@ -239,7 +240,7 @@
         $list.empty();
 
         if (!filteredFilings.length) {
-            $list.html('<tr><td colspan="6" class="ot-empty">No filings found.</td></tr>');
+            $list.html('<tr><td colspan="7" class="ot-empty">No filings found.</td></tr>');
             $('#filingSummary').text('0 results');
             return;
         }
@@ -256,8 +257,9 @@
                 <tr>
                     <td>${formatDate(it.ot_date)}</td>
                     <td>${formatTimeRange(it.time_from, it.time_to)}</td>
+                    <td>${formatOtHours(it.time_from, it.time_to)}</td>
                     <td>${escapeHtml(it.reason || '-')}</td>
-                    <td>${statusBadge(it.status)}</td>
+                    <td>${statusBadge(it.status, it.pending_step || null)}</td>
                     <td>${escapeHtml(it.remarks || '-')}</td>
                     <td>${deleteAction(it)}</td>
                 </tr>
@@ -322,13 +324,28 @@
         return `${moment(from, 'HH:mm:ss').format('hh:mm A')} - ${moment(to, 'HH:mm:ss').format('hh:mm A')}`;
     }
 
-    function statusBadge(status) {
+    function formatOtHours(timeFrom, timeTo) {
+        if (!timeFrom || !timeTo) return '-';
+        const totalMins = moment(timeTo, 'HH:mm:ss').diff(moment(timeFrom, 'HH:mm:ss'), 'minutes');
+        if (totalMins <= 0) return '-';
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
+        if (h > 0 && m > 0) return `${h}h ${m}m`;
+        if (h > 0) return `${h}h`;
+        return `${m}m`;
+    }
+
+    function statusBadge(status, pendingStep) {
         const s = (status || 'pending').toLowerCase();
         let cls = 'secondary';
-        if (s === 'approved') cls = 'success';
-        if (s === 'rejected') cls = 'danger';
-        if (s === 'pending') cls = 'warning text-dark';
-        return `<span class="badge bg-${cls} text-uppercase">${escapeHtml(s)}</span>`;
+        let label = s;
+        if (s === 'approved') { cls = 'success'; }
+        if (s === 'rejected') { cls = 'danger'; }
+        if (s === 'pending') {
+            cls = 'warning text-dark';
+            label = pendingStep ? `Pending (${pendingStep})` : 'Pending';
+        }
+        return `<span class="badge bg-${cls} text-uppercase">${escapeHtml(label)}</span>`;
     }
 
     function showApiError(errorPayload, fallbackMessage) {
