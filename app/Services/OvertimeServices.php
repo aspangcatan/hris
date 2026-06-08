@@ -169,29 +169,46 @@ class OvertimeServices
 
     public function getFilingsForReview()
     {
+        $userId  = Auth::id();
+        $isAdmin = $this->isAdmin();
+
+        $employeeNameExpr = DB::raw("CONCAT(COALESCE(u.fname, ''), ' ', COALESCE(LEFT(u.mname,1), ''), CASE WHEN u.mname IS NULL OR u.mname = '' THEN '' ELSE '. ' END, COALESCE(u.lname, ''), CASE WHEN u.suffix IS NULL OR u.suffix = '' THEN '' ELSE CONCAT(' ', u.suffix) END) as employee_name");
+
+        $columns = [
+            'ot.id',
+            'ot.userid',
+            $employeeNameExpr,
+            'ot.ot_date',
+            'ot.time_from',
+            'ot.time_to',
+            'ot.reason',
+            'ot.status',
+            'ot.remarks',
+            'ot.reviewed_at',
+            'ora.role as current_step',
+        ];
+
         $query = DB::table('hris.overtime_requests as ot')
             ->join('tdh_user.users as u', 'u.id', '=', 'ot.userid')
+            ->join('hris.overtime_request_approvals as ora', function ($join) {
+                $join->on('ora.overtime_request_id', '=', 'ot.id')
+                     ->where('ora.status', 'pending');
+            })
             ->where('ot.status', 'pending')
+            ->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('hris.overtime_request_approvals as prev')
+                    ->whereColumn('prev.overtime_request_id', 'ot.id')
+                    ->whereRaw('prev.order_no < ora.order_no')
+                    ->where('prev.status', 'pending');
+            })
             ->orderBy('ot.created_at', 'desc');
 
-        if (!$this->isAdmin()) {
-            $query->where(function ($where) {
-                $this->applyManagedEmployeeScope($where, 'u');
-            });
+        if (!$isAdmin) {
+            $query->where('ora.approver_id', $userId);
         }
 
-        return $query->get([
-                'ot.id',
-                'ot.userid',
-                DB::raw("CONCAT(COALESCE(u.fname, ''), ' ', COALESCE(LEFT(u.mname,1), ''), CASE WHEN u.mname IS NULL OR u.mname = '' THEN '' ELSE '. ' END, COALESCE(u.lname, ''), CASE WHEN u.suffix IS NULL OR u.suffix = '' THEN '' ELSE CONCAT(' ', u.suffix) END) as employee_name"),
-                'ot.ot_date',
-                'ot.time_from',
-                'ot.time_to',
-                'ot.reason',
-                'ot.status',
-                'ot.remarks',
-                'ot.reviewed_at',
-            ]);
+        return $query->get($columns);
     }
 
     public function reviewFiling($filingId, $status, $remarks = null)

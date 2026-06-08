@@ -280,4 +280,50 @@ class OvertimeApprovalTest extends TestCase
         $filing = $filings->firstWhere('id', $requestId);
         $this->assertNull($filing->pending_step);
     }
+
+    /** @test */
+    public function sh_only_sees_filings_at_their_step()
+    {
+        $requestId = $this->seedFiling();
+        $this->actAs($this->shUserId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $results = $service->getFilingsForReview();
+
+        $found = collect($results)->firstWhere('id', $requestId);
+        $this->assertNotNull($found);
+        $this->assertEquals('SH', $found->current_step);
+    }
+
+    /** @test */
+    public function dh_does_not_see_filing_before_sh_approves()
+    {
+        $requestId = $this->seedFiling();
+        $this->actAs($this->dhUserId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $results = $service->getFilingsForReview();
+
+        $found = collect($results)->firstWhere('id', $requestId);
+        $this->assertNull($found);
+    }
+
+    /** @test */
+    public function dh_sees_filing_after_sh_approves()
+    {
+        $requestId = $this->seedFiling();
+
+        DB::table('hris.overtime_request_approvals')
+            ->where('overtime_request_id', $requestId)->where('role', 'SH')
+            ->update(['status' => 'approved', 'approved_at' => now()]);
+
+        $this->actAs($this->dhUserId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $results = $service->getFilingsForReview();
+
+        $found = collect($results)->firstWhere('id', $requestId);
+        $this->assertNotNull($found);
+        $this->assertEquals('DH', $found->current_step);
+    }
 }
