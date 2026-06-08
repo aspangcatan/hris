@@ -123,11 +123,12 @@
                 <table class="table table-bordered align-middle text-center">
                     <thead>
                     <tr>
-                        <th style="width: 20%">Title</th>
-                        <th style="width: 10%">Period Start</th>
-                        <th style="width: 10%">Period End</th>
-                        <th style="width: 10%">Status</th>
-                        <th style="width: 25%">Remarks</th>
+                        <th style="width: 18%">Title</th>
+                        <th style="width: 16%">Cutoff Period</th>
+                        <th style="width: 9%">Period Start</th>
+                        <th style="width: 9%">Period End</th>
+                        <th style="width: 9%">Status</th>
+                        <th style="width: 14%">Remarks</th>
                         <th style="width: 10%">Prepared By</th>
                         <th style="width: 10%">Created At</th>
                         <th style="width: 5%"></th>
@@ -809,6 +810,7 @@
                         const row = `
                         <tr>
                             <td>${item.title}</td>
+                            <td>${item.cutoff_label || ''}</td>
                             <td>${moment(item.start_date).format('MM/DD/YYYY')}</td>
                             <td>${moment(item.end_date).format('MM/DD/YYYY')}</td>
                             <td>${formatStatus(item.status)}</td>
