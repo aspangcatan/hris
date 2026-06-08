@@ -1,0 +1,84 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
+
+class PayrollCutoffTest extends TestCase
+{
+    use DatabaseTransactions;
+
+    private int $userId = 9201;
+
+    /** @var int|null */
+    private $seededMasterId = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // APP_URL contains a subfolder (/hris) which breaks test HTTP client path matching.
+        // Override to bare host so routes resolve correctly in tests.
+        config(['app.url' => 'http://localhost']);
+        app('url')->forceRootUrl('http://localhost');
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->seededMasterId) {
+            DB::table('hris.cutoff_summaries_master')->where('id', $this->seededMasterId)->delete();
+        }
+        parent::tearDown();
+    }
+
+    private function actAsUser(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->userId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'admin']);
+    }
+
+    private function seedCutoffMaster(
+        string $start = '2026-06-01',
+        string $end   = '2026-06-15',
+        string $title = 'Test Cutoff'
+    ): int {
+        // Remove any stale record from a previous failed run before inserting
+        DB::table('hris.cutoff_summaries_master')
+            ->where('period_start', $start)
+            ->where('period_end', $end)
+            ->where('title', $title)
+            ->delete();
+
+        $id = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'title'        => $title,
+            'period_start' => $start,
+            'period_end'   => $end,
+            'generated_by' => $this->userId,
+            'generated_at' => now(),
+            'created_at'   => now(),
+            'updated_at'   => now(),
+        ]);
+
+        $this->seededMasterId = $id;
+        return $id;
+    }
+
+    /** @test */
+    public function get_cutoff_periods_includes_id()
+    {
+        $masterId = $this->seedCutoffMaster();
+        $this->actAsUser();
+
+        $response = $this->withoutMiddleware()->get('/cutoff-periods');
+
+        $response->assertOk();
+        $data = $response->json('data');
+        $found = collect($data)->firstWhere('id', $masterId);
+        $this->assertNotNull($found, 'Master record not found in response');
+        $this->assertArrayHasKey('id', (array) $found);
+        $this->assertEquals($masterId, $found['id']);
+    }
+}

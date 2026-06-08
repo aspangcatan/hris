@@ -436,7 +436,7 @@ class PayrollController extends Controller
         try {
             $table = $this->payrollServices->getCutoffSummaryMasterTableName();
             $periods = DB::table($table)
-                ->select('period_start', 'period_end', 'title as remarks')
+                ->select('id', 'period_start', 'period_end', 'title')
                 ->orderByDesc('period_start')
                 ->get();
 
