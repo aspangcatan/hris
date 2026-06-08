@@ -571,16 +571,26 @@ class PayrollController extends Controller
                 return response()->json(['error' => "Payroll doesn't exist."], 404);
             }
 
-            $cutoffStart = $period->cutoff_start_date ?? $period->start_date;
-            $cutoffEnd = $period->cutoff_end_date ?? $period->end_date;
-            $cutoffTitle = $period->cutoff_title ?? null;
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
 
-            $cutoffMaster = $this->payrollServices->getCutoffMasterByPeriod($cutoffStart, $cutoffEnd, $cutoffTitle);
+            if ($period->cutoff_id) {
+                $cutoffMaster = DB::table($masterTable)->where('id', $period->cutoff_id)->first();
+            } else {
+                // Backward compat: old payrolls without cutoff_id use date matching
+                $cutoffStart = $period->cutoff_start_date ?? $period->start_date;
+                $cutoffEnd   = $period->cutoff_end_date ?? $period->end_date;
+                $cutoffTitle = $period->cutoff_title ?? null;
+                $cutoffMaster = $this->payrollServices->getCutoffMasterByPeriod($cutoffStart, $cutoffEnd, $cutoffTitle);
+            }
+
             if (!$cutoffMaster) {
                 return response()->json([
-                    'error' => 'Cutoff master record not found for the selected period.',
+                    'error' => 'Cutoff master record not found for this payroll.',
                 ], 422);
             }
+
+            $cutoffStart = $cutoffMaster->period_start;
+            $cutoffEnd   = $cutoffMaster->period_end;
 
             $currentStatus = strtolower((string) ($period->status ?? 'draft'));
             if (in_array($currentStatus, ['for_approval', 'approved', 'released'], true)) {
@@ -606,7 +616,7 @@ class PayrollController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($validated, $period, $cutoffStart, $cutoffEnd, $employeeIds) {
+            DB::transaction(function () use ($validated, $period, $cutoffStart, $cutoffEnd, $employeeIds, $cutoffMaster) {
                 $this->payrollServices->deletePayrollEmployees($validated['payroll_id']);
                 DB::table('payroll_approvals')->where('payroll_id', $validated['payroll_id'])->delete();
 

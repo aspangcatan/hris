@@ -138,4 +138,43 @@ class PayrollCutoffTest extends TestCase
         $this->assertEquals('2026-06-15', $payroll->cutoff_end_date);
         $this->assertEquals('June 1st Half', $payroll->cutoff_title);
     }
+
+    private function seedPayrollWithCutoff(int $cutoffId): int
+    {
+        $master = DB::table('hris.cutoff_summaries_master')->where('id', $cutoffId)->first();
+        return DB::table('hris.payrolls')->insertGetId([
+            'cutoff_id'         => $cutoffId,
+            'title'             => 'Test Payroll',
+            'start_date'        => $master->period_start,
+            'end_date'          => $master->period_end,
+            'cutoff_start_date' => $master->period_start,
+            'cutoff_end_date'   => $master->period_end,
+            'cutoff_title'      => $master->title,
+            'payroll_type'      => 'Regular',
+            'rate_type'         => 'Non Pro-rated',
+            'status'            => 'draft',
+            'prepared_by'       => $this->userId,
+            'created_at'        => now(),
+            'updated_at'        => now(),
+        ]);
+    }
+
+    /** @test */
+    public function save_payroll_employee_fails_gracefully_when_no_cutoff_summaries_exist()
+    {
+        $masterId  = $this->seedCutoffMaster();
+        $payrollId = $this->seedPayrollWithCutoff($masterId);
+        $this->actAsUser();
+
+        $response = $this->withoutMiddleware()->postJson('/save_payroll_employee', [
+            'payroll_id' => $payrollId,
+            'employees'  => [['userid' => $this->userId]],
+        ]);
+
+        // Should fail with missing cutoff summaries error
+        $response->assertStatus(422);
+        $responseData = $response->json();
+        $errorMsg = strtolower($responseData['error'] ?? '');
+        $this->assertStringContainsString('cutoff', $errorMsg);
+    }
 }
