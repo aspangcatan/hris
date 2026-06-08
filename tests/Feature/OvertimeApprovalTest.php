@@ -129,4 +129,120 @@ class OvertimeApprovalTest extends TestCase
 
         $this->assertEquals(1.125, round((float) $credit->based_credit, 3));
     }
+
+    // -------------------------------------------------------------------------
+    // Helpers for multi-level approval tests
+    // -------------------------------------------------------------------------
+
+    private function seedFiling(string $timeFrom = '17:00:00', string $timeTo = '19:00:00'): int
+    {
+        $requestId = DB::table('hris.overtime_requests')->insertGetId([
+            'userid'     => $this->employeeId,
+            'ot_date'    => '2026-07-01',
+            'time_from'  => $timeFrom,
+            'time_to'    => $timeTo,
+            'reason'     => 'Test',
+            'status'     => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.overtime_request_approvals')->insert([
+            ['overtime_request_id' => $requestId, 'approver_id' => $this->shUserId, 'role' => 'SH', 'order_no' => 1, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()],
+            ['overtime_request_id' => $requestId, 'approver_id' => $this->dhUserId, 'role' => 'DH', 'order_no' => 2, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()],
+            ['overtime_request_id' => $requestId, 'approver_id' => $this->hrUserId, 'role' => 'HR', 'order_no' => 3, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        return $requestId;
+    }
+
+    private function actAs(int $userId, bool $isAdmin = false): void
+    {
+        Auth::shouldReceive('id')->andReturn($userId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => $isAdmin ? 'admin' : 'employee']);
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-level approval tests
+    // -------------------------------------------------------------------------
+
+    /** @test */
+    public function sh_approval_marks_sh_row_approved_and_filing_stays_pending()
+    {
+        $requestId = $this->seedFiling();
+        $this->actAs($this->shUserId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $service->reviewFiling($requestId, 'approved', 'Looks good');
+
+        $shRow = DB::table('hris.overtime_request_approvals')
+            ->where('overtime_request_id', $requestId)->where('role', 'SH')->first();
+        $this->assertEquals('approved', $shRow->status);
+        $this->assertNotNull($shRow->approved_at);
+
+        $filing = DB::table('hris.overtime_requests')->where('id', $requestId)->first();
+        $this->assertEquals('pending', $filing->status);
+    }
+
+    /** @test */
+    public function rejection_at_sh_level_closes_filing_immediately()
+    {
+        $requestId = $this->seedFiling();
+        $this->actAs($this->shUserId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $service->reviewFiling($requestId, 'rejected', 'Not justified');
+
+        $shRow = DB::table('hris.overtime_request_approvals')
+            ->where('overtime_request_id', $requestId)->where('role', 'SH')->first();
+        $this->assertEquals('rejected', $shRow->status);
+
+        $filing = DB::table('hris.overtime_requests')->where('id', $requestId)->first();
+        $this->assertEquals('rejected', $filing->status);
+
+        $ctoLeaveId = DB::table('hris.leave_types')->where('code', 'CTO')->value('id');
+        $credits = DB::table('hris.leave_credits')
+            ->where('user_id', $this->employeeId)->where('leave_id', $ctoLeaveId)->first();
+        $this->assertNull($credits);
+    }
+
+    /** @test */
+    public function full_chain_approval_awards_cto_credits_and_closes_filing()
+    {
+        // 60 min OT = 0.125 credits
+        $requestId = $this->seedFiling('17:00:00', '18:00:00');
+        $service = app(\App\Services\OvertimeServices::class);
+
+        // SH approves — set up Auth mock with all three return values in sequence
+        Auth::shouldReceive('id')->andReturnValues([$this->shUserId, $this->dhUserId, $this->hrUserId]);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'employee']);
+
+        $service->reviewFiling($requestId, 'approved');
+        $service->reviewFiling($requestId, 'approved');
+        $service->reviewFiling($requestId, 'approved');
+
+        $filing = DB::table('hris.overtime_requests')->where('id', $requestId)->first();
+        $this->assertEquals('approved', $filing->status);
+        $this->assertEquals($this->hrUserId, (int) $filing->reviewed_by);
+
+        $ctoLeaveId = DB::table('hris.leave_types')->where('code', 'CTO')->value('id');
+        $credit = DB::table('hris.leave_credits')
+            ->where('user_id', $this->employeeId)->where('leave_id', $ctoLeaveId)->first();
+        $this->assertNotNull($credit);
+        $this->assertEquals(0.125, round((float) $credit->based_credit, 3));
+    }
+
+    /** @test */
+    public function dh_cannot_approve_before_sh_approves()
+    {
+        $requestId = $this->seedFiling();
+        $this->actAs($this->dhUserId);
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $service->reviewFiling($requestId, 'approved');
+    }
 }

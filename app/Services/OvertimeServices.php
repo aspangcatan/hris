@@ -179,41 +179,88 @@ class OvertimeServices
 
     public function reviewFiling($filingId, $status, $remarks = null)
     {
-        $filing = DB::table('hris.overtime_requests as ot')
-            ->join('tdh_user.users as u', 'u.id', '=', 'ot.userid')
-            ->where('ot.id', $filingId)
-            ->select('ot.id', 'ot.status')
-            ;
+        $userId  = Auth::id();
+        $isAdmin = $this->isAdmin();
 
-        if (!$this->isAdmin()) {
-            $filing->where(function ($where) {
-                $this->applyManagedEmployeeScope($where, 'u');
-            });
-        }
+        DB::transaction(function () use ($filingId, $status, $remarks, $userId, $isAdmin) {
+            $filing = DB::table('hris.overtime_requests')
+                ->where('id', $filingId)
+                ->where('status', 'pending')
+                ->first(['id', 'status', 'userid', 'time_from', 'time_to']);
 
-        $filing = $filing->first();
+            if (!$filing) {
+                throw ValidationException::withMessages([
+                    'id' => 'Overtime filing not found or is not pending.',
+                ]);
+            }
 
-        if (!$filing) {
-            throw ValidationException::withMessages([
-                'id' => 'Overtime filing record not found.',
-            ]);
-        }
+            // Find the current active step for this reviewer.
+            // Active = pending with no earlier pending step.
+            $approvalQuery = DB::table('hris.overtime_request_approvals as ora')
+                ->where('ora.overtime_request_id', $filingId)
+                ->where('ora.status', 'pending')
+                ->whereNotExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('hris.overtime_request_approvals as prev')
+                        ->whereColumn('prev.overtime_request_id', 'ora.overtime_request_id')
+                        ->whereRaw('prev.order_no < ora.order_no')
+                        ->where('prev.status', 'pending');
+                });
 
-        if (!in_array(strtolower((string) $filing->status), ['pending'], true)) {
-            throw ValidationException::withMessages([
-                'id' => 'Only pending overtime filings can be reviewed.',
-            ]);
-        }
+            if (!$isAdmin) {
+                $approvalQuery->where('ora.approver_id', $userId);
+            }
 
-        DB::table('hris.overtime_requests')
-            ->where('id', $filingId)
-            ->update([
-                'status' => $status,
-                'remarks' => $remarks,
-                'reviewed_by' => Auth::id(),
-                'reviewed_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
-            ]);
+            $approval = $approvalQuery->first(['ora.id', 'ora.role', 'ora.order_no']);
+
+            if (!$approval) {
+                throw ValidationException::withMessages([
+                    'id' => 'No active approval step found for you on this filing.',
+                ]);
+            }
+
+            $now = Carbon::now();
+
+            DB::table('hris.overtime_request_approvals')
+                ->where('id', $approval->id)
+                ->update([
+                    'status'      => $status,
+                    'remarks'     => $remarks,
+                    'approved_at' => $now,
+                    'updated_at'  => $now,
+                ]);
+
+            if ($status === 'rejected') {
+                DB::table('hris.overtime_requests')
+                    ->where('id', $filingId)
+                    ->update([
+                        'status'      => 'rejected',
+                        'reviewed_by' => $userId,
+                        'reviewed_at' => $now,
+                        'updated_at'  => $now,
+                    ]);
+                return;
+            }
+
+            // Approved — check if all steps are now done
+            $anyStillPending = DB::table('hris.overtime_request_approvals')
+                ->where('overtime_request_id', $filingId)
+                ->where('status', 'pending')
+                ->exists();
+
+            if (!$anyStillPending) {
+                $this->awardCtoCredits((int) $filing->userid, $filing->time_from, $filing->time_to);
+
+                DB::table('hris.overtime_requests')
+                    ->where('id', $filingId)
+                    ->update([
+                        'status'      => 'approved',
+                        'reviewed_by' => $userId,
+                        'reviewed_at' => $now,
+                        'updated_at'  => $now,
+                    ]);
+            }
+        });
     }
 
     private function awardCtoCredits(int $userId, string $timeFrom, string $timeTo): void
