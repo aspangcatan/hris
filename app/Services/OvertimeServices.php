@@ -362,8 +362,14 @@ class OvertimeServices
             ]);
         }
 
-        DB::table('hris.overtime_requests')
-            ->where('id', $filingId)
-            ->delete();
+        DB::transaction(function () use ($filingId) {
+            DB::table('hris.overtime_request_approvals')
+                ->where('overtime_request_id', $filingId)
+                ->delete();
+
+            DB::table('hris.overtime_requests')
+                ->where('id', $filingId)
+                ->delete();
+        });
     }
 }
