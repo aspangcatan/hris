@@ -149,7 +149,6 @@
         let selectedEmployees = [];
         let payroll_id = 0;
         let payrollMeta = {};
-        let cutoffMeta = {};
 
         $(document).ready(function () {
             getPayroll();
@@ -317,42 +316,21 @@
 
 
             $("#btn_save_payroll").click(function () {
-                const title = $("#title").val().trim();
-                const start = $("#start_date").val();
-                const end = $("#end_date").val();
+                const title        = $("#title").val().trim();
+                const cutoff_id    = parseInt($("#cutoff_period").val()) || null;
                 const payroll_type = $("#payroll_type").val();
-                const rate_type = $("#rate_type").val();
-                const remarks = $("#remarks").val().trim();
-                const tax_purpose = $("#tax_purpose").val().trim();
-                const cutoff_start_date = $("#cutoff_start_date").val();
-                const cutoff_end_date = $("#cutoff_end_date").val();
-                const cutoff_title = ($("#cutoff_period").find(":selected").data("title") || "").trim();
+                const rate_type    = $("#rate_type").val();
+                const remarks      = $("#remarks").val().trim();
+                const tax_purpose  = $("#tax_purpose").val().trim();
 
-                // Basic validation
-                if (!title || !start || !end) {
-                    alert("Please fill in all required fields.");
+                if (!title) {
+                    toastr.error("Payroll title is required.", "Validation");
                     return;
                 }
-
-                // Optional: Validate that end date is after or equal to start date
-                if (new Date(start) > new Date(end)) {
-                    alert("End date cannot be earlier than start date.");
+                if (!cutoff_id) {
+                    toastr.error("Please select a cutoff period.", "Validation");
                     return;
                 }
-
-                // Prepare data
-                const params = {
-                    title: title,
-                    start_date: start,
-                    end_date: end,
-                    payroll_type: payroll_type,
-                    rate_type: rate_type,
-                    remarks: remarks,
-                    tax_purpose: tax_purpose || null,
-                    cutoff_start_date: cutoff_start_date || null,
-                    cutoff_end_date: cutoff_end_date || null,
-                    cutoff_title: cutoff_title || null
-                };
 
                 fetch('{{ route('savePayroll') }}', {
                     method: "POST",
@@ -360,16 +338,30 @@
                         "Content-Type": "application/json",
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
-                    body: JSON.stringify(params)
+                    body: JSON.stringify({
+                        title:        title,
+                        cutoff_id:    cutoff_id,
+                        payroll_type: payroll_type,
+                        rate_type:    rate_type,
+                        remarks:      remarks || null,
+                        tax_purpose:  tax_purpose || null,
+                    })
                 })
                     .then(res => res.json())
                     .then(data => {
+                        if (data.errors || data.error) {
+                            const msg = data.error || Object.values(data.errors)[0]?.[0] || "Failed to create payroll.";
+                            toastr.error(msg, "Error");
+                            return;
+                        }
                         getPayroll();
                         $("#create_payroll_modal").modal("hide");
-                        toastr.success(data.message, 'Information');
-                    }).catch(err => {
-                    console.log(err);
-                });
+                        toastr.success(data.message, 'Success');
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        toastr.error("Failed to create payroll.", "Error");
+                    });
             });
 
             $("#btn_preview_cutoff").click(function () {
@@ -914,32 +906,24 @@
                         return;
                     }
                     const $select = $("#cutoff_period");
-                    $select.empty().append("<option value=''>Use payroll period dates</option>");
-                    cutoffMeta = {};
-                    (data.data || []).forEach((item, index) => {
-                        const title = item.remarks || `Cutoff ${item.period_start} - ${item.period_end}`;
-                        const value = `${item.period_start}|${item.period_end}|${title}`;
-                        cutoffMeta[value] = item;
-                        $select.append(`<option value="${value}" data-title="${title}">${title} (${item.period_start} to ${item.period_end})</option>`);
+                    $select.empty().append("<option value=''>— Select a cutoff period —</option>");
+                    (data.data || []).forEach((item) => {
+                        const title = item.title || `Cutoff ${item.period_start} - ${item.period_end}`;
+                        $select.append(
+                            `<option value="${item.id}" data-start="${item.period_start}" data-end="${item.period_end}" data-title="${title}">` +
+                            `${title} (${item.period_start} to ${item.period_end})</option>`
+                        );
                     });
                 })
                 .catch(err => console.error(err));
         }
 
         $("#cutoff_period").change(function () {
-            const value = $(this).val();
-            if (!value) {
-                $("#cutoff_start_date").val("");
-                $("#cutoff_end_date").val("");
-                $("#start_date").prop("readonly", false);
-                $("#end_date").prop("readonly", false);
-                return;
-            }
-            const parts = value.split("|");
-            $("#cutoff_start_date").val(parts[0] || "");
-            $("#cutoff_end_date").val(parts[1] || "");
-            $("#start_date").val(parts[0] || "").prop("readonly", true);
-            $("#end_date").val(parts[1] || "").prop("readonly", true);
+            const $option = $(this).find(":selected");
+            const periodStart = $option.data("start") || "";
+            const periodEnd   = $option.data("end")   || "";
+            $("#start_date").val(periodStart);
+            $("#end_date").val(periodEnd);
         });
     </script>
 @stop
