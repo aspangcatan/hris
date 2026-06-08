@@ -21,7 +21,7 @@ class OvertimeController extends Controller
         return in_array(session('access_rights'), ['admin'], true)
             || (bool) session('is_section_head')
             || (bool) session('is_division_head')
-            || Auth::id() == 15;
+            || Auth::id() == 325;
     }
 
     public function fileForSelf(Request $request)
