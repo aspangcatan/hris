@@ -113,9 +113,9 @@
                             <th>Employee</th>
                             <th>Date</th>
                             <th>Time Range</th>
+                            <th>OT Hours</th>
                             <th>Reason</th>
-                            <th>Status</th>
-                            <th>Remarks</th>
+                            <th>Level</th>
                             <th>Action</th>
                         </tr>
                         </thead>
@@ -200,14 +200,17 @@
 
         pageItems.forEach(it => {
             const canReview = String(it.status || '').toLowerCase() === 'pending';
+            const levelBadge = it.current_step
+                ? `<span class="badge bg-secondary text-uppercase">${escapeHtml(it.current_step)}</span>`
+                : '-';
             $list.append(`
                 <tr>
                     <td>${escapeHtml((it.employee_name || '').replace(/\s+/g, ' ').trim())}</td>
                     <td>${formatDate(it.ot_date)}</td>
                     <td>${formatTimeRange(it.time_from, it.time_to)}</td>
+                    <td>${formatOtHours(it.time_from, it.time_to)}</td>
                     <td>${escapeHtml(it.reason || '-')}</td>
-                    <td>${statusBadge(it.status)}</td>
-                    <td>${escapeHtml(it.remarks || '-')}</td>
+                    <td>${levelBadge}</td>
                     <td>
                         ${canReview ? `
                             <button type="button" class="btn btn-action btn-edit me-1 mb-1" onclick="reviewFiling(${it.id}, 'approve')" title="Approve"><i class="bi bi-check2"></i></button>
@@ -352,6 +355,17 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    function formatOtHours(timeFrom, timeTo) {
+        if (!timeFrom || !timeTo) return '-';
+        const totalMins = moment(timeTo, 'HH:mm:ss').diff(moment(timeFrom, 'HH:mm:ss'), 'minutes');
+        if (totalMins <= 0) return '-';
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
+        if (h > 0 && m > 0) return `${h}h ${m}m`;
+        if (h > 0) return `${h}h`;
+        return `${m}m`;
     }
 </script>
 @stop
