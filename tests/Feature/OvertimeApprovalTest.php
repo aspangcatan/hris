@@ -245,4 +245,39 @@ class OvertimeApprovalTest extends TestCase
         $service = app(\App\Services\OvertimeServices::class);
         $service->reviewFiling($requestId, 'approved');
     }
+
+    /** @test */
+    public function get_my_filings_returns_pending_step_field()
+    {
+        $requestId = $this->seedFiling();
+        $this->actAs($this->employeeId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $filings = $service->getMyFilings();
+
+        $filing = $filings->firstWhere('id', $requestId);
+        $this->assertNotNull($filing);
+        $this->assertEquals('SH', $filing->pending_step);
+    }
+
+    /** @test */
+    public function get_my_filings_pending_step_is_null_when_approved()
+    {
+        $requestId = $this->seedFiling();
+
+        DB::table('hris.overtime_request_approvals')
+            ->where('overtime_request_id', $requestId)
+            ->update(['status' => 'approved']);
+        DB::table('hris.overtime_requests')
+            ->where('id', $requestId)
+            ->update(['status' => 'approved']);
+
+        $this->actAs($this->employeeId);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $filings = $service->getMyFilings();
+
+        $filing = $filings->firstWhere('id', $requestId);
+        $this->assertNull($filing->pending_step);
+    }
 }

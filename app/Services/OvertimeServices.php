@@ -135,7 +135,7 @@ class OvertimeServices
 
     public function getMyFilings()
     {
-        return DB::table('hris.overtime_requests as ot')
+        $filings = DB::table('hris.overtime_requests as ot')
             ->where('ot.userid', Auth::id())
             ->orderBy('ot.created_at', 'desc')
             ->get([
@@ -148,6 +148,23 @@ class OvertimeServices
                 'ot.remarks',
                 'ot.reviewed_at',
             ]);
+
+        if ($filings->isEmpty()) return $filings;
+
+        $filingIds = $filings->pluck('id')->toArray();
+
+        $pendingSteps = DB::table('hris.overtime_request_approvals')
+            ->whereIn('overtime_request_id', $filingIds)
+            ->where('status', 'pending')
+            ->orderBy('order_no')
+            ->get(['overtime_request_id', 'role'])
+            ->groupBy('overtime_request_id')
+            ->map(fn($rows) => $rows->first()->role);
+
+        return $filings->map(function ($filing) use ($pendingSteps) {
+            $filing->pending_step = $pendingSteps[$filing->id] ?? null;
+            return $filing;
+        });
     }
 
     public function getFilingsForReview()
