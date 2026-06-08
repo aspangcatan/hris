@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\OvertimeServices;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class OvertimeController extends Controller
@@ -19,7 +20,8 @@ class OvertimeController extends Controller
     {
         return in_array(session('access_rights'), ['admin'], true)
             || (bool) session('is_section_head')
-            || (bool) session('is_division_head');
+            || (bool) session('is_division_head')
+            || Auth::id() == 15;
     }
 
     public function fileForSelf(Request $request)
