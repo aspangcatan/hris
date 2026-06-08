@@ -502,13 +502,17 @@ class PayrollController extends Controller
     public function getPayroll()
     {
         try {
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+
             $payrolls = DB::table('payrolls as p')
                 ->leftJoin('tdh_user.users as u', 'u.id', '=', 'p.prepared_by')
+                ->leftJoin($masterTable . ' as cm', 'cm.id', '=', 'p.cutoff_id')
                 ->select(
                     'p.id',
                     'p.title',
                     'p.start_date',
                     'p.end_date',
+                    'p.cutoff_id',
                     'p.cutoff_start_date',
                     'p.cutoff_end_date',
                     'p.cutoff_title',
@@ -521,7 +525,8 @@ class PayrollController extends Controller
                     'u.fname',
                     'u.mname',
                     'u.lname',
-                    'u.suffix'
+                    'u.suffix',
+                    DB::raw('COALESCE(cm.title, p.cutoff_title) as cutoff_label')
                 )
                 ->orderByDesc('p.created_at')
                 ->get();

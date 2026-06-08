@@ -37,6 +37,7 @@ class PayrollCutoffTest extends TestCase
     {
         Auth::shouldReceive('id')->andReturn($this->userId);
         Auth::shouldReceive('check')->andReturn(true);
+        Auth::shouldReceive('user')->andReturn(null);
         session(['access_rights' => 'admin']);
     }
 
@@ -157,6 +158,21 @@ class PayrollCutoffTest extends TestCase
             'created_at'        => now(),
             'updated_at'        => now(),
         ]);
+    }
+
+    /** @test */
+    public function get_payroll_list_includes_cutoff_label()
+    {
+        $masterId  = $this->seedCutoffMaster('2026-06-01', '2026-06-15', 'June 1st Half');
+        $payrollId = $this->seedPayrollWithCutoff($masterId);
+        $this->actAsUser();
+
+        $response = $this->withoutMiddleware()->get('/get_payroll');
+
+        $response->assertOk();
+        $found = collect($response->json())->firstWhere('id', $payrollId);
+        $this->assertNotNull($found);
+        $this->assertEquals('June 1st Half', $found['cutoff_label'] ?? null);
     }
 
     /** @test */
