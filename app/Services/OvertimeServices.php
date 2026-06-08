@@ -59,10 +59,38 @@ class OvertimeServices
         $query->whereRaw('1=0');
     }
 
+    private function resolveOvertimeApprovers(int $userId): array
+    {
+        $employee = DB::table('tdh_user.users')->where('id', $userId)->first(['section', 'division']);
+
+        $shId = null;
+        $dhId = null;
+
+        if ($employee && $employee->section) {
+            $shId = DB::table('tdh_user.section')
+                ->where('id', $employee->section)
+                ->value('head');
+        }
+
+        if ($employee && $employee->division) {
+            $dhId = DB::table('tdh_user.division')
+                ->where('id', $employee->division)
+                ->value('head');
+        }
+
+        return [
+            ['role' => 'SH', 'order_no' => 1, 'approver_id' => $shId ? (int) $shId : null],
+            ['role' => 'DH', 'order_no' => 2, 'approver_id' => $dhId ? (int) $dhId : null],
+            ['role' => 'HR', 'order_no' => 3, 'approver_id' => 15],
+        ];
+    }
+
     public function fileForSelf($otDate, $timeFrom, $timeTo, $reason = null)
     {
+        $userId = Auth::id();
+
         $exists = DB::table('hris.overtime_requests')
-            ->where('userid', Auth::id())
+            ->where('userid', $userId)
             ->where('ot_date', $otDate)
             ->where('time_from', $timeFrom)
             ->where('time_to', $timeTo)
@@ -74,16 +102,36 @@ class OvertimeServices
             ]);
         }
 
-        DB::table('hris.overtime_requests')->insert([
-            'userid' => Auth::id(),
-            'ot_date' => $otDate,
-            'time_from' => $timeFrom,
-            'time_to' => $timeTo,
-            'reason' => $reason,
-            'status' => 'pending',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now(),
-        ]);
+        $approvers = $this->resolveOvertimeApprovers($userId);
+
+        DB::transaction(function () use ($otDate, $timeFrom, $timeTo, $reason, $userId, $approvers) {
+            $requestId = DB::table('hris.overtime_requests')->insertGetId([
+                'userid'     => $userId,
+                'ot_date'    => $otDate,
+                'time_from'  => $timeFrom,
+                'time_to'    => $timeTo,
+                'reason'     => $reason,
+                'status'     => 'pending',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            $now = Carbon::now();
+
+            foreach ($approvers as $approver) {
+                $autoApproved = ($approver['approver_id'] === null);
+                DB::table('hris.overtime_request_approvals')->insert([
+                    'overtime_request_id' => $requestId,
+                    'approver_id'         => $approver['approver_id'],
+                    'role'                => $approver['role'],
+                    'order_no'            => $approver['order_no'],
+                    'status'              => $autoApproved ? 'approved' : 'pending',
+                    'approved_at'         => $autoApproved ? $now : null,
+                    'created_at'          => $now,
+                    'updated_at'          => $now,
+                ]);
+            }
+        });
     }
 
     public function getMyFilings()
