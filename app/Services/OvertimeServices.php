@@ -102,9 +102,10 @@ class OvertimeServices
             ]);
         }
 
-        $approvers = $this->resolveOvertimeApprovers($userId);
+        DB::transaction(function () use ($otDate, $timeFrom, $timeTo, $reason, $userId) {
+            $now = Carbon::now();
+            $approvers = $this->resolveOvertimeApprovers($userId);
 
-        DB::transaction(function () use ($otDate, $timeFrom, $timeTo, $reason, $userId, $approvers) {
             $requestId = DB::table('hris.overtime_requests')->insertGetId([
                 'userid'     => $userId,
                 'ot_date'    => $otDate,
@@ -112,11 +113,9 @@ class OvertimeServices
                 'time_to'    => $timeTo,
                 'reason'     => $reason,
                 'status'     => 'pending',
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
+                'created_at' => $now,
+                'updated_at' => $now,
             ]);
-
-            $now = Carbon::now();
 
             foreach ($approvers as $approver) {
                 $autoApproved = ($approver['approver_id'] === null);
