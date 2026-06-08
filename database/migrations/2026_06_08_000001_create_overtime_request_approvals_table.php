@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('overtime_request_approvals', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('overtime_request_id');
-            $table->integer('approver_id')->nullable();
+            $table->unsignedBigInteger('approver_id')->nullable();
             $table->enum('role', ['SH', 'DH', 'HR']);
             $table->unsignedTinyInteger('order_no');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
