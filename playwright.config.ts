@@ -1,11 +1,12 @@
 import { defineConfig } from '@playwright/test';
+import * as path from 'path';
 
 export default defineConfig({
   testDir: './tests/e2e',
   globalSetup: './tests/e2e/global-setup.ts',
   use: {
     baseURL: process.env.APP_URL ?? 'http://localhost/hris',
-    storageState: 'tests/e2e/.auth/user.json',
+    storageState: path.join(__dirname, 'tests/e2e/.auth/user.json'),
     headless: true,
   },
   projects: [

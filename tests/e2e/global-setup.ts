@@ -22,7 +22,7 @@ async function globalSetup(config: FullConfig) {
   // Wait until we leave the login page
   await page.waitForURL(url => !url.toString().includes('/login'), { timeout: 15000 });
 
-  const authDir = path.join('tests', 'e2e', '.auth');
+  const authDir = path.join(__dirname, '.auth');
   if (!fs.existsSync(authDir)) {
     fs.mkdirSync(authDir, { recursive: true });
   }
