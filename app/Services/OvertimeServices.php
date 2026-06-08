@@ -322,6 +322,7 @@ class OvertimeServices
         $existing = DB::table('hris.leave_credits')
             ->where('user_id', $userId)
             ->where('leave_id', $ctoLeaveId)
+            ->lockForUpdate()
             ->first(['id', 'based_credit']);
 
         if ($existing) {

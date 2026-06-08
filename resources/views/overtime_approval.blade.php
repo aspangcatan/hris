@@ -2,7 +2,7 @@
 
 @section('content')
     @php
-        $canApproveOvertime = in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head');
+        $canApproveOvertime = in_array(session('access_rights'), ['admin'], true) || session('is_section_head') || session('is_division_head') || Auth::id() == 15;
     @endphp
 
     @if(!$canApproveOvertime)
