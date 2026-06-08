@@ -147,30 +147,22 @@
                         <input type="text" class="form-control" id="title" name="title" required>
                     </div>
 
-                    <!-- Payroll Period Start -->
-                    <div class="col-md-6">
-                        <label for="payroll_start" class="form-label">Payroll Period Start</label>
-                        <input type="date" class="form-control" id="start_date" name="start_date" required>
-                    </div>
-
-                    <!-- Payroll Period End -->
-                    <div class="col-md-6">
-                        <label for="payroll_end" class="form-label">Payroll Period End</label>
-                        <input type="date" class="form-control" id="end_date" name="end_date" required>
-                    </div>
+                    <!-- Cutoff Period (required) -->
                     <div class="col-md-12">
-                        <label for="cutoff_period" class="form-label">Cutoff Period</label>
-                        <select class="form-control" id="cutoff_period">
-                            <option value="">Use payroll period dates</option>
+                        <label for="cutoff_period" class="form-label">Cutoff Period <span class="text-danger">*</span></label>
+                        <select class="form-control" id="cutoff_period" required>
+                            <option value="">— Select a cutoff period —</option>
                         </select>
                     </div>
+
+                    <!-- Payroll Period (auto-filled from cutoff, read-only) -->
                     <div class="col-md-6">
-                        <label class="form-label">Cutoff Start</label>
-                        <input type="date" class="form-control" id="cutoff_start_date" readonly>
+                        <label class="form-label">Period Start</label>
+                        <input type="date" class="form-control" id="start_date" readonly>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Cutoff End</label>
-                        <input type="date" class="form-control" id="cutoff_end_date" readonly>
+                        <label class="form-label">Period End</label>
+                        <input type="date" class="form-control" id="end_date" readonly>
                     </div>
                     <div class="col-md-6">
                         <label for="payroll_type" class="form-label">Type</label>
