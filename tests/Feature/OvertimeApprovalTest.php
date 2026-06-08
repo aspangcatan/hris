@@ -14,7 +14,7 @@ class OvertimeApprovalTest extends TestCase
     private int $employeeId = 9001;
     private int $shUserId   = 9002;
     private int $dhUserId   = 9003;
-    private int $hrUserId   = 15;
+    private int $hrUserId   = 325;
     private int $sectionId  = 801;
     private int $divisionId = 901;
 
