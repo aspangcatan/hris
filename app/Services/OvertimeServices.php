@@ -216,6 +216,51 @@ class OvertimeServices
             ]);
     }
 
+    private function awardCtoCredits(int $userId, string $timeFrom, string $timeTo): void
+    {
+        $from = Carbon::createFromFormat('H:i:s', $timeFrom);
+        $to   = Carbon::createFromFormat('H:i:s', $timeTo);
+        $totalMinutes = (int) $from->diffInMinutes($to);
+
+        if ($totalMinutes <= 0) return;
+
+        $minuteConversions = DB::table('hris.minute_conversions')
+            ->pluck('points_deduction', 'minute');
+
+        $fullHours = intdiv($totalMinutes, 60);
+        $remaining = $totalMinutes % 60;
+
+        $credits = ((float) ($minuteConversions[60] ?? 0)) * $fullHours
+                 + ($remaining > 0 ? (float) ($minuteConversions[$remaining] ?? 0) : 0);
+
+        if ($credits <= 0) return;
+
+        $ctoLeaveId = DB::table('hris.leave_types')->where('code', 'CTO')->value('id');
+        if (!$ctoLeaveId) return;
+
+        $existing = DB::table('hris.leave_credits')
+            ->where('user_id', $userId)
+            ->where('leave_id', $ctoLeaveId)
+            ->first(['id', 'based_credit']);
+
+        if ($existing) {
+            DB::table('hris.leave_credits')
+                ->where('id', $existing->id)
+                ->update([
+                    'based_credit'       => (float) $existing->based_credit + $credits,
+                    'last_updated_month' => Carbon::now()->format('Y-m'),
+                ]);
+        } else {
+            DB::table('hris.leave_credits')->insert([
+                'user_id'            => $userId,
+                'leave_id'           => $ctoLeaveId,
+                'based_credit'       => $credits,
+                'used_credit'        => 0,
+                'last_updated_month' => Carbon::now()->format('Y-m'),
+            ]);
+        }
+    }
+
     public function deleteMyFiling($filingId)
     {
         $filing = DB::table('hris.overtime_requests')

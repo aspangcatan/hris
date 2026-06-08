@@ -83,4 +83,50 @@ class OvertimeApprovalTest extends TestCase
         $this->assertEquals(3, $hr->order_no);
         $this->assertEquals('pending', $hr->status);
     }
+
+    /** @test */
+    public function award_cto_credits_calculates_correctly_for_90_minutes()
+    {
+        // 90 min OT = 1 full hour (0.125) + 30 remaining (0.063) = 0.188 credits
+        $service = app(\App\Services\OvertimeServices::class);
+
+        $method = new \ReflectionMethod($service, 'awardCtoCredits');
+        $method->setAccessible(true);
+        $method->invoke($service, $this->employeeId, '17:00:00', '18:30:00');
+
+        $ctoLeaveId = DB::table('hris.leave_types')->where('code', 'CTO')->value('id');
+        $credit = DB::table('hris.leave_credits')
+            ->where('user_id', $this->employeeId)
+            ->where('leave_id', $ctoLeaveId)
+            ->first();
+
+        $this->assertNotNull($credit);
+        $this->assertEquals(0.188, round((float) $credit->based_credit, 3));
+    }
+
+    /** @test */
+    public function award_cto_credits_increments_existing_balance()
+    {
+        $ctoLeaveId = DB::table('hris.leave_types')->where('code', 'CTO')->value('id');
+
+        DB::table('hris.leave_credits')->insert([
+            'user_id'      => $this->employeeId,
+            'leave_id'     => $ctoLeaveId,
+            'based_credit' => 1.000,
+            'used_credit'  => 0,
+        ]);
+
+        $service = app(\App\Services\OvertimeServices::class);
+        $method = new \ReflectionMethod($service, 'awardCtoCredits');
+        $method->setAccessible(true);
+        // 60 min = 0.125 credits
+        $method->invoke($service, $this->employeeId, '17:00:00', '18:00:00');
+
+        $credit = DB::table('hris.leave_credits')
+            ->where('user_id', $this->employeeId)
+            ->where('leave_id', $ctoLeaveId)
+            ->first();
+
+        $this->assertEquals(1.125, round((float) $credit->based_credit, 3));
+    }
 }
