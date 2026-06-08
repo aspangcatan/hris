@@ -234,36 +234,44 @@ class PayrollController extends Controller
     {
         try {
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
+                'title'        => 'required|string|max:255',
+                'cutoff_id'    => 'required|integer',
                 'payroll_type' => 'nullable|string|max:50',
-                'rate_type' => 'nullable|string|max:50',
-                'remarks' => 'nullable|string',
-                'tax_purpose' => 'nullable|string|max:150',
-                'cutoff_start_date' => 'nullable|date',
-                'cutoff_end_date' => 'nullable|date|after_or_equal:cutoff_start_date',
-                'cutoff_title' => 'nullable|string|max:255',
+                'rate_type'    => 'nullable|string|max:50',
+                'remarks'      => 'nullable|string',
+                'tax_purpose'  => 'nullable|string|max:150',
             ]);
 
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+            $master = DB::table($masterTable)->where('id', $validated['cutoff_id'])->first();
+
+            if (!$master) {
+                throw ValidationException::withMessages([
+                    'cutoff_id' => ['The selected cutoff period does not exist.'],
+                ]);
+            }
+
             DB::table('hris.payrolls')->insert([
-                'title' => $validated['title'],
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-                'cutoff_start_date' => $validated['cutoff_start_date'] ?? null,
-                'cutoff_end_date' => $validated['cutoff_end_date'] ?? null,
-                'cutoff_title' => $validated['cutoff_title'] ?? null,
-                'payroll_type' => $validated['payroll_type'] ?? 'Regular',
-                'rate_type' => $validated['rate_type'] ?? 'Non Pro-rated',
-                'remarks' => $validated['remarks'] ?? null,
-                'tax_purpose' => $validated['tax_purpose'] ?? null,
-                'status' => 'draft',
-                'prepared_by' => Auth::id(),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'cutoff_id'         => $master->id,
+                'title'             => $validated['title'],
+                'start_date'        => $master->period_start,
+                'end_date'          => $master->period_end,
+                'cutoff_start_date' => $master->period_start,
+                'cutoff_end_date'   => $master->period_end,
+                'cutoff_title'      => $master->title,
+                'payroll_type'      => $validated['payroll_type'] ?? 'Regular',
+                'rate_type'         => $validated['rate_type'] ?? 'Non Pro-rated',
+                'remarks'           => $validated['remarks'] ?? null,
+                'tax_purpose'       => $validated['tax_purpose'] ?? null,
+                'status'            => 'draft',
+                'prepared_by'       => Auth::id(),
+                'created_at'        => now(),
+                'updated_at'        => now(),
             ]);
 
             return response()->json(['message' => 'Payroll created successfully.']);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }

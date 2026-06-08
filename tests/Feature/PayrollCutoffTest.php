@@ -81,4 +81,61 @@ class PayrollCutoffTest extends TestCase
         $this->assertArrayHasKey('id', (array) $found);
         $this->assertEquals($masterId, $found['id']);
     }
+
+    /** @test */
+    public function save_payroll_requires_cutoff_id()
+    {
+        $this->actAsUser();
+
+        $response = $this->withoutMiddleware()->postJson('/save_payroll', [
+            'title'        => 'Test Payroll',
+            'payroll_type' => 'Regular',
+            'rate_type'    => 'Non Pro-rated',
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    /** @test */
+    public function save_payroll_rejects_nonexistent_cutoff_id()
+    {
+        $this->actAsUser();
+
+        $response = $this->withoutMiddleware()->postJson('/save_payroll', [
+            'title'     => 'Test Payroll',
+            'cutoff_id' => 99999,
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    /** @test */
+    public function save_payroll_with_valid_cutoff_id_stores_cutoff_id_and_derives_dates()
+    {
+        $masterId = $this->seedCutoffMaster('2026-06-01', '2026-06-15', 'June 1st Half');
+        $this->actAsUser();
+
+        $response = $this->withoutMiddleware()->postJson('/save_payroll', [
+            'title'        => 'June Payroll',
+            'cutoff_id'    => $masterId,
+            'payroll_type' => 'Regular',
+            'rate_type'    => 'Non Pro-rated',
+        ]);
+
+        $response->assertOk();
+
+        $payroll = DB::table('hris.payrolls')
+            ->where('title', 'June Payroll')
+            ->where('prepared_by', $this->userId)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($payroll);
+        $this->assertEquals($masterId, (int) $payroll->cutoff_id);
+        $this->assertEquals('2026-06-01', $payroll->start_date);
+        $this->assertEquals('2026-06-15', $payroll->end_date);
+        $this->assertEquals('2026-06-01', $payroll->cutoff_start_date);
+        $this->assertEquals('2026-06-15', $payroll->cutoff_end_date);
+        $this->assertEquals('June 1st Half', $payroll->cutoff_title);
+    }
 }
