@@ -265,6 +265,15 @@
                         <span>Hospital Order Create</span>
                     </a>
                 </li>
+                @if(strtolower((string) session('access_rights')) === 'admin')
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.permissions') ? '' : 'collapsed' }}"
+                           href="{{ route('admin.permissions') }}">
+                            <i class="bi bi-shield-lock"></i>
+                            <span>Access Rights</span>
+                        </a>
+                    </li>
+                @endif
             @endif
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_management') ? '' : 'collapsed' }}"
