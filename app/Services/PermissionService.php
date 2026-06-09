@@ -58,25 +58,31 @@ class PermissionService
 
     public function setUserPermission(int $adminId, int $targetUserId, string $code, string $type): void
     {
+        if (!in_array($type, ['grant', 'revoke'], true)) {
+            throw new \InvalidArgumentException("Invalid permission type: {$type}");
+        }
+
         $permId = DB::table('hris.permissions')->where('code', $code)->value('id');
         if (!$permId) {
             throw new \InvalidArgumentException("Unknown permission code: {$code}");
         }
 
-        DB::table('hris.user_permissions')->updateOrInsert(
-            ['user_id' => $targetUserId, 'permission_id' => $permId],
-            ['user_id' => $targetUserId, 'permission_id' => $permId, 'type' => $type,
-             'created_at' => now(), 'updated_at' => now()]
-        );
+        DB::transaction(function () use ($adminId, $targetUserId, $permId, $code, $type) {
+            DB::table('hris.user_permissions')->updateOrInsert(
+                ['user_id' => $targetUserId, 'permission_id' => $permId],
+                ['user_id' => $targetUserId, 'permission_id' => $permId, 'type' => $type,
+                 'created_at' => now(), 'updated_at' => now()]
+            );
 
-        DB::table('hris.permission_audit_logs')->insert([
-            'performer_id'   => $adminId,
-            'target_user_id' => $targetUserId,
-            'action'         => "{$type}d {$code}",
-            'details'        => json_encode(['code' => $code, 'type' => $type]),
-            'created_at'     => now(),
-            'updated_at'     => now(),
-        ]);
+            DB::table('hris.permission_audit_logs')->insert([
+                'performer_id'   => $adminId,
+                'target_user_id' => $targetUserId,
+                'action'         => "{$type}d {$code}",
+                'details'        => json_encode(['code' => $code, 'type' => $type]),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        });
 
         unset($this->cache[$targetUserId]);
     }
@@ -86,19 +92,21 @@ class PermissionService
         $permId = DB::table('hris.permissions')->where('code', $code)->value('id');
         if (!$permId) return;
 
-        DB::table('hris.user_permissions')
-            ->where('user_id', $targetUserId)
-            ->where('permission_id', $permId)
-            ->delete();
+        DB::transaction(function () use ($adminId, $targetUserId, $permId, $code) {
+            DB::table('hris.user_permissions')
+                ->where('user_id', $targetUserId)
+                ->where('permission_id', $permId)
+                ->delete();
 
-        DB::table('hris.permission_audit_logs')->insert([
-            'performer_id'   => $adminId,
-            'target_user_id' => $targetUserId,
-            'action'         => "reset {$code} to level default",
-            'details'        => json_encode(['code' => $code, 'type' => 'reset']),
-            'created_at'     => now(),
-            'updated_at'     => now(),
-        ]);
+            DB::table('hris.permission_audit_logs')->insert([
+                'performer_id'   => $adminId,
+                'target_user_id' => $targetUserId,
+                'action'         => "reset {$code} to level default",
+                'details'        => json_encode(['code' => $code, 'type' => 'reset']),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        });
 
         unset($this->cache[$targetUserId]);
     }
@@ -111,16 +119,18 @@ class PermissionService
             ->pluck('p.code')
             ->toArray();
 
-        DB::table('hris.user_permissions')->where('user_id', $targetUserId)->delete();
+        DB::transaction(function () use ($adminId, $targetUserId, $removedCodes) {
+            DB::table('hris.user_permissions')->where('user_id', $targetUserId)->delete();
 
-        DB::table('hris.permission_audit_logs')->insert([
-            'performer_id'   => $adminId,
-            'target_user_id' => $targetUserId,
-            'action'         => 'reset all permissions to level defaults',
-            'details'        => json_encode(['removed' => $removedCodes]),
-            'created_at'     => now(),
-            'updated_at'     => now(),
-        ]);
+            DB::table('hris.permission_audit_logs')->insert([
+                'performer_id'   => $adminId,
+                'target_user_id' => $targetUserId,
+                'action'         => 'reset all permissions to level defaults',
+                'details'        => json_encode(['removed' => $removedCodes]),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        });
 
         unset($this->cache[$targetUserId]);
     }
