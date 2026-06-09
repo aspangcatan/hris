@@ -94,7 +94,8 @@ class PermissionController extends Controller
             $this->permissions->setUserPermission(Auth::id(), $id, $code, $type);
         }
 
-        return response()->json(['message' => "Permission {$type}d successfully."]);
+        $past = ['grant' => 'granted', 'revoke' => 'revoked', 'reset' => 'reset'];
+        return response()->json(['message' => "Permission {$past[$type]} successfully."]);
     }
 
     public function reset(int $id)

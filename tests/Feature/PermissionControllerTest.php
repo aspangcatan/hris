@@ -127,7 +127,7 @@ class PermissionControllerTest extends TestCase
                  'type' => 'grant',
              ])
              ->assertStatus(200)
-             ->assertJson(['message' => 'Permission grantd successfully.']);
+             ->assertJson(['message' => 'Permission granted successfully.']);
 
         $this->assertTrue(
             DB::table('hris.user_permissions')
