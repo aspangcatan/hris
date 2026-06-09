@@ -157,7 +157,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/dtr', function () {
         return view('dtr');
-    })->name('dtr');
+    })->name('dtr')->middleware('permission:dtr.view_own');
 
     Route::get('/pass_slip', function () {
         return view('pass_slip');
@@ -165,7 +165,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/employee_dtr', function () {
         return view('employee_dtr');
-    })->name('employee_dtr');
+    })->name('employee_dtr')->middleware('permission:dtr.view_others');
 
     Route::get('/leave', function () {
         return view('leave');
@@ -465,7 +465,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_all_cancellations_admin', [\App\Http\Controllers\LeaveCancellationController::class, 'getAllForAdmin'])->name('getAllCancellationsAdmin');
 
 #DTR LOGS
-    Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDTR'])->name('printDTR');
+    Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDTR'])->name('printDTR')->middleware('permission:dtr.print');
     Route::get('/get_employee_dtr', [\App\Http\Controllers\DTRController::class, 'getEmployeeDtr'])->name('getEmployeeDtr');
     Route::get('/get_division_list', [\App\Http\Controllers\DTRController::class, 'getDivisionList'])->name('getDivisionList');
     Route::get('/get_section_list', [\App\Http\Controllers\DTRController::class, 'getSectionList'])->name('getSectionList');

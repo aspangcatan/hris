@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PermissionService;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Storage;
 
 class DTRController extends Controller
 {
+    public function __construct(private PermissionService $permissions) {}
+
     private function getCurrentAccessRights(): string
     {
         return strtolower((string) session('access_rights'));
@@ -38,16 +41,12 @@ class DTRController extends Controller
 
     private function canAccessEmployeeDtrModule(): bool
     {
-        $accessRights = $this->getCurrentAccessRights();
-
-        return in_array($accessRights, ['admin', 'schedule', 'dh'], true)
-            || (bool) session('is_section_head')
-            || (bool) session('is_division_head');
+        return $this->permissions->can(Auth::id(), 'dtr.view_others');
     }
 
     private function canManageRawTimelog(): bool
     {
-        return in_array($this->getCurrentAccessRights(), ['admin', 'it', 'dh'], true);
+        return $this->permissions->can(Auth::id(), 'dtr.edit');
     }
 
     private function canViewEmployeeDtrForUser(int $userId): bool
