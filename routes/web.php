@@ -544,6 +544,18 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/update-filing-type', [\App\Http\Controllers\SalnAdminController::class, 'updateFilingType'])->name('saln.admin.updateFilingType');
         Route::get('/summary-report', [\App\Http\Controllers\SalnAdminController::class, 'generateSummaryReport'])->name('saln.admin.summaryReport');
     });
+
+    # ADMIN — Access Rights Management
+    Route::get('/admin/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])
+        ->name('admin.permissions');
+    Route::get('/admin/permissions/users', [\App\Http\Controllers\Admin\PermissionController::class, 'users'])
+        ->name('admin.permissions.users');
+    Route::get('/admin/permissions/users/{id}', [\App\Http\Controllers\Admin\PermissionController::class, 'show'])
+        ->name('admin.permissions.users.show');
+    Route::post('/admin/permissions/users/{id}', [\App\Http\Controllers\Admin\PermissionController::class, 'update'])
+        ->name('admin.permissions.users.update');
+    Route::delete('/admin/permissions/users/{id}/reset', [\App\Http\Controllers\Admin\PermissionController::class, 'reset'])
+        ->name('admin.permissions.users.reset');
 });
 
     // SALN List View Example
