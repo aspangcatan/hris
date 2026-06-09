@@ -15,5 +15,6 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call(MinuteConversionSeeder::class);
+        $this->call(PermissionSeeder::class);
     }
 }
