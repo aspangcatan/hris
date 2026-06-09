@@ -3,21 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Services\HospitalOrderServices;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class HospitalOrderController extends Controller
 {
     protected $hospitalService;
+    protected PermissionService $permissions;
 
     public function __construct(HospitalOrderServices $hospitalService)
     {
         $this->hospitalService = $hospitalService;
+        $this->permissions = app(PermissionService::class);
     }
 
     private function canReviewHospitalOrderFilings()
     {
-        return in_array(session('access_rights'), ['admin'], true)
+        return $this->permissions->can(Auth::id(), 'hospital_order.approve')
             || (bool) session('is_section_head')
             || (bool) session('is_division_head');
     }
@@ -25,7 +29,7 @@ class HospitalOrderController extends Controller
     public function createHospitalOrder(Request $request)
     {
         try {
-            if (!in_array(session('access_rights'), ['admin'])) {
+            if (!$this->permissions->can(Auth::id(), 'hospital_order.approve')) {
                 return response()->json(['error' => 'Only authorized users can create hospital orders.'], 403);
             }
 

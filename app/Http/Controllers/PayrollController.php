@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DTRServices;
 use App\Services\PayrollServices;
+use App\Services\PermissionService;
 use Barryvdh\Snappy\Facades\SnappyPdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,11 +14,13 @@ use Illuminate\Validation\ValidationException;
 class PayrollController extends Controller
 {
     protected $dtrServices, $payrollServices;
+    protected PermissionService $permissions;
 
     public function __construct(DTRServices $dtrServices, PayrollServices $payrollServices)
     {
         $this->dtrServices = $dtrServices;
         $this->payrollServices = $payrollServices;
+        $this->permissions = app(PermissionService::class);
     }
 
     public function getPayrollSettings(Request $request)
@@ -550,7 +553,7 @@ class PayrollController extends Controller
                 $item->can_submit = $this->canSubmitPayroll($item);
                 $item->can_approve = isset($pendingApprovalMap[$item->id]);
                 $item->pending_approval_role = $item->can_approve ? $pendingApprovalMap[$item->id]->role : null;
-                $item->can_release = in_array(session('access_rights'), ['admin', 'HR', 'HRH'], true) && $status === 'approved';
+                $item->can_release = $this->permissions->can(Auth::id(), 'payroll.manage') && $status === 'approved';
                 $item->can_generate_payslip = in_array($status, ['approved', 'released'], true);
 
                 return $item;
@@ -691,7 +694,7 @@ class PayrollController extends Controller
                 return response()->json(['error' => 'Payroll not found.'], 404);
             }
 
-            $isAdmin = in_array(session('access_rights'), ['admin'], true);
+            $isAdmin = $this->permissions->can(Auth::id(), 'payroll.manage');
             if ((int) $payroll->prepared_by !== (int) Auth::id() && !$isAdmin) {
                 return response()->json(['error' => 'Only the preparer can submit this payroll for approval.'], 403);
             }
@@ -866,7 +869,7 @@ class PayrollController extends Controller
                 'payroll_id' => 'required|integer|exists:payrolls,id',
             ]);
 
-            if (!in_array(session('access_rights'), ['admin', 'HR', 'HRH'], true)) {
+            if (!$this->permissions->can(Auth::id(), 'payroll.manage')) {
                 return response()->json(['error' => 'You are not allowed to release payroll.'], 403);
             }
 
@@ -957,7 +960,7 @@ class PayrollController extends Controller
     {
         $status = strtolower((string) ($payroll->status ?? 'draft'));
         $isOwner = (int) $payroll->prepared_by === (int) Auth::id();
-        $isAdmin = in_array(session('access_rights'), ['admin'], true);
+        $isAdmin = $this->permissions->can(Auth::id(), 'payroll.manage');
 
         return ($isOwner || $isAdmin) && in_array($status, ['draft', 'computed', 'rejected'], true);
     }
@@ -966,7 +969,7 @@ class PayrollController extends Controller
     {
         $status = strtolower((string) ($payroll->status ?? 'draft'));
         $isOwner = (int) $payroll->prepared_by === (int) Auth::id();
-        $isAdmin = in_array(session('access_rights'), ['admin'], true);
+        $isAdmin = $this->permissions->can(Auth::id(), 'payroll.manage');
 
         return ($isOwner || $isAdmin) && in_array($status, ['draft', 'computed', 'rejected'], true);
     }

@@ -4,19 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Declarant;
 use App\Models\User;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SalnAdminController extends Controller
 {
+    protected PermissionService $permissions;
+
+    public function __construct()
+    {
+        $this->permissions = app(PermissionService::class);
+    }
+
     /**
      * Display the SALN Admin dashboard.
      */
     public function index()
     {
         // Check if user has admin/hr privileges
-        if (!in_array(session('access_rights'), ['admin', 'hr', 'HRH'])) {
+        if (!$this->permissions->can(Auth::id(), 'saln.admin')) {
             return redirect()->route('profile')->with('error', 'Unauthorized access.');
         }
 

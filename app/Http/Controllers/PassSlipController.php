@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Services\PermissionService;
 use App\Services\PassSlipService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PassSlipController extends Controller
 {
     protected $service;
+    protected PermissionService $permissions;
 
     public function __construct(PassSlipService $service)
     {
         $this->service = $service;
+        $this->permissions = app(PermissionService::class);
     }
 
     public function index()

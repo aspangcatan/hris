@@ -149,7 +149,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/saln', function () {
         return view('saln');
-    })->name('saln');
+    })->name('saln')->middleware('permission:saln.view_own');
 
     Route::get('/employee', function () {
         return view('employee');
@@ -161,7 +161,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/pass_slip', function () {
         return view('pass_slip');
-    })->name('pass_slip');
+    })->name('pass_slip')->middleware('permission:passslip.file');
 
     Route::get('/employee_dtr', function () {
         return view('employee_dtr');
@@ -189,10 +189,10 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/schedule', function () {
         return view('schedule');
-    })->name('schedule');
+    })->name('schedule')->middleware('permission:schedule.view');
     Route::get('/schedule_master_list', function () {
         return view('schedule_master_list');
-    })->name('schedule_master_list');
+    })->name('schedule_master_list')->middleware('permission:schedule.manage');
     Route::get('/schedule_access', function () {
         return view('schedule_access');
     })->name('schedule_access');
@@ -217,22 +217,22 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('hospital_order_create');
     Route::get('/hospital_order/file', function () {
         return view('hospital_order_file');
-    })->name('hospital_order_file');
+    })->name('hospital_order_file')->middleware('permission:hospital_order.file');
     Route::get('/hospital_order/approval', function () {
         if (!in_array(session('access_rights'), ['admin'], true) && !session('is_section_head') && !session('is_division_head')) {
             abort(403);
         }
         return view('hospital_order_approval');
-    })->name('hospital_order_approval');
+    })->name('hospital_order_approval')->middleware('permission:hospital_order.approve');
     Route::get('/overtime/file', function () {
         return view('overtime_file');
-    })->name('overtime_file');
+    })->name('overtime_file')->middleware('permission:overtime.file');
     Route::get('/overtime/approval', function () {
         if (!in_array(session('access_rights'), ['admin'], true) && !session('is_section_head') && !session('is_division_head')) {
             abort(403);
         }
         return view('overtime_approval');
-    })->name('overtime_approval');
+    })->name('overtime_approval')->middleware('permission:overtime.approve');
 
     Route::get('/leave_management', function () {
         return view('settings.leave_management');
@@ -252,13 +252,13 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/payroll', function () {
         return view('payroll');
-    })->name('payroll');
+    })->name('payroll')->middleware('permission:payroll.view');
     Route::get('/payroll_settings', function () {
         return view('settings.payroll');
-    })->name('payroll_settings');
+    })->name('payroll_settings')->middleware('permission:payroll.settings');
     Route::get('/payroll-components/manage', function () {
         return view('settings.payroll_components');
-    })->name('payroll_components');
+    })->name('payroll_components')->middleware('permission:payroll.settings');
 
     Route::get('/timetable', function () {
         return view('settings.timetable');
@@ -281,12 +281,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'savePayrollComponents'])->name('savePayrollComponents');
     Route::get('/payroll-tax-rules/manage', function () {
         return view('settings.payroll_tax_rules');
-    })->name('payroll_tax_rules');
+    })->name('payroll_tax_rules')->middleware('permission:payroll.settings');
     Route::get('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'getPayrollTaxRules'])->name('getPayrollTaxRules');
     Route::post('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'savePayrollTaxRules'])->name('savePayrollTaxRules');
     Route::get('/cutoff-summaries/manage', function () {
         return view('settings.cutoff_summaries');
-    })->name('cutoff_summaries');
+    })->name('cutoff_summaries')->middleware('permission:payroll.settings');
     Route::get('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaries'])->name('getCutoffSummaries');
     Route::post('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'createCutoffSummaries'])->name('createCutoffSummaries');
     Route::get('/cutoff-periods', [\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
@@ -361,7 +361,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/service_records/delete', [\App\Http\Controllers\ServiceRecordsController::class, 'deleteServiceRecords'])->name('deleteServiceRecords');
 #REPORTS
     Route::get('/reports/leave_bal', [\App\Http\Controllers\ReportController::class, 'leaveBalance'])->name('leaveBalance');
-    Route::get('/reports/quarterly-leave-balance', [\App\Http\Controllers\ReportController::class, 'quarterlyLeaveBalance'])->name('report.quarterly_leave_balance');
+    Route::get('/reports/quarterly-leave-balance', [\App\Http\Controllers\ReportController::class, 'quarterlyLeaveBalance'])->name('report.quarterly_leave_balance')->middleware('permission:reports.quarterly_leave');
     Route::get('/reports/quarterly-leave-balance/data', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalance'])->name('report.quarterly_leave_balance.data');
     Route::get('/reports/quarterly-leave-balance/history', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalanceHistory'])->name('report.quarterly_leave_balance.history');
     Route::get('/reports/quarterly-leave-balance/snapshot/{id}', [\App\Http\Controllers\ReportController::class, 'getQuarterlyLeaveBalanceSnapshot'])->name('report.quarterly_leave_balance.snapshot');
@@ -522,7 +522,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     // Pass Slip Approver Routes
     Route::prefix('pass-slip-approver')->group(function () {
-        Route::get('/', [PassSlipApproverController::class, 'index'])->name('pass-slip.approver.index');
+        Route::get('/', [PassSlipApproverController::class, 'index'])->name('pass-slip.approver.index')->middleware('permission:passslip.approve');
         Route::get('/list', [PassSlipApproverController::class, 'list'])->name('pass-slip.approver.list');
         Route::post('/approve/{id}', [PassSlipApproverController::class, 'approve'])->name('pass-slip.approver.approve');
         Route::post('/reject/{id}', [PassSlipApproverController::class, 'reject'])->name('pass-slip.approver.reject');
@@ -538,7 +538,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     // SALN Admin Routes
     Route::prefix('saln-admin')->group(function () {
-        Route::get('/', [\App\Http\Controllers\SalnAdminController::class, 'index'])->name('saln.admin.index');
+        Route::get('/', [\App\Http\Controllers\SalnAdminController::class, 'index'])->name('saln.admin.index')->middleware('permission:saln.admin');
         Route::get('/employees', [\App\Http\Controllers\SalnAdminController::class, 'getEmployees'])->name('saln.admin.employees');
         Route::get('/history/{user_id}', [\App\Http\Controllers\SalnAdminController::class, 'getEmployeeSalnHistory'])->name('saln.admin.history');
         Route::post('/update-filing-type', [\App\Http\Controllers\SalnAdminController::class, 'updateFilingType'])->name('saln.admin.updateFilingType');

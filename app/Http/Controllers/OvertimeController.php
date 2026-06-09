@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\OvertimeServices;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -10,15 +11,17 @@ use Illuminate\Validation\ValidationException;
 class OvertimeController extends Controller
 {
     protected $overtimeService;
+    protected PermissionService $permissions;
 
     public function __construct(OvertimeServices $overtimeService)
     {
         $this->overtimeService = $overtimeService;
+        $this->permissions = app(PermissionService::class);
     }
 
     private function canReviewOvertimeFilings()
     {
-        return in_array(session('access_rights'), ['admin'], true)
+        return $this->permissions->can(Auth::id(), 'overtime.approve')
             || (bool) session('is_section_head')
             || (bool) session('is_division_head')
             || Auth::id() == 325;
