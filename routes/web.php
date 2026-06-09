@@ -153,7 +153,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/employee', function () {
         return view('employee');
-    })->name('employee');
+    })->name('employee')->middleware('permission:employee.view');
 
     Route::get('/dtr', function () {
         return view('dtr');
@@ -173,11 +173,11 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/leave_application', function () {
         return view('leave_application');
-    })->name('leave_application');
+    })->name('leave_application')->middleware('permission:leave.file');
 
     Route::get('/leave_approval', function () {
         return view('leave_approval');
-    })->name('leave_approval');
+    })->name('leave_approval')->middleware('permission:leave.approve');
 
     Route::get('/promotion_applied', function () {
         return view('promotion_work_applied');

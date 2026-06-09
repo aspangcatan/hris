@@ -6,6 +6,7 @@ use App\Models\LeaveApplication;
 use App\Services\LeaveApplicationService;
 use App\Services\LeaveApprovalService;
 use App\Services\LeaveLogsService;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,12 +16,14 @@ class LeaveApplicationController extends Controller
     protected LeaveLogsService $leaveLogService;
     protected LeaveApplicationService $leaveApplicationService;
     protected LeaveApprovalService $leaveApprovalService;
+    protected PermissionService $permissions;
 
-    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService, LeaveApprovalService $leaveApprovalService)
+    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService, LeaveApprovalService $leaveApprovalService, PermissionService $permissions)
     {
         $this->leaveLogService = $leaveLogsService;
         $this->leaveApplicationService = $leaveApplicationService;
         $this->leaveApprovalService = $leaveApprovalService;
+        $this->permissions = $permissions;
     }
 
     public function index(Request $request)

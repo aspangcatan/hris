@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\EmployeeServices;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -12,10 +13,12 @@ use Illuminate\Support\Facades\DB;
 class EmployeeController extends Controller
 {
     protected $employeeService;
+    protected PermissionService $permissions;
 
-    public function __construct(EmployeeServices $employeeService)
+    public function __construct(EmployeeServices $employeeService, PermissionService $permissions)
     {
         $this->employeeService = $employeeService;
+        $this->permissions = $permissions;
     }
 
     public function getEmployeeDetails(Request $request)
@@ -37,9 +40,8 @@ class EmployeeController extends Controller
     {
         try {
             $target_user_id = $request->user_id ?: Auth::id();
-            $access_rights = strtolower((string) session('access_rights'));
             $is_self_update = ((int) $target_user_id === (int) Auth::id());
-            $can_update_others = in_array($access_rights, ['admin', 'hr', 'hrh']);
+            $can_update_others = $this->permissions->can(Auth::id(), 'employee.edit');
 
             if (!$is_self_update && !$can_update_others) {
                 return response(['code' => 500, 'message' => 'Unauthorized employee update request']);
