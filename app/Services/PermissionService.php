@@ -77,7 +77,7 @@ class PermissionService
             DB::table('hris.permission_audit_logs')->insert([
                 'performer_id'   => $adminId,
                 'target_user_id' => $targetUserId,
-                'action'         => "{$type}d {$code}",
+                'action'         => ($type === 'grant' ? 'granted' : 'revoked') . " {$code}",
                 'details'        => json_encode(['code' => $code, 'type' => $type]),
                 'created_at'     => now(),
                 'updated_at'     => now(),

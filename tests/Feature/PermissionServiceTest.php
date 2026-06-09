@@ -127,11 +127,11 @@ class PermissionServiceTest extends TestCase
             ->exists();
         $this->assertTrue($hasPermission, 'Expected grant row in user_permissions');
 
-        // Service writes "{$type}d {$code}" — for type='grant' this produces "grantd {$code}"
+        // Service writes "granted {$code}" for type='grant'
         $hasAudit = DB::table('hris.permission_audit_logs')
             ->where('performer_id', $adminId)
             ->where('target_user_id', $this->testUserId)
-            ->where('action', "grantd {$code}")
+            ->where('action', "granted {$code}")
             ->exists();
         $this->assertTrue($hasAudit, 'Expected audit log entry for grant');
     }
