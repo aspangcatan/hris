@@ -320,6 +320,8 @@ class PermissionService
             throw new \InvalidArgumentException("Unknown permission code: {$code}");
         }
 
+        $level = strtolower($level);
+
         if ($granted) {
             DB::table('hris.access_level_permissions')->updateOrInsert(
                 ['level' => $level, 'permission_id' => $permId],
