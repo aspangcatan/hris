@@ -101,9 +101,8 @@ The final `else` branch (employees who hold neither `admin` nor `schedule.manage
 
 ## Known Behavior Changes
 
-1. **Broader manager set on `/schedule_access`**: any non-admin user whose effective permissions include `schedule.manage` now appears — by default this includes `hr`, `hrh`, `dh`, and `schedule` levels (per `PermissionSeeder`), plus anyone individually granted the permission. Previously only `level = 'schedule'` users appeared.
-2. **No employees until a section is assigned**: a `schedule.manage` holder (of any level) with no rows in `hris.schedule_user_sections` now sees an empty employee list / schedule grid on Manage Schedule, and `printSchedule` returns its existing "No managed sections assigned." 422. Previously they'd see their own section's employees by default.
-3. **`hr`/`hrh`/`dh` users gain managed-sections gating**: these levels hold `schedule.manage` per the seeder, so they now go through the same assigned-sections requirement as `schedule`-level users on the Manage Schedule page (previously they fell into the final `else` branch and saw only their own section, with no admin assignment needed). An admin must assign sections to these users via `/schedule_access` if they need to manage schedules beyond PDS-only access.
+1. **Broader/narrower manager set on `/schedule_access`**: per `PermissionSeeder`, only the `admin` and `schedule` levels hold `schedule.manage` by default, and `admin` is excluded — so by default the listed set is unchanged (`schedule`-level users). The real difference is per-user overrides: a user of any level individually **granted** `schedule.manage` via the Admin Permission UI now appears in the list, and a `schedule`-level user who has had `schedule.manage` individually **revoked** no longer appears (and immediately falls through to the final `else` branch, seeing only their own section, with no manager-assignment workflow available).
+2. **No employees until a section is assigned**: a `schedule.manage` holder (of any level) with no rows in `hris.schedule_user_sections` now sees an empty employee list / schedule grid on Manage Schedule, and `printSchedule` returns its existing "No managed sections assigned." 422. Previously `schedule`-level users would fall back to seeing their own section's employees by default.
 
 ---
 
