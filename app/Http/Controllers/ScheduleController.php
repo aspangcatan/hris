@@ -882,11 +882,11 @@ class ScheduleController extends Controller
                 ->unique()
                 ->values();
 
-            $isScheduleManager = DB::table('tdh_user.user_priv')
-                ->where('user_id', $userId)
-                ->where('syscode', 'hris')
-                ->where('level', 'schedule')
-                ->exists();
+            $isScheduleManager = in_array(
+                $userId,
+                app(PermissionService::class)->getUserIdsWithPermission('schedule.manage'),
+                true
+            );
 
             if (!$isScheduleManager) {
                 return response()->json(['message' => 'Selected user is not a schedule manager.'], 422);

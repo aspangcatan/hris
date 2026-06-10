@@ -284,4 +284,52 @@ class ScheduleAccessTest extends TestCase
         $managerIds = collect($data['managers'])->pluck('id')->map(fn($id) => (int) $id)->all();
         $this->assertContains($this->employeeUserId, $managerIds);
     }
+
+    /** @test */
+    public function save_manager_sections_rejects_user_without_schedule_manage_permission(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->managerUserId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'admin']);
+
+        $controller = app(ScheduleController::class);
+        $request = new Request([
+            'manager_id' => $this->employeeUserId,
+            'section_ids' => [$this->sectionAId],
+        ]);
+
+        $response = $controller->saveScheduleManagerSections($request);
+
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame('Selected user is not a schedule manager.', $response->getData(true)['message']);
+    }
+
+    /** @test */
+    public function save_manager_sections_accepts_schedule_manage_holder_and_persists(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->managerUserId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'admin']);
+
+        $controller = app(ScheduleController::class);
+        $request = new Request([
+            'manager_id' => $this->managerUserId,
+            'section_ids' => [$this->sectionAId, $this->sectionBId],
+        ]);
+
+        $response = $controller->saveScheduleManagerSections($request);
+
+        $this->assertSame(200, $response->getStatusCode());
+
+        $persistedSectionIds = DB::table('hris.schedule_user_sections')
+            ->where('user_id', $this->managerUserId)
+            ->pluck('section_id')
+            ->map(fn($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+
+        $expected = collect([$this->sectionAId, $this->sectionBId])->sort()->values()->all();
+        $this->assertSame($expected, $persistedSectionIds);
+    }
 }
