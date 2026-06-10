@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PermissionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,7 @@ class ScheduleController extends Controller
             return true;
         }
 
-        if ($this->getCurrentAccessRights() !== 'schedule') {
+        if (!permission_check('schedule.manage')) {
             return false;
         }
 
@@ -247,7 +248,7 @@ class ScheduleController extends Controller
                 } else {
                     $employees->where('u.section', Auth::user()->section);
                 }
-            } elseif ($accessRights === 'schedule') {
+            } elseif (permission_check('schedule.manage')) {
                 $managedSections = $this->getManagedSectionIdsForCurrentUser();
                 if (empty($managedSections)) {
                     return response()->json(['schedules' => [], 'days' => $daysInMonth]);
@@ -364,7 +365,7 @@ class ScheduleController extends Controller
                 } else {
                     $employeesQuery->where('u.section', Auth::user()->section);
                 }
-            } elseif ($accessRights === 'schedule') {
+            } elseif (permission_check('schedule.manage')) {
                 $managedSections = $this->getManagedSectionIdsForCurrentUser();
                 if (empty($managedSections)) {
                     return response()->json(['message' => 'No managed sections assigned.'], 422);
@@ -444,7 +445,7 @@ class ScheduleController extends Controller
                 $sectionLabel = $this->getSectionLabelByDivisionId($requestedDivision);
                 $divisionId = $requestedDivision;
             } else {
-                if ($accessRights === 'schedule') {
+                if ($accessRights !== 'admin' && permission_check('schedule.manage')) {
                     $managedSectionLabel = $this->getSectionLabelByIds($managedSections, $requestedDivision);
                     $managedDivisionLabel = $this->getDivisionLabelBySectionIds($managedSections);
 
@@ -791,7 +792,7 @@ class ScheduleController extends Controller
                 ->orderBy('d.description')
                 ->orderBy('s.description');
 
-            if ($accessRights === 'schedule') {
+            if ($accessRights !== 'admin' && permission_check('schedule.manage')) {
                 $managedSections = $this->getManagedSectionIdsForCurrentUser();
                 if (empty($managedSections)) {
                     return response()->json(['sections' => []]);

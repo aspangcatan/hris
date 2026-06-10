@@ -18,10 +18,19 @@ class ScheduleAccessTest extends TestCase
     private int $divisionId;
     private int $sectionAId;
     private int $sectionBId;
+    private int $schedulePermissionId;
 
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The PermissionService singleton caches effective permissions per user id
+        // for its lifetime. Since DatabaseTransactions rolls back each test, newly
+        // created users can be assigned the same auto-increment id as a previous
+        // test's user, causing stale cached permission results. Forget the
+        // singleton instance so permission_check() resolves a fresh, uncached
+        // PermissionService for this test.
+        $this->app->forgetInstance(\App\Services\PermissionService::class);
 
         $this->managerUserId = DB::table('tdh_user.users')->insertGetId([
             'fname' => 'Manager', 'lname' => 'Test', 'mname' => '',
@@ -64,10 +73,27 @@ class ScheduleAccessTest extends TestCase
         DB::table('tdh_user.users')->where('id', $this->employeeUserId)->update([
             'division' => $this->divisionId, 'section' => $this->sectionAId,
         ]);
+
+        // The test database is not seeded with PermissionSeeder, so the
+        // 'schedule.manage' permission and its grant to the 'schedule' level
+        // must be created here for permission_check('schedule.manage') to work.
+        $this->schedulePermissionId = DB::table('hris.permissions')->insertGetId([
+            'module' => 'schedule',
+            'code' => 'schedule.manage',
+            'description' => 'Manage schedules',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('hris.access_level_permissions')->insert([
+            'level' => 'schedule',
+            'permission_id' => $this->schedulePermissionId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
     }
 
     protected function tearDown(): void
     {
+        DB::table('hris.access_level_permissions')->where('permission_id', $this->schedulePermissionId)->delete();
+        DB::table('hris.permissions')->where('id', $this->schedulePermissionId)->delete();
         DB::table('hris.schedule_user_sections')->whereIn('user_id', [$this->managerUserId, $this->employeeUserId])->delete();
         DB::table('hris.user_permissions')->whereIn('user_id', [$this->managerUserId, $this->employeeUserId])->delete();
         DB::table('tdh_user.section')->whereIn('id', [$this->sectionAId, $this->sectionBId])->delete();
@@ -118,5 +144,106 @@ class ScheduleAccessTest extends TestCase
         // Only sectionB (the assigned one) should come back — not sectionA
         // (the manager's own section), since the fallback is gone.
         $this->assertSame([$this->sectionBId], $this->callPrivate($controller, 'getManagedSectionIdsForCurrentUser'));
+    }
+
+    /** @test */
+    public function cannot_manage_employee_when_no_sections_assigned(): void
+    {
+        $this->actAsManager();
+        $controller = app(ScheduleController::class);
+
+        $this->assertFalse($this->callPrivate($controller, 'canManageEmployee', [$this->employeeUserId]));
+    }
+
+    /** @test */
+    public function can_manage_employee_in_assigned_section(): void
+    {
+        $this->actAsManager();
+
+        DB::table('hris.schedule_user_sections')->insert([
+            'user_id' => $this->managerUserId,
+            'section_id' => $this->sectionAId, // employee is in sectionA
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $controller = app(ScheduleController::class);
+
+        $this->assertTrue($this->callPrivate($controller, 'canManageEmployee', [$this->employeeUserId]));
+    }
+
+    /** @test */
+    public function cannot_manage_employee_outside_assigned_sections(): void
+    {
+        $this->actAsManager();
+
+        DB::table('hris.schedule_user_sections')->insert([
+            'user_id' => $this->managerUserId,
+            'section_id' => $this->sectionBId, // employee is in sectionA, not sectionB
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $controller = app(ScheduleController::class);
+
+        $this->assertFalse($this->callPrivate($controller, 'canManageEmployee', [$this->employeeUserId]));
+    }
+
+    /** @test */
+    public function get_schedules_returns_empty_when_manager_has_no_assigned_sections(): void
+    {
+        $this->actAsManager();
+        $controller = app(ScheduleController::class);
+
+        $response = $controller->getSchedules(new Request());
+        $data = $response->getData(true);
+
+        $this->assertSame([], $data['schedules']);
+        $this->assertArrayHasKey('days', $data);
+    }
+
+    /** @test */
+    public function get_managed_sections_returns_empty_when_manager_has_no_assigned_sections(): void
+    {
+        $this->actAsManager();
+        $controller = app(ScheduleController::class);
+
+        $response = $controller->getManagedSections();
+        $data = $response->getData(true);
+
+        $this->assertSame([], $data['sections']);
+    }
+
+    /** @test */
+    public function get_managed_sections_returns_assigned_sections_for_manager(): void
+    {
+        $this->actAsManager();
+
+        DB::table('hris.schedule_user_sections')->insert([
+            'user_id' => $this->managerUserId,
+            'section_id' => $this->sectionAId,
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $controller = app(ScheduleController::class);
+        $response = $controller->getManagedSections();
+        $data = $response->getData(true);
+
+        $sectionIds = collect($data['sections'])->pluck('id')->map(fn($id) => (int) $id)->all();
+        $this->assertSame([$this->sectionAId], $sectionIds);
+    }
+
+    /** @test */
+    public function get_managed_sections_returns_unfiltered_list_for_admin(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->managerUserId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'admin']);
+
+        $controller = app(ScheduleController::class);
+        $response = $controller->getManagedSections();
+        $data = $response->getData(true);
+
+        $sectionIds = collect($data['sections'])->pluck('id')->map(fn($id) => (int) $id)->all();
+        $this->assertContains($this->sectionAId, $sectionIds);
+        $this->assertContains($this->sectionBId, $sectionIds);
     }
 }
