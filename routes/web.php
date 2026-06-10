@@ -556,6 +556,13 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('admin.permissions.users.update');
     Route::delete('/admin/permissions/users/{id}/reset', [\App\Http\Controllers\Admin\PermissionController::class, 'reset'])
         ->name('admin.permissions.users.reset');
+
+    Route::get('/admin/permission-levels', [\App\Http\Controllers\Admin\PermissionLevelController::class, 'index'])
+        ->name('admin.permission_levels');
+    Route::get('/admin/permission-levels/data', [\App\Http\Controllers\Admin\PermissionLevelController::class, 'data'])
+        ->name('admin.permission_levels.data');
+    Route::post('/admin/permission-levels/update', [\App\Http\Controllers\Admin\PermissionLevelController::class, 'update'])
+        ->name('admin.permission_levels.update');
 });
 
     // SALN List View Example
