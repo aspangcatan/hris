@@ -246,4 +246,42 @@ class ScheduleAccessTest extends TestCase
         $this->assertContains($this->sectionAId, $sectionIds);
         $this->assertContains($this->sectionBId, $sectionIds);
     }
+
+    /** @test */
+    public function manager_assignments_lists_users_with_schedule_manage_permission(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->managerUserId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'admin']);
+
+        $controller = app(ScheduleController::class);
+        $response = $controller->getScheduleManagerAssignments();
+        $data = $response->getData(true);
+
+        $managerIds = collect($data['managers'])->pluck('id')->map(fn($id) => (int) $id)->all();
+        $this->assertContains($this->managerUserId, $managerIds);
+        $this->assertNotContains($this->employeeUserId, $managerIds);
+    }
+
+    /** @test */
+    public function manager_assignments_includes_per_user_granted_employee(): void
+    {
+        DB::table('hris.user_permissions')->insert([
+            'user_id' => $this->employeeUserId,
+            'permission_id' => $this->schedulePermissionId,
+            'type' => 'grant',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        Auth::shouldReceive('id')->andReturn($this->managerUserId);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'admin']);
+
+        $controller = app(ScheduleController::class);
+        $response = $controller->getScheduleManagerAssignments();
+        $data = $response->getData(true);
+
+        $managerIds = collect($data['managers'])->pluck('id')->map(fn($id) => (int) $id)->all();
+        $this->assertContains($this->employeeUserId, $managerIds);
+    }
 }

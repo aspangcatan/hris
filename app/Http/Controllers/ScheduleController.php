@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PermissionService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -826,11 +827,11 @@ class ScheduleController extends Controller
                 ->orderBy('s.description')
                 ->get();
 
-            $managers = DB::table('tdh_user.user_priv as up')
-                ->join('tdh_user.users as u', 'up.user_id', '=', 'u.id')
+            $managerIds = app(PermissionService::class)->getUserIdsWithPermission('schedule.manage');
+
+            $managers = DB::table('tdh_user.users as u')
                 ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
-                ->where('up.syscode', 'hris')
-                ->where('up.level', 'schedule')
+                ->whereIn('u.id', $managerIds)
                 ->selectRaw("
                     u.id,
                     CONCAT(
