@@ -268,4 +268,68 @@ class PermissionService
             ->values()
             ->all();
     }
+
+    public function getLevelPermissionMatrix(): array
+    {
+        $levels = DB::table('tdh_user.user_priv')
+            ->where('syscode', 'hris')
+            ->select(DB::raw('LOWER(level) as level'))
+            ->distinct()
+            ->pluck('level')
+            ->all();
+
+        sort($levels);
+
+        $grants = DB::table('hris.access_level_permissions')
+            ->get(['level', 'permission_id'])
+            ->map(fn($row) => strtolower($row->level) . ':' . $row->permission_id)
+            ->flip();
+
+        $modules = DB::table('hris.permissions')
+            ->orderBy('module')
+            ->orderBy('code')
+            ->get()
+            ->map(function ($p) use ($levels, $grants) {
+                $levelMap = [];
+                foreach ($levels as $level) {
+                    $levelMap[$level] = $level === 'admin'
+                        ? true
+                        : $grants->has("{$level}:{$p->id}");
+                }
+                return [
+                    'id'          => $p->id,
+                    'module'      => $p->module,
+                    'code'        => $p->code,
+                    'description' => $p->description,
+                    'levels'      => $levelMap,
+                ];
+            })
+            ->groupBy('module')
+            ->toArray();
+
+        return [
+            'levels'  => $levels,
+            'modules' => $modules,
+        ];
+    }
+
+    public function setLevelPermission(string $level, string $code, bool $granted): void
+    {
+        $permId = DB::table('hris.permissions')->where('code', $code)->value('id');
+        if (!$permId) {
+            throw new \InvalidArgumentException("Unknown permission code: {$code}");
+        }
+
+        if ($granted) {
+            DB::table('hris.access_level_permissions')->updateOrInsert(
+                ['level' => $level, 'permission_id' => $permId],
+                ['level' => $level, 'permission_id' => $permId, 'created_at' => now(), 'updated_at' => now()]
+            );
+        } else {
+            DB::table('hris.access_level_permissions')
+                ->where('level', $level)
+                ->where('permission_id', $permId)
+                ->delete();
+        }
+    }
 }
