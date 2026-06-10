@@ -170,12 +170,102 @@ class PermissionService
         return $this->cache[$userId];
     }
 
+    public function syncHeadshipGrants(int $userId, bool $isSectionHead, bool $isDivisionHead): void
+    {
+        if (!$isSectionHead && !$isDivisionHead) {
+            return;
+        }
+
+        $codes = ['leave.approve', 'overtime.approve', 'passslip.approve', 'hospital_order.approve'];
+
+        $permissions = DB::table('hris.permissions')
+            ->whereIn('code', $codes)
+            ->get(['id', 'code']);
+
+        $existingPermIds = DB::table('hris.user_permissions')
+            ->where('user_id', $userId)
+            ->pluck('permission_id')
+            ->flip()
+            ->toArray();
+
+        foreach ($permissions as $permission) {
+            if (array_key_exists($permission->id, $existingPermIds)) {
+                continue;
+            }
+
+            DB::transaction(function () use ($userId, $permission) {
+                DB::table('hris.user_permissions')->insert([
+                    'user_id' => $userId,
+                    'permission_id' => $permission->id,
+                    'type' => 'grant',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('hris.permission_audit_logs')->insert([
+                    'performer_id'   => $userId,
+                    'target_user_id' => $userId,
+                    'action'         => "auto-granted {$permission->code} via section/division headship",
+                    'details'        => json_encode(['code' => $permission->code, 'type' => 'auto-grant']),
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+            });
+
+            unset($this->cache[$userId]);
+        }
+    }
+
     public function getUserLevel(int $userId): string
     {
         return strtolower(
             DB::table('tdh_user.user_priv')
                 ->where('user_id', $userId)
+                ->where('syscode','hris')
                 ->value('level') ?? 'standard'
         );
+    }
+
+    public function getUserIdsWithPermission(string $code, bool $excludeAdminLevel = true): array
+    {
+        $permId = DB::table('hris.permissions')->where('code', $code)->value('id');
+        if (!$permId) {
+            return [];
+        }
+
+        $grantedLevels = DB::table('hris.access_level_permissions')
+            ->where('permission_id', $permId)
+            ->pluck('level')
+            ->map(fn($level) => strtolower($level))
+            ->all();
+
+        $grantedUserIds = DB::table('hris.user_permissions')
+            ->where('permission_id', $permId)
+            ->where('type', 'grant')
+            ->pluck('user_id')
+            ->all();
+
+        $revokedUserIds = DB::table('hris.user_permissions')
+            ->where('permission_id', $permId)
+            ->where('type', 'revoke')
+            ->pluck('user_id')
+            ->all();
+
+        return DB::table('tdh_user.user_priv')
+            ->where('syscode', 'hris')
+            ->get(['user_id', 'level'])
+            ->filter(function ($row) use ($grantedLevels, $grantedUserIds, $excludeAdminLevel) {
+                $level = strtolower((string) $row->level);
+                if ($excludeAdminLevel && $level === 'admin') {
+                    return false;
+                }
+                return in_array($level, $grantedLevels, true) || in_array($row->user_id, $grantedUserIds, true);
+            })
+            ->pluck('user_id')
+            ->reject(fn($id) => in_array($id, $revokedUserIds, true))
+            ->unique()
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->all();
     }
 }
