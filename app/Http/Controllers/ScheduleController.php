@@ -16,21 +16,15 @@ class ScheduleController extends Controller
         return strtolower((string) session('access_rights'));
     }
 
-    private function getManagedSectionIdsForCurrentUser(bool $includeOwnSectionFallback = true): array
+    private function getManagedSectionIdsForCurrentUser(): array
     {
-        $managedSectionIds = DB::table('hris.schedule_user_sections')
+        return DB::table('hris.schedule_user_sections')
             ->where('user_id', Auth::id())
             ->pluck('section_id')
             ->map(fn($id) => (int) $id)
             ->unique()
             ->values()
             ->toArray();
-
-        if (empty($managedSectionIds) && $includeOwnSectionFallback && Auth::check() && Auth::user()->section) {
-            $managedSectionIds = [(int) Auth::user()->section];
-        }
-
-        return $managedSectionIds;
     }
 
     private function canManageEmployee(int $employeeId): bool
