@@ -111,7 +111,7 @@
         @endif
 
         {{-- SCHEDULE MANAGEMENT --}}
-        @if(permission_check('schedule.manage') || in_array(session('access_rights'), ['admin']))
+        @if(permission_check('schedule.manage') || permission_check('schedule.view') || in_array(session('access_rights'), ['admin']))
             <li class="nav-heading">Schedule Management</li>
             @permission('schedule.manage')
                 <li class="nav-item">
@@ -122,6 +122,15 @@
                     </a>
                 </li>
             @endpermission
+            @if(!permission_check('schedule.manage') && permission_check('schedule.view'))
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('schedule') ? '' : 'collapsed' }}"
+                       href="{{ route('schedule') }}">
+                        <i class="bi bi-clock-history"></i>
+                        <span>View Schedule</span>
+                    </a>
+                </li>
+            @endif
             @if(in_array(session('access_rights'), ['admin']))
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_master_list') ? '' : 'collapsed' }}"
@@ -212,7 +221,7 @@
         @endif
 
         {{-- HR MANAGEMENT --}}
-        @permission('employee.edit')
+        @permission('employee.view')
             <li class="nav-heading">HR Management</li>
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee') ? '' : 'collapsed' }}"
