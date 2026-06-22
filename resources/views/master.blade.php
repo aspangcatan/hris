@@ -462,10 +462,10 @@
     <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
     <!-- Template Main CSS File -->
-    <link href="{{ asset('css/style.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
-    <link href="{{ asset('css/toastr.min.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
-    <link href="{{ asset('css/selectize.default.min.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
-    <link href="{{ asset('css/progress.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/toastr.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/selectize.default.min.css') }} }}" rel="stylesheet">
+    <link href="{{ asset('css/progress.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css" integrity="sha512-mSYUmp1HYZDFaVKK//63EcZq4iFWFjxSL+Z3T/aCt4IO9Cejm03q3NKKYN6pFQzY0SBOr8h+eCIAZHPXcpZaNw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
