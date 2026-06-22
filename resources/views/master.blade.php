@@ -462,7 +462,7 @@
     <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
     <!-- Template Main CSS File -->
-    <link href="{{ asset('assets/css/style.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
     <link href="{{ asset('css/toastr.min.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
     <link href="{{ asset('css/selectize.default.min.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
     <link href="{{ asset('css/progress.css') }}?v={{ date('ymdhis') }}" rel="stylesheet">
