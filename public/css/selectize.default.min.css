@@ -1,3 +1,4 @@
+@charset "UTF-8";
 .selectize-control.plugin-drag_drop.multi>.selectize-input.dragging {
 overflow: visible
 }
