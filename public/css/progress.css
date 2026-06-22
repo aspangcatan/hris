@@ -1,17 +1,14 @@
 .container .progress {
-    display: flex;
-    margin: 40px 0;
+display: flex;
+margin: 40px 0;
 }
-
 .container .progress .step {
-    text-align: center;
-    width: 100%;
+text-align: center;
+width: 100%;
 }
-
 .progress .step p {
-    font-size: 18px;
-    font-weight: 800;
-    color: #000;
-    margin-bottom: 8px;
+font-size: 18px;
+font-weight: 800;
+color: #000;
+margin-bottom: 8px;
 }
-
