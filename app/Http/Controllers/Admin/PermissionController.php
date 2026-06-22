@@ -33,27 +33,40 @@ class PermissionController extends Controller
 
         $query = DB::table('tdh_user.users as u')
             ->leftJoin('tdh_user.user_priv as up', 'up.user_id', '=', 'u.id')
-            ->select('u.id', 'u.fname', 'u.lname', 'u.mname',
-                     DB::raw("COALESCE(up.level, 'standard') as level"))
+            ->select(
+                'u.id',
+                'u.fname',
+                'u.lname',
+                'u.mname',
+                DB::raw("COALESCE(up.level, 'standard') as level")
+            )
+            ->where('up.syscode','hris')
             ->where(function ($q) use ($search) {
                 if ($search) {
                     $q->where('u.fname', 'like', "%{$search}%")
-                      ->orWhere('u.lname', 'like', "%{$search}%");
+                        ->orWhere('u.lname', 'like', "%{$search}%");
                 }
             })
             ->orderBy('u.lname')
             ->orderBy('u.fname');
 
-        return response()->json($query->paginate(20));
+        return response()->json($query->paginate(10));
     }
 
     public function show(int $id)
     {
         $user = DB::table('tdh_user.users as u')
-            ->leftJoin('tdh_user.user_priv as up', 'up.user_id', '=', 'u.id')
+            ->leftJoin('tdh_user.user_priv as up', function ($join) {
+                $join->on('up.user_id', '=', 'u.id')
+                    ->where('up.syscode', '=', 'hris');
+            })
             ->where('u.id', $id)
-            ->select('u.id', 'u.fname', 'u.lname',
-                     DB::raw("COALESCE(up.level, 'standard') as level"))
+            ->select(
+                'u.id',
+                'u.fname',
+                'u.lname',
+                DB::raw("COALESCE(up.level, 'standard') as level")
+            )
             ->first();
 
         if (!$user) {
@@ -65,16 +78,19 @@ class PermissionController extends Controller
         $auditLog = DB::table('hris.permission_audit_logs as pal')
             ->leftJoin('tdh_user.users as u', 'u.id', '=', 'pal.performer_id')
             ->where('pal.target_user_id', $id)
-            ->select('pal.action', 'pal.created_at',
-                     DB::raw("CONCAT(u.fname, ' ', u.lname) as performed_by"))
+            ->select(
+                'pal.action',
+                'pal.created_at',
+                DB::raw("CONCAT(u.fname, ' ', u.lname) as performed_by")
+            )
             ->orderByDesc('pal.created_at')
             ->limit(20)
             ->get();
 
         return response()->json([
-            'user'        => $user,
+            'user' => $user,
             'permissions' => $permissions,
-            'audit_log'   => $auditLog,
+            'audit_log' => $auditLog,
         ]);
     }
 

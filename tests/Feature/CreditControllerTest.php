@@ -4,24 +4,24 @@ namespace Tests\Feature;
 
 use App\Services\DTRServices;
 use App\Services\LeaveCreditService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 use Tests\TestCase;
 
 class CreditControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseTransactions;
 
     /** @test */
     public function it_updates_credit_balance_for_employees()
     {
         // Mock employee data
-        DB::table('tdh_user.users')->insert([
-            ['id' => 1, 'division' => 'IT', 'section' => 'Development']
+        DB::table('tdh_user.users')->insertOrIgnore([
+            ['id' => 8999, 'division' => 1, 'section' => 1, 'fname' => 'Test', 'lname' => 'User', 'username' => 'credit_test_8999', 'password' => 'x']
         ]);
-        DB::table('hris.schedules')->insert([
-            ['employee_id' => 1, 'schedule_date' => '2025-09-05']
+        DB::table('hris.schedules')->insertOrIgnore([
+            ['employee_id' => 8999, 'schedule_date' => '2025-09-05']
         ]);
 
         // Mock DTR and LeaveCredit services

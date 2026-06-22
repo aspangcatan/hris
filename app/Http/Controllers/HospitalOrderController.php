@@ -21,9 +21,7 @@ class HospitalOrderController extends Controller
 
     private function canReviewHospitalOrderFilings()
     {
-        return $this->permissions->can(Auth::id(), 'hospital_order.approve')
-            || (bool) session('is_section_head')
-            || (bool) session('is_division_head');
+        return $this->permissions->can(Auth::id(), 'hospital_order.approve');
     }
 
     public function createHospitalOrder(Request $request)

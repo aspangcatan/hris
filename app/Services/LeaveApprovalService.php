@@ -8,10 +8,22 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApprovalService
 {
+    private PermissionService $permissions;
+
+    public function __construct(PermissionService $permissions)
+    {
+        $this->permissions = $permissions;
+    }
+
     private function canActAsHr(): bool
     {
         $accessRight = strtoupper((string) session('access_rights'));
-        return in_array($accessRight, ['HR', 'HRH'], true);
+        if (in_array($accessRight, ['HR', 'HRH'], true)) {
+            return true;
+        }
+
+        $userId = Auth::id();
+        return $userId && $this->permissions->can($userId, 'leave.approve_hr');
     }
 
     private function canApprovePendingStep(object $pendingApproval, $user): bool

@@ -61,6 +61,8 @@ const LEVEL_LABELS = {
     admin: 'Admin', dh: 'DH', hr: 'HR', schedule: 'Schedule', sh: 'SH', standard: 'Standard',
 };
 
+const PERM_DESCRIPTIONS = {};
+
 async function loadMatrix() {
     const res  = await fetch(ROUTE_DATA, { headers: { Accept: 'application/json' } });
     const data = await res.json();
@@ -79,6 +81,7 @@ function renderMatrix(data) {
             <tr class="table-light">
                 <th colspan="${levels.length + 1}"><i class="bi ${info.icon} me-1"></i> ${info.label}</th>
             </tr>`;
+        perms.forEach(p => { PERM_DESCRIPTIONS[p.code] = p.description; });
         const permRows = perms.map(p => renderPermRow(p, levels)).join('');
         return moduleHeader + permRows;
     }).join('');
@@ -117,8 +120,12 @@ async function toggleLevelPermission(checkbox, level, code) {
 
     if (!res.ok) {
         checkbox.checked = !granted;
-        alert('Failed to update permission. Please try again.');
+        toastr.error('Failed to update permission. Please try again.', 'Error');
+        return;
     }
+
+    const action = granted ? 'granted to' : 'revoked from';
+    toastr.success(`${PERM_DESCRIPTIONS[code] || code} ${action} ${LEVEL_LABELS[level] || level}`, 'Updated');
 }
 
 loadMatrix();

@@ -207,8 +207,7 @@ class LeaveMonetizationService
 
         $query = DB::table('leave_monetizations as lm')
             ->join('leave_types as lt', 'lt.id', '=', 'lm.leave_type_id')
-            ->join('users as u', 'u.id', '=', 'lm.user_id')
-            ->join('employees as e', 'e.user_id', '=', 'lm.user_id')
+            ->join('tdh_user.users as u', 'u.id', '=', 'lm.user_id')
             ->join('leave_monetization_approvals as lma', function ($join) {
                 $join->on('lma.leave_monetization_id', '=', 'lm.id');
             });
@@ -248,8 +247,8 @@ class LeaveMonetizationService
 
         if ($searchEmployee) {
             $query->where(function ($q) use ($searchEmployee) {
-                $q->where('e.firstname', 'like', "%{$searchEmployee}%")
-                  ->orWhere('e.lastname', 'like', "%{$searchEmployee}%");
+                $q->where('u.fname', 'like', "%{$searchEmployee}%")
+                  ->orWhere('u.lname', 'like', "%{$searchEmployee}%");
             });
         }
 
@@ -262,20 +261,21 @@ class LeaveMonetizationService
                 'lm.created_at',
                 'lt.description as leave_type',
                 'lt.code as leave_code',
-                'e.firstname',
-                'e.lastname',
+                'u.fname',
+                'u.mname',
+                'u.lname',
                 'lma.role as approval_role',
                 'lma.status as approval_status',
             ])
             ->map(function ($row) {
                 return [
-                    'id'           => $row->id,
-                    'employee'     => trim("{$row->firstname} {$row->lastname}"),
-                    'leave_type'   => $row->leave_type,
-                    'leave_code'   => $row->leave_code,
+                    'id'             => $row->id,
+                    'employee'       => trim("{$row->lname}, {$row->fname}" . ($row->mname ? ' ' . strtoupper(substr($row->mname, 0, 1)) . '.' : '')),
+                    'leave_type'     => $row->leave_type,
+                    'leave_code'     => $row->leave_code,
                     'days_requested' => number_format($row->days_requested, 3),
-                    'status'       => ucfirst($row->monetization_status),
-                    'filed_date'   => Carbon::parse($row->created_at)->format('m/d/Y'),
+                    'status'         => ucfirst($row->monetization_status),
+                    'filed_date'     => Carbon::parse($row->created_at)->format('m/d/Y'),
                     'approval_role'   => $row->approval_role,
                     'approval_status' => $row->approval_status,
                 ];

@@ -1,6 +1,6 @@
 <div class="modal fade" id="saln_form_modal" tabindex="-1" aria-labelledby="salnFormModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-fullscreen">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header saln-premium-header">
                 <div class="d-flex align-items-center gap-3">

@@ -17,6 +17,7 @@ class PermissionSeeder extends Seeder
             ['module' => 'employee',       'code' => 'employee.edit',           'description' => "Edit other employees' PDS"],
             ['module' => 'leave',          'code' => 'leave.file',              'description' => 'File leave applications'],
             ['module' => 'leave',          'code' => 'leave.approve',           'description' => 'Approve leave applications'],
+            ['module' => 'leave',          'code' => 'leave.approve_hr',        'description' => 'Approve leave applications at the HR phase'],
             ['module' => 'leave',          'code' => 'leave.manage_credits',    'description' => 'Add/edit leave credits'],
             ['module' => 'leave',          'code' => 'leave.manage_types',      'description' => 'Manage leave types'],
             ['module' => 'payroll',        'code' => 'payroll.view',            'description' => 'View payroll records'],
@@ -49,7 +50,7 @@ class PermissionSeeder extends Seeder
             'hr' => [
                 'dtr.view_own','dtr.view_others','dtr.print',
                 'employee.view','employee.edit',
-                'leave.file','leave.approve','leave.manage_credits','leave.manage_types',
+                'leave.file','leave.approve','leave.approve_hr','leave.manage_credits','leave.manage_types',
                 'payroll.view','payroll.manage',
                 'overtime.file','overtime.approve',
                 'passslip.file','passslip.approve',
@@ -61,7 +62,7 @@ class PermissionSeeder extends Seeder
             'hrh' => [
                 'dtr.view_own','dtr.view_others','dtr.print',
                 'employee.view','employee.edit',
-                'leave.file','leave.approve','leave.manage_credits','leave.manage_types',
+                'leave.file','leave.approve','leave.approve_hr','leave.manage_credits','leave.manage_types',
                 'payroll.view','payroll.manage',
                 'overtime.file','overtime.approve',
                 'passslip.file','passslip.approve',

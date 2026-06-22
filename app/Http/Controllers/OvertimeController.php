@@ -21,10 +21,7 @@ class OvertimeController extends Controller
 
     private function canReviewOvertimeFilings()
     {
-        return $this->permissions->can(Auth::id(), 'overtime.approve')
-            || (bool) session('is_section_head')
-            || (bool) session('is_division_head')
-            || Auth::id() == 325;
+        return $this->permissions->can(Auth::id(), 'overtime.approve');
     }
 
     public function fileForSelf(Request $request)

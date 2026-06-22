@@ -81,7 +81,7 @@ class OvertimeServices
         return [
             ['role' => 'SH', 'order_no' => 1, 'approver_id' => $shId ? (int) $shId : null],
             ['role' => 'DH', 'order_no' => 2, 'approver_id' => $dhId ? (int) $dhId : null],
-            ['role' => 'HR', 'order_no' => 3, 'approver_id' => 15],
+            ['role' => 'HR', 'order_no' => 3, 'approver_id' => 325],
         ];
     }
 

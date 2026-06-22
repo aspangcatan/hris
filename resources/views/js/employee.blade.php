@@ -12,6 +12,8 @@
 @include('js.service_record')
 @include('js.leave_credits')
 <script>
+    const CAN_MANAGE_LEAVE_CREDITS = @json(permission_check('leave.manage_credits'));
+
     const SURVEYS = [
         {question: "within the third degree?", id: "survey_1"},
         {question: "within the fourth degree (for Local Government Unit - Career Employees)?", id: "survey_2"},
@@ -549,13 +551,19 @@
                     tr += "<td><span class='leave-credit-code'>" + (it.code || "leave") + "</span></td>";
                     tr += "<td>";
                     tr += "<div class='leave-credit-display'><span class='leave-credit-value'>" + formattedValue + "</span></div>";
-                    tr += "<div class='input-group input-group-sm leave-credit-input-group d-none'>";
-                    tr += "<input type='number' step='0.001' min='0' class='form-control text-center leave-credit-input' value='" + formattedValue + "' data-original='" + parseFloat(it.based_credit || 0) + "' />";
-                    tr += "<button type='button' class='btn btn-success leave-credit-save-btn' disabled><i class='bi bi-check-lg'></i></button>";
-                    tr += "<button type='button' class='btn btn-outline-secondary leave-credit-cancel-btn'><i class='bi bi-x-lg'></i></button>";
-                    tr += "</div>";
+                    if (CAN_MANAGE_LEAVE_CREDITS) {
+                        tr += "<div class='input-group input-group-sm leave-credit-input-group d-none'>";
+                        tr += "<input type='number' step='0.001' min='0' class='form-control text-center leave-credit-input' value='" + formattedValue + "' data-original='" + parseFloat(it.based_credit || 0) + "' />";
+                        tr += "<button type='button' class='btn btn-success leave-credit-save-btn' disabled><i class='bi bi-check-lg'></i></button>";
+                        tr += "<button type='button' class='btn btn-outline-secondary leave-credit-cancel-btn'><i class='bi bi-x-lg'></i></button>";
+                        tr += "</div>";
+                    }
                     tr += "</td>";
-                    tr += "<td><div class='leave-credit-actions'><span class='leave-credit-status'>Current value</span><button type='button' class='btn btn-sm btn-outline-primary credit-edit-btn'><i class='bi bi-pencil-square'></i> Edit</button></div></td>";
+                    tr += "<td><div class='leave-credit-actions'><span class='leave-credit-status'>Current value</span>";
+                    if (CAN_MANAGE_LEAVE_CREDITS) {
+                        tr += "<button type='button' class='btn btn-sm btn-outline-primary credit-edit-btn'><i class='bi bi-pencil-square'></i> Edit</button>";
+                    }
+                    tr += "</div></td>";
                     tr += "</tr>";
                     $("#leave_credits_list").append(tr);
                 });

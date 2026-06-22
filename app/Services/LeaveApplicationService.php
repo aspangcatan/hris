@@ -293,7 +293,7 @@ class LeaveApplicationService
         $dateRows = DB::table('hris.leave_date_applied as lda')
             ->leftJoin('hris.leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
             ->where('lda.leave_application_id', $id)
-            ->select('lda.id', 'lda.date_applied', 'lda.hours', 'lda.leave_type_id', 'lt.description as leave_type_name')
+            ->select('lda.id', 'lda.date_applied', 'lda.hours', 'lda.leave_type_id', 'lda.status', 'lt.description as leave_type_name')
             ->orderBy('lda.date_applied', 'asc')
             ->get();
 

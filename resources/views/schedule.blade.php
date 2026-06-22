@@ -1,5 +1,9 @@
 @extends('master')
 
+@php
+    $canManageSchedule = permission_check('schedule.manage');
+@endphp
+
 @section('content')
     <style>
         .schedule-board {
@@ -100,8 +104,13 @@
     <div class="schedule-board">
         <div class="schedule-head">
             <div class="schedule-head-title">
-                <h4>Schedule Management</h4>
-                <span>Build and manage monthly schedules by division and section.</span>
+                @if($canManageSchedule)
+                    <h4>Schedule Management</h4>
+                    <span>Build and manage monthly schedules by division and section.</span>
+                @else
+                    <h4>My Schedule</h4>
+                    <span>View your schedule for the month.</span>
+                @endif
             </div>
             <div class="schedule-legend">
                 <div class="fw-bold mb-1">Legend</div>
@@ -154,7 +163,7 @@
                     </div>
                 @endif
 
-                @if(in_array(session('access_rights'), ['admin', 'schedule']))
+                @if($canManageSchedule)
                     <div class="col-md-2">
                         <div class="form-floating">
                             <select class="form-select form-control-sm" id="section">
@@ -170,10 +179,12 @@
                         <label for="employee_search_filter">Search Employee</label>
                     </div>
                 </div>
-                <div class="col-md-2 d-grid gap-2">
-                    <button id="btn_advance_schedule" class="btn btn-action btn-edit w-100">Advance</button>
-                    <button id="btn_print_schedule" class="btn btn-action btn-view w-100">Print Preview</button>
-                </div>
+                @if($canManageSchedule)
+                    <div class="col-md-2 d-grid gap-2">
+                        <button id="btn_advance_schedule" class="btn btn-action btn-edit w-100">Advance</button>
+                        <button id="btn_print_schedule" class="btn btn-action btn-view w-100">Print Preview</button>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -199,6 +210,7 @@
         let currentEmployees = [];
         let managedSectionsByDivision = {};
         const accessRights = @json(strtolower((string) session('access_rights')));
+        const canManageSchedule = @json($canManageSchedule);
 
         $(document).ready(function () {
             loadScheduleMasterList();
@@ -361,6 +373,10 @@
             });
 
             $("body").on("click", ".schedule-cell", function () {
+                if (!canManageSchedule) {
+                    return;
+                }
+
                 if (isLockedMonthSelection()) {
                     toastr.warning("Schedules from last month and older can no longer be edited.", "Locked");
                     return;
@@ -433,7 +449,7 @@
 
             if (accessRights === 'admin') {
                 loadDivision();
-            } else if (accessRights === 'schedule') {
+            } else if (canManageSchedule) {
                 loadManagedSections();
             }
         });
@@ -623,8 +639,12 @@
                     data.schedules.forEach(emp => {
                         let row = `<tr class="schedule-employee-row" data-search="${(emp.name + ' ' + emp.designation).toLowerCase()}"><td class="d-none">${emp.id}</td><td>${emp.name}</td><td>${emp.designation}</td>`;
                         emp.schedule.forEach((sched, i) => {
-                            row += `<td class="fw-bold text-primary schedule-cell" style="cursor:pointer"
-                                 data-employee-id="${emp.id}" data-day="${i + 1}">${sched}</td>`;
+                            if (canManageSchedule) {
+                                row += `<td class="fw-bold text-primary schedule-cell" style="cursor:pointer"
+                                     data-employee-id="${emp.id}" data-day="${i + 1}">${sched}</td>`;
+                            } else {
+                                row += `<td class="fw-bold text-primary">${sched}</td>`;
+                            }
                         });
                         row += `</tr>`;
                         $('#employee_list').append(row);

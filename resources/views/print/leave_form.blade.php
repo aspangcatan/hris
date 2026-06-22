@@ -546,6 +546,38 @@
             font-weight: 700;
         }
 
+        .attachment-page {
+            page-break-before: always;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .attachment-title {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .attachment-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .attachment-body img {
+            max-width: 100%;
+            max-height: 277mm;
+            object-fit: contain;
+        }
+
+        .attachment-body iframe {
+            width: 100%;
+            height: 277mm;
+            border: none;
+        }
+
         @media print {
             .print-toolbar {
                 display: none;
@@ -853,5 +885,18 @@
         </table>
     </div>
 </div>
+
+@foreach($attachments as $attachment)
+    <div class="page attachment-page">
+        <div class="attachment-title">Attachment: {{ $attachment->original_name }}</div>
+        <div class="attachment-body">
+            @if($attachment->is_pdf)
+                <iframe src="{{ $attachment->url }}"></iframe>
+            @else
+                <img src="{{ $attachment->url }}" alt="{{ $attachment->original_name }}">
+            @endif
+        </div>
+    </div>
+@endforeach
 </body>
 </html>

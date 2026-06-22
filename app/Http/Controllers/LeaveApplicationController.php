@@ -412,6 +412,7 @@ class LeaveApplicationController extends Controller
                 'duration'      => $d->hours,
                 'leave_type_id' => $d->leave_type_id ?? null,
                 'leave_type'    => $d->leave_type_name ?? '',
+                'is_cancelled'  => ($d->status ?? '') === 'cancelled',
             ])->values(),
         ]);
     }

@@ -835,10 +835,15 @@
             } else {
                 $('#view_attachment_row').hide();
             }
-            $('#leave_details').val((data.details || '') + ':' + (data.extra || ''));
+            $('#leave_details_container').html(renderLeaveDetailsHtml(data));
 
             $('#dates_applied_body').html(
-                data.dates.map(d => `<tr><td>${d.leave_type || ''}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`).join("")
+                data.dates.map(d => {
+                    const cancelledBadge = d.is_cancelled
+                        ? ` <span class="badge bg-danger" style="font-size:.7rem">Cancelled</span>`
+                        : '';
+                    return `<tr><td>${d.leave_type || ''}${cancelledBadge}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`;
+                }).join("")
             );
 
             updateStepStatus('#step1', data.approvals.sh);
@@ -864,6 +869,17 @@
         } catch {
             alert("Error loading leave application.");
         }
+    }
+
+    function renderLeaveDetailsHtml(data) {
+        const items = Array.isArray(data.details_per_type) ? data.details_per_type : [];
+        if (items.length === 0) return '<span class="text-muted">No details provided.</span>';
+        return items.map(d => {
+            const typeName = (data.leave_types_map && data.leave_types_map[d.leave_id]) || '';
+            const parts = [d.detail, d.extra].filter(Boolean);
+            const text = parts.join(' — ');
+            return `<div class="mb-1"><strong>${typeName}:</strong>${text ? ' ' + text : ' <span class="text-muted">—</span>'}</div>`;
+        }).join('') || '<span class="text-muted">No details provided.</span>';
     }
 
     function updateStepStatus(selector, approval) {
@@ -1081,9 +1097,15 @@
                         ? `<span class="badge bg-danger">REJECTED</span>`
                         : `<span class="badge bg-secondary">PENDING</span>`;
 
-                const deleteBtn = it.is_deletable
-                    ? `<li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMonetization(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>`
-                    : '';
+                const actionsCell = it.is_deletable ? `
+                    <div class="dropdown dropstart">
+                        <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: transparent">
+                            <i class="bi bi-three-dots-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMonetization(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>
+                        </ul>
+                    </div>` : '';
 
                 $("#monetization_history_list").append(`
                 <tr id="monetization_id_${it.id}">
@@ -1091,16 +1113,7 @@
                     <td>${it.days_requested}</td>
                     <td>${it.filed_date}</td>
                     <td>${statusBadge}</td>
-                    <td>
-                        <div class="dropdown dropstart">
-                            <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: transparent">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
-                            <ul class="dropdown-menu">
-                                ${deleteBtn}
-                            </ul>
-                        </div>
-                    </td>
+                    <td>${actionsCell}</td>
                 </tr>`);
             });
         } catch {

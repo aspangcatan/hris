@@ -266,7 +266,7 @@ class ScheduleController extends Controller
                     }
                 }
             } else {
-                $employees->where('u.section', Auth::user()->section);
+                $employees->where('u.id', Auth::id());
             }
 
             $employees = $employees->get();
@@ -383,7 +383,7 @@ class ScheduleController extends Controller
                     }
                 }
             } else {
-                $employeesQuery->where('u.section', Auth::user()->section);
+                return response()->json(['message' => 'You are not allowed to print schedules.'], 403);
             }
 
             $employees = $employeesQuery->get();

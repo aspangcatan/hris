@@ -13,7 +13,23 @@
       "Bash(Select-Object -ExpandProperty Name)",
       "Bash(Sort-Object)",
       "Bash(php -l app/Services/LeaveMonetizationService.php)",
-      "Bash(php -l app/Http/Controllers/LeaveMonetizationController.php)"
+      "Bash(php -l app/Http/Controllers/LeaveMonetizationController.php)",
+      "PowerShell(& \"C:\\\\wamp64\\\\bin\\\\mysql\\\\mysql8.0.31\\\\bin\\\\mysql.exe\" -u root -e \"SHOW TABLES LIKE '%minute%'; SHOW TABLES LIKE '%conversion%';\" hris 2>&1)",
+      "PowerShell(& \"C:\\\\wamp64\\\\bin\\\\mysql\\\\mysql8.0.31\\\\bin\\\\mysql.exe\" -u root hris -e \"SHOW TABLES;\" 2>&1)",
+      "PowerShell(& \"C:\\\\wamp64\\\\bin\\\\mysql\\\\mysql8.0.31\\\\bin\\\\mysql.exe\" -u root hris -e \"SELECT MAX\\(minute\\) FROM minute_conversions;\" 2>&1)",
+      "PowerShell(& \"C:\\\\wamp64\\\\bin\\\\mysql\\\\mysql8.0.31\\\\bin\\\\mysql.exe\" -u root hris -e \"DESCRIBE leave_application_approvals;\" 2>&1)",
+      "Bash(mkdir -p \"c:/wamp64/projects/hris/docs/superpowers/specs\")",
+      "Bash(findstr /i \"pending\\\\|No\")",
+      "Bash(git -C \"C:\\\\wamp64\\\\projects\\\\hris\" add \"database/migrations/2026_06_08_000001_create_overtime_request_approvals_table.php\" \"database/migrations/2026_05_25_000001_improve_leave_applications_schema.php\")",
+      "Bash(git -C 'C:\\\\wamp64\\\\projects\\\\hris' commit -m ' *)",
+      "Bash(\"C:\\\\wamp64\\\\bin\\\\mysql\\\\mysql8.0.31\\\\bin\\\\mysql.exe\" -u root hris -e \"SHOW TABLES LIKE 'overtime_request_approvals';\")",
+      "Bash(php --version)",
+      "Bash(git -C \"c:/wamp64/projects/hris\" diff 665d6d8..HEAD)",
+      "Bash(git -C C:/wamp64/projects/hris add app/Services/OvertimeServices.php tests/Feature/OvertimeApprovalTest.php)",
+      "Bash(git -C C:/wamp64/projects/hris commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "c:\\wamp64\\projects\\hris\\docs\\superpowers\\specs"
     ]
   }
 }

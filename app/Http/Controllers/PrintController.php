@@ -360,6 +360,7 @@ class PrintController extends Controller
         $leaveTypeRows = DB::table('hris.leave_date_applied as lda')
             ->join('hris.leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
             ->where('lda.leave_application_id', $request->id)
+            ->where('lda.status', '!=', 'cancelled')
             ->select('lda.leave_type_id as leave_id', 'lt.description as leave_type_name')
             ->distinct()
             ->orderBy('lda.leave_type_id')
@@ -387,8 +388,21 @@ class PrintController extends Controller
             ->where('role', 'SH')
             ->first(['status', 'remarks']);
 
+        $attachments = DB::table('leave_application_attachments')
+            ->where('leave_application_id', $request->id)
+            ->get(['file_path', 'original_name'])
+            ->map(function ($a) {
+                $extension = strtolower(pathinfo($a->file_path, PATHINFO_EXTENSION));
+                return (object) [
+                    'url'           => route('leave-attachments.serve', ['filename' => basename($a->file_path)]),
+                    'original_name' => $a->original_name ?? basename($a->file_path),
+                    'is_pdf'        => $extension === 'pdf',
+                ];
+            });
+
         $dates_applied = DB::table('leave_date_applied')
             ->where('leave_application_id', $leave_application->id)
+            ->where('status', '!=', 'cancelled')
             ->orderBy('date_applied', 'ASC')
             ->get(['date_applied', 'hours']);
 
@@ -438,6 +452,7 @@ class PrintController extends Controller
             'totalHours'             => $totalHours,
             'inclusiveDates'         => self::getInclusiveDates($dates_applied),
             'sectionHeadApproval'    => $sectionHeadApproval,
+            'attachments'            => $attachments,
         ]);
     }
 

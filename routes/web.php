@@ -267,7 +267,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
     Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
-    Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit');
+    Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit')->middleware('permission:leave.manage_credits');
     Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
 
     Route::get('/get/leave_types', [\App\Http\Controllers\LeaveController::class, 'getLeaveTypes'])->name('getLeaveTypes');

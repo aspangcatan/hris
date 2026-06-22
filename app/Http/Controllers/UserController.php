@@ -6,6 +6,7 @@ use App\Models\Designation;
 use App\Models\Employee;
 use App\Models\User;
 use App\Models\UserPrivelege;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -42,10 +43,14 @@ class UserController extends Controller
                 session(['designation' => $designation->description]);
 
             session(['access_rights' => $user_priv->level]);
+            $isSectionHead = DB::table('tdh_user.section')->where('head', Auth::id())->exists();
+            $isDivisionHead = DB::table('tdh_user.division')->where('head', Auth::id())->exists();
             session([
-                'is_section_head' => DB::table('tdh_user.section')->where('head', Auth::id())->exists(),
-                'is_division_head' => DB::table('tdh_user.division')->where('head', Auth::id())->exists(),
+                'is_section_head' => $isSectionHead,
+                'is_division_head' => $isDivisionHead,
             ]);
+            
+            app(PermissionService::class)->syncHeadshipGrants(Auth::id(), $isSectionHead, $isDivisionHead);
 
             return redirect()->intended('/profile');
         }

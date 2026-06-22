@@ -11,6 +11,10 @@
     </nav>
 </div>
 
+<style>
+    .perm-row + .perm-row { border-top: 1px solid #e9ecef; }
+</style>
+
 <section class="section">
     <div class="row">
         {{-- LEFT: User List --}}
@@ -45,12 +49,6 @@
                     </div>
 
                     <div id="permissions_by_module"></div>
-
-                    <hr>
-                    <h6>Recent Changes</h6>
-                    <div id="audit_log" style="max-height:200px; overflow-y:auto; font-size:.85rem;">
-                        <p class="text-muted">No changes yet.</p>
-                    </div>
                 </div>
             </div>
             <div class="card h-100" id="permission_placeholder">
@@ -64,7 +62,7 @@
 
 @endsection
 
-@push('scripts')
+@section('js')
 <script>
 const ROUTE_USERS      = "{{ route('admin.permissions.users') }}";
 const ROUTE_USER_PERMS = "{{ url('/admin/permissions/users') }}";
@@ -116,50 +114,67 @@ async function selectUser(id) {
     document.getElementById('panel_user_level').textContent = data.user.level;
 
     renderPermissions(data.permissions);
-    renderAuditLog(data.audit_log);
 
     document.getElementById('permission_panel').style.display = '';
     document.getElementById('permission_placeholder').style.display = 'none';
 }
 
 function renderPermissions(grouped) {
-    const MODULE_LABELS = {
-        dtr: 'DTR', employee: 'Employee', leave: 'Leave', payroll: 'Payroll',
-        overtime: 'Overtime', passslip: 'Pass Slip', schedule: 'Schedule',
-        saln: 'SALN', hospital_order: 'Hospital Order', reports: 'Reports',
+    const MODULE_INFO = {
+        dtr:            { label: 'DTR',            icon: 'bi-calendar-check' },
+        employee:       { label: 'Employee',       icon: 'bi-person-badge' },
+        leave:          { label: 'Leave',          icon: 'bi-calendar-event' },
+        payroll:        { label: 'Payroll',        icon: 'bi-cash-stack' },
+        overtime:       { label: 'Overtime',       icon: 'bi-clock-history' },
+        passslip:       { label: 'Pass Slip',      icon: 'bi-door-open' },
+        schedule:       { label: 'Schedule',       icon: 'bi-calendar3' },
+        saln:           { label: 'SALN',           icon: 'bi-file-earmark-text' },
+        hospital_order: { label: 'Hospital Order', icon: 'bi-hospital' },
+        reports:        { label: 'Reports',        icon: 'bi-bar-chart-line' },
     };
 
-    const html = Object.entries(grouped).map(([module, perms]) => `
-        <div class="mb-3">
-            <div class="fw-semibold text-uppercase text-muted small mb-1">
-                ${MODULE_LABELS[module] || module}
-            </div>
-            ${perms.map(p => renderPermRow(p)).join('')}
-        </div>`).join('');
+    const cards = Object.entries(grouped).map(([module, perms]) => {
+        const info = MODULE_INFO[module] || { label: module, icon: 'bi-gear' };
+        return `
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-header fw-semibold">
+                        <i class="bi ${info.icon} me-1"></i> ${info.label}
+                    </div>
+                    <div class="card-body py-2">
+                        ${perms.map(p => renderPermRow(p)).join('')}
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
 
-    document.getElementById('permissions_by_module').innerHTML = html;
+    document.getElementById('permissions_by_module').innerHTML =
+        `<div class="row row-cols-md-2 g-3">${cards}</div>`;
 }
 
 function renderPermRow(p) {
-    let badge, btn;
-    if (p.revoked) {
-        badge = '<span class="badge bg-danger ms-2">Revoked</span>';
-        btn   = `<button class="btn btn-sm btn-outline-secondary" onclick="setPermission('${p.code}','reset')">Restore</button>`;
-    } else if (p.granted) {
-        badge = '<span class="badge bg-success ms-2">Granted</span>';
-        btn   = `<button class="btn btn-sm btn-outline-secondary" onclick="setPermission('${p.code}','reset')">Remove</button>`;
-    } else if (p.from_level) {
-        badge = '<span class="badge bg-light text-dark border ms-2">Level Default</span>';
-        btn   = `<button class="btn btn-sm btn-outline-danger" onclick="setPermission('${p.code}','revoke')">Revoke</button>`;
+    let action;
+    if (p.effective) {
+        action = p.granted ? 'reset' : 'revoke';
     } else {
-        badge = '<span class="badge bg-light text-muted border ms-2">No Access</span>';
-        btn   = `<button class="btn btn-sm btn-outline-success" onclick="setPermission('${p.code}','grant')">Grant</button>`;
+        action = p.revoked ? 'reset' : 'grant';
     }
 
+    const hint = p.from_level && !p.revoked && !p.granted
+        ? '<small class="text-muted ms-2">(role default)</small>'
+        : p.granted ? '<small class="text-success ms-2">(custom grant)</small>'
+        : p.revoked ? '<small class="text-danger ms-2">(revoked)</small>'
+        : '';
+
     return `
-        <div class="d-flex align-items-center justify-content-between py-1 border-bottom">
-            <span>${p.description}${badge}</span>
-            ${btn}
+        <div class="d-flex align-items-center justify-content-between py-2 perm-row">
+            <span>${p.description}${hint}</span>
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       style="cursor:pointer; width:2.5em; height:1.25em;"
+                       ${p.effective ? 'checked' : ''}
+                       onchange="setPermission('${p.code}', '${action}')">
+            </div>
         </div>`;
 }
 
@@ -186,20 +201,6 @@ document.getElementById('btn_reset_all').addEventListener('click', async functio
     await selectUser(currentUserId);
 });
 
-function renderAuditLog(logs) {
-    const el = document.getElementById('audit_log');
-    if (!logs.length) {
-        el.innerHTML = '<p class="text-muted mb-0">No changes yet.</p>';
-        return;
-    }
-    el.innerHTML = logs.map(l => `
-        <div class="border-bottom py-1">
-            <span class="text-capitalize">${l.action}</span>
-            <span class="text-muted ms-2">by ${l.performed_by}</span>
-            <span class="text-muted float-end">${moment(l.created_at).format('MM/DD/YYYY HH:mm')}</span>
-        </div>`).join('');
-}
-
-document.addEventListener('DOMContentLoaded', () => loadUsers());
+loadUsers();
 </script>
-@endpush
+@endsection

@@ -18,9 +18,21 @@ class OvertimeApprovalTest extends TestCase
     private int $sectionId  = 801;
     private int $divisionId = 901;
 
+    protected function tearDown(): void
+    {
+        // Explicit cleanup — DatabaseTransactions may not roll back cross-DB inserts reliably
+        DB::table('hris.overtime_requests')->whereIn('userid', [$this->employeeId, $this->shUserId, $this->dhUserId])->delete();
+        DB::table('hris.leave_credits')->whereIn('user_id', [$this->employeeId])->delete();
+        parent::tearDown();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Pre-clean any stale data from a previous failed run
+        DB::table('hris.overtime_requests')->whereIn('userid', [$this->employeeId, $this->shUserId, $this->dhUserId])->delete();
+        DB::table('hris.leave_credits')->whereIn('user_id', [$this->employeeId])->delete();
 
         DB::table('tdh_user.users')->insertOrIgnore([
             ['id' => $this->shUserId,   'fname' => 'SH',   'lname' => 'User',   'section' => $this->sectionId,  'division' => $this->divisionId, 'username' => 'sh_test',   'password' => 'x'],
@@ -35,6 +47,12 @@ class OvertimeApprovalTest extends TestCase
         DB::table('tdh_user.section')->insertOrIgnore([
             ['id' => $this->sectionId, 'description' => 'TestSection', 'head' => $this->shUserId, 'division' => $this->divisionId, 'code' => 'TSEC'],
         ]);
+
+        // Ensure CTO leave type exists — may be wiped by RefreshDatabase in other test classes
+        DB::table('hris.leave_types')->updateOrInsert(
+            ['code' => 'CTO'],
+            ['id' => 16, 'description' => 'Compensatory Time Off', 'monthly_earned' => 0, 'status' => 'active', 'monthly_points_earned' => 0, 'minute_deduction' => 0, 'day_deduction' => 1.25]
+        );
     }
 
     private function actAsEmployee(): void

@@ -129,17 +129,22 @@
         $('#leave_name').text(data.name);
         $('#leave_type').text(data.type);
         $('#leave_commutation').text(data.commutation);
-        $('#leave_details').val((data.details || '') + ':' + (data.extra || ''));
+        $('#leave_details_container').html(renderLeaveDetailsHtml(data));
 
-        if (data.attachment_url) {
-            $('#view_attachment_link').attr('href', data.attachment_url);
-            $('#view_attachment_row').show();
+        const allAttachments = (data.attachments && data.attachments.length > 0)
+            ? data.attachments
+            : (data.attachment_url ? [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }] : []);
+        if (allAttachments.length > 0) {
+            const links = allAttachments.map(a =>
+                `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${a.original_name}</a>`
+            ).join('');
+            $('#view_attachment_row').html(`<p><strong>Attachments:</strong> ${links}</p>`).show();
         } else {
             $('#view_attachment_row').hide();
         }
 
         $('#dates_applied_body').html(data.dates.map(d =>
-            `<tr><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`
+            `<tr><td>${d.leave_type || ''}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`
         ).join(""));
 
         updateStepStatus('#step1', data.approvals.sh);
@@ -163,6 +168,17 @@
         $('#undoApprovalBtn').toggle(!!data.can_undo);
 
         $('#viewLeaveModal').modal('show');
+    }
+
+    function renderLeaveDetailsHtml(data) {
+        const items = Array.isArray(data.details_per_type) ? data.details_per_type : [];
+        if (items.length === 0) return '<span class="text-muted">No details provided.</span>';
+        return items.map(d => {
+            const typeName = (data.leave_types_map && data.leave_types_map[d.leave_id]) || '';
+            const parts = [d.detail, d.extra].filter(Boolean);
+            const text = parts.join(' — ');
+            return `<div class="mb-1"><strong>${typeName}:</strong>${text ? ' ' + text : ' <span class="text-muted">—</span>'}</div>`;
+        }).join('') || '<span class="text-muted">No details provided.</span>';
     }
 
     function updateStepStatus(sel, a) {
