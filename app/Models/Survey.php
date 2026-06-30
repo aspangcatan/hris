@@ -9,6 +9,14 @@ class Survey extends Model
 {
     use HasFactory;
 
+       protected $fillable = [
+        'user_id',
+        'question',
+        'answer',
+        'details',
+        'extra',
+    ];
+
     protected $connection = 'mysql';
     protected $table = 'surveys';
     public $timestamps = false;
