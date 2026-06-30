@@ -1188,7 +1188,20 @@ class PrintController extends Controller
 
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];
-            $SURVEYS = [''];
+            $SURVEYS = [
+                "within the third degree?",
+                "within the fourth degree (for Local Government Unit - Career Employees)?",
+                "Have you ever been found guilty of any administrative offense?",
+                "Have you been criminally charged before any court?",
+                "Have you ever been convicted of any crime or violation of any law, decree, ordinance or regulation by any court or tribunal?",
+                "Have you ever been separated from the service in any of the following modes: resignation, retirement, dropped from the rolls, dismissal, termination, end of term, finished contract or phased out (abolition) in the public or private sector?",
+                "Have you ever been a candidate in a national or local election held within the last year (except Barangay election)?",
+                "Have you resigned from the government service during the three (3)-month period before the last election to promote/actively campaign for a national or local candidate?",
+                "Have you acquired the status of an immigrant or permanent resident of another country?",
+                "Are you a member of any indigenous group?",
+                "Are you a person with disability?",
+                "Are you a solo parent?",
+            ];
             #VARIABLE ARRAYS
             $childrens = [];
             $educations = [];
@@ -1244,8 +1257,18 @@ class PrintController extends Controller
             $survey = Survey::where('user_id', $user_id)->get();
             $reference = Reference::where('user_id', $user_id)->get();
 
-            if (count($survey) > 0)
-                $surveys = $survey;
+            if (count($survey) > 0) {
+                $indexMap = array_flip($SURVEYS);
+                foreach ($survey as $s) {
+                    if (isset($indexMap[$s->question])) {
+                        $surveys[$indexMap[$s->question]] = [
+                            'answer'  => $s->answer,
+                            'details' => $s->details,
+                            'extra'   => $s->extra,
+                        ];
+                    }
+                }
+            }
 
             for ($i = 0; $i < 13; $i++) {
                 $name = "N/A";
