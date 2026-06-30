@@ -25,17 +25,17 @@ class SurveyController extends Controller
 
             $surveys = $request->surveys;
             for ($i = 0; $i < count($surveys); $i++) {
-                $survey = Survey::where([['user_id', Auth::id()], ['question', $surveys[$i]['question']]])->first();
-                if (!$survey) {
-                    $survey = new Survey;
-                    $survey->user_id = Auth::id();
-                    $survey->question = $surveys[$i]['question'];
-                }
-
-                $survey->answer = $surveys[$i]['answer'];
-                $survey->details = $surveys[$i]['details'];
-                $survey->extra = $surveys[$i]['extra'];
-                $survey->save();
+                Survey::updateOrCreate(
+                    [
+                        'user_id' => Auth::id(),
+                        'question' => $surveys[$i]['question'],
+                    ],
+                    [
+                        'answer' => $surveys[$i]['answer'],
+                        'details' => $surveys[$i]['details'],
+                        'extra' => $surveys[$i]['extra'],
+                    ]
+                );
             }
 
             return response(['code' => 200, 'message' => 'Surveys updated']);
