@@ -1165,6 +1165,27 @@ class DTRController extends Controller
                             }
                         }
 
+                        // Flat half-day addition: one entire half of the day (AM or PM) has zero
+                        // logs while the other half has a complete IN+OUT pair, on a full-day
+                        // schedule with a configured break. The precise math below is scoped to
+                        // the half that has logs, and half the schedule's rendered minutes is
+                        // added to the late bucket on top of it.
+                        $hasAmAttendance = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
+                        $hasPmAttendance = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
+                        $isFullDaySchedule = $rawSched
+                            && !$isOffSchedule
+                            && !$isOvernightSchedule
+                            && (int) ($data['rendered_minutes'] ?? 0) > 240;
+                        $hasBreakConfigured = $calcSched
+                            && !empty($calcSched->break_out)
+                            && !empty($calcSched->break_in);
+                        $isHalfDayMissingHalf = $isFullDaySchedule
+                            && $hasBreakConfigured
+                            && !$isOvernightSpilloverOnly
+                            && $firstIn
+                            && $lastOut
+                            && ($hasAmAttendance xor $hasPmAttendance);
+
                         // Do not compute late/undertime for days without an IN log.
                         // This avoids false penalties when an AM OUT is just a spillover from a previous day.
                         if (!$skipLateUndertimeComputation && $calcSched && !$hasApprovedPassSlip && $firstIn) {
@@ -1173,8 +1194,16 @@ class DTRController extends Controller
 
                             if ($firstIn) {
                                 $firstInTime = Carbon::parse($firstIn)->startOfMinute();
-                                $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
-                                $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
+                                // Half-day-missing-AM: firstIn is actually the PM arrival, so compare
+                                // it against the PM boundary (break_in) instead of the AM schedule,
+                                // which would otherwise register the entire missing AM span as "late".
+                                if ($isHalfDayMissingHalf && !$hasAmAttendance) {
+                                    $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
+                                    $schedInLatest = $schedIn->copy();
+                                } else {
+                                    $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
+                                    $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
+                                }
                                 if ($schedInLatest->lt($schedIn)) {
                                     $schedInLatest->addDay();
                                 }
@@ -1215,7 +1244,13 @@ class DTRController extends Controller
                                 }
                                 $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
 
-                                if ($isGliding && $firstIn) {
+                                // Half-day-missing-PM: lastOut is actually the AM departure, so require
+                                // it against the AM boundary (break_out) instead of the full day's time_out,
+                                // and skip gliding (it shifts the day's departure requirement based on
+                                // arrival, which isn't meaningful when the day was cut short at the half).
+                                if ($isHalfDayMissingHalf && !$hasPmAttendance) {
+                                    $requiredOut = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
+                                } elseif ($isGliding && $firstIn && !($isHalfDayMissingHalf && !$hasAmAttendance)) {
                                     $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
                                     $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
                                     $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
@@ -1266,6 +1301,13 @@ class DTRController extends Controller
                                             $undertimeMinutes = max(0, $undertimeMinutes - $overlapStart->diffInMinutes($overlapEnd));
                                         }
                                     }
+                                }
+                            }
+
+                            if ($isHalfDayMissingHalf) {
+                                $halfDayLateMinutes = (int) round($data['rendered_minutes'] / 2);
+                                if ($halfDayLateMinutes > 0) {
+                                    $lateMinutes += $halfDayLateMinutes;
                                 }
                             }
 
