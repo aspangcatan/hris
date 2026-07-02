@@ -1305,9 +1305,17 @@ class DTRController extends Controller
                             }
 
                             if ($isHalfDayMissingHalf) {
-                                $halfDayLateMinutes = (int) round($data['rendered_minutes'] / 2);
-                                if ($halfDayLateMinutes > 0) {
-                                    $lateMinutes += $halfDayLateMinutes;
+                                $halfDayMinutes = (int) round($data['rendered_minutes'] / 2);
+                                if ($halfDayMinutes > 0) {
+                                    // Missing AM (only showed up for PM): treat the whole missed
+                                    // morning as an extreme late arrival.
+                                    // Missing PM (left after AM, never returned): treat the whole
+                                    // missed afternoon as undertime, not lateness.
+                                    if (!$hasAmAttendance) {
+                                        $lateMinutes += $halfDayMinutes;
+                                    } else {
+                                        $undertimeMinutes += $halfDayMinutes;
+                                    }
                                 }
                             }
 

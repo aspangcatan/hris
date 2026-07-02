@@ -1,7 +1,7 @@
 # DTR: Additive Half-Day Late Charge
 
 **Date:** 2026-07-02
-**Status:** Approved
+**Status:** Approved (amended 2026-07-02 — see Correction)
 
 ## Context
 
@@ -11,7 +11,7 @@ The new requirement is different: instead of replacing the precise computation, 
 
 ## Rules
 
-1. When one half of a full-day schedule has zero logs and the other half has a complete IN+OUT pair, charge a flat amount equal to half the schedule's rendered minutes (e.g. a 10-hour schedule → 5 hours), categorized as **late**.
+1. When one half of a full-day schedule has zero logs and the other half has a complete IN+OUT pair, charge a flat amount equal to half the schedule's rendered minutes (e.g. a 10-hour schedule → 5 hours). ~~Categorized as **late**.~~ **See Correction below: categorization depends on which half is missing.**
 2. Additionally, compute late and undertime normally for the half that *is* present, but scoped to that half's own boundary (not the full day's), and add this to the flat charge from rule 1.
 
 ## Detection
@@ -66,3 +66,28 @@ This is added into `$lateMinutes` before the existing tally code (`lateCount++`,
 - Schedules without a configured break (no AM/PM split possible).
 - Half-day schedules (`rendered_minutes <= 240`) — they have no "other half" to be missing.
 - Overnight schedules and overnight-spillover-only days — unaffected, same as before.
+
+## Correction (2026-07-02)
+
+Rule 1 as originally written and implemented always charged the flat half-day amount to `$lateMinutes`, regardless of which half was missing. This was wrong for the missing-PM case: an employee who works the AM half and never returns for PM left/failed to return, which is an **undertime** concept (not completing required hours), not a **late** concept (tardy arrival). Charging the whole flat amount as "late" caused the `L -` / `U -` summary box (and the underlying `late_total_minutes` / `undertime_total_minutes` totals used elsewhere) to misattribute large chunks of undertime as lateness.
+
+Reported case: employee on a GLIDING full-day schedule (07:00–08:00 AM in-window, 12:00–1:00 PM break, 6:00–7:00 PM out-window), logged IN 07:09 / OUT 12:01, no PM logs. Correct result: `late = 0` (07:09 is within the gliding grace window), `undertime = 300 min` (5h, the entire missing PM half). The original rule instead produced `late = 300 min`, `undertime = 0`.
+
+**Corrected rule:** the flat half-day charge is categorized based on which half is missing:
+- **AM missing** (only showed up for PM) → charge to `$lateMinutes` (treated as an extreme late arrival — they effectively missed their entire scheduled start).
+- **PM missing** (showed up for AM, never returned) → charge to `$undertimeMinutes` (treated as undertime — they didn't complete the required hours).
+
+```php
+if ($isHalfDayMissingHalf) {
+    $halfDayMinutes = (int) round($data['rendered_minutes'] / 2);
+    if ($halfDayMinutes > 0) {
+        if (!$hasAmAttendance) {
+            $lateMinutes += $halfDayMinutes;
+        } else {
+            $undertimeMinutes += $halfDayMinutes;
+        }
+    }
+}
+```
+
+This categorization is independent of schedule `type` (GLIDING/FIXED/etc.) — type only affects the precise computation for the half that *is* present (per the "Computation changes" section above), not which bucket the flat charge lands in.
