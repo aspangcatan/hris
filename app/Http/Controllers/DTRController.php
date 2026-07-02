@@ -1165,35 +1165,9 @@ class DTRController extends Controller
                             }
                         }
 
-                        // Flat half-day undertime: one entire half of the day (AM or PM) has zero
-                        // logs while the other half has a complete IN+OUT pair, on a full-day
-                        // schedule. Charge half the schedule's rendered minutes instead of running
-                        // the precise late/departure math for that day.
-                        $hasAmAttendance = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
-                        $hasPmAttendance = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
-                        $isFullDaySchedule = $rawSched
-                            && !$isOffSchedule
-                            && !$isOvernightSchedule
-                            && (int) ($data['rendered_minutes'] ?? 0) > 240;
-                        $isHalfDayMissingHalf = $isFullDaySchedule
-                            && !$isOvernightSpilloverOnly
-                            && $firstIn
-                            && $lastOut
-                            && ($hasAmAttendance xor $hasPmAttendance);
-
-                        if (!$skipLateUndertimeComputation && $isHalfDayMissingHalf) {
-                            $halfDayUndertimeMinutes = (int) round($data['rendered_minutes'] / 2);
-                            if ($halfDayUndertimeMinutes > 0) {
-                                $undertimeCount++;
-                                $undertimeTotalMinutes += $halfDayUndertimeMinutes;
-                                $data['undertime_hours'] = floor($halfDayUndertimeMinutes / 60) ?: '';
-                                $data['undertime_minutes'] = ($halfDayUndertimeMinutes % 60) ?: '';
-                            }
-                        }
-
                         // Do not compute late/undertime for days without an IN log.
                         // This avoids false penalties when an AM OUT is just a spillover from a previous day.
-                        if (!$skipLateUndertimeComputation && $calcSched && !$hasApprovedPassSlip && $firstIn && !$isHalfDayMissingHalf) {
+                        if (!$skipLateUndertimeComputation && $calcSched && !$hasApprovedPassSlip && $firstIn) {
                             $lateMinutes = 0;
                             $undertimeMinutes = 0;
 
