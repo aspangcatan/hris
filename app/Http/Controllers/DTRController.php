@@ -1307,16 +1307,15 @@ class DTRController extends Controller
                             } else {
                                 $data['day_marker'] = '';
                             }
-                        } elseif (!$hasExcusedRecord && ($hasOfficialPassSlip || $hasApprovedOvertime)) {
-                            if ($hasOfficialPassSlip) {
-                                $data['day_marker'] = 'OB';
-                            } else {
-                                $lateMarker = '';
-                                if (!empty($data['late_minutes']) && (int) $data['late_minutes'] > 0) {
-                                    $lateMarker = 'L: ' . $formatMinutes((int) $data['late_minutes']) . ' ';
-                                }
-                                $data['day_marker'] = $lateMarker . $overtimeRequests[$currentDay];
+                        } elseif ($hasOfficialPassSlip) {
+                            // OB reflects regardless of whether the employee also has timelogs that day.
+                            $data['day_marker'] = 'OB';
+                        } elseif (!$hasExcusedRecord && $hasApprovedOvertime) {
+                            $lateMarker = '';
+                            if (!empty($data['late_minutes']) && (int) $data['late_minutes'] > 0) {
+                                $lateMarker = 'L: ' . $formatMinutes((int) $data['late_minutes']) . ' ';
                             }
+                            $data['day_marker'] = $lateMarker . $overtimeRequests[$currentDay];
                         } else {
                             $data['day_marker'] = '';
                         }

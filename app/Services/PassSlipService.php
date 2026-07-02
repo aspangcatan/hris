@@ -25,13 +25,20 @@ class PassSlipService
 
     public function store(array $data)
     {
-        return PassSlip::create([
+        $payload = [
             'user_id' => Auth::id(),
             'slip_date' => $data['slip_date'],
             'time_out' => $data['time_out'],
             'time_in' => $data['time_in'] ?? null,
             'type' => $data['type'],
-        ]);
+        ];
+
+        if (config('hris.pass_slip_auto_approve')) {
+            $payload['status'] = 'approved';
+            $payload['approved_at'] = now();
+        }
+
+        return PassSlip::create($payload);
     }
 
     public function getUserPassSlips()
