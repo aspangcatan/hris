@@ -12,5 +12,6 @@
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml
+/.superpowers
 npm-debug.log
 yarn-error.log
