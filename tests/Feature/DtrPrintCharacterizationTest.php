@@ -37,7 +37,12 @@ class DtrPrintCharacterizationTest extends TestCase
         DB::table('hris.schedule_master_lists')->where('code', 'CTESTSCH')->delete();
         DB::table('tdh_user.users')->where('id', $this->userId)->delete();
         DB::table('hris.calendar_holidays')->where('description', 'Characterization Test Holiday')->delete();
+        DB::table('hris.leave_date_applied')->whereIn(
+            'leave_application_id',
+            DB::table('hris.leave_applications')->where('user_id', $this->userId)->pluck('id')
+        )->delete();
         DB::table('hris.leave_applications')->where('user_id', $this->userId)->delete();
+        DB::table('hris.leave_types')->where('description', 'Characterization Test Leave Type')->delete();
     }
 
     private function actAsAdmin(): void
@@ -197,5 +202,89 @@ class DtrPrintCharacterizationTest extends TestCase
         // Half of rendered_minutes (480 non-break minutes / 2 = 240) added to
         // late, plus 10 min precise lateness against break_in (13:00) = 250.
         $this->assertEquals(250, $day['late_minutes']);
+    }
+
+    /** @test */
+    public function gliding_schedule_shifts_required_out_by_the_late_arrival_offset(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        // Gliding 07:00(-08:00 latest)/16:00(-17:00 latest), no break.
+        $this->seedSchedule('2027-04-14', '07:00:00', '16:00:00', null, null, 'GLIDING', '08:00:00', '17:00:00');
+        // Arrives 07:30 (within gliding window, 30 min after core time_in) - required out shifts to 16:30.
+        $this->seedLog('2027-04-14 07:30:00', 'IN');
+        $this->seedLog('2027-04-14 16:15:00', 'OUT');
+
+        $data = $this->capturePrintDtrData(4, 2027);
+        $day = $this->dayResult($data[0], 14);
+
+        // No lateness (07:30 is within the gliding IN window). Required out
+        // shifted to 16:30 (16:00 + 30min offset); left at 16:15 = 15 min undertime.
+        $this->assertEquals(0, $day['late_minutes']);
+        $this->assertEquals(15, (int) $day['undertime_hours'] * 60 + (int) $day['undertime_minutes']);
+    }
+
+    /** @test */
+    public function overnight_schedule_matches_out_log_on_the_following_calendar_day(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        // Overnight 22:00-06:00 (out is on the next calendar day).
+        $this->seedSchedule('2027-04-16', '22:00:00', '06:00:00');
+        $this->seedLog('2027-04-16 22:00:00', 'IN');
+        $this->seedLog('2027-04-17 06:00:00', 'OUT');
+
+        $data = $this->capturePrintDtrData(4, 2027);
+        $day = $this->dayResult($data[0], 16);
+
+        $this->assertEquals(0, $day['late_minutes']);
+        $this->assertEquals('', $day['undertime_hours']);
+        $this->assertEquals('', $day['undertime_minutes']);
+    }
+
+    /** @test */
+    public function approved_leave_waives_late_undertime_computation_entirely(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        $this->seedSchedule('2027-04-19', '08:00:00', '17:00:00', '12:00:00', '13:00:00');
+        // Arrives very late - would normally be a large penalty.
+        $this->seedLog('2027-04-19 11:00:00', 'IN');
+        $this->seedLog('2027-04-19 17:00:00', 'OUT');
+
+        // The live DB's hris.leave_types has no pre-seeded 'VL' row in this
+        // environment - self-seed a dedicated test-only leave type (any code
+        // works for the exemption check; DTRController only requires the
+        // leave_type_id join to resolve, not a specific code) rather than
+        // assuming production reference data exists.
+        $leaveTypeId = DB::table('hris.leave_types')->where('code', 'VL')->value('id');
+        if (!$leaveTypeId) {
+            $leaveTypeId = DB::table('hris.leave_types')->insertGetId([
+                'description' => 'Characterization Test Leave Type',
+                'code' => 'VL',
+                'monthly_earned' => 0,
+                'status' => 'active',
+            ]);
+        }
+        $this->assertNotNull($leaveTypeId, 'Seed a VL leave type before running this test.');
+
+        $applicationId = DB::table('hris.leave_applications')->insertGetId([
+            'user_id' => $this->userId,
+            'status' => 'Approved',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('hris.leave_date_applied')->insert([
+            'leave_application_id' => $applicationId,
+            'leave_type_id' => $leaveTypeId,
+            'date_applied' => '2027-04-19',
+            'hours' => 8,
+        ]);
+
+        $data = $this->capturePrintDtrData(4, 2027);
+        $day = $this->dayResult($data[0], 19);
+
+        // Waived entirely despite the late arrival - late_minutes stays 0.
+        $this->assertEquals(0, $day['late_minutes']);
     }
 }
