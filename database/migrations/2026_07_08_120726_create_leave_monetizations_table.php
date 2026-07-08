@@ -13,16 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('leave_application_attachments', function (Blueprint $table) {
+        Schema::create('leave_monetizations', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('leave_application_id');
-            $table->string('file_path');
-            $table->string('original_name')->nullable();
+            $table->unsignedBigInteger('user_id')->index();
+            $table->unsignedBigInteger('leave_type_id')->index();
+            $table->decimal('days_requested', 10, 3);
+            $table->decimal('credits_deducted', 10, 3);
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->timestamps();
-
-            $table->foreign('leave_application_id')
-                ->references('id')->on('leave_applications')
-                ->onDelete('cascade');
         });
     }
 
@@ -33,6 +31,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('leave_application_attachments');
+        Schema::dropIfExists('leave_monetizations');
     }
 };

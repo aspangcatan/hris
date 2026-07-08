@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean('taxable')->default(false);
             $table->decimal('default_amount', 12)->default(0);
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_cutoff_adjustable')->default(false);
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
         });

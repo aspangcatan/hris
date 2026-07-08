@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('payrolls', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('cutoff_id')->nullable();
+            $table->unsignedBigInteger('cutoff_id')->nullable()->index();
             $table->string('title');
             $table->date('start_date');
             $table->date('end_date');
@@ -32,8 +32,6 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('released_at')->nullable();
             $table->timestamps();
-
-            $table->index('cutoff_id');
         });
     }
 

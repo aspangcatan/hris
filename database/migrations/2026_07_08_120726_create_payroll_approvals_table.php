@@ -13,13 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        if (Schema::hasTable('payroll_approvals')) {
-            return;
-        }
-
         Schema::create('payroll_approvals', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('payroll_id');
+            $table->unsignedBigInteger('payroll_id')->index();
             $table->unsignedBigInteger('approver_id');
             $table->enum('role', ['SH', 'DH', 'HR']);
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
@@ -27,8 +23,6 @@ return new class extends Migration
             $table->timestamp('acted_at')->nullable();
             $table->unsignedTinyInteger('order_no');
             $table->timestamps();
-
-            $table->index('payroll_id');
         });
     }
 
