@@ -102,6 +102,8 @@
                     <th>Time In Latest</th>
                     <th>Time Out</th>
                     <th>Time Out Latest</th>
+                    <th>Break Out</th>
+                    <th>Break In</th>
                     <th style="width: 8%">Action</th>
                 </tr>
                 </thead>
@@ -153,6 +155,14 @@
                         <div class="col-6">
                             <label class="form-label">Time Out Latest</label>
                             <input type="time" class="form-control" id="schedule_time_out_latest">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Break Out <span class="text-muted small">(optional)</span></label>
+                            <input type="time" class="form-control" id="schedule_break_out">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Break In <span class="text-muted small">(optional)</span></label>
+                            <input type="time" class="form-control" id="schedule_break_in">
                         </div>
                     </div>
                 </div>
@@ -249,6 +259,8 @@
                         <td>${item.time_in_latest || ""}</td>
                         <td>${item.time_out || ""}</td>
                         <td>${item.time_out_latest || ""}</td>
+                        <td>${item.break_out || ""}</td>
+                        <td>${item.break_in || ""}</td>
                         <td>
                             <button type="button" class="btn btn-action btn-edit btn-edit-schedule-master" data-id="${item.id}" title="Edit">
                                 <i class="bi bi-pencil"></i>
@@ -316,6 +328,8 @@
             $("#schedule_time_in_latest").val(isEdit ? normalizeTime(item.time_in_latest) : "");
             $("#schedule_time_out").val(isEdit ? normalizeTime(item.time_out) : "");
             $("#schedule_time_out_latest").val(isEdit ? normalizeTime(item.time_out_latest) : "");
+            $("#schedule_break_out").val(isEdit ? normalizeTime(item.break_out) : "");
+            $("#schedule_break_in").val(isEdit ? normalizeTime(item.break_in) : "");
             scheduleMasterModal.show();
         }
 
@@ -332,7 +346,9 @@
                 time_in: normalizeTime($("#schedule_time_in").val()),
                 time_in_latest: normalizeTime($("#schedule_time_in_latest").val()),
                 time_out: normalizeTime($("#schedule_time_out").val()),
-                time_out_latest: normalizeTime($("#schedule_time_out_latest").val())
+                time_out_latest: normalizeTime($("#schedule_time_out_latest").val()),
+                break_out: normalizeTime($("#schedule_break_out").val()) || null,
+                break_in: normalizeTime($("#schedule_break_in").val()) || null
             };
 
             fetch("{{ route('saveScheduleMasterList') }}", {

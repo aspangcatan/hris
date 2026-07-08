@@ -567,6 +567,8 @@ class ScheduleController extends Controller
                 'time_in_latest' => 'required|date_format:H:i',
                 'time_out' => 'required|date_format:H:i',
                 'time_out_latest' => 'required|date_format:H:i',
+                'break_out' => 'nullable|date_format:H:i',
+                'break_in' => 'nullable|date_format:H:i',
             ]);
 
             $payload = [
@@ -577,6 +579,8 @@ class ScheduleController extends Controller
                 'time_in_latest' => $validated['time_in_latest'],
                 'time_out' => $validated['time_out'],
                 'time_out_latest' => $validated['time_out_latest'],
+                'break_out' => $validated['break_out'] ?? null,
+                'break_in' => $validated['break_in'] ?? null,
                 'updated_at' => now(),
             ];
 
