@@ -8,9 +8,12 @@ class ExampleTest extends TestCase
 {
     public function testBasicTest()
     {
-        // Root redirects to login for unauthenticated users
+        // '/' is itself the login page for unauthenticated users (see
+        // routes/web.php) - it renders the login view directly rather than
+        // redirecting to a separate route.
         $response = $this->get('/');
 
-        $response->assertRedirect();
+        $response->assertOk();
+        $response->assertViewIs('login');
     }
 }

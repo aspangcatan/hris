@@ -48,10 +48,12 @@ class OvertimeApprovalTest extends TestCase
             ['id' => $this->sectionId, 'description' => 'TestSection', 'head' => $this->shUserId, 'division' => $this->divisionId, 'code' => 'TSEC'],
         ]);
 
-        // Ensure CTO leave type exists — may be wiped by RefreshDatabase in other test classes
+        // Ensure CTO leave type exists — may be wiped by RefreshDatabase in other test classes.
+        // Credit amounts are computed in OvertimeServices::awardCtoCredits() directly; this
+        // row only needs to exist so leave_credits can reference its id.
         DB::table('hris.leave_types')->updateOrInsert(
             ['code' => 'CTO'],
-            ['id' => 16, 'description' => 'Compensatory Time Off', 'monthly_earned' => 0, 'status' => 'active', 'monthly_points_earned' => 0, 'minute_deduction' => 0, 'day_deduction' => 1.25]
+            ['id' => 16, 'description' => 'Compensatory Time Off', 'monthly_earned' => 0, 'status' => 'active']
         );
     }
 

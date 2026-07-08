@@ -43,11 +43,18 @@ class CreditControllerTest extends TestCase
         $this->app->instance(DTRServices::class, $mockDTR);
         $this->app->instance(LeaveCreditService::class, $mockLeaveCredit);
 
-        $response = $this->postJson('/update-credit-balance', [
+        // Route sits behind the 'auth' middleware group (routes/web.php:133);
+        // this test exercises controller wiring, not auth, so bypass it -
+        // same pattern used by the other feature tests in this suite.
+        // The controller filters tdh_user.users.division/section directly
+        // (numeric FK ids - confirmed against credit_management.blade.php,
+        // whose division/section <select> option values are ids, not names),
+        // so these must match the seeded user's numeric division/section above.
+        $response = $this->withoutMiddleware()->postJson('/update_credit_balance', [
             'month' => 9,
             'year' => 2025,
-            'division' => 'IT',
-            'section' => 'Development',
+            'division' => 1,
+            'section' => 1,
         ]);
 
         $response->assertStatus(200)

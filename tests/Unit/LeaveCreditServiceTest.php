@@ -3,13 +3,19 @@
 namespace Tests\Unit;
 
 use App\Services\LeaveCreditService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class LeaveCreditServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    // RefreshDatabase runs migrate:fresh once per PHPUnit process, dropping
+    // and recreating every table in the shared hris database with no reseed -
+    // this was silently wiping all real data (payroll_tax_rules,
+    // payroll_components, etc.) every time the suite ran. Every other test in
+    // this project uses DatabaseTransactions against the shared live-ish
+    // database; this test needs the same.
+    use DatabaseTransactions;
 
     protected $leaveCreditService;
 
@@ -28,6 +34,21 @@ class LeaveCreditServiceTest extends TestCase
             ['minute' => 60, 'points_deduction' => 0.1],
             ['minute' => 15, 'points_deduction' => 0.025],
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        // monthly_earned_points and minute_conversions are MyISAM, so
+        // RefreshDatabase's transaction wrapping is a silent no-op for them -
+        // without this cleanup, every test run permanently leaks these rows
+        // into the shared database (this is how the real minute_conversions
+        // table ended up with duplicate/incorrect rows in the first place,
+        // which fed wrong values into OvertimeApprovalTest's CTO credit math).
+        DB::table('monthly_earned_points')->where('present', 22)->where('points', 1.5)->delete();
+        DB::table('monthly_earned_points')->where('present', 30)->where('points', 2.0)->delete();
+        DB::table('minute_conversions')->where('minute', 60)->where('points_deduction', 0.1)->delete();
+        DB::table('minute_conversions')->where('minute', 15)->where('points_deduction', 0.025)->delete();
+        parent::tearDown();
     }
 
     /** @test */

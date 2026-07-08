@@ -1,0 +1,39 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Recreates a table whose migration (aa0a955, 665d6d8) was written and
+     * committed but never actually applied to this database — a different
+     * migration was failing mid-batch around the same time and this one
+     * never got its turn to run. OvertimeServices has depended on this table
+     * ever since, so the overtime approval workflow has been broken in
+     * production. Schema recovered verbatim from that git history.
+     */
+    public function up()
+    {
+        Schema::create('overtime_request_approvals', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('overtime_request_id');
+            $table->integer('approver_id')->nullable();
+            $table->enum('role', ['SH', 'DH', 'HR']);
+            $table->unsignedTinyInteger('order_no');
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->text('remarks')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->timestamps();
+
+            $table->index('overtime_request_id');
+            $table->unique(['overtime_request_id', 'role'], 'ot_approvals_request_role_unique');
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('overtime_request_approvals');
+    }
+};

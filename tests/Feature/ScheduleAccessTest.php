@@ -74,26 +74,23 @@ class ScheduleAccessTest extends TestCase
             'division' => $this->divisionId, 'section' => $this->sectionAId,
         ]);
 
-        // The test database is not seeded with PermissionSeeder, so the
-        // 'schedule.manage' permission and its grant to the 'schedule' level
-        // must be created here for permission_check('schedule.manage') to work.
-        $this->schedulePermissionId = DB::table('hris.permissions')->insertGetId([
-            'module' => 'schedule',
-            'code' => 'schedule.manage',
-            'description' => 'Manage schedules',
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
-        DB::table('hris.access_level_permissions')->insert([
-            'level' => 'schedule',
-            'permission_id' => $this->schedulePermissionId,
-            'created_at' => now(), 'updated_at' => now(),
-        ]);
+        // PermissionSeeder may or may not have run against this database yet,
+        // so upsert idempotently instead of assuming either state - this is a
+        // permanent catalog permission (same one PermissionSeeder defines), not
+        // per-test fixture data, so it's intentionally never deleted below.
+        DB::table('hris.permissions')->updateOrInsert(
+            ['code' => 'schedule.manage'],
+            ['module' => 'schedule', 'description' => 'Manage schedules', 'updated_at' => now(), 'created_at' => now()]
+        );
+        $this->schedulePermissionId = DB::table('hris.permissions')->where('code', 'schedule.manage')->value('id');
+        DB::table('hris.access_level_permissions')->updateOrInsert(
+            ['level' => 'schedule', 'permission_id' => $this->schedulePermissionId],
+            ['created_at' => now(), 'updated_at' => now()]
+        );
     }
 
     protected function tearDown(): void
     {
-        DB::table('hris.access_level_permissions')->where('permission_id', $this->schedulePermissionId)->delete();
-        DB::table('hris.permissions')->where('id', $this->schedulePermissionId)->delete();
         DB::table('hris.schedule_user_sections')->whereIn('user_id', [$this->managerUserId, $this->employeeUserId])->delete();
         DB::table('hris.user_permissions')->whereIn('user_id', [$this->managerUserId, $this->employeeUserId])->delete();
         DB::table('tdh_user.section')->whereIn('id', [$this->sectionAId, $this->sectionBId])->delete();
