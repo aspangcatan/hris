@@ -51,6 +51,13 @@
             background: #fff;
         }
 
+        /* Bootstrap couples overflow-x:auto (table-responsive) with an implicit
+           overflow-y:auto, which clips the row-action dropdown menu. Temporarily
+           lift the clip while a dropdown inside this table is open. */
+        .payroll-table-shell.dropdown-open {
+            overflow: visible;
+        }
+
         .payroll-table-shell table {
             margin-bottom: 0;
         }
@@ -147,112 +154,26 @@
 @stop
 @section('js')
     <script>
-        let selectedEmployees = [];
         let payroll_id = 0;
         let payrollMeta = {};
 
         $(document).ready(function () {
             getPayroll();
-            loadDivision();
             loadTaxPurposes();
             loadCutoffPeriods();
 
-            $("#select_all").change(function () {
-                if ($(this).prop("checked")) {
-                    $(".employee-checkbox").prop("checked", true).change();
-                } else {
-                    $(".employee-checkbox").prop("checked", false).change();
-                }
+            // Row-action dropdowns are appended dynamically inside #payroll_list,
+            // so bind via delegation. Lift the table shell's overflow clip while
+            // a dropdown is open so it isn't cut off near the bottom of the table.
+            $(document).on('show.bs.dropdown', '.payroll-table-shell .dropdown', function () {
+                $(this).closest('.payroll-table-shell').addClass('dropdown-open');
             });
-
-            $("#filter_status").change(function () {
-                getEmployee($("#filter_division").val(), $("#filter_section").val(), $("#filter_status").val());
-            });
-
-            $("#filter_division").change(function () {
-                const division = $("#filter_division").val();
-                fetch("{{ route('getSectionList') }}?division=" + division, {
-                    method: "GET"
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        getEmployee($("#filter_division").val(), "", $("#filter_status").val());
-                        $("#filter_section").empty();
-                        $("#filter_section").append("<option value=''>Select Section</option>");
-                        if (division == 0) {
-                            $("#filter_section").addClass("d-none");
-                        } else {
-                            $("#filter_section").removeClass("d-none");
-                        }
-
-                        data.forEach(it => {
-                            const option = `<option value="` + it.id + `">` + it.description + `</option>`;
-                            $("#filter_section").append(option);
-                        });
-
-                        updateCheckedStatus();
-                    }).catch(err => {
-                    alert("Ooops, something went wrong. Please reload");
-                });
-            });
-
-            $("body").on("change", ".employee-checkbox", function () {
-                const value = $(this).val();
-                const row = $(this).closest("tr");
-
-                if ($(this).prop("checked")) {
-                    // Only add if not already present
-                    if (!selectedEmployees.some(emp => emp.userid === value)) {
-                        selectedEmployees.push({
-                            userid: value,
-                            salary_adjustment: row.find(".employee-adjustment").eq(0).val(),
-                            hazard_adjustment: row.find(".employee-adjustment").eq(1).val(),
-                            pera_adjustment: row.find(".employee-adjustment").eq(2).val(),
-                            subsistence_adjustment: row.find(".employee-adjustment").eq(3).val(),
-                            laundry_adjustment: row.find(".employee-adjustment").eq(4).val(),
-                        });
-                    }
-                } else {
-                    // Remove from array
-                    selectedEmployees = selectedEmployees.filter(emp => emp.userid !== value);
-                }
-            });
-
-            $("body").on("input", ".employee-adjustment", function () {
-                const row = $(this).closest("tr");
-                const checkbox = row.find(".employee-checkbox");
-                const value = checkbox.val();
-
-                if (checkbox.prop("checked")) {
-                    // Update existing record
-                    const existing = selectedEmployees.find(emp => emp.userid === value);
-                    if (existing) {
-                        existing.salary_adjustment = row.find(".employee-adjustment").eq(0).val();
-                        existing.hazard_adjustment = row.find(".employee-adjustment").eq(1).val();
-                        existing.pera_adjustment = row.find(".employee-adjustment").eq(2).val();
-                        existing.subsistence_adjustment = row.find(".employee-adjustment").eq(3).val();
-                        existing.laundry_adjustment = row.find(".employee-adjustment").eq(4).val();
-                    } else {
-                        // If somehow not found but checkbox is checked, add it
-                        selectedEmployees.push({
-                            userid: value,
-                            salary_adjustment: row.find(".employee-adjustment").eq(0).val(),
-                            hazard_adjustment: row.find(".employee-adjustment").eq(1).val(),
-                            pera_adjustment: row.find(".employee-adjustment").eq(2).val(),
-                            subsistence_adjustment: row.find(".employee-adjustment").eq(3).val(),
-                            laundry_adjustment: row.find(".employee-adjustment").eq(4).val(),
-                        });
-                    }
-                }
+            $(document).on('hidden.bs.dropdown', '.payroll-table-shell .dropdown', function () {
+                $(this).closest('.payroll-table-shell').removeClass('dropdown-open');
             });
 
             $("#filter_name").on("input", function () {
                 filterEmployeeRows();
-            });
-
-
-            $("#filter_section").change(function () {
-                getEmployee($("#filter_division").val(), $("#filter_section").val(), $("#filter_status").val());
             });
 
             $("#btn_add").click(function () {
@@ -261,29 +182,25 @@
 
             $("#btn_save_employees").click(function () {
                 const checked = [];
-                $(".employee-checkbox:checked").each(function () {
-                    // Get the user_id from the value attribute
-                    var userId = $(this).val();
+                $("#employee_list tr").each(function () {
+                    const userId = $(this).data("userid");
+                    if (!userId) {
+                        return;
+                    }
 
-                    // Get the full name from data-name attribute
-                    var fullName = $(this).data("name");
+                    // Basic Pay is the one fixed, non-component input; every
+                    // other adjustment column is read by its component code
+                    // (set as data-code on the input), not by position.
+                    const salaryAdjustment = $(this).find("[data-code='__SALARY__']").val();
+                    const adjustments = {};
+                    $(this).find("input.employee-adjustment[data-code]").not("[data-code='__SALARY__']").each(function () {
+                        adjustments[$(this).data("code")] = $(this).val();
+                    });
 
-                    // Get the row of the current checkbox
-                    var row = $(this).closest("tr");
-
-                    // Collect the input values in that row (assuming order matters)
-                    var inputValues = row.find("input[type='number']").map(function () {
-                        return $(this).val();
-                    }).get(); // get() returns the array
-
-                    // Log or process the data
                     checked.push({
                         "userid": userId,
-                        "salary_adjustment": inputValues[0],
-                        "hazard_adjustment": inputValues[1],
-                        "pera_adjustment": inputValues[2],
-                        "subsistence_adjustment": inputValues[3],
-                        "laundry_adjustment": inputValues[4]
+                        "salary_adjustment": salaryAdjustment,
+                        "adjustments": adjustments
                     });
                 });
 
@@ -365,10 +282,6 @@
                     });
             });
 
-            $("#btn_preview_cutoff").click(function () {
-                previewCutoffSummary();
-            });
-
             $("#btn_export_regular").click(function () {
                 window.location.href = "{{ url('/payroll/export') }}/" + payroll_id;
             });
@@ -392,85 +305,60 @@
                 .catch(err => console.error(err));
         }
 
-        function getEmployee(division, section, type) {
-            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}&type=${type}`)
+        function loadCutoffEmployees(payrollId) {
+            const $tbody = $('#employee_list');
+            $tbody.empty();
+
+            fetch(`{{ url('/payroll') }}/${payrollId}/cutoff-employees`)
                 .then(response => response.json())
                 .then(data => {
-                    const $tbody = $('#employee_list');
-                    $tbody.empty(); // Clear current list
-                    $("#select_all").prop("checked", false);
-                    data.results.forEach(emp => {
+                    if (!data.success) {
+                        toastr.error(data.message || "Failed to load employees for this cutoff.", "Error");
+                        return;
+                    }
+
+                    const columns = data.columns || [];
+                    renderAdjustmentColumnHeaders(columns);
+
+                    (data.data || []).forEach(emp => {
                         const middleInitial = emp.mname ? emp.mname.charAt(0) + '.' : '';
                         const suffix = emp.suffix ?? '';
                         const fullName = `${emp.lname}, ${emp.fname} ${middleInitial} ${suffix}`.trim();
 
+                        const adjustmentCells = columns.map(col => `
+                        <td>
+                            <input class="form-control text-center employee-adjustment" type="number"
+                                   data-code="${col.code}" value="${(emp.adjustments || {})[col.code] ?? 0}" />
+                        </td>`).join('');
+
                         const row = `
-                    <tr data-name="${fullName.toLowerCase()}">
-                        <td class="text-center">
-                            <input type="checkbox" class="form-check-input employee-checkbox" value="${emp.user_id}" data-name="${fullName}">
-                        </td>
+                    <tr data-name="${fullName.toLowerCase()}" data-userid="${emp.employee_id}">
                         <td class="text-center">${fullName}</td>
                         <td>
-                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
+                            <input class="form-control text-center employee-adjustment" type="number"
+                                   data-code="__SALARY__" value="${emp.salary_adjustment ?? 0}" />
                         </td>
-                        <td>
-                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
-                        </td>
-                        <td>
-                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
-                        </td>
-                        <td>
-                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
-                        </td>
-                        <td>
-                            <input class="form-control text-center employee-adjustment" type="number" value="0.00" />
-                        </td>
+                        ${adjustmentCells}
                     </tr>
                     `;
 
                         $tbody.append(row);
                     });
-                    updateCheckedStatus();
                     filterEmployeeRows();
                 })
                 .catch(err => {
-                    console.error("Error fetching employees:", err);
+                    console.error("Error fetching cutoff employees:", err);
+                    toastr.error("Failed to load employees for this cutoff.", "Error");
                 });
         }
 
-
-        function loadDivision() {
-            fetch("{{ route('getDivisionList') }}", {
-                method: "GET"
-            })
-                .then(response => response.json())
-                .then(data => {
-                    $("#filter_division").append("<option value=''>Select division</option>");
-                    data.forEach(it => {
-                        const option = `<option value="` + it.id + `">` + it.description + `</option>`;
-                        $("#filter_division").append(option);
-                    });
-                }).catch(err => {
-                alert("Ooops, something went wrong. Please reload");
+        function renderAdjustmentColumnHeaders(columns) {
+            const $row = $("#adjustment_columns_row");
+            $row.empty().append("<th>Basic Pay</th>");
+            columns.forEach(col => {
+                $row.append(`<th>${col.name}</th>`);
             });
-        }
-
-        function updateCheckedStatus() {
-            selectedEmployees.forEach(emp => {
-                // Find the checkbox for this employee
-                const checkbox = $(".employee-checkbox[value='" + emp.userid + "']");
-                const row = checkbox.closest("tr");
-
-                // Check the checkbox
-                checkbox.prop("checked", true);
-
-                // Update the input fields
-                row.find(".employee-adjustment").eq(0).val(emp.salary_adjustment || "0.00");
-                row.find(".employee-adjustment").eq(1).val(emp.hazard_adjustment || "0.00");
-                row.find(".employee-adjustment").eq(2).val(emp.pera_adjustment || "0.00");
-                row.find(".employee-adjustment").eq(3).val(emp.subsistence_adjustment || "0.00");
-                row.find(".employee-adjustment").eq(4).val(emp.laundry_adjustment || "0.00");
-            });
+            $("#adjustment_group_header").attr("colspan", 1 + columns.length);
         }
 
         function formatCurrency(value) {
@@ -604,6 +492,10 @@
             window.location.href = "{{ url('/payroll/payslip') }}/" + id;
         }
 
+        function downloadSummary(id) {
+            window.location.href = "{{ url('/payroll/summary') }}/" + id;
+        }
+
         function viewPayroll(id, type) {
             payroll_id = id;
             const config = {
@@ -633,7 +525,7 @@
                     const tbody = $(settings.tbodyId);
                     tbody.empty();
 
-                    if (!data || data.length === 0) {
+                    if (!data || !data.employees || data.employees.length === 0) {
                         toastr.error("There are no employee assigned", "Information");
                         return;
                     }
@@ -653,94 +545,110 @@
             const meta = payrollMeta[id] || {};
             $("#preview_cutoff_start").text(meta.cutoff_start_date || meta.start_date || "-");
             $("#preview_cutoff_end").text(meta.cutoff_end_date || meta.end_date || "-");
+            $("#filter_name").val("");
+            loadCutoffEmployees(id);
             $("#append_employee_modal").modal("show");
         }
 
-        function populateRegularRows(tbody, data) {
-            data.forEach((item, index) => {
+        function componentAmountFor(componentAmounts, employeeId, code) {
+            const row = componentAmounts && componentAmounts[employeeId];
+            return (row && row[code]) || 0;
+        }
+
+        function renderRegularPayrollHeader(earningComponents, deductionComponents) {
+            const earningHeaders = earningComponents.map(c => `<th class="text-end">${c.name}</th>`).join('');
+            const deductionHeaders = deductionComponents.map(c => `<th class="text-end">${c.name}</th>`).join('');
+
+            const headerHtml = `
+                <tr class="text-center align-middle">
+                    <th rowspan="2">No.</th>
+                    <th rowspan="2">Family Name</th>
+                    <th rowspan="2">First Name</th>
+                    <th rowspan="2">Middle Name</th>
+                    <th rowspan="2">Suffix</th>
+                    <th rowspan="2">Designation</th>
+                    <th rowspan="2">SG</th>
+                    <th rowspan="2">Step</th>
+                    <th rowspan="2" class="text-end">Basic Pay</th>
+                    <th rowspan="2" class="text-end">Late/Absent Deduction</th>
+                    <th colspan="${earningComponents.length}">Earnings</th>
+                    <th colspan="${deductionComponents.length}">Deductions</th>
+                    <th rowspan="2" class="text-end">Withholding Tax</th>
+                    <th rowspan="2" class="text-end fw-bold">Total Deduction</th>
+                    <th rowspan="2" class="text-end fw-bold">Net Pay</th>
+                    <th rowspan="2" class="text-end">1st Half 10th</th>
+                    <th rowspan="2" class="text-end">2nd Half 25th</th>
+                </tr>
+                <tr class="text-center align-middle">
+                    ${earningHeaders}
+                    ${deductionHeaders}
+                </tr>`;
+            $("#regular_payroll_thead").html(headerHtml);
+
+            const totalColspan = 10; // No. through Late/Absent Deduction
+            const footerHtml = `
+                <tr>
+                    <td colspan="${totalColspan}" class="text-end">TOTAL:</td>
+                    ${earningComponents.map(() => '<td></td>').join('')}
+                    ${deductionComponents.map(() => '<td></td>').join('')}
+                    <td class="text-end" id="total_withholding">0.00</td>
+                    <td class="text-end" id="total_deduction">0.00</td>
+                    <td class="text-end" id="total_net">0.00</td>
+                    <td colspan="2"></td>
+                </tr>`;
+            $("#regular_payroll_tfoot").html(footerHtml);
+        }
+
+        function populateRegularRows(tbody, payload) {
+            const { employees, earningComponents, deductionComponents, componentAmounts } = payload;
+            renderRegularPayrollHeader(earningComponents, deductionComponents);
+
+            let totalWithholding = 0;
+            let totalDeduction = 0;
+            let totalNet = 0;
+
+            employees.forEach((item, index) => {
+                totalWithholding += parseFloat(item.withholding_tax || 0);
+                totalDeduction += parseFloat(item.deductions || 0);
+                totalNet += parseFloat(item.net_pay || 0);
+
+                const earningCells = earningComponents.map(c =>
+                    `<td>${formatCurrency(componentAmountFor(componentAmounts, item.id, c.code))}</td>`
+                ).join('');
+                const deductionCells = deductionComponents.map(c =>
+                    `<td>${formatCurrency(componentAmountFor(componentAmounts, item.id, c.code))}</td>`
+                ).join('');
+
                 const row = `
                         <tr>
-                            <td class="sticky-col sticky-1">${index + 1}</td>
-                            <td class="sticky-col sticky-2">${item.lname}</td>
-                            <td class="sticky-col sticky-3">${item.fname}</td>
-                            <td class="sticky-col sticky-4">${item.mname ?? ''}</td>
-                            <td class="sticky-col sticky-5">${item.suffix ?? ''}</td>
-                            <td class="sticky-col sticky-6">${item.mi ?? ''}</td>
-                            <td class="sticky-col sticky-7">${item.stat ?? ''}</td>
-                            <td>${item.division}</td>
-                            <td>${item.section ?? ''}</td>
-                            <td>${item.zz ?? ''}</td>
-                            <td>${item.sg ?? ''}</td>
+                            <td>${index + 1}</td>
+                            <td>${item.lname}</td>
+                            <td>${item.fname}</td>
+                            <td>${item.mname ?? ''}</td>
+                            <td>${item.suffix ?? ''}</td>
+                            <td>${item.designation ?? ''}</td>
+                            <td>${item.salary_grade ?? ''}</td>
                             <td>${item.step ?? ''}</td>
-                            <td>${item.sg_b ?? ''}</td>
                             <td>${formatCurrency(item.basic_salary)}</td>
-                            <td>${formatCurrency(item.salary_adjustment)}</td>
                             <td>${formatCurrency(item.late_absent)}</td>
-                            <td>${formatCurrency(item.final_basic_pay ?? "0.00")}</td>
-                            <td>${formatCurrency(item.pera)}</td>
-                            <td>${formatCurrency(item.rata)}</td>
-                            <td>${formatCurrency(item.subsistence)}</td>
-                            <td>${formatCurrency(item.laundry)}</td>
-                            <td>${formatCurrency(item.hazard)}</td>
-                            <td>${formatCurrency(item.longevity)}</td>
-                            <td>${formatCurrency(item.quarters_allowance ?? "0.00")}</td>
-                            <td>${formatCurrency(item.cellphone_allowance)}</td>
-                            <td class="text-danger">${formatCurrency(item.gross_pay)}</td>
+                            ${earningCells}
+                            ${deductionCells}
                             <td>${formatCurrency(item.withholding_tax ?? "0.00")}</td>
-                            <td>${formatCurrency(item.withholding_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_ps)}</td>
-                            <td>${formatCurrency(item.gsis_gs)}</td>
-                            <td>${formatCurrency(item.gsis_ec)}</td>
-                            <td>${formatCurrency(item.hdmf)}</td>
-                            <td>${formatCurrency(item.phic)}</td>
-                            <td>${formatCurrency(item.pagibig_cal)}</td>
-                            <td>${formatCurrency(item.pagibig_mpl)}</td>
-                            <td>${formatCurrency(item.pagibig_mp2)}</td>
-                            <td>${formatCurrency(item.pagibig_mp2_2nd)}</td>
-                            <td>${formatCurrency(item.pagibig_mp2_3rd)}</td>
-                            <td>${formatCurrency(item.gsis_consoloan)}</td>
-                            <td>${formatCurrency(item.gsis_emergency_loan)}</td>
-                            <td>${formatCurrency(item.gsis_educational_loan)}</td>
-                            <td>${formatCurrency(item.gsis_policy_loan)}</td>
-                            <td>${formatCurrency(item.gsis_opt_life_loan)}</td>
-                            <td>${formatCurrency(item.gsis_gfal)}</td>
-                            <td>${formatCurrency(item.gsis_mpl)}</td>
-                            <td>${formatCurrency(item.gsis_cpl)}</td>
-                            <td>${formatCurrency(item.gsis_mpl_lite)}</td>
-                            <td>${formatCurrency(item.cfi_coop)}</td>
-                            <td>${formatCurrency(item.first_valley_bank)}</td>
-                            <td>${formatCurrency(item.tdhea)}</td>
-                            <td>${formatCurrency(item.dbp_loan)}</td>
-                            <td>${formatCurrency(item.ucpb_loan)}</td>
-                            <td>${formatCurrency(item.meds_payable)}</td>
-                            <td>${formatCurrency(item.phic_contri_adj ?? "0.00")}</td>
-                            <td>${formatCurrency(item.phic_refund_eo ?? "0.00")}</td>
-                            <td>${formatCurrency(item.hazard_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.pera_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.subsistence_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.laundry_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.sss_deduction)}</td>
-                            <td>${formatCurrency(item.sss_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_ps_lwop ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_gs_lwop ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_plreg_refund ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_mpl_refund ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_emergency_refund ?? "0.00")}</td>
-                            <td>${formatCurrency(item.gsis_consoloan_refund ?? "0.00")}</td>
-                            <td>${formatCurrency(item.subsistence_deduction_leave ?? "0.00")}</td>
-                            <td>${formatCurrency(item.resigned_adjustment ?? "0.00")}</td>
-                            <td>${formatCurrency(item.deductions ?? "0.00")}</td>
-                            <td class="text-danger">${formatCurrency(item.net_pay)}</td>
+                            <td class="fw-bold">${formatCurrency(item.deductions ?? "0.00")}</td>
+                            <td class="text-danger fw-bold">${formatCurrency(item.net_pay)}</td>
                             <td>${formatCurrency(item.first_half_10th ?? "0.00")}</td>
                             <td>${formatCurrency(item.second_half_25th ?? "0.00")}</td>
                         </tr>`;
                 tbody.append(row);
             });
+
+            $("#total_withholding").text(formatCurrency(totalWithholding));
+            $("#total_deduction").text(formatCurrency(totalDeduction));
+            $("#total_net").text(formatCurrency(totalNet));
         }
 
-        function populateJobOrderRows(tbody, data) {
-            console.log(data);
-            data.forEach((item, index) => {
+        function populateJobOrderRows(tbody, payload) {
+            payload.employees.forEach((item, index) => {
                 const row = `
                         <tr>
                             <td class="sticky-col sticky-1">${index + 1}</td>
@@ -785,7 +693,7 @@
                         payrollMeta[item.id] = item;
                         const actions = [];
                         if (item.can_assign) {
-                            actions.push(`<li><a class="dropdown-item" href="#" onclick="assignEmployee(${item.id})">Assign / Compute</a></li>`);
+                            actions.push(`<li><a class="dropdown-item" href="#" onclick="assignEmployee(${item.id})">Review &amp; Compute</a></li>`);
                         }
                         actions.push(`<li><a class="dropdown-item" href="#" onclick="viewPayroll(${item.id},'${item.payroll_type}')">View</a></li>`);
 
@@ -801,6 +709,7 @@
                         }
                         if (item.can_generate_payslip) {
                             actions.push(`<li><a class="dropdown-item" href="#" onclick="downloadPayslip(${item.id})">Download Payslip</a></li>`);
+                            actions.push(`<li><a class="dropdown-item" href="#" onclick="downloadSummary(${item.id})">Print Summary</a></li>`);
                         }
 
                         if (actions.length === 0) {
@@ -848,57 +757,6 @@
             });
         }
 
-        function previewCutoffSummary() {
-            const meta = payrollMeta[payroll_id] || {};
-            const startDate = meta.cutoff_start_date || meta.start_date;
-            const endDate = meta.cutoff_end_date || meta.end_date;
-            if (!startDate || !endDate) {
-                toastr.error("Cutoff period is not set for this payroll.", "Validation");
-                return;
-            }
-
-            const selected = $("#employee_list .employee-checkbox:checked").map(function () {
-                return $(this).val();
-            }).get();
-
-            const params = new URLSearchParams();
-            params.append("start_date", startDate);
-            params.append("end_date", endDate);
-            if (selected.length) {
-                params.append("employees", selected.join(","));
-            }
-
-            fetch(`{{ route('getCutoffSummaryPreview') }}?${params.toString()}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $tbody = $("#cutoff_preview_body");
-                    $tbody.empty();
-                    if (!data.success || !data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='6' class='text-muted text-center'>No cutoff summaries found for this period.</td></tr>");
-                        return;
-                    }
-
-                    data.data.forEach(item => {
-                        const middleInitial = item.mname ? item.mname.charAt(0) + '.' : '';
-                        const suffix = item.suffix ? ` ${item.suffix}` : '';
-                        const fullName = `${item.lname}, ${item.fname} ${middleInitial}${suffix}`.trim();
-                        const row = `
-                            <tr>
-                                <td>${fullName}</td>
-                                <td>${item.total_working_days ?? 0}</td>
-                                <td>${item.days_present ?? 0}</td>
-                                <td>${item.days_absent ?? 0}</td>
-                                <td>${item.late_minutes ?? 0}</td>
-                                <td>${item.undertime_minutes ?? 0}</td>
-                            </tr>`;
-                        $tbody.append(row);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    toastr.error("Failed to load cutoff summary.", "Error");
-                });
-        }
 
         function loadCutoffPeriods() {
             fetch('{{ route('getCutoffPeriods') }}')

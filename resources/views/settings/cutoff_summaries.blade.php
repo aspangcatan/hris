@@ -224,7 +224,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-success btn-edit" id="btn_compute_leave_credits">
+                    <button type="button" class="btn btn-success btn-edit d-none" id="btn_compute_leave_credits">
                         <span class="btn-label">Compute Leave Credits Earned</span>
                         <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
                     </button>

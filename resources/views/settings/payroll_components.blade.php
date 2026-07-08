@@ -50,11 +50,12 @@
                         <table class="table align-middle">
                             <thead>
                             <tr>
-                                <th style="width: 18%;">Code</th>
+                                <th style="width: 16%;">Code</th>
                                 <th>Name</th>
-                                <th style="width: 12%;">Taxable</th>
-                                <th style="width: 18%;">Default</th>
-                                <th style="width: 14%;">Active</th>
+                                <th style="width: 10%;">Taxable</th>
+                                <th style="width: 16%;">Default</th>
+                                <th style="width: 12%;">Active</th>
+                                <th style="width: 14%;">Adjustable per Cutoff</th>
                                 <th style="width: 10%;"></th>
                             </tr>
                             </thead>
@@ -132,7 +133,14 @@
                                 <label class="form-check-label" for="component_active">Active</label>
                             </div>
                         </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="component_cutoff_adjustable">
+                                <label class="form-check-label" for="component_cutoff_adjustable">Adjustable per Cutoff</label>
+                            </div>
+                        </div>
                     </div>
+                    <p class="text-muted small mt-2 mb-0">When checked, this component gets a quick manual-entry field in the Payroll module's Review &amp; Compute step for every cutoff.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
@@ -206,7 +214,7 @@
             $deductions.empty();
 
             if (!earnings.length) {
-                $earnings.append("<tr><td colspan='6' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
+                $earnings.append("<tr><td colspan='7' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
             } else {
                 earnings.forEach(component => {
                     $earnings.append(renderRow(component));
@@ -214,7 +222,7 @@
             }
 
             if (!deductions.length) {
-                $deductions.append("<tr><td colspan='6' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
+                $deductions.append("<tr><td colspan='7' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
             } else {
                 deductions.forEach(component => {
                     $deductions.append(renderRow(component));
@@ -225,6 +233,7 @@
         function renderRow(component) {
             const taxable = component.taxable ? "Yes" : "No";
             const active = component.is_active ? "Yes" : "No";
+            const adjustable = component.is_cutoff_adjustable ? "Yes" : "No";
             const defaultAmount = component.default_amount !== undefined && component.default_amount !== null
                 ? parseFloat(component.default_amount).toFixed(2)
                 : "0.00";
@@ -236,6 +245,7 @@
                     <td>${taxable}</td>
                     <td>${defaultAmount}</td>
                     <td>${active}</td>
+                    <td>${adjustable}</td>
                     <td class="text-end">
                         <button type="button" class="btn btn-action btn-edit btn-edit-component" data-code="${component.code}" data-type="${component.type}">
                             <i class="bi bi-pencil"></i>
@@ -257,6 +267,7 @@
             $("#component_default").val(component ? (component.default_amount ?? 0) : "0.00");
             $("#component_taxable").prop("checked", !!(component && component.taxable));
             $("#component_active").prop("checked", component ? !!component.is_active : true);
+            $("#component_cutoff_adjustable").prop("checked", !!(component && component.is_cutoff_adjustable));
             $("#component_modal").modal("show");
         }
 
@@ -266,6 +277,7 @@
             const type = $("#component_type").val();
             const taxable = $("#component_taxable").is(":checked");
             const active = $("#component_active").is(":checked");
+            const cutoffAdjustable = $("#component_cutoff_adjustable").is(":checked");
             const defaultRaw = $("#component_default").val();
             const defaultAmount = defaultRaw === "" ? 0 : parseFloat(defaultRaw);
 
@@ -281,7 +293,8 @@
                 taxable: taxable,
                 default_amount: isNaN(defaultAmount) ? 0 : defaultAmount,
                 is_global: true,
-                is_active: active
+                is_active: active,
+                is_cutoff_adjustable: cutoffAdjustable
             };
 
             submitComponents([payload]);

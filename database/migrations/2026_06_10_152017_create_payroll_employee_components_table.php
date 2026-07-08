@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('payroll_employee_components', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('payroll_employee_id')->index();
-            $table->unsignedBigInteger('payroll_component_id')->index();
+            $table->unsignedBigInteger('payroll_component_id')->nullable()->index();
             $table->string('code', 100);
             $table->string('name');
             $table->enum('type', ['earning', 'deduction']);

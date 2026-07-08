@@ -211,6 +211,7 @@ class PayrollController extends Controller
                 $defaultAmount = isset($component['default_amount']) ? (float) $component['default_amount'] : 0;
                 $isGlobal = !empty($component['is_global']);
                 $isActive = array_key_exists('is_active', $component) ? (bool) $component['is_active'] : true;
+                $isCutoffAdjustable = !empty($component['is_cutoff_adjustable']);
 
                 DB::table('hris.payroll_components')->updateOrInsert(
                     ['code' => $code],
@@ -221,6 +222,7 @@ class PayrollController extends Controller
                         'taxable' => $taxable,
                         'default_amount' => $defaultAmount,
                         'is_active' => $isActive ? 1 : 0,
+                        'is_cutoff_adjustable' => $isCutoffAdjustable ? 1 : 0,
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]
@@ -303,28 +305,75 @@ class PayrollController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid payload.'], 422);
             }
 
+            $normalized = [];
             foreach ($rules as $rule) {
                 $purpose = trim((string) ($rule['purpose'] ?? ''));
                 if ($purpose === '') {
                     continue;
                 }
-                $minAnnual = isset($rule['min_annual']) ? (float) $rule['min_annual'] : 0;
                 $maxAnnual = array_key_exists('max_annual', $rule) ? $rule['max_annual'] : null;
-                $ratePercent = isset($rule['rate_percent']) ? (float) $rule['rate_percent'] : 0;
-                $taxMode = strtolower((string) ($rule['tax_mode'] ?? 'flat')) === 'progressive' ? 'progressive' : 'flat';
-                $isActive = array_key_exists('is_active', $rule) ? (bool) $rule['is_active'] : true;
-                $sortOrder = isset($rule['sort_order']) ? (int) $rule['sort_order'] : 0;
-                $remarks = $rule['remarks'] ?? null;
 
-                $payload = [
+                $normalized[] = [
+                    'id' => !empty($rule['id']) ? (int) $rule['id'] : null,
                     'purpose' => $purpose,
-                    'min_annual' => $minAnnual,
-                    'max_annual' => $maxAnnual === '' ? null : $maxAnnual,
-                    'rate_percent' => $ratePercent,
-                    'tax_mode' => $taxMode,
-                    'is_active' => $isActive ? 1 : 0,
-                    'sort_order' => $sortOrder,
-                    'remarks' => $remarks,
+                    'min_annual' => isset($rule['min_annual']) ? (float) $rule['min_annual'] : 0,
+                    'max_annual' => $maxAnnual === '' || $maxAnnual === null ? null : (float) $maxAnnual,
+                    'rate_percent' => isset($rule['rate_percent']) ? (float) $rule['rate_percent'] : 0,
+                    'tax_mode' => strtolower((string) ($rule['tax_mode'] ?? 'flat')) === 'progressive' ? 'progressive' : 'flat',
+                    'is_active' => array_key_exists('is_active', $rule) ? (bool) $rule['is_active'] : true,
+                    'sort_order' => isset($rule['sort_order']) ? (int) $rule['sort_order'] : 0,
+                    'remarks' => $rule['remarks'] ?? null,
+                ];
+            }
+
+            // Validate every touched purpose's full resulting active-rule set
+            // before writing anything, so a bad entry never lands half-saved.
+            $errors = [];
+            foreach (collect($normalized)->groupBy('purpose') as $purpose => $incomingForPurpose) {
+                $incomingIds = collect($incomingForPurpose)->pluck('id')->filter()->all();
+
+                $existingActive = DB::table('hris.payroll_tax_rules')
+                    ->where('purpose', $purpose)
+                    ->where('is_active', 1)
+                    ->when(!empty($incomingIds), fn($q) => $q->whereNotIn('id', $incomingIds))
+                    ->get(['min_annual', 'max_annual', 'tax_mode'])
+                    ->map(fn($row) => (array) $row)
+                    ->all();
+
+                $incomingActive = collect($incomingForPurpose)
+                    ->where('is_active', true)
+                    ->map(fn($rule) => [
+                        'min_annual' => $rule['min_annual'],
+                        'max_annual' => $rule['max_annual'],
+                        'tax_mode' => $rule['tax_mode'],
+                    ])
+                    ->all();
+
+                $resultingSet = array_merge($existingActive, $incomingActive);
+                $error = $this->payrollServices->validateTaxRuleSet($purpose, $resultingSet);
+                if ($error) {
+                    $errors[$purpose] = $error;
+                }
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(' ', $errors),
+                    'errors' => $errors,
+                ], 422);
+            }
+
+            foreach ($normalized as $rule) {
+                $payload = [
+                    'purpose' => $rule['purpose'],
+                    'min_annual' => $rule['min_annual'],
+                    'max_annual' => $rule['max_annual'],
+                    'rate_percent' => $rule['rate_percent'],
+                    'tax_mode' => $rule['tax_mode'],
+                    'is_active' => $rule['is_active'] ? 1 : 0,
+                    'sort_order' => $rule['sort_order'],
+                    'remarks' => $rule['remarks'],
                     'updated_at' => now(),
                 ];
 
@@ -502,6 +551,60 @@ class PayrollController extends Controller
         }
     }
 
+    public function getCutoffEmployeesForPayroll($payroll_id)
+    {
+        try {
+            $payroll = $this->payrollServices->getPayrollPeriod($payroll_id);
+            if (!$payroll || !$payroll->cutoff_id) {
+                return response()->json(['success' => false, 'message' => 'Payroll has no cutoff assigned.'], 422);
+            }
+
+            $cutoffTable = $this->payrollServices->getCutoffSummaryTableName();
+
+            $employees = DB::table($cutoffTable . ' as cs')
+                ->join('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+                ->where('cs.cutoff_id', $payroll->cutoff_id)
+                ->orderBy('u.lname')
+                ->get(['cs.employee_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix']);
+
+            // Basic Pay is a fixed, non-component adjustment; every other
+            // column is whatever is currently flagged is_cutoff_adjustable.
+            $adjustableComponents = $this->payrollServices->getCutoffAdjustableComponents();
+            $adjustmentCodes = $adjustableComponents
+                ->map(fn($component) => $component->code . '_ADJUSTMENT')
+                ->push('SALARY_ADJUSTMENT')
+                ->all();
+
+            $savedAdjustments = DB::table('hris.payroll_employees as pe')
+                ->join('hris.payroll_employee_components as pec', 'pec.payroll_employee_id', '=', 'pe.id')
+                ->where('pe.payroll_id', $payroll_id)
+                ->whereIn('pec.code', $adjustmentCodes)
+                ->get(['pe.employee_id', 'pec.code', 'pec.amount'])
+                ->groupBy('employee_id');
+
+            $employees = $employees->map(function ($item) use ($savedAdjustments, $adjustableComponents) {
+                $byCode = $savedAdjustments->get($item->employee_id, collect())->pluck('amount', 'code');
+                $item->salary_adjustment = (float) ($byCode['SALARY_ADJUSTMENT'] ?? 0);
+
+                $adjustments = [];
+                foreach ($adjustableComponents as $component) {
+                    $adjustments[$component->code] = (float) ($byCode[$component->code . '_ADJUSTMENT'] ?? 0);
+                }
+                $item->adjustments = $adjustments;
+
+                return $item;
+            });
+
+            return response()->json([
+                'success' => true,
+                'columns' => $adjustableComponents->values(),
+                'data' => $employees,
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
     public function getPayroll()
     {
         try {
@@ -572,6 +675,8 @@ class PayrollController extends Controller
                 'payroll_id' => 'required|integer|exists:payrolls,id',
                 'employees' => 'required|array|min:1',
                 'employees.*.userid' => 'required|integer',
+                'employees.*.salary_adjustment' => 'nullable|numeric',
+                'employees.*.adjustments' => 'nullable|array',
             ]);
 
             $period = $this->payrollServices->getPayrollPeriod($validated['payroll_id']);
@@ -905,21 +1010,57 @@ class PayrollController extends Controller
     public function getPayrollEmployee(Request $request)
     {
         try {
-            return response()->json($this->payrollServices->getPayrollEmployee($request->payroll_id));
+            $employees = $this->payrollServices->getPayrollEmployee($request->payroll_id);
+            $breakdown = $this->getComponentBreakdown($employees);
+
+            return response()->json([
+                'employees' => $employees,
+                'earningComponents' => $breakdown['earning'],
+                'deductionComponents' => $breakdown['deduction'],
+                'componentAmounts' => $breakdown['amounts'],
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
     }
 
+    private function getComponentBreakdown($employees)
+    {
+        $components = DB::table('hris.payroll_components')
+            ->where('is_active', 1)
+            ->orderBy('sort_order')
+            ->get(['code', 'name', 'type']);
+
+        $componentAmounts = DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', $employees->pluck('id'))
+            ->select('payroll_employee_id', 'code', 'amount')
+            ->get()
+            ->groupBy('payroll_employee_id')
+            ->map(function ($rows) {
+                return $rows->pluck('amount', 'code');
+            });
+
+        return [
+            'earning' => $components->where('type', 'earning')->values(),
+            'deduction' => $components->where('type', 'deduction')->values(),
+            'amounts' => $componentAmounts,
+        ];
+    }
+
     public function export($payroll_id)
     {
+        $payroll = $this->payrollServices->getPayrollPeriod($payroll_id);
+        if (!$payroll) {
+            return back()->with('error', 'Payroll not found.');
+        }
+
         $employees = $this->payrollServices->getPayrollEmployee($payroll_id);
         if ($employees->isEmpty()) {
             return back()->with('error', 'No employees found for this payroll.');
         }
 
         $exportPath = storage_path('app/exports/payroll.xlsx');
-        $this->payrollServices->exportRegularPayroll($employees, $exportPath);
+        $this->payrollServices->exportRegularPayroll($employees, $exportPath, $payroll);
 
         return response()->download($exportPath)->deleteFileAfterSend(true);
     }
@@ -951,6 +1092,44 @@ class PayrollController extends Controller
 
             $safeTitle = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title);
             return $pdf->download('payslip_' . $safeTitle . '.pdf');
+        } catch (\Exception $exception) {
+            return response()->json(['error' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function payrollSummary($payroll_id)
+    {
+        try {
+            $payroll = $this->payrollServices->getPayrollPeriod($payroll_id);
+            if (!$payroll) {
+                return back()->with('error', 'Payroll not found.');
+            }
+
+            $employees = $this->payrollServices->getPayrollEmployee($payroll_id);
+            if ($employees->isEmpty()) {
+                return back()->with('error', 'No employees found for this payroll.');
+            }
+
+            $breakdown = $this->getComponentBreakdown($employees);
+
+            $pdf = SnappyPdf::loadView('pdf.payroll_summary', [
+                'payroll' => $payroll,
+                'employees' => $employees,
+                'earningComponents' => $breakdown['earning'],
+                'deductionComponents' => $breakdown['deduction'],
+                'componentAmounts' => $breakdown['amounts'],
+            ])
+                ->setOption('page-width', '1000mm')
+                ->setOption('page-height', '210mm')
+                ->setOption('margin-top', 6)
+                ->setOption('margin-bottom', 6)
+                ->setOption('margin-left', 6)
+                ->setOption('margin-right', 6)
+                ->setOption('disable-javascript', true)
+                ->setOption('load-error-handling', 'ignore');
+
+            $safeTitle = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title);
+            return $pdf->download('summary_' . $safeTitle . '.pdf');
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }

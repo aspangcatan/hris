@@ -291,6 +291,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'createCutoffSummaries'])->name('createCutoffSummaries');
     Route::get('/cutoff-periods', [\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
     Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview');
+    Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
     Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits');
     Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits');
 
@@ -305,6 +306,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'getPayrollEmployee'])->name('getPayrollEmployee');
     Route::get('/payroll/export/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'export'])->name('exportPayroll');
     Route::get('/payroll/payslip/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payslip'])->name('payrollPayslip');
+    Route::get('/payroll/summary/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payrollSummary'])->name('payrollSummary');
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE

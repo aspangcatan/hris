@@ -217,45 +217,13 @@
 
             <!-- Scrollable Body -->
             <div class="modal-body" style="max-height: 75vh; overflow-y: auto; padding: 1.5rem;">
+                <p class="text-muted small">Employees are pulled automatically from this payroll's cutoff entry — every employee with a cutoff summary for this period is included below. Use the search to find someone and enter any manual adjustments.</p>
                 <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="filter_division" class="form-label">Filter by Division</label>
-                            <select id="filter_division" class="form-select"></select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label for="filter_section" class="form-label">Filter by Section</label>
-                            <select id="filter_section" class="form-select"></select>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="filter_status" class="form-label">Filter by Status</label>
-                            <select id="filter_status" class="form-select">
-                                <option value="" selected>Select status</option>
-                                <option>Job Order</option>
-                                <option>Permanent</option>
-                                <option>Resigned</option>
-                                <option>Retired</option>
-                                <option>Temporary</option>
-                                <option>EOT</option>
-                                <option>COS</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-8">
                         <div class="mb-3">
                             <label for="filter_name" class="form-label">Search Name</label>
                             <input type="text" class="form-control" id="filter_name" placeholder="Search employee">
                         </div>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button class="btn btn-action btn-view w-100 mb-3" id="btn_preview_cutoff">
-                            <i class="bi bi-eye me-1"></i>
-                            Preview Cutoff Summary
-                        </button>
                     </div>
                     <div class="col-md-4 d-flex align-items-end">
                         <div class="mb-3 w-100">
@@ -269,44 +237,18 @@
                 <div class="border rounded p-2" style="height: 55vh; overflow-y: auto;">
                     <div>
                         <table class="table table-sm table-bordered align-middle">
-                            <thead class="table-light text-center">
+                            <thead class="table-light text-center" id="employee_list_head">
                             <tr>
-                                <th rowspan="2" style="width: 4%;">
-                                    <input class="form-check-input" type="checkbox" id="select_all"/>
-                                </th>
                                 <th rowspan="2" style="width: 35%">Full Name</th>
-                                <th colspan="5">Adjustment</th>
+                                <th colspan="1" id="adjustment_group_header">Adjustment</th>
                             </tr>
-                            <tr>
+                            <tr id="adjustment_columns_row">
                                 <th>Basic Pay</th>
-                                <th>Hazard</th>
-                                <th>PERA</th>
-                                <th>Subsistence</th>
-                                <th>Laundry</th>
                             </tr>
                             </thead>
                             <tbody id="employee_list"></tbody>
                         </table>
                     </div>
-                </div>
-                <div class="mt-3 table-responsive shadow-sm rounded">
-                    <table class="table table-sm table-bordered align-middle text-center">
-                        <thead class="table-light">
-                        <tr>
-                            <th>Employee</th>
-                            <th>Working Days</th>
-                            <th>Days Present</th>
-                            <th>Days Absent</th>
-                            <th>Late (mins)</th>
-                            <th>Undertime (mins)</th>
-                        </tr>
-                        </thead>
-                        <tbody id="cutoff_preview_body">
-                        <tr>
-                            <td colspan="6" class="text-muted text-center">Preview cutoff summary to view totals.</td>
-                        </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -335,94 +277,9 @@
             <div class="modal-body p-3">
                 <div class="table-responsive shadow-sm rounded">
                     <table class="table table-bordered table-striped align-middle">
-                        <thead class="table-light">
-                        <tr class="text-center align-middle">
-                            <th class="sticky-col sticky-1">No.</th>
-                            <th class="sticky-col sticky-2">Family Name</th>
-                            <th class="sticky-col sticky-3">First Name</th>
-                            <th class="sticky-col sticky-4">Middle Name</th>
-                            <th class="sticky-col sticky-5">Suffix</th>
-                            <th class="sticky-col sticky-6">MI</th>
-                            <th class="sticky-col sticky-7">STAT</th>
-                            <th>Division</th>
-                            <th>Designation</th>
-                            <th>zz</th>
-                            <th>SG</th>
-                            <th>Step</th>
-                            <th>SG B</th>
-                            <th class="text-end">SSL 6 Basic Pay</th>
-                            <th class="text-end">Basic Pay Adj</th>
-                            <th class="text-end">Basic Pay LWOP</th>
-                            <th class="text-end">Final Basic Pay</th>
-                            <th class="text-end">PERA</th>
-                            <th class="text-end">RATA</th>
-                            <th class="text-end">Subsistence</th>
-                            <th class="text-end">Laundry</th>
-                            <th class="text-end">Hazard</th>
-                            <th class="text-end">Longevity</th>
-                            <th class="text-end">Quarters Allowance</th>
-                            <th class="text-end">Cellphone Allowance</th>
-                            <th class="fw-bold text-end">Gross Pay</th>
-                            <th class="text-end">Withholding Tax</th>
-                            <th class="text-end">Withholding Tax (Adjustment)</th>
-                            <th class="text-end">GSIS PS</th>
-                            <th class="text-end">GSIS GS</th>
-                            <th class="text-end">GSIS EC</th>
-                            <th class="text-end">HDMF</th>
-                            <th class="text-end">PHIC</th>
-                            <th class="text-end">PAGIBIG CAL</th>
-                            <th class="text-end">PAGIBIG MPL</th>
-                            <th class="text-end">PAG-IBIG MP2</th>
-                            <th class="text-end">PAG-IBIG MP2 2nd Account</th>
-                            <th class="text-end">PAG-IBIG MP2 3rd Account</th>
-                            <th class="text-end">GSIS Conso Loan</th>
-                            <th class="text-end">GSIS Emergency Loan</th>
-                            <th class="text-end">GSIS Educational Loan</th>
-                            <th class="text-end">GSIS Policy Loan</th>
-                            <th class="text-end">GSIS Opt_Life Loan</th>
-                            <th class="text-end">GSIS GFAL</th>
-                            <th class="text-end">GSIS MPL</th>
-                            <th class="text-end">GSIS CPL</th>
-                            <th class="text-end">GSIS MPL Lite</th>
-                            <th class="text-end">CFI Coop</th>
-                            <th class="text-end">1st Valley Bank</th>
-                            <th class="text-end">TDHEA</th>
-                            <th class="text-end">DBP Loan</th>
-                            <th class="text-end">UCPB Loan</th>
-                            <th class="text-end">Meds Payable</th>
-                            <th class="text-end">PHIC Contri Adj</th>
-                            <th class="text-end">PHIC Refund from E.O.</th>
-                            <th class="text-end">Hazard Pay Adj</th>
-                            <th class="text-end">Adj PERA</th>
-                            <th class="text-end">Adj Subsistence</th>
-                            <th class="text-end">Adj Laundry</th>
-                            <th class="text-end">SSS Deduction</th>
-                            <th class="text-end">SSS Adjustment</th>
-                            <th class="text-end">GSIS PS LWOP (2%)</th>
-                            <th class="text-end">GSIS GS LWOP (2%)</th>
-                            <th class="text-end">GSIS PLREG Refund</th>
-                            <th class="text-end">GSIS MPL Refund</th>
-                            <th class="text-end">GSIS Emergency Refund</th>
-                            <th class="text-end">GSIS Conso Loan Refund</th>
-                            <th class="text-end">Subsistence Deduction from Leave</th>
-                            <th class="text-end">2nd Half Adjustment (Resigned Employee)</th>
-                            <th class="fw-bold text-end">Total Deduction</th>
-                            <th class="fw-bold text-end">Net Pay</th>
-                            <th class="text-end">1st Half 10th</th>
-                            <th class="text-end">2nd Half 25th</th>
-                        </tr>
-                        </thead>
+                        <thead class="table-light" id="regular_payroll_thead"></thead>
                         <tbody id="payroll_employee_list"></tbody>
-                        <tfoot class="table-light fw-bold">
-                        <tr>
-                            <td colspan="25" class="text-end">TOTAL:</td>
-                            <td class="text-end" id="total_gross">0.00</td>
-                            <td colspan="44"></td>
-                            <td class="text-end" id="total_deduction">0.00</td>
-                            <td class="text-end" id="total_net">0.00</td>
-                            <td colspan="2"></td>
-                        </tr>
-                        </tfoot>
+                        <tfoot class="table-light fw-bold" id="regular_payroll_tfoot"></tfoot>
                     </table>
                 </div>
             </div>

@@ -13,12 +13,21 @@ class PayrollServices
         return DB::table('hris.payrolls')->where('id', $id)->first();
     }
 
-    public function exportRegularPayroll($payrollEmployees, $exportPath)
+    private function formatEmployeeName($item)
     {
-        // Load template
-        $templatePath = storage_path('app/templates/payroll_template.xlsx');
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath);
+        return trim(implode(' ', array_filter([
+            strtoupper($item->lname ?? '') . ',',
+            strtoupper($item->fname ?? ''),
+            !empty($item->mname) ? strtoupper(substr($item->mname, 0, 1)) . '.' : null,
+            $item->suffix ?? null,
+        ])));
+    }
+
+    public function exportRegularPayroll($payrollEmployees, $exportPath, $payroll = null)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Payroll Summary');
 
         // Define column mapping according to your desired order
         $columns = [
@@ -98,7 +107,39 @@ class PayrollServices
             '2ND HALF 25TH' => 'second_half_25th',
         ];
 
-        $row = 2; // Start from row 2 (headers in row 1)
+        $textColumns = ['NAME', 'FAMILY NAME', 'FIRST NAME', 'MIDDLE NAME', 'SUFFIX', 'MI', 'STAT', 'DIVISION', 'DESIGNATION', 'zz'];
+        $plainNumberColumns = ['No.', 'SG', 'Step', 'SG B'];
+
+        $columnCount = count($columns);
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnCount);
+
+        $titleRow = 1;
+        $periodRow = 2;
+        $headerRow = 4;
+        $dataStartRow = 5;
+
+        $titleText = 'PAYROLL SUMMARY' . (!empty($payroll->title) ? ' - ' . strtoupper($payroll->title) : '');
+        $sheet->setCellValue("A{$titleRow}", $titleText);
+        $sheet->mergeCells("A{$titleRow}:{$lastColLetter}{$titleRow}");
+        $sheet->getStyle("A{$titleRow}")->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle("A{$titleRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        if (!empty($payroll->start_date) && !empty($payroll->end_date)) {
+            $periodText = 'For the period of ' . Carbon::parse($payroll->start_date)->format('F j') . ' to ' . Carbon::parse($payroll->end_date)->format('F j, Y');
+            $sheet->setCellValue("A{$periodRow}", $periodText);
+            $sheet->mergeCells("A{$periodRow}:{$lastColLetter}{$periodRow}");
+            $sheet->getStyle("A{$periodRow}")->getFont()->setItalic(true)->setSize(10);
+            $sheet->getStyle("A{$periodRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        }
+
+        $headerColIndex = 0;
+        foreach (array_keys($columns) as $header) {
+            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($headerColIndex + 1) . $headerRow;
+            $sheet->setCellValue($cell, $header);
+            $headerColIndex++;
+        }
+
+        $row = $dataStartRow;
 
         foreach ($payrollEmployees as $index => $item) {
             $colIndex = 0;
@@ -108,6 +149,8 @@ class PayrollServices
                 if ($field === null) {
                     // Auto number column
                     $sheet->setCellValue($cell, $index + 1);
+                } elseif ($header === 'NAME') {
+                    $sheet->setCellValue($cell, $this->formatEmployeeName($item));
                 } elseif ($header === 'zz') {
                     // Generate acronym for designation
                     $sheet->setCellValue($cell, $this->generateAcronym($item->designation ?? ''));
@@ -121,6 +164,57 @@ class PayrollServices
             $row++;
         }
 
+        $lastDataRow = $row - 1;
+        $totalsRow = $row;
+
+        $sheet->setCellValue("A{$totalsRow}", 'TOTAL (' . count($payrollEmployees) . ' employees)');
+        $sheet->mergeCells("A{$totalsRow}:J{$totalsRow}");
+
+        $colIndex = 0;
+        foreach ($columns as $header => $field) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            if ($colIndex >= 10 && !in_array($header, $textColumns, true) && !in_array($header, $plainNumberColumns, true)) {
+                $sheet->setCellValue("{$colLetter}{$totalsRow}", "=SUM({$colLetter}{$dataStartRow}:{$colLetter}{$lastDataRow})");
+            }
+            $colIndex++;
+        }
+
+        // Header styling
+        $headerRange = "A{$headerRow}:{$lastColLetter}{$headerRow}";
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($headerRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('1F4E78');
+        $sheet->getStyle($headerRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $sheet->getRowDimension($headerRow)->setRowHeight(32);
+
+        // Totals row styling
+        $totalsRange = "A{$totalsRow}:{$lastColLetter}{$totalsRow}";
+        $sheet->getStyle($totalsRange)->getFont()->setBold(true);
+        $sheet->getStyle($totalsRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('DDEBF7');
+
+        // Borders around the whole table (header through totals)
+        $sheet->getStyle("A{$headerRow}:{$lastColLetter}{$totalsRow}")
+            ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // Per-column alignment, number format, and auto width
+        $colIndex = 0;
+        foreach ($columns as $header => $field) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            $columnRange = "{$colLetter}{$dataStartRow}:{$colLetter}{$lastDataRow}";
+
+            if (in_array($header, $textColumns, true)) {
+                $sheet->getStyle($columnRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            } elseif (in_array($header, $plainNumberColumns, true)) {
+                $sheet->getStyle($columnRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            } else {
+                $sheet->getStyle($columnRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle($columnRange)->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+            $colIndex++;
+        }
+
+        $sheet->freezePane("A{$dataStartRow}");
 
         // Save to export path
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -129,9 +223,7 @@ class PayrollServices
 
     public function exportJobOrderPayroll($payrollEmployees, $exportPath)
     {
-        // Load template
-        $templatePath = storage_path('app/templates/jo_payroll_template.xlsx');
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($templatePath);
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         // Define column mapping according to your new desired order
@@ -159,7 +251,14 @@ class PayrollServices
             'NET AMOUNT DUE' => 'net_amount_due',
         ];
 
-        $row = 3; // Start from row 2 (headers in row 1)
+        $headerColIndex = 0;
+        foreach (array_keys($columns) as $header) {
+            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($headerColIndex + 1) . '1';
+            $sheet->setCellValue($cell, $header);
+            $headerColIndex++;
+        }
+
+        $row = 2; // Start from row 2 (headers in row 1)
 
         foreach ($payrollEmployees as $index => $item) {
             $colIndex = 0;
@@ -192,6 +291,7 @@ class PayrollServices
             ->join('tdh_user.designation as de', 'u.designation', '=', 'de.id')
             ->join('tdh_user.division as d', 'd.id', '=', 'u.division')
             ->join('tdh_user.section as s', 's.id', '=', 'u.section')
+            ->leftJoin('hris.payroll_settings as ps', 'ps.userid', '=', 'e.employee_id')
             ->where('e.payroll_id', '=', $payroll_id)
             ->select(
                 'e.*',
@@ -201,7 +301,9 @@ class PayrollServices
                 'u.suffix',
                 'd.code as division',
                 's.code as section',
-                'de.description as designation'
+                'de.description as designation',
+                'ps.salary_grade',
+                'ps.step'
             )
             ->get();
 
@@ -245,6 +347,19 @@ class PayrollServices
             return 0;
         }
 
+        $modes = $rules->pluck('tax_mode')->unique();
+        if ($modes->count() > 1) {
+            // Data anomaly: active rules for this purpose should never mix modes
+            // (savePayrollTaxRules blocks this going forward). Fall back to the
+            // mode of the lowest bracket rather than silently folding a flat
+            // rule's rate into a progressive marginal sum, or vice versa.
+            \Illuminate\Support\Facades\Log::warning("Payroll tax rules for purpose \"{$purpose}\" mix tax modes; using the first bracket's mode and ignoring the rest.", [
+                'modes' => $modes->values()->all(),
+            ]);
+            $dominantMode = $rules->first()->tax_mode;
+            $rules = $rules->where('tax_mode', $dominantMode)->values();
+        }
+
         $hasProgressive = $rules->contains(function ($rule) {
             return $rule->tax_mode === 'progressive';
         });
@@ -284,6 +399,56 @@ class PayrollServices
         }
 
         return $annualGross * ((float) $matched->rate_percent / 100);
+    }
+
+    /**
+     * Checks a purpose's full set of would-be-active tax rules for conflicts
+     * before they are persisted. Returns a human-readable error, or null if
+     * the set is consistent.
+     *
+     * @param array<int, array{min_annual: mixed, max_annual: mixed, tax_mode: string}> $activeRules
+     */
+    public function validateTaxRuleSet(string $purpose, array $activeRules): ?string
+    {
+        if (count($activeRules) < 2) {
+            return null;
+        }
+
+        $modes = collect($activeRules)->pluck('tax_mode')->unique();
+        if ($modes->count() > 1) {
+            return "Tax rules for purpose \"{$purpose}\" mix tax modes (" . $modes->implode(', ') . "). All active rules for a purpose must use the same tax mode.";
+        }
+
+        foreach ($activeRules as $rule) {
+            $min = (float) $rule['min_annual'];
+            $max = $rule['max_annual'] !== null ? (float) $rule['max_annual'] : null;
+            if ($max !== null && $max <= $min) {
+                return "Tax rule for purpose \"{$purpose}\" has max_annual ({$max}) not greater than min_annual ({$min}).";
+            }
+        }
+
+        $sorted = collect($activeRules)->sortBy(fn($rule) => (float) $rule['min_annual'])->values();
+        for ($i = 0; $i < $sorted->count() - 1; $i++) {
+            $a = $sorted[$i];
+            $b = $sorted[$i + 1];
+            if ($this->taxRangesOverlap($a, $b)) {
+                $aMax = $a['max_annual'] !== null ? $a['max_annual'] : '∞';
+                $bMax = $b['max_annual'] !== null ? $b['max_annual'] : '∞';
+                return "Tax rules for purpose \"{$purpose}\" have overlapping ranges: [{$a['min_annual']}, {$aMax}) and [{$b['min_annual']}, {$bMax}).";
+            }
+        }
+
+        return null;
+    }
+
+    private function taxRangesOverlap(array $a, array $b): bool
+    {
+        $aMin = (float) $a['min_annual'];
+        $aMax = $a['max_annual'] !== null ? (float) $a['max_annual'] : INF;
+        $bMin = (float) $b['min_annual'];
+        $bMax = $b['max_annual'] !== null ? (float) $b['max_annual'] : INF;
+
+        return $aMin < $bMax && $bMin < $aMax;
     }
 
     private function generateAcronym($designation)
@@ -565,72 +730,64 @@ class PayrollServices
         return $globals->merge($employeeSpecific);
     }
 
+    /**
+     * Components eligible for a quick per-cutoff adjustment field in the
+     * Review & Compute modal. Adding/removing one is purely a Settings >
+     * Payroll Components edit (toggling is_cutoff_adjustable) - no code change.
+     */
+    public function getCutoffAdjustableComponents()
+    {
+        return DB::table('hris.payroll_components')
+            ->where('is_active', 1)
+            ->where('is_cutoff_adjustable', 1)
+            ->orderBy('sort_order')
+            ->get(['code', 'name', 'type', 'sort_order']);
+    }
+
     private function getComputedComponents($employee, $totalTardinessDeductions)
     {
         $components = [];
-        $earningAdjustments = [
-            'SALARY_ADJUSTMENT' => $employee['salary_adjustment'] ?? 0.00,
-            'HAZARD_ADJUSTMENT' => $employee['hazard_adjustment'] ?? 0.00,
-            'PERA_ADJUSTMENT' => $employee['pera_adjustment'] ?? 0.00,
-            'SUBSISTENCE_ADJUSTMENT' => $employee['subsistence_adjustment'] ?? 0.00,
-            'LAUNDRY_ADJUSTMENT' => $employee['laundry_adjustment'] ?? 0.00,
-        ];
 
-        foreach ($earningAdjustments as $code => $amount) {
-            if ((float) $amount !== 0.0) {
-                $components[] = (object) [
-                    'payroll_component_id' => null,
-                    'code' => $code,
-                    'name' => $code,
-                    'type' => 'earning',
-                    'taxable' => false,
-                    'amount' => (float) $amount,
-                ];
-            }
+        // Basic Pay adjustment isn't a payroll_components row - it adjusts the
+        // basic salary itself, which lives on payroll_settings - so it stays
+        // a fixed, non-dynamic entry rather than going through the loop below.
+        $salaryAdjustment = (float) ($employee['salary_adjustment'] ?? 0.00);
+        if ($salaryAdjustment !== 0.0) {
+            $components[] = (object) [
+                'payroll_component_id' => null,
+                'code' => 'SALARY_ADJUSTMENT',
+                'name' => 'SALARY_ADJUSTMENT',
+                'type' => 'earning',
+                'taxable' => false,
+                'amount' => $salaryAdjustment,
+            ];
         }
 
-        $deductionAdjustments = [
-            'WITHHOLDING_TAX_ADJUSTMENT' => (float) ($employee['withholding_tax_adjustment'] ?? 0.00),
-            'PHIC_CONTRI_ADJ' => (float) ($employee['phic_contri_adj'] ?? 0.00),
-            'SSS_ADJUSTMENT' => (float) ($employee['sss_adjustment'] ?? 0.00),
-            'GSIS_PS_LWOP_2PCT' => (float) ($employee['gsis_ps_lwop_2pct'] ?? 0.00),
-            'GSIS_GS_LWOP_2PCT' => (float) ($employee['gsis_gs_lwop_2pct'] ?? 0.00),
-            'SUBSISTENCE_DEDUCTION_FROM_LEAVE' => (float) ($employee['subsistence_deduction_from_leave'] ?? 0.00),
-            'SECOND_HALF_ADJUSTMENT_RESIGNED' => (float) ($employee['second_half_adjustment_resigned_employee'] ?? 0.00),
-        ];
+        // Every other quick per-cutoff adjustment is driven by whichever
+        // payroll_components rows are flagged is_cutoff_adjustable - adding a
+        // new adjustable component in Settings > Payroll Components is all
+        // that's needed to make it available here, no code change required.
+        // One signed amount per component: positive adds to it, negative
+        // reduces/refunds it (this replaces the old separate "adjustment" vs
+        // "refund" codes with a single signed field per component).
+        $adjustableComponents = $this->getCutoffAdjustableComponents();
 
-        foreach ($deductionAdjustments as $code => $amount) {
-            if ((float) $amount !== 0.0) {
-                $components[] = (object) [
-                    'payroll_component_id' => null,
-                    'code' => $code,
-                    'name' => $code,
-                    'type' => 'deduction',
-                    'taxable' => false,
-                    'amount' => (float) $amount,
-                ];
+        $adjustments = $employee['adjustments'] ?? [];
+
+        foreach ($adjustableComponents as $component) {
+            $amount = (float) ($adjustments[$component->code] ?? 0.00);
+            if ($amount === 0.0) {
+                continue;
             }
-        }
 
-        $refunds = [
-            'PHIC_REFUND_FROM_EO' => (float) ($employee['phic_refund_from_eo'] ?? 0.00),
-            'GSIS_PLREG_REFUND' => (float) ($employee['gsis_plreg_refund'] ?? 0.00),
-            'GSIS_MPL_REFUND' => (float) ($employee['gsis_mpl_refund'] ?? 0.00),
-            'GSIS_EMERGENCY_REFUND' => (float) ($employee['gsis_emergency_refund'] ?? 0.00),
-            'GSIS_CONSOLOAN_REFUND' => (float) ($employee['gsis_consoloan_refund'] ?? 0.00),
-        ];
-
-        foreach ($refunds as $code => $amount) {
-            if ((float) $amount !== 0.0) {
-                $components[] = (object) [
-                    'payroll_component_id' => null,
-                    'code' => $code,
-                    'name' => $code,
-                    'type' => 'deduction',
-                    'taxable' => false,
-                    'amount' => (float) $amount * -1,
-                ];
-            }
+            $components[] = (object) [
+                'payroll_component_id' => null,
+                'code' => $component->code . '_ADJUSTMENT',
+                'name' => $component->name . ' (Cutoff Adjustment)',
+                'type' => $component->type,
+                'taxable' => false,
+                'amount' => $amount,
+            ];
         }
 
         return collect($components);
