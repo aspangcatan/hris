@@ -151,4 +151,75 @@ class PayrollAssignatoryTest extends TestCase
         $response->assertStatus(422);
         $this->assertEquals(0, DB::table('payroll_assignatories')->count());
     }
+
+    /** @test */
+    public function saving_a_multi_row_batch_persists_every_row(): void
+    {
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->postJson('/payroll-assignatories', [
+            'assignatories' => [
+                [
+                    'label' => 'Section Head',
+                    'user_id' => $this->approverUserId,
+                    'order_no' => 1,
+                    'is_active' => true,
+                ],
+                [
+                    'label' => 'Division Chief',
+                    'user_id' => $this->approverUserId,
+                    'order_no' => 2,
+                    'is_active' => true,
+                ],
+                [
+                    'label' => 'Payroll Officer',
+                    'user_id' => $this->approverUserId,
+                    'order_no' => 3,
+                    'is_active' => true,
+                ],
+            ],
+        ]);
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+
+        $this->assertEquals(3, DB::table('payroll_assignatories')->count());
+
+        $rows = DB::table('payroll_assignatories')->orderBy('order_no')->get();
+        $this->assertEquals('Section Head', $rows[0]->label);
+        $this->assertEquals(1, $rows[0]->order_no);
+        $this->assertEquals('Division Chief', $rows[1]->label);
+        $this->assertEquals(2, $rows[1]->order_no);
+        $this->assertEquals('Payroll Officer', $rows[2]->label);
+        $this->assertEquals(3, $rows[2]->order_no);
+        foreach ($rows as $row) {
+            $this->assertEquals($this->approverUserId, $row->user_id);
+        }
+    }
+
+    /** @test */
+    public function saving_a_batch_with_one_invalid_row_rejects_the_entire_batch(): void
+    {
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->postJson('/payroll-assignatories', [
+            'assignatories' => [
+                [
+                    'label' => 'Section Head',
+                    'user_id' => $this->approverUserId,
+                    'order_no' => 1,
+                    'is_active' => true,
+                ],
+                [
+                    'label' => '',
+                    'user_id' => $this->approverUserId,
+                    'order_no' => 2,
+                    'is_active' => true,
+                ],
+            ],
+        ]);
+        $response->assertStatus(422);
+        $response->assertJson(['success' => false]);
+
+        $this->assertEquals(0, DB::table('payroll_assignatories')->count());
+    }
 }
