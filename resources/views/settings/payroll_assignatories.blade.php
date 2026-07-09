@@ -90,6 +90,28 @@
         .selectize-dropdown {
             z-index: 2000 !important;
         }
+
+        /* Match Selectize's box to the plain .form-control inputs (Order,
+           Label) in this modal - Selectize's own default padding/height
+           don't line up with Bootstrap's, so without this it looks shorter
+           and less padded than its siblings. */
+        #assignatory_modal .selectize-control.single .selectize-input {
+            min-height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.375rem 0.75rem;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+        }
+
+        #assignatory_modal .selectize-control.single .selectize-input input {
+            padding: 0 !important;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        #assignatory_modal .selectize-control.single .selectize-input.items {
+            padding-right: 2rem;
+        }
     </style>
 
     <div class="assignatory-board">
