@@ -267,23 +267,6 @@ class PayrollCutoffTest extends TestCase
             'level'   => 'admin',
         ]);
 
-        $assignatorySnapshot = DB::table('payroll_assignatories')->get()->map(fn($row) => (array) $row)->all();
-        DB::table('payroll_assignatories')->delete();
-        DB::table('payroll_assignatories')->insert([
-            [
-                'order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->userId,
-                'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
-            ],
-            [
-                'order_no' => 2, 'label' => 'Division Head', 'user_id' => $this->userId,
-                'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
-            ],
-            [
-                'order_no' => 3, 'label' => 'HR', 'user_id' => $this->userId,
-                'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
-            ],
-        ]);
-
         $masterId = $this->seedCutoffMaster('2027-01-01', '2027-01-15', 'Smoke Test Cutoff');
 
         app(\App\Services\PayrollServices::class)->generateCutoffSummary(
@@ -309,6 +292,23 @@ class PayrollCutoffTest extends TestCase
         $payrollId = $payroll->id;
 
         try {
+            $assignatorySnapshot = DB::table('payroll_assignatories')->get()->map(fn($row) => (array) $row)->all();
+            DB::table('payroll_assignatories')->delete();
+            DB::table('payroll_assignatories')->insert([
+                [
+                    'order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->userId,
+                    'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
+                ],
+                [
+                    'order_no' => 2, 'label' => 'Division Head', 'user_id' => $this->userId,
+                    'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
+                ],
+                [
+                    'order_no' => 3, 'label' => 'HR', 'user_id' => $this->userId,
+                    'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
+                ],
+            ]);
+
             $computeResponse = $this->withoutMiddleware()->postJson('/save_payroll_employee', [
                 'payroll_id' => $payrollId,
                 'employees'  => [['userid' => $this->userId]],
