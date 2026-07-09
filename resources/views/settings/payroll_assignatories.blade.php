@@ -141,7 +141,7 @@
                                 <input type="text" class="form-control" id="assignatory_user_search"
                                        placeholder="Search by name..." autocomplete="off">
                                 <input type="hidden" id="assignatory_user_id">
-                                <ul class="dropdown-menu w-100" id="assignatory_user_results"></ul>
+                                <ul class="dropdown-menu" id="assignatory_user_results"></ul>
                             </div>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
