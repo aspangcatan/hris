@@ -1,5 +1,6 @@
 @extends('master')
 @section('content')
+    <link rel="stylesheet" href="{{ asset('css/select2.min.css') }}">
     <style>
         .assignatory-board {
             background: #ffffff;
@@ -81,9 +82,26 @@
             background: #f8fafc;
         }
 
-        #assignatory_user_results {
-            max-height: 220px;
-            overflow-y: auto;
+        /* Match Select2's box to the plain .form-control inputs (Order,
+           Label) in this modal - Select2's default theme doesn't line up
+           with Bootstrap's sizing on its own. */
+        #assignatory_modal .select2-container--default .select2-selection--single {
+            height: calc(1.5em + 0.75rem + 2px);
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        #assignatory_modal .select2-container--default .select2-selection--single .select2-selection__rendered {
+            padding: 0;
+            line-height: normal;
+        }
+
+        #assignatory_modal .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: calc(1.5em + 0.75rem);
+            right: 0.5rem;
         }
     </style>
 
@@ -137,12 +155,7 @@
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">Assigned User</label>
-                            <div class="dropdown">
-                                <input type="text" class="form-control" id="assignatory_user_search"
-                                       placeholder="Search by name..." autocomplete="off">
-                                <input type="hidden" id="assignatory_user_id">
-                                <ul class="dropdown-menu" id="assignatory_user_results"></ul>
-                            </div>
+                            <select id="assignatory_user_id" class="form-control" style="width: 100%;"></select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <div class="form-check">
@@ -162,39 +175,31 @@
 @stop
 
 @section('js')
+    <script src="{{ asset('js/select2.min.js') }}"></script>
     <script>
         let assignatories = [];
-        let userDropdown = null;
-        let userSearchTimeout = null;
 
         $(document).ready(function () {
-            // strategy: 'fixed' positions the menu relative to the viewport
-            // instead of its nearest positioned ancestor, so it isn't
-            // clipped by the modal body's overflow-y: auto. Under 'fixed'
-            // positioning the menu's width% no longer resolves against the
-            // input's wrapper, so a custom modifier pins it to the input's
-            // actual width on every reposition.
-            userDropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('assignatory_user_search'), {
-                popperConfig: function (defaultBsPopperConfig) {
-                    return {
-                        ...defaultBsPopperConfig,
-                        strategy: 'fixed',
-                        modifiers: [
-                            ...defaultBsPopperConfig.modifiers,
-                            {
-                                name: 'sameWidth',
-                                enabled: true,
-                                phase: 'beforeWrite',
-                                requires: ['computeStyles'],
-                                fn: ({state}) => {
-                                    state.styles.popper.width = `${state.rects.reference.width}px`;
-                                },
-                                effect: ({state}) => {
-                                    state.elements.popper.style.width = `${state.elements.reference.offsetWidth}px`;
-                                }
-                            }
-                        ]
-                    };
+            $('#assignatory_user_id').select2({
+                dropdownParent: $('#assignatory_modal'),
+                placeholder: 'Search by name...',
+                allowClear: true,
+                minimumInputLength: 1,
+                ajax: {
+                    url: '{{ route('searchPayrollAssignatoryUsers') }}',
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return {q: params.term};
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: (data.data || []).map(function (user) {
+                                return {id: user.id, text: user.lname + ', ' + user.fname};
+                            })
+                        };
+                    },
+                    cache: true
                 }
             });
 
@@ -231,23 +236,6 @@
                     order_no: row.order_no,
                     is_active: false
                 }]);
-            });
-
-            $("#assignatory_user_search").on("input", function () {
-                clearTimeout(userSearchTimeout);
-                const query = $(this).val().trim();
-                $("#assignatory_user_id").val("");
-                if (!query) {
-                    userDropdown.hide();
-                    return;
-                }
-                userSearchTimeout = setTimeout(() => searchAssignatoryUsers(query), 300);
-            });
-
-            $(document).on("click", "#assignatory_user_results .dropdown-item", function (e) {
-                e.preventDefault();
-                $("#assignatory_user_id").val($(this).data("id"));
-                $("#assignatory_user_search").val($(this).text());
             });
         });
 
@@ -302,30 +290,17 @@
             $("#assignatory_order").val(row ? row.order_no : (assignatories.length + 1));
             $("#assignatory_label").val(row ? row.label : "");
             $("#assignatory_active").prop("checked", row ? !!row.is_active : true);
-            $("#assignatory_user_id").val(row ? row.user_id : "");
-            $("#assignatory_user_search").val(row && row.fname ? `${row.lname}, ${row.fname}` : "");
-            $("#assignatory_user_results").empty();
-            userDropdown.hide();
+
+            $("#assignatory_user_id").empty();
+            if (row && row.user_id) {
+                const text = row.fname ? `${row.lname}, ${row.fname}` : `User #${row.user_id}`;
+                const option = new Option(text, row.user_id, true, true);
+                $("#assignatory_user_id").append(option).trigger('change');
+            } else {
+                $("#assignatory_user_id").val(null).trigger('change');
+            }
 
             $("#assignatory_modal").modal("show");
-        }
-
-        function searchAssignatoryUsers(query) {
-            fetch('{{ route('searchPayrollAssignatoryUsers') }}?q=' + encodeURIComponent(query))
-                .then(res => res.json())
-                .then(data => {
-                    const $results = $("#assignatory_user_results");
-                    $results.empty();
-                    if (!data.success || !data.data.length) {
-                        userDropdown.hide();
-                        return;
-                    }
-                    data.data.forEach(user => {
-                        $results.append(`<li><a class="dropdown-item" href="#" data-id="${user.id}">${user.lname}, ${user.fname}</a></li>`);
-                    });
-                    userDropdown.show();
-                })
-                .catch(err => console.error(err));
         }
 
         function saveAssignatory() {
