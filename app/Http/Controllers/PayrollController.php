@@ -393,6 +393,81 @@ class PayrollController extends Controller
         }
     }
 
+    public function getPayrollAssignatories()
+    {
+        try {
+            $assignatories = DB::table('payroll_assignatories as pa')
+                ->leftJoin('tdh_user.users as u', 'u.id', '=', 'pa.user_id')
+                ->where('pa.is_active', 1)
+                ->orderBy('pa.order_no')
+                ->select('pa.id', 'pa.order_no', 'pa.label', 'pa.user_id', 'pa.is_active', 'u.fname', 'u.lname')
+                ->get();
+
+            return response()->json(['success' => true, 'data' => $assignatories]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function savePayrollAssignatories(Request $request)
+    {
+        try {
+            $rows = $request->input('assignatories', []);
+            if (!is_array($rows)) {
+                return response()->json(['success' => false, 'message' => 'Invalid payload.'], 422);
+            }
+
+            $normalized = [];
+            $errors = [];
+            foreach ($rows as $index => $row) {
+                $label = trim((string) ($row['label'] ?? ''));
+                $userId = isset($row['user_id']) ? (int) $row['user_id'] : null;
+
+                if ($label === '') {
+                    $errors[] = 'Row ' . ($index + 1) . ': label is required.';
+                    continue;
+                }
+                if (!$userId || !DB::table('tdh_user.users')->where('id', $userId)->exists()) {
+                    $errors[] = 'Row ' . ($index + 1) . ': a valid assigned user is required.';
+                    continue;
+                }
+
+                $normalized[] = [
+                    'id' => !empty($row['id']) ? (int) $row['id'] : null,
+                    'label' => $label,
+                    'user_id' => $userId,
+                    'order_no' => isset($row['order_no']) ? (int) $row['order_no'] : 0,
+                    'is_active' => array_key_exists('is_active', $row) ? (bool) $row['is_active'] : true,
+                ];
+            }
+
+            if (!empty($errors)) {
+                return response()->json(['success' => false, 'message' => implode(' ', $errors)], 422);
+            }
+
+            foreach ($normalized as $row) {
+                $payload = [
+                    'label' => $row['label'],
+                    'user_id' => $row['user_id'],
+                    'order_no' => $row['order_no'],
+                    'is_active' => $row['is_active'] ? 1 : 0,
+                    'updated_at' => now(),
+                ];
+
+                if (!empty($row['id'])) {
+                    DB::table('payroll_assignatories')->where('id', $row['id'])->update($payload);
+                } else {
+                    $payload['created_at'] = now();
+                    DB::table('payroll_assignatories')->insert($payload);
+                }
+            }
+
+            return response()->json(['success' => true, 'message' => 'Assignatories saved successfully.']);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
     public function getCutoffSummaries(Request $request)
     {
         try {

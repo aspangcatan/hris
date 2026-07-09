@@ -284,6 +284,8 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('payroll_tax_rules')->middleware('permission:payroll.settings');
     Route::get('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'getPayrollTaxRules'])->name('getPayrollTaxRules');
     Route::post('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'savePayrollTaxRules'])->name('savePayrollTaxRules');
+    Route::get('/payroll-assignatories', [\App\Http\Controllers\PayrollController::class, 'getPayrollAssignatories'])->name('getPayrollAssignatories');
+    Route::post('/payroll-assignatories', [\App\Http\Controllers\PayrollController::class, 'savePayrollAssignatories'])->name('savePayrollAssignatories');
     Route::get('/cutoff-summaries/manage', function () {
         return view('settings.cutoff_summaries');
     })->name('cutoff_summaries')->middleware('permission:payroll.settings');
