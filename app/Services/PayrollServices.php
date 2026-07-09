@@ -894,10 +894,41 @@ class PayrollServices
             'updated_at' => now(),
         ]);
 
+        $this->persistCutoffSummaryDays($master->id, $employeeId, $startDate, $endDate);
+
         return DB::table($table)
             ->where('employee_id', $employeeId)
             ->where('cutoff_id', $master->id)
             ->first();
+    }
+
+    private function persistCutoffSummaryDays($cutoffId, $employeeId, $startDate, $endDate): void
+    {
+        $daily = app(DTRServices::class)->getDailyBreakdown($employeeId, $startDate, $endDate);
+
+        DB::table('hris.cutoff_summary_days')
+            ->where('cutoff_id', $cutoffId)
+            ->where('employee_id', $employeeId)
+            ->delete();
+
+        $rows = $daily->map(function ($day, $date) use ($cutoffId, $employeeId) {
+            return [
+                'cutoff_id' => $cutoffId,
+                'employee_id' => $employeeId,
+                'date' => $date,
+                'late_minutes' => $day['late_minutes'],
+                'undertime_minutes' => $day['undertime_minutes'],
+                'is_absent' => $day['is_absent'] ? 1 : 0,
+                'is_holiday' => $day['is_holiday'] ? 1 : 0,
+                'exemption_reason' => $day['exemption_reason'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        })->values()->all();
+
+        if (!empty($rows)) {
+            DB::table('hris.cutoff_summary_days')->insert($rows);
+        }
     }
 
     public function generateCutoffSummary($employeeId, $startDate, $endDate, $title = null, $generatedBy = null)
@@ -940,6 +971,8 @@ class PayrollServices
             ],
             $payload + ['created_at' => now()]
         );
+
+        $this->persistCutoffSummaryDays($master->id, $employeeId, $startDate, $endDate);
 
         return DB::table($table)
             ->where('employee_id', $employeeId)

@@ -28,27 +28,17 @@ class DTRServices
 
     public function getTotalLateAbsent($userid, $start_date, $end_date)
     {
-        $holidays = $this->getHolidayDatesByRangeWithDetails($start_date, $end_date);
-        $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
-        $hospitalOrders = array_fill_keys($this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date), true);
-        $passSlips = array_fill_keys(
-            $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date)->pluck('slip_date')->unique()->all(),
-            true
-        );
+        $results = $this->getDailyBreakdown($userid, $start_date, $end_date);
 
-        // absenceExemptDates mirrors buildPresentAbsentByRange()'s own
-        // exemption set exactly (leave + special-duty[HO+overtime] +
-        // official-only pass slips) - a different, wider set than the
-        // late/undertime exemption above (which excludes overtime and
-        // includes personal pass slips too). Reuses the same private
-        // range-lookup helpers buildPresentAbsentByRange() already calls.
-        $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
-        $officialPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
-        $absenceExemptDates = array_fill_keys(
-            array_unique(array_merge($leaveDates, $specialDutyDates, $officialPassSlipDates)),
-            true
-        );
+        return [
+            'late_minutes' => $results->sum('late_minutes'),
+            'undertime_minutes' => $results->sum('undertime_minutes'),
+            'absences' => $results->where('is_absent', true)->count(),
+        ];
+    }
 
+    public function getDailyBreakdown($userid, $start_date, $end_date): \Illuminate\Support\Collection
+    {
         $schedules = $this->mapSchedulesWithBreaks($this->getEmployeePlottedSchedules(
             $userid,
             Carbon::parse($start_date)->copy()->subDay()->toDateString(),
@@ -60,25 +50,47 @@ class DTRServices
             Carbon::parse($end_date)->copy()->addDay()->toDateString()
         );
 
-        $results = app(\App\Services\DtrDayComputationService::class)->computeRange(
+        return app(\App\Services\DtrDayComputationService::class)->computeRange(
             $userid,
             $start_date,
             $end_date,
             $schedules,
             $logs,
-            [
-                'holidays' => $holidays,
-                'leaves' => array_fill_keys($leaveDates, true),
-                'hospitalOrders' => $hospitalOrders,
-                'passSlips' => $passSlips,
-                'absenceExemptDates' => $absenceExemptDates,
-            ]
+            $this->buildComputationExemptions($userid, $start_date, $end_date)
+        );
+    }
+
+    /**
+     * absenceExemptDates mirrors buildPresentAbsentByRange()'s own exemption
+     * set exactly (leave + special-duty[HO+overtime] + official-only pass
+     * slips) - a different, wider set than the late/undertime exemption
+     * (which excludes overtime and includes personal pass slips too).
+     * Reuses the same private range-lookup helpers buildPresentAbsentByRange()
+     * already calls.
+     */
+    private function buildComputationExemptions($userid, $start_date, $end_date): array
+    {
+        $holidays = $this->getHolidayDatesByRangeWithDetails($start_date, $end_date);
+        $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
+        $hospitalOrders = array_fill_keys($this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date), true);
+        $passSlips = array_fill_keys(
+            $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date)->pluck('slip_date')->unique()->all(),
+            true
+        );
+
+        $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
+        $officialPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
+        $absenceExemptDates = array_fill_keys(
+            array_unique(array_merge($leaveDates, $specialDutyDates, $officialPassSlipDates)),
+            true
         );
 
         return [
-            'late_minutes' => $results->sum('late_minutes'),
-            'undertime_minutes' => $results->sum('undertime_minutes'),
-            'absences' => $results->where('is_absent', true)->count(),
+            'holidays' => $holidays,
+            'leaves' => array_fill_keys($leaveDates, true),
+            'hospitalOrders' => $hospitalOrders,
+            'passSlips' => $passSlips,
+            'absenceExemptDates' => $absenceExemptDates,
         ];
     }
 
