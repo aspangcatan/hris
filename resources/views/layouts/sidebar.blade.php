@@ -271,6 +271,15 @@
                     </a>
                 </li>
             @endpermission
+            @permission('payroll.settings')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('payroll_assignatories') ? '' : 'collapsed' }}"
+                       href="{{ route('payroll_assignatories') }}">
+                        <i class="bi bi-person-check"></i>
+                        <span>Payroll Assignatories</span>
+                    </a>
+                </li>
+            @endpermission
             @permission('payroll.view')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('cutoff_summaries') ? '' : 'collapsed' }}"

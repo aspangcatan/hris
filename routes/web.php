@@ -284,6 +284,9 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('payroll_tax_rules')->middleware('permission:payroll.settings');
     Route::get('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'getPayrollTaxRules'])->name('getPayrollTaxRules');
     Route::post('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'savePayrollTaxRules'])->name('savePayrollTaxRules');
+    Route::get('/payroll-assignatories/manage', function () {
+        return view('settings.payroll_assignatories');
+    })->name('payroll_assignatories')->middleware('permission:payroll.settings');
     Route::get('/payroll-assignatories', [\App\Http\Controllers\PayrollController::class, 'getPayrollAssignatories'])->name('getPayrollAssignatories');
     Route::post('/payroll-assignatories', [\App\Http\Controllers\PayrollController::class, 'savePayrollAssignatories'])->name('savePayrollAssignatories');
     Route::get('/payroll-assignatories/search-users', [\App\Http\Controllers\PayrollController::class, 'searchPayrollAssignatoryUsers'])->name('searchPayrollAssignatoryUsers');
