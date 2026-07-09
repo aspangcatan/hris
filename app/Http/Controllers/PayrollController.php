@@ -913,46 +913,31 @@ class PayrollController extends Controller
                 return response()->json(['error' => 'Please compute payroll employees before submitting for approval.'], 422);
             }
 
-            $user = Auth::user();
-            $sectionId = $user->section ?? null;
-            $divisionId = $user->division ?? null;
+            $assignatories = DB::table('payroll_assignatories')
+                ->where('is_active', 1)
+                ->orderBy('order_no')
+                ->get(['label', 'user_id']);
 
-            if (empty($sectionId) || empty($divisionId)) {
-                return response()->json(['error' => 'Preparer account must have section and division to initialize approvals.'], 422);
+            if ($assignatories->isEmpty()) {
+                return response()->json(['error' => 'No approval assignatories are configured. Configure them in Payroll Assignatories settings before submitting.'], 422);
             }
 
-            DB::transaction(function () use ($validated, $sectionId, $divisionId) {
+            DB::transaction(function () use ($validated, $assignatories) {
                 DB::table('payroll_approvals')->where('payroll_id', $validated['payroll_id'])->delete();
 
-                DB::table('payroll_approvals')->insert([
-                    [
+                $rows = [];
+                foreach ($assignatories->values() as $index => $assignatory) {
+                    $rows[] = [
                         'payroll_id' => $validated['payroll_id'],
-                        'approver_id' => $sectionId,
-                        'role' => 'SH',
+                        'approver_id' => $assignatory->user_id,
+                        'label' => $assignatory->label,
                         'status' => 'pending',
-                        'order_no' => 1,
+                        'order_no' => $index + 1,
                         'created_at' => now(),
                         'updated_at' => now(),
-                    ],
-                    [
-                        'payroll_id' => $validated['payroll_id'],
-                        'approver_id' => $divisionId,
-                        'role' => 'DH',
-                        'status' => 'pending',
-                        'order_no' => 2,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                    [
-                        'payroll_id' => $validated['payroll_id'],
-                        'approver_id' => 15,
-                        'role' => 'HR',
-                        'status' => 'pending',
-                        'order_no' => 3,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ],
-                ]);
+                    ];
+                }
+                DB::table('payroll_approvals')->insert($rows);
 
                 DB::table('payrolls')
                     ->where('id', $validated['payroll_id'])
