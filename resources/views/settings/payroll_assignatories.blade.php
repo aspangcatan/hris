@@ -80,6 +80,16 @@
         .payroll-modal-theme .modal-body {
             background: #f8fafc;
         }
+
+        /* dropdownParent: 'body' floats the Selectize dropdown above the
+           modal instead of being clipped by modal-body's overflow-y, but
+           that also lifts it out of the modal's stacking context, so it
+           needs a z-index above Bootstrap's modal (1055) and backdrop
+           (1050) or it renders behind them - only the portion spilling
+           past the modal's edge would otherwise be visible. */
+        .selectize-dropdown {
+            z-index: 2000 !important;
+        }
     </style>
 
     <div class="assignatory-board">
@@ -163,6 +173,7 @@
                 searchField: 'text',
                 create: false,
                 maxItems: 1,
+                dropdownParent: 'body',
                 loadThrottle: 300,
                 load: function (query, callback) {
                     if (!query.length) {
