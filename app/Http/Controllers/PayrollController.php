@@ -468,6 +468,31 @@ class PayrollController extends Controller
         }
     }
 
+    public function searchPayrollAssignatoryUsers(Request $request)
+    {
+        try {
+            $search = trim((string) $request->query('q', ''));
+            if ($search === '') {
+                return response()->json(['success' => true, 'data' => []]);
+            }
+
+            $users = DB::table('tdh_user.users as u')
+                ->select('u.id', 'u.fname', 'u.lname')
+                ->where(function ($q) use ($search) {
+                    $q->where('u.fname', 'like', "%{$search}%")
+                        ->orWhere('u.lname', 'like', "%{$search}%");
+                })
+                ->orderBy('u.lname')
+                ->orderBy('u.fname')
+                ->limit(10)
+                ->get();
+
+            return response()->json(['success' => true, 'data' => $users]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
     public function getCutoffSummaries(Request $request)
     {
         try {

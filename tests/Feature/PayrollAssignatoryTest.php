@@ -222,4 +222,26 @@ class PayrollAssignatoryTest extends TestCase
 
         $this->assertEquals(0, DB::table('payroll_assignatories')->count());
     }
+
+    /** @test */
+    public function search_users_finds_by_last_name(): void
+    {
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->getJson('/payroll-assignatories/search-users?q=Tester');
+        $response->assertOk();
+        $data = $response->json('data');
+        $this->assertNotEmpty($data);
+        $this->assertTrue(collect($data)->contains('id', $this->approverUserId));
+    }
+
+    /** @test */
+    public function search_users_returns_empty_for_blank_query(): void
+    {
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->getJson('/payroll-assignatories/search-users?q=');
+        $response->assertOk();
+        $response->assertJson(['success' => true, 'data' => []]);
+    }
 }
