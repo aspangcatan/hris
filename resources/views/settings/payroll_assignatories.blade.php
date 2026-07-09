@@ -163,7 +163,6 @@
                 searchField: 'text',
                 create: false,
                 maxItems: 1,
-                dropdownParent: 'body',
                 loadThrottle: 300,
                 load: function (query, callback) {
                     if (!query.length) {
