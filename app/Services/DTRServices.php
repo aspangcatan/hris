@@ -28,82 +28,57 @@ class DTRServices
 
     public function getTotalLateAbsent($userid, $start_date, $end_date)
     {
-        $lates = 0;
-        $undertime = 0;
-        $absences = 0;
+        $holidays = $this->getHolidayDatesByRangeWithDetails($start_date, $end_date);
+        $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
+        $hospitalOrders = array_fill_keys($this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date), true);
+        $passSlips = array_fill_keys(
+            $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date)->pluck('slip_date')->unique()->all(),
+            true
+        );
 
-        $holidays = $this->getHolidayDatesByRange($start_date, $end_date);
-        $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
-        $approvedSpecialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
-        $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date);
+        // absenceExemptDates mirrors buildPresentAbsentByRange()'s own
+        // exemption set exactly (leave + special-duty[HO+overtime] +
+        // official-only pass slips) - a different, wider set than the
+        // late/undertime exemption above (which excludes overtime and
+        // includes personal pass slips too). Reuses the same private
+        // range-lookup helpers buildPresentAbsentByRange() already calls.
+        $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
+        $officialPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
+        $absenceExemptDates = array_fill_keys(
+            array_unique(array_merge($leaveDates, $specialDutyDates, $officialPassSlipDates)),
+            true
+        );
 
-        $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
+        $schedules = $this->mapSchedulesWithBreaks($this->getEmployeePlottedSchedules(
+            $userid,
+            Carbon::parse($start_date)->copy()->subDay()->toDateString(),
+            Carbon::parse($end_date)->copy()->addDay()->toDateString()
+        ));
         $logs = $this->getLogsByRange(
             $userid,
             Carbon::parse($start_date)->copy()->subDay()->toDateString(),
             Carbon::parse($end_date)->copy()->addDay()->toDateString()
         );
 
-        foreach ($schedules as $date => $schedule) {
-            // Skip weekends and holidays
-            if (in_array($date, $holidays) || in_array(Carbon::parse($date)->format('l'), ['Saturday', 'Sunday'])) {
-                continue;
-            }
-
-            // Skip approved leaves
-            if (in_array($date, $approvedLeaves) || in_array($date, $approvedSpecialDutyDates)) {
-                continue;
-            }
-
-            [$firstIn, $lastOut] = $this->resolveAttendanceLogs($logs, $schedules, $date);
-
-            // Handle approved pass slips
-            $datePassSlips = $approvedPassSlips->where('slip_date', $date);
-            if ($datePassSlips->isNotEmpty()) {
-                $hasOfficialPassSlip = $datePassSlips->contains(function ($passSlip) {
-                    return strtolower((string) ($passSlip->type ?? '')) === 'official';
-                });
-
-                if ($hasOfficialPassSlip) {
-                    // Excused: no late or undertime
-                    continue;
-                }
-
-                $personalPassSlipMinutes = $datePassSlips
-                    ->filter(function ($passSlip) {
-                        return strtolower((string) ($passSlip->type ?? '')) === 'personal';
-                    })
-                    ->sum(function ($passSlip) use ($date) {
-                        return $this->calculatePersonalPassSlipMinutes($date, $passSlip->time_out, $passSlip->time_in);
-                    });
-
-                if ($personalPassSlipMinutes > 0) {
-                    // Personal pass slip hours are treated as undertime.
-                    $undertime += $personalPassSlipMinutes;
-                    continue;
-                }
-            }
-
-            // If no logs count absence
-            if (!$firstIn && !$lastOut) {
-                $absences++;
-                continue;
-            }
-
-            // Process late and undertime
-            list($late, $undertimeMinutes) = $this->processLogs($firstIn, $lastOut, $schedule, $date);
-            $lates += $late;
-            $undertime += $undertimeMinutes;
-        }
-
-        // Compute absences over full range (including weekends) using the same present rules.
-        [$presentDays, $absentDays] = $this->buildPresentAbsentByRange($userid, $start_date, $end_date);
-        $absences = count($absentDays);
+        $results = app(\App\Services\DtrDayComputationService::class)->computeRange(
+            $userid,
+            $start_date,
+            $end_date,
+            $schedules,
+            $logs,
+            [
+                'holidays' => $holidays,
+                'leaves' => array_fill_keys($leaveDates, true),
+                'hospitalOrders' => $hospitalOrders,
+                'passSlips' => $passSlips,
+                'absenceExemptDates' => $absenceExemptDates,
+            ]
+        );
 
         return [
-            'late_minutes' => $lates,
-            'undertime_minutes' => $undertime,
-            'absences' => $absences
+            'late_minutes' => $results->sum('late_minutes'),
+            'undertime_minutes' => $results->sum('undertime_minutes'),
+            'absences' => $results->where('is_absent', true)->count(),
         ];
     }
 
@@ -169,6 +144,22 @@ class DTRServices
             ->toArray();
     }
 
+    private function getHolidayDatesByRangeWithDetails($startDate, $endDate): array
+    {
+        $rows = DB::table('hris.calendar_holidays')
+            ->whereBetween('date', [$startDate, $endDate])
+            ->get(['date', 'type', 'description']);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[Carbon::parse($row->date)->toDateString()] = [
+                'type' => $row->type,
+                'description' => $row->description,
+            ];
+        }
+        return $result;
+    }
+
     public function getEmployeePlottedSchedules($userid, $startDate, $endDate)
     {
         return DB::table('hris.schedules as s')
@@ -193,6 +184,23 @@ class DTRServices
         return $scheduleMap;
     }
 
+    private function mapSchedulesWithBreaks($plottedSchedules)
+    {
+        $scheduleMap = [];
+        foreach ($plottedSchedules as $schedule) {
+            $scheduleMap[$schedule->schedule_date] = (object) [
+                'type' => $schedule->type ?? 'FIXED',
+                'time_in' => $schedule->time_in,
+                'time_out' => $schedule->time_out,
+                'time_in_latest' => $schedule->time_in_latest,
+                'time_out_latest' => $schedule->time_out_latest,
+                'break_out' => $schedule->break_out ?? null,
+                'break_in' => $schedule->break_in ?? null,
+            ];
+        }
+        return collect($scheduleMap);
+    }
+
     private function resolveExpectedWorkDates(array $schedules, $startDate, $endDate, array $holidays): array
     {
         if (!empty($schedules)) {
@@ -211,123 +219,6 @@ class DTRServices
             })
             ->values()
             ->all();
-    }
-
-    private function getFirstInLog($userid, $date)
-    {
-        return DB::table('hris.dtr_logs')
-            ->where('userid', $userid)
-            ->whereDate('created_at', $date)
-            ->where('status', 'IN')
-            ->orderBy('created_at', 'asc')
-            ->value('created_at');
-    }
-
-    private function getLastOutLog($userid, $date)
-    {
-        return DB::table('hris.dtr_logs')
-            ->where('userid', $userid)
-            ->whereDate('created_at', $date)
-            ->where('status', 'OUT')
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
-    }
-
-    private function processLogs($firstIn, $lastOut, $shift, $date)
-    {
-        $lateMinutes = 0;
-        $undertimeMinutes = 0;
-
-        $expectedIn = Carbon::parse("$date {$shift['time_in']}")->startOfMinute();
-        $expectedInLatest = $shift['time_in_latest'] ? Carbon::parse("$date {$shift['time_in_latest']}")->startOfMinute() : $expectedIn;
-        $expectedOut = Carbon::parse("$date {$shift['time_out']}")->startOfMinute();
-        $expectedOutLatest = $shift['time_out_latest'] ? Carbon::parse("$date {$shift['time_out_latest']}")->startOfMinute() : $expectedOut;
-
-        if ($expectedInLatest->lt($expectedIn)) {
-            $expectedInLatest->addDay();
-        }
-        if ($expectedOut->lte($expectedIn)) {
-            $expectedOut->addDay();
-        }
-        if ($expectedOutLatest->lte($expectedOut)) {
-            $expectedOutLatest->addDay();
-        }
-
-        $actualIn = Carbon::parse($firstIn)->startOfMinute();
-
-        // Handle late check-in
-        if ($actualIn->gt($expectedInLatest)) {
-            $lateMinutes = $actualIn->diffInMinutes($expectedInLatest);
-        }
-
-        $requiredOut = $expectedOut->copy();
-        $scheduleType = strtoupper((string) ($shift['type'] ?? 'FIXED'));
-        if ($scheduleType === 'GLIDING') {
-            if ($actualIn->gt($expectedIn) && $actualIn->lte($expectedInLatest)) {
-                $requiredOut = $expectedOut->copy()->addMinutes($expectedIn->diffInMinutes($actualIn));
-                if ($requiredOut->gt($expectedOutLatest)) {
-                    $requiredOut = $expectedOutLatest->copy();
-                }
-            } elseif ($actualIn->gt($expectedInLatest)) {
-                $requiredOut = $expectedOutLatest->copy();
-            }
-        }
-
-        // Handle undertime if the employee checks out early
-        if ($lastOut) {
-            $actualOut = Carbon::parse($lastOut)->startOfMinute();
-
-            // Apply half-day rule (if check-out before 1:00 PM)
-            if ($actualOut->lt(Carbon::parse("$date 13:00:00"))) {
-                // For half-day undertime calculation, consider 12:00 PM as the cutoff
-                $undertimeMinutes = Carbon::parse("$date 12:00:00")->diffInMinutes($actualOut);
-                $undertimeMinutes += 240; // Add 240 minutes (4 hours) for half-day
-            } else {
-                // For full-day undertime, calculate based on the required out time
-                if ($actualOut->lt($requiredOut)) {
-                    $undertimeMinutes = $actualOut->diffInMinutes($requiredOut);
-                }
-            }
-        }
-
-        return [$lateMinutes, $undertimeMinutes];
-    }
-
-    private function getNoScheduleDays($scheduleMap, $workdays, $holidays)
-    {
-        $plottedDays = array_keys($scheduleMap);
-        return array_diff($workdays, $plottedDays, $holidays);
-    }
-
-    private function getWorkDays($year, $month)
-    {
-        $startDate = Carbon::createFromDate($year, $month, 1);
-        $endDate = $startDate->copy()->endOfMonth();
-        $workdays = [];
-
-        while ($startDate <= $endDate) {
-            if ($startDate->isWeekday()) {
-                $workdays[] = $startDate->toDateString();
-            }
-            $startDate->addDay();
-        }
-
-        return $workdays;
-    }
-
-    // Helper: get all days in month (including weekends)
-    private function getAllDays($year, $month)
-    {
-        $startDate = Carbon::createFromDate($year, $month, 1);
-        $endDate = $startDate->copy()->endOfMonth();
-        $days = [];
-
-        while ($startDate <= $endDate) {
-            $days[] = $startDate->toDateString();
-            $startDate->addDay();
-        }
-
-        return $days;
     }
 
     private function getAllDaysByRange($startDate, $endDate)

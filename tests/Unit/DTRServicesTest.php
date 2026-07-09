@@ -67,28 +67,31 @@ class DTRServicesTest extends TestCase
     /** @test */
     public function it_returns_late_and_absence_totals_using_plotted_schedule_dates()
     {
-        DB::shouldReceive('table->whereBetween->pluck->map->toArray')
-            ->twice()
-            ->andReturn([]);
+        DB::shouldReceive('table->whereBetween->get')
+            ->once()
+            ->andReturn(collect([]));
 
         DB::shouldReceive('table->join->where->whereRaw->whereBetween->pluck->map->toArray')
-            ->twice()
+            ->once()
             ->andReturn([]);
 
+        // getApprovedSpecialDutyDatesByRange is called twice by getTotalLateAbsent
+        // (once for the hospitalOrders exemption, once for absenceExemptDates), and
+        // each call issues two sub-queries of this same shape (hospital orders, overtime).
         DB::shouldReceive('table->where->where->whereBetween->pluck->map->toArray')
-            ->twice()
+            ->times(4)
             ->andReturn([]);
 
-        DB::shouldReceive('table->where->where->whereBetween->pluck->map->toArray')
-            ->twice()
-            ->andReturn([]);
+        DB::shouldReceive('table->where->whereRaw->whereBetween->get')
+            ->once()
+            ->andReturn(collect([]));
 
         DB::shouldReceive('table->where->whereRaw->whereRaw->whereBetween->pluck->map->unique->values->toArray')
             ->once()
             ->andReturn([]);
 
         DB::shouldReceive('table->join->where->whereBetween->get')
-            ->twice()
+            ->once()
             ->andReturn(collect([
                 (object) [
                     'schedule_date' => '2025-09-01',
@@ -97,19 +100,17 @@ class DTRServicesTest extends TestCase
                     'time_out' => '17:00:00',
                     'time_in_latest' => '09:00:00',
                     'time_out_latest' => '18:00:00',
+                    'break_out' => null,
+                    'break_in' => null,
                 ],
             ]));
 
         DB::shouldReceive('table->where->whereBetween->orderBy->get')
-            ->twice()
+            ->once()
             ->andReturn(collect([
                 (object) ['created_at' => '2025-09-01 09:15:00', 'status' => 'IN'],
                 (object) ['created_at' => '2025-09-01 17:00:00', 'status' => 'OUT'],
             ]));
-
-        DB::shouldReceive('table->where->whereRaw->whereBetween->get')
-            ->once()
-            ->andReturn(collect([]));
 
         $result = $this->dtrService->getTotalLateAbsent(1, '2025-09-01', '2025-09-30');
 
