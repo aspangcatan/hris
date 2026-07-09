@@ -1,6 +1,5 @@
 @extends('master')
 @section('content')
-    <link rel="stylesheet" href="{{ asset('css/select2.min.css') }}">
     <style>
         .assignatory-board {
             background: #ffffff;
@@ -81,28 +80,6 @@
         .payroll-modal-theme .modal-body {
             background: #f8fafc;
         }
-
-        /* Match Select2's box to the plain .form-control inputs (Order,
-           Label) in this modal - Select2's default theme doesn't line up
-           with Bootstrap's sizing on its own. */
-        #assignatory_modal .select2-container--default .select2-selection--single {
-            height: calc(1.5em + 0.75rem + 2px);
-            padding: 0.375rem 0.75rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-        }
-
-        #assignatory_modal .select2-container--default .select2-selection--single .select2-selection__rendered {
-            padding: 0;
-            line-height: normal;
-        }
-
-        #assignatory_modal .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: calc(1.5em + 0.75rem);
-            right: 0.5rem;
-        }
     </style>
 
     <div class="assignatory-board">
@@ -175,7 +152,6 @@
 @stop
 
 @section('js')
-    <script src="{{ asset('js/select2.min.js') }}"></script>
     <script>
         let assignatories = [];
 

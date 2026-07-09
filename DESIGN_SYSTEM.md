@@ -273,7 +273,7 @@ From `master.blade.php` — **reuse only these classes, do not create new ones:*
 ---
 
 ## Forms And Inputs
-- `.form-control`, `.form-select`, `.selectize-input`: 12px radius, 42–44px min height
+- `.form-control`, `.form-select`, `.select2-selection`: 12px radius, 42–44px min height
 - Focus: 4px glow `rgba(14,165,164,0.14)`, border `--brand-500`
 - Inside filter strips: add `border: 1px solid #d8e1ee; background: #fff`
 
@@ -326,7 +326,7 @@ New page type?
 
 **Cards / Surfaces:** `.card` `.saln-record-card` `.saln-board`
 
-**Inputs:** `.form-control` `.form-select` `.selectize-input` `.form-control-premium`
+**Inputs:** `.form-control` `.form-select` `.select2-selection` `.form-control-premium`
 
 **Tables:** `.table` `.saln-table-premium` + `{page}-table-shell` pattern
 

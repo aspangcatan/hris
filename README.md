@@ -19,7 +19,7 @@ This repository contains a Laravel 8 HRIS that manages employee records and HR w
 - Frontend: Blade templates, Bootstrap 5, Tailwind CDN utilities
 - Build: Laravel Mix (Webpack)
 - Reporting: Dompdf, Snappy (wkhtmltopdf), FPDF/FPDI, PHPSpreadsheet
-- UI libraries: Bootstrap Icons, Font Awesome, Simple Datatables, Selectize, Toastr
+- UI libraries: Bootstrap Icons, Font Awesome, Simple Datatables, Select2, Toastr
 
 ## Requirements
 - PHP 7.4.33 (per Composer platform config)

@@ -4,27 +4,30 @@
 
     let position_applied_id = 0;
     let related_work_id = 0;
+
+    function setSelect2Tags(selector, values) {
+        const $el = $(selector);
+        $el.empty();
+        values.forEach(function (text) {
+            $el.append(new Option(text, text, true, true));
+        });
+        $el.trigger('change');
+    }
+
     $(document).ready(function () {
-        let $selectize_accomplishment = $("#work_accomplishment").selectize({
-            maxItems: 99,
-            valueField: "description",
-            labelField: "description",
-            searchField: "description",
-            create: true,
-            persist: false,
+        $("#work_accomplishment").select2({
+            tags: true,
+            multiple: true,
+            dropdownParent: $("#edit_promotion_modal"),
+            placeholder: "Type and press enter to add"
         });
 
-        let $selectize_duties = $("#work_duties").selectize({
-            maxItems: 99,
-            valueField: "description",
-            labelField: "description",
-            searchField: "description",
-            create: true,
-            persist: false,
+        $("#work_duties").select2({
+            tags: true,
+            multiple: true,
+            dropdownParent: $("#edit_promotion_modal"),
+            placeholder: "Type and press enter to add"
         });
-
-        let selectize_accomplishment = $selectize_accomplishment[0].selectize;
-        let selectize_duties = $selectize_duties[0].selectize;
 
         $("#btn_print_work").click(function () {
             window.open(
@@ -109,17 +112,15 @@
             const accomplishment_array = [];
             const duties_array = [];
             $("#accomplishment_id_" + related_work_id + " li").each(function () {
-                selectize_accomplishment.addOption({'description': $(this).text()});
                 accomplishment_array.push($(this).text());
             });
 
             $("#duties_id_" + related_work_id + " li").each(function () {
-                selectize_duties.addOption({'description': $(this).text()});
                 duties_array.push($(this).text());
             });
 
-            selectize_accomplishment.setValue(accomplishment_array);
-            selectize_duties.setValue(duties_array);
+            setSelect2Tags("#work_accomplishment", accomplishment_array);
+            setSelect2Tags("#work_duties", duties_array);
 
 
             $("#work_from").val(moment(date_from, "MMMM D, YYYY").format("YYYY-MM-DD"));
@@ -172,8 +173,8 @@
             $("#work_supervisor").val("");
             $("#work_agency").val("");
 
-            selectize_accomplishment.clear();
-            selectize_duties.clear();
+            setSelect2Tags("#work_accomplishment", []);
+            setSelect2Tags("#work_duties", []);
 
             edit_promotion_modal.toggle();
         });
@@ -187,8 +188,8 @@
             const office = $("#work_office").val().trim().toUpperCase();
             const supervisor = $("#work_supervisor").val().trim().toUpperCase();
             const agency = $("#work_agency").val().trim().toUpperCase();
-            const accomplishments = selectize_accomplishment.getValue();
-            const duties = selectize_duties.getValue();
+            const accomplishments = $("#work_accomplishment").val() || [];
+            const duties = $("#work_duties").val() || [];
 
             if (from_date == "") {
                 toastr.error("Please fill in from date");
@@ -269,8 +270,8 @@
                     $("#work_office").val("");
                     $("#work_supervisor").val("");
                     $("#work_agency").val("");
-                    selectize_accomplishment.clear();
-                    selectize_duties.clear();
+                    setSelect2Tags("#work_accomplishment", []);
+                    setSelect2Tags("#work_duties", []);
                     toastr.success(data.message, "Information");
                     //IMPROVE NOT TO RELOAD BUT APPEND ONLY
                     getRelatedWork(params.work_id);

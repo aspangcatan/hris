@@ -166,7 +166,8 @@
 
         .form-control,
         .form-select,
-        .selectize-input {
+        .select2-container--default .select2-selection--single,
+        .select2-container--default .select2-selection--multiple {
             border: 1px solid #cbd5e1 !important;
             border-radius: 12px !important;
             min-height: 42px;
@@ -175,9 +176,19 @@
 
         .form-control:focus,
         .form-select:focus,
-        .selectize-input.focus {
+        .select2-container--default.select2-container--focus .select2-selection--single,
+        .select2-container--default.select2-container--focus .select2-selection--multiple {
             border-color: var(--brand-500) !important;
             box-shadow: 0 0 0 4px rgba(14, 165, 164, 0.14) !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 40px;
+            padding-left: 0;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 40px;
         }
 
         .form-floating>label {
@@ -472,7 +483,7 @@
         <!-- Template Main CSS File -->
         <link href="{{ asset('css/style.css?v=2') }}" rel="stylesheet">
         <link href="{{ asset('css/toastr.min.css') }}" rel="stylesheet">
-        <link href="{{ asset('css/selectize.default.min.css') }}" rel="stylesheet">
+        <link href="{{ asset('css/select2.min.css') }}" rel="stylesheet">
         <link href="{{ asset('css/progress.css') }}" rel="stylesheet">
         <link rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
@@ -535,7 +546,7 @@
     <script src="{{ asset('js/jquery.min.js') }}"></script>
     <script src="{{ asset('js/moment.min.js') }}"></script>
     <script src="{{ asset('js/toastr.min.js') }}"></script>
-    <script src="{{ asset('js/selectize.min.js') }}"></script>
+    <script src="{{ asset('js/select2.min.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"
         integrity="sha512-T/tUfKSV1bihCnd+MxKD0Hm1uBBroVYBOYSk1knyvQ9VyZJpc/ALb4P0r6ubwVPSGB2GvjeoMAJJImBG12TiaQ=="

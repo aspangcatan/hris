@@ -95,11 +95,11 @@
                         </div>
                         <div class="col-md-12">
                             <label>List of Accomplishments and Contributions (if any)</label>
-                            <select id="work_accomplishment"></select>
+                            <select id="work_accomplishment" multiple="multiple" style="width: 100%;"></select>
                         </div>
                         <div class="col-md-12 mt-2">
                             <label>Summary of Actual Duties</label>
-                            <select id="work_duties"></select>
+                            <select id="work_duties" multiple="multiple" style="width: 100%;"></select>
                         </div>
                     </div>
 
