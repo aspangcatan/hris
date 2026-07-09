@@ -80,28 +80,6 @@
         .payroll-modal-theme .modal-body {
             background: #f8fafc;
         }
-
-        #assignatory_user_results {
-            position: absolute;
-            z-index: 20;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            width: 100%;
-            max-height: 220px;
-            overflow-y: auto;
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
-            display: none;
-        }
-
-        #assignatory_user_results .result-row {
-            padding: 0.5rem 0.75rem;
-            cursor: pointer;
-        }
-
-        #assignatory_user_results .result-row:hover {
-            background: #f1f5f9;
-        }
     </style>
 
     <div class="assignatory-board">
@@ -152,12 +130,9 @@
                             <label class="form-label">Label</label>
                             <input type="text" class="form-control" id="assignatory_label" placeholder="e.g. Section Head">
                         </div>
-                        <div class="col-md-12 position-relative">
+                        <div class="col-md-12">
                             <label class="form-label">Assigned User</label>
-                            <input type="text" class="form-control" id="assignatory_user_search" placeholder="Search by name..." autocomplete="off">
-                            <input type="hidden" id="assignatory_user_id">
-                            <div id="assignatory_user_results"></div>
-                            <small class="text-muted" id="assignatory_user_selected"></small>
+                            <select id="assignatory_user_id" class="form-control" placeholder="Search by name..."></select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <div class="form-check">
@@ -179,9 +154,33 @@
 @section('js')
     <script>
         let assignatories = [];
-        let userSearchTimeout = null;
+        let userSelectize = null;
 
         $(document).ready(function () {
+            userSelectize = $("#assignatory_user_id").selectize({
+                valueField: 'id',
+                labelField: 'text',
+                searchField: 'text',
+                create: false,
+                maxItems: 1,
+                dropdownParent: 'body',
+                loadThrottle: 300,
+                load: function (query, callback) {
+                    if (!query.length) {
+                        return callback();
+                    }
+                    fetch('{{ route('searchPayrollAssignatoryUsers') }}?q=' + encodeURIComponent(query))
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.success) {
+                                return callback();
+                            }
+                            callback(data.data.map(user => ({id: user.id, text: `${user.lname}, ${user.fname}`})));
+                        })
+                        .catch(() => callback());
+                }
+            })[0].selectize;
+
             loadAssignatories();
 
             $("#btn_add_assignatory").click(function () {
@@ -217,22 +216,6 @@
                 }]);
             });
 
-            $("#assignatory_user_search").on("input", function () {
-                clearTimeout(userSearchTimeout);
-                const query = $(this).val().trim();
-                $("#assignatory_user_id").val("");
-                if (!query) {
-                    $("#assignatory_user_results").hide().empty();
-                    return;
-                }
-                userSearchTimeout = setTimeout(() => searchAssignatoryUsers(query), 300);
-            });
-
-            $(document).on("click", "#assignatory_user_results .result-row", function () {
-                $("#assignatory_user_id").val($(this).data("id"));
-                $("#assignatory_user_search").val($(this).text());
-                $("#assignatory_user_results").hide().empty();
-            });
         });
 
         function loadAssignatories() {
@@ -285,37 +268,24 @@
             $("#assignatory_id").val(row ? row.id : "");
             $("#assignatory_order").val(row ? row.order_no : (assignatories.length + 1));
             $("#assignatory_label").val(row ? row.label : "");
-            $("#assignatory_user_id").val(row ? row.user_id : "");
-            $("#assignatory_user_search").val(row && row.fname ? `${row.lname}, ${row.fname}` : "");
-            $("#assignatory_user_selected").text("");
             $("#assignatory_active").prop("checked", row ? !!row.is_active : true);
-            $("#assignatory_user_results").hide().empty();
-            $("#assignatory_modal").modal("show");
-        }
 
-        function searchAssignatoryUsers(query) {
-            fetch('{{ route('searchPayrollAssignatoryUsers') }}?q=' + encodeURIComponent(query))
-                .then(res => res.json())
-                .then(data => {
-                    const $results = $("#assignatory_user_results");
-                    $results.empty();
-                    if (!data.success || !data.data.length) {
-                        $results.hide();
-                        return;
-                    }
-                    data.data.forEach(user => {
-                        $results.append(`<div class="result-row" data-id="${user.id}">${user.lname}, ${user.fname}</div>`);
-                    });
-                    $results.show();
-                })
-                .catch(err => console.error(err));
+            userSelectize.clear(true);
+            userSelectize.clearOptions();
+            if (row && row.user_id) {
+                const text = row.fname ? `${row.lname}, ${row.fname}` : `User #${row.user_id}`;
+                userSelectize.addOption({id: row.user_id, text: text});
+                userSelectize.setValue(row.user_id, true);
+            }
+
+            $("#assignatory_modal").modal("show");
         }
 
         function saveAssignatory() {
             const id = $("#assignatory_id").val();
             const orderNo = parseInt($("#assignatory_order").val() || "1", 10);
             const label = ($("#assignatory_label").val() || "").trim();
-            const userId = $("#assignatory_user_id").val();
+            const userId = userSelectize.getValue();
             const active = $("#assignatory_active").is(":checked");
 
             if (!label) {
@@ -323,7 +293,7 @@
                 return;
             }
             if (!userId) {
-                toastr.error("Please select an assigned user from the search results.", "Validation");
+                toastr.error("Please select an assigned user.", "Validation");
                 return;
             }
 
