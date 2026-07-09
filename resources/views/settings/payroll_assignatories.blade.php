@@ -168,7 +168,12 @@
         let userSearchTimeout = null;
 
         $(document).ready(function () {
-            userDropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('assignatory_user_search'));
+            // strategy: 'fixed' positions the menu relative to the viewport
+            // instead of its nearest positioned ancestor, so it isn't
+            // clipped by the modal body's overflow-y: auto.
+            userDropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('assignatory_user_search'), {
+                popperConfig: {strategy: 'fixed'}
+            });
 
             loadAssignatories();
 
