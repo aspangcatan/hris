@@ -170,9 +170,32 @@
         $(document).ready(function () {
             // strategy: 'fixed' positions the menu relative to the viewport
             // instead of its nearest positioned ancestor, so it isn't
-            // clipped by the modal body's overflow-y: auto.
+            // clipped by the modal body's overflow-y: auto. Under 'fixed'
+            // positioning the menu's width% no longer resolves against the
+            // input's wrapper, so a custom modifier pins it to the input's
+            // actual width on every reposition.
             userDropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('assignatory_user_search'), {
-                popperConfig: {strategy: 'fixed'}
+                popperConfig: function (defaultBsPopperConfig) {
+                    return {
+                        ...defaultBsPopperConfig,
+                        strategy: 'fixed',
+                        modifiers: [
+                            ...defaultBsPopperConfig.modifiers,
+                            {
+                                name: 'sameWidth',
+                                enabled: true,
+                                phase: 'beforeWrite',
+                                requires: ['computeStyles'],
+                                fn: ({state}) => {
+                                    state.styles.popper.width = `${state.rects.reference.width}px`;
+                                },
+                                effect: ({state}) => {
+                                    state.elements.popper.style.width = `${state.elements.reference.offsetWidth}px`;
+                                }
+                            }
+                        ]
+                    };
+                }
             });
 
             loadAssignatories();
