@@ -81,36 +81,9 @@
             background: #f8fafc;
         }
 
-        /* dropdownParent: 'body' floats the Selectize dropdown above the
-           modal instead of being clipped by modal-body's overflow-y, but
-           that also lifts it out of the modal's stacking context, so it
-           needs a z-index above Bootstrap's modal (1055) and backdrop
-           (1050) or it renders behind them - only the portion spilling
-           past the modal's edge would otherwise be visible. */
-        .selectize-dropdown {
-            z-index: 2000 !important;
-        }
-
-        /* Match Selectize's box to the plain .form-control inputs (Order,
-           Label) in this modal - Selectize's own default padding/height
-           don't line up with Bootstrap's, so without this it looks shorter
-           and less padded than its siblings. */
-        #assignatory_modal .selectize-control.single .selectize-input {
-            min-height: calc(1.5em + 0.75rem + 2px);
-            padding: 0.375rem 0.75rem;
-            display: flex;
-            align-items: center;
-            font-size: 1rem;
-        }
-
-        #assignatory_modal .selectize-control.single .selectize-input input {
-            padding: 0 !important;
-            font-size: 1rem;
-            line-height: 1.5;
-        }
-
-        #assignatory_modal .selectize-control.single .selectize-input.items {
-            padding-right: 2rem;
+        #assignatory_user_results {
+            max-height: 220px;
+            overflow-y: auto;
         }
     </style>
 
@@ -164,7 +137,12 @@
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">Assigned User</label>
-                            <select id="assignatory_user_id" class="form-control" placeholder="Search by name..."></select>
+                            <div class="dropdown">
+                                <input type="text" class="form-control" id="assignatory_user_search"
+                                       placeholder="Search by name..." autocomplete="off">
+                                <input type="hidden" id="assignatory_user_id">
+                                <ul class="dropdown-menu w-100" id="assignatory_user_results"></ul>
+                            </div>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <div class="form-check">
@@ -186,32 +164,11 @@
 @section('js')
     <script>
         let assignatories = [];
-        let userSelectize = null;
+        let userDropdown = null;
+        let userSearchTimeout = null;
 
         $(document).ready(function () {
-            userSelectize = $("#assignatory_user_id").selectize({
-                valueField: 'id',
-                labelField: 'text',
-                searchField: 'text',
-                create: false,
-                maxItems: 1,
-                dropdownParent: 'body',
-                loadThrottle: 300,
-                load: function (query, callback) {
-                    if (!query.length) {
-                        return callback();
-                    }
-                    fetch('{{ route('searchPayrollAssignatoryUsers') }}?q=' + encodeURIComponent(query))
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.success) {
-                                return callback();
-                            }
-                            callback(data.data.map(user => ({id: user.id, text: `${user.lname}, ${user.fname}`})));
-                        })
-                        .catch(() => callback());
-                }
-            })[0].selectize;
+            userDropdown = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('assignatory_user_search'));
 
             loadAssignatories();
 
@@ -248,6 +205,22 @@
                 }]);
             });
 
+            $("#assignatory_user_search").on("input", function () {
+                clearTimeout(userSearchTimeout);
+                const query = $(this).val().trim();
+                $("#assignatory_user_id").val("");
+                if (!query) {
+                    userDropdown.hide();
+                    return;
+                }
+                userSearchTimeout = setTimeout(() => searchAssignatoryUsers(query), 300);
+            });
+
+            $(document).on("click", "#assignatory_user_results .dropdown-item", function (e) {
+                e.preventDefault();
+                $("#assignatory_user_id").val($(this).data("id"));
+                $("#assignatory_user_search").val($(this).text());
+            });
         });
 
         function loadAssignatories() {
@@ -301,23 +274,37 @@
             $("#assignatory_order").val(row ? row.order_no : (assignatories.length + 1));
             $("#assignatory_label").val(row ? row.label : "");
             $("#assignatory_active").prop("checked", row ? !!row.is_active : true);
-
-            userSelectize.clear(true);
-            userSelectize.clearOptions();
-            if (row && row.user_id) {
-                const text = row.fname ? `${row.lname}, ${row.fname}` : `User #${row.user_id}`;
-                userSelectize.addOption({id: row.user_id, text: text});
-                userSelectize.setValue(row.user_id, true);
-            }
+            $("#assignatory_user_id").val(row ? row.user_id : "");
+            $("#assignatory_user_search").val(row && row.fname ? `${row.lname}, ${row.fname}` : "");
+            $("#assignatory_user_results").empty();
+            userDropdown.hide();
 
             $("#assignatory_modal").modal("show");
+        }
+
+        function searchAssignatoryUsers(query) {
+            fetch('{{ route('searchPayrollAssignatoryUsers') }}?q=' + encodeURIComponent(query))
+                .then(res => res.json())
+                .then(data => {
+                    const $results = $("#assignatory_user_results");
+                    $results.empty();
+                    if (!data.success || !data.data.length) {
+                        userDropdown.hide();
+                        return;
+                    }
+                    data.data.forEach(user => {
+                        $results.append(`<li><a class="dropdown-item" href="#" data-id="${user.id}">${user.lname}, ${user.fname}</a></li>`);
+                    });
+                    userDropdown.show();
+                })
+                .catch(err => console.error(err));
         }
 
         function saveAssignatory() {
             const id = $("#assignatory_id").val();
             const orderNo = parseInt($("#assignatory_order").val() || "1", 10);
             const label = ($("#assignatory_label").val() || "").trim();
-            const userId = userSelectize.getValue();
+            const userId = $("#assignatory_user_id").val();
             const active = $("#assignatory_active").is(":checked");
 
             if (!label) {
@@ -325,7 +312,7 @@
                 return;
             }
             if (!userId) {
-                toastr.error("Please select an assigned user.", "Validation");
+                toastr.error("Please select an assigned user from the search results.", "Validation");
                 return;
             }
 
