@@ -755,7 +755,7 @@ class PayrollController extends Controller
                 $item->can_assign = $this->canAssignPayroll($item);
                 $item->can_submit = $this->canSubmitPayroll($item);
                 $item->can_approve = isset($pendingApprovalMap[$item->id]);
-                $item->pending_approval_role = $item->can_approve ? $pendingApprovalMap[$item->id]->role : null;
+                $item->pending_approval_label = $item->can_approve ? $pendingApprovalMap[$item->id]->label : null;
                 $item->can_release = $this->permissions->can(Auth::id(), 'payroll.manage') && $status === 'approved';
                 $item->can_generate_payslip = in_array($status, ['approved', 'released'], true);
 
@@ -1241,51 +1241,15 @@ class PayrollController extends Controller
     private function getPendingApprovalMapForCurrentUser()
     {
         $accessRight = strtoupper((string) session('access_rights'));
-        $user = Auth::user();
+        $userId = Auth::id();
 
         $query = DB::table('payroll_approvals as pa')
             ->where('pa.status', 'pending')
-            ->select('pa.id', 'pa.payroll_id', 'pa.role', 'pa.order_no');
+            ->whereRaw('pa.order_no = (SELECT MIN(px.order_no) FROM payroll_approvals as px WHERE px.payroll_id = pa.payroll_id AND px.status = ?)', ['pending'])
+            ->select('pa.id', 'pa.payroll_id', 'pa.label', 'pa.order_no');
 
-        if ($accessRight === 'ADMIN') {
-            $query->whereRaw('pa.order_no = (SELECT MIN(px.order_no) FROM payroll_approvals as px WHERE px.payroll_id = pa.payroll_id AND px.status = ?)', ['pending']);
-        } elseif ($accessRight === 'SH') {
-            if (empty($user->section)) {
-                return [];
-            }
-            $query->where('pa.role', 'SH')->where('pa.approver_id', $user->section);
-        } elseif ($accessRight === 'DH') {
-            if (empty($user->division)) {
-                return [];
-            }
-            $query->where('pa.role', 'DH')
-                ->where('pa.approver_id', $user->division)
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('payroll_approvals as sh')
-                        ->whereColumn('sh.payroll_id', 'pa.payroll_id')
-                        ->where('sh.role', 'SH')
-                        ->where('sh.status', 'approved');
-                });
-        } elseif (in_array($accessRight, ['HR', 'HRH'], true)) {
-            $query->where('pa.role', 'HR')
-                ->where('pa.approver_id', 15)
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('payroll_approvals as sh')
-                        ->whereColumn('sh.payroll_id', 'pa.payroll_id')
-                        ->where('sh.role', 'SH')
-                        ->where('sh.status', 'approved');
-                })
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('payroll_approvals as dh')
-                        ->whereColumn('dh.payroll_id', 'pa.payroll_id')
-                        ->where('dh.role', 'DH')
-                        ->where('dh.status', 'approved');
-                });
-        } else {
-            return [];
+        if ($accessRight !== 'ADMIN') {
+            $query->where('pa.approver_id', $userId);
         }
 
         return $query->get()->keyBy('payroll_id')->toArray();
@@ -1294,52 +1258,16 @@ class PayrollController extends Controller
     private function getUserPendingApproval($payrollId)
     {
         $accessRight = strtoupper((string) session('access_rights'));
-        $user = Auth::user();
+        $userId = Auth::id();
 
         $query = DB::table('payroll_approvals as pa')
             ->where('pa.payroll_id', $payrollId)
             ->where('pa.status', 'pending')
+            ->whereRaw('pa.order_no = (SELECT MIN(px.order_no) FROM payroll_approvals as px WHERE px.payroll_id = pa.payroll_id AND px.status = ?)', ['pending'])
             ->select('pa.*');
 
-        if ($accessRight === 'ADMIN') {
-            $query->orderBy('pa.order_no', 'asc');
-        } elseif ($accessRight === 'SH') {
-            if (empty($user->section)) {
-                return null;
-            }
-            $query->where('pa.role', 'SH')->where('pa.approver_id', $user->section);
-        } elseif ($accessRight === 'DH') {
-            if (empty($user->division)) {
-                return null;
-            }
-            $query->where('pa.role', 'DH')
-                ->where('pa.approver_id', $user->division)
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('payroll_approvals as sh')
-                        ->whereColumn('sh.payroll_id', 'pa.payroll_id')
-                        ->where('sh.role', 'SH')
-                        ->where('sh.status', 'approved');
-                });
-        } elseif (in_array($accessRight, ['HR', 'HRH'], true)) {
-            $query->where('pa.role', 'HR')
-                ->where('pa.approver_id', 15)
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('payroll_approvals as sh')
-                        ->whereColumn('sh.payroll_id', 'pa.payroll_id')
-                        ->where('sh.role', 'SH')
-                        ->where('sh.status', 'approved');
-                })
-                ->whereExists(function ($sub) {
-                    $sub->select(DB::raw(1))
-                        ->from('payroll_approvals as dh')
-                        ->whereColumn('dh.payroll_id', 'pa.payroll_id')
-                        ->where('dh.role', 'DH')
-                        ->where('dh.status', 'approved');
-                });
-        } else {
-            return null;
+        if ($accessRight !== 'ADMIN') {
+            $query->where('pa.approver_id', $userId);
         }
 
         return $query->first();

@@ -18,6 +18,7 @@ class PayrollApprovalChainTest extends TestCase
     private array $assignatorySnapshot = [];
     private ?int $payrollId = null;
     private ?int $masterId = null;
+    private ?int $currentActorId = null;
 
     protected function setUp(): void
     {
@@ -71,13 +72,26 @@ class PayrollApprovalChainTest extends TestCase
 
     private function actAs(int $userId, string $accessRights = 'admin'): void
     {
-        Auth::shouldReceive('id')->andReturn($userId);
-        Auth::shouldReceive('check')->andReturn(true);
-        // Stubbed defensively even though the rewritten submitForApproval() no
-        // longer calls Auth::user() — an unstubbed call on a Mockery-replaced
-        // facade throws instead of returning null (see PayrollCutoffTest's
-        // actAsUser(), which does the same for this reason).
-        Auth::shouldReceive('user')->andReturn(null);
+        // Auth::shouldReceive() only swaps the facade root for a Mockery mock
+        // on the FIRST call; every call after that just stacks another
+        // expectation onto the same mock. Since these tests switch the acting
+        // user mid-test (preparer -> approver1 -> approver2), a plain
+        // ->andReturn($userId) on each call would never override the first
+        // one Mockery registered — Auth::id() would keep returning whichever
+        // user was mocked first. Instead, register the returning-a-closure
+        // expectation once, and have every actAs() call just update the
+        // $currentActorId property the closure reads from.
+        if (!Auth::getFacadeRoot() instanceof \Mockery\MockInterface) {
+            Auth::shouldReceive('id')->andReturnUsing(fn () => $this->currentActorId);
+            Auth::shouldReceive('check')->andReturn(true);
+            // Stubbed defensively even though the rewritten submitForApproval() no
+            // longer calls Auth::user() — an unstubbed call on a Mockery-replaced
+            // facade throws instead of returning null (see PayrollCutoffTest's
+            // actAsUser(), which does the same for this reason).
+            Auth::shouldReceive('user')->andReturn(null);
+        }
+
+        $this->currentActorId = $userId;
         session(['access_rights' => $accessRights]);
     }
 
@@ -170,5 +184,98 @@ class PayrollApprovalChainTest extends TestCase
         $this->assertEquals(['Section Head', 'Division Head', 'HR'], $approvals->pluck('label')->toArray());
         $this->assertEquals([$this->approver1Id, $this->approver2Id, $this->approver3Id], $approvals->pluck('approver_id')->map(fn($v) => (int) $v)->toArray());
         $this->assertEquals(['pending', 'pending', 'pending'], $approvals->pluck('status')->toArray());
+    }
+
+    /** @test */
+    public function later_phase_approver_cannot_act_before_an_earlier_phase_is_approved(): void
+    {
+        $this->seedAssignatories([
+            ['order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->approver1Id],
+            ['order_no' => 2, 'label' => 'Division Head', 'user_id' => $this->approver2Id],
+        ]);
+        $payrollId = $this->seedComputedPayroll();
+        $this->withoutMiddleware()->postJson('/payroll/submit_for_approval', ['payroll_id' => $payrollId])->assertOk();
+
+        $this->actAs($this->approver2Id, 'standard');
+
+        $response = $this->withoutMiddleware()->postJson('/payroll/approval_action', [
+            'payroll_id' => $payrollId,
+            'status' => 'approved',
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertEquals(
+            'pending',
+            DB::table('payroll_approvals')->where('payroll_id', $payrollId)->where('order_no', 2)->value('status')
+        );
+    }
+
+    /** @test */
+    public function each_named_approver_can_act_only_on_their_own_step_in_sequence(): void
+    {
+        $this->seedAssignatories([
+            ['order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->approver1Id],
+            ['order_no' => 2, 'label' => 'Division Head', 'user_id' => $this->approver2Id],
+        ]);
+        $payrollId = $this->seedComputedPayroll();
+        $this->withoutMiddleware()->postJson('/payroll/submit_for_approval', ['payroll_id' => $payrollId])->assertOk();
+
+        $this->actAs($this->approver1Id, 'standard');
+        $this->withoutMiddleware()->postJson('/payroll/approval_action', [
+            'payroll_id' => $payrollId,
+            'status' => 'approved',
+        ])->assertOk();
+
+        $this->actAs($this->approver2Id, 'standard');
+        $this->withoutMiddleware()->postJson('/payroll/approval_action', [
+            'payroll_id' => $payrollId,
+            'status' => 'approved',
+        ])->assertOk();
+
+        $payroll = DB::table('payrolls')->where('id', $payrollId)->first();
+        $this->assertEquals('approved', strtolower($payroll->status));
+    }
+
+    /** @test */
+    public function rejection_cascades_to_remaining_pending_steps(): void
+    {
+        $this->seedAssignatories([
+            ['order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->approver1Id],
+            ['order_no' => 2, 'label' => 'Division Head', 'user_id' => $this->approver2Id],
+        ]);
+        $payrollId = $this->seedComputedPayroll();
+        $this->withoutMiddleware()->postJson('/payroll/submit_for_approval', ['payroll_id' => $payrollId])->assertOk();
+
+        $this->actAs($this->approver1Id, 'standard');
+        $this->withoutMiddleware()->postJson('/payroll/approval_action', [
+            'payroll_id' => $payrollId,
+            'status' => 'rejected',
+            'remarks' => 'Numbers look off.',
+        ])->assertOk();
+
+        $statuses = DB::table('payroll_approvals')->where('payroll_id', $payrollId)->orderBy('order_no')->pluck('status');
+        $this->assertEquals(['rejected', 'rejected'], $statuses->toArray());
+
+        $payroll = DB::table('payrolls')->where('id', $payrollId)->first();
+        $this->assertEquals('rejected', strtolower($payroll->status));
+    }
+
+    /** @test */
+    public function admin_session_can_approve_any_step_regardless_of_assigned_approver(): void
+    {
+        $this->seedAssignatories([
+            ['order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->approver1Id],
+        ]);
+        $payrollId = $this->seedComputedPayroll();
+        $this->withoutMiddleware()->postJson('/payroll/submit_for_approval', ['payroll_id' => $payrollId])->assertOk();
+
+        // Preparer is acting as admin (set up in seedComputedPayroll), not approver1Id.
+        $this->withoutMiddleware()->postJson('/payroll/approval_action', [
+            'payroll_id' => $payrollId,
+            'status' => 'approved',
+        ])->assertOk();
+
+        $payroll = DB::table('payrolls')->where('id', $payrollId)->first();
+        $this->assertEquals('approved', strtolower($payroll->status));
     }
 }
