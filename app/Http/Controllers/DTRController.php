@@ -798,7 +798,7 @@ class DTRController extends Controller
                 $lateTotalMinutes = 0;
                 $undertimeTotalMinutes = 0;
 
-                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $approvedPassSlips, $officialPassSlips, $skipAllAutomation, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
+                $days = collect(range(1, $daysInMonth))->map(function ($day) use ($employee, $month, $year, $startDay, $endDay, $logs, $holidays, $leaves, $hospitalOrders, $overtimeRequests, $schedules, $approvedPassSlips, $officialPassSlips, $skipAllAutomation, &$lateCount, &$undertimeCount, &$lateTotalMinutes, &$undertimeTotalMinutes) {
                     $formatMinutes = function ($minutes) {
                         $minutes = (int) $minutes;
                         if ($minutes <= 0)
@@ -982,356 +982,34 @@ class DTRController extends Controller
                             $data['isEmpty'] = false;
                         }
 
-                        // Skip late/undertime computation only for excused records.
-                        // Holidays with timelogs should still be evaluated.
-                        // When automation is disabled globally, skip computation for all days.
-                        $skipLateUndertimeComputation = $hasComputationExemption || $skipAllAutomation;
+                        $dayResult = app(\App\Services\DtrDayComputationService::class)->computeRange(
+                            $employee->id,
+                            $currentDay,
+                            $currentDay,
+                            collect($schedules),
+                            $logs,
+                            [
+                                'holidays' => $holidays,
+                                'leaves' => $leaves,
+                                'hospitalOrders' => $hospitalOrders,
+                                'passSlips' => $approvedPassSlips,
+                            ],
+                            $skipAllAutomation
+                        )[$currentDay];
 
-                        // Calculate Late and Undertime (skip when OFF)
-                        $rawSched = $schedules[$currentDay] ?? null;
-                        $isOvernightSchedule = false;
-                        $rawSchedIn = null;
-                        $rawSchedOut = null;
-                        if ($rawSched) {
-                            $rawSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
-                            $rawSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
-                            $isOvernightSchedule = $rawSchedOut->lte($rawSchedIn);
-                            if ($isOvernightSchedule) {
-                                $rawSchedOut->addDay();
-                            }
-                        }
+                        $lateMinutes = $dayResult['late_minutes'];
+                        $undertimeMinutes = $dayResult['undertime_minutes'];
 
-                        $previousDay = Carbon::parse($currentDay)->subDay()->toDateString();
-                        $prevSched = $schedules[$previousDay] ?? null;
-                        $prevSchedIn = null;
-                        $prevSchedOut = null;
-                        $previousDayIsOvernightSchedule = false;
-                        if ($prevSched) {
-                            $prevSchedIn = Carbon::parse($previousDay . ' ' . $prevSched->time_in);
-                            $prevSchedOut = Carbon::parse($previousDay . ' ' . $prevSched->time_out);
-                            $previousDayIsOvernightSchedule = $prevSchedOut->lte($prevSchedIn);
-                            if ($previousDayIsOvernightSchedule) {
-                                $prevSchedOut->addDay();
-                            }
-                        }
+                        if ($lateMinutes > 0) $lateCount++;
+                        if ($undertimeMinutes > 0) $undertimeCount++;
+                        $lateTotalMinutes += $lateMinutes;
+                        $undertimeTotalMinutes += $undertimeMinutes;
+                        $data['late_minutes'] = $lateMinutes;
 
-                        $scheduleMatchedAm = false;
-                        $scheduleMatchedPm = false;
-                        $firstIn = null;
-                        $lastOut = null;
-
-                        if ($rawSched && !$isOffSchedule) {
-                            if ($isOvernightSchedule) {
-                                $nextDay = Carbon::parse($currentDay)->addDay()->toDateString();
-
-                                $currentDayLogs = $logs->filter(function ($log) use ($currentDay) {
-                                    return Carbon::parse($log->created_at)->toDateString() === $currentDay;
-                                });
-                                $nextDayLogs = $logs->filter(function ($log) use ($nextDay) {
-                                    return Carbon::parse($log->created_at)->toDateString() === $nextDay;
-                                });
-
-                                $schedInWindowStart = Carbon::parse($currentDay . ' ' . $rawSched->time_in)->subHours(6);
-                                $schedInWindowEnd = Carbon::parse($currentDay . ' 23:59:59');
-                                $firstIn = $currentDayLogs
-                                    ->where('status', 'IN')
-                                    ->pluck('created_at')
-                                    ->filter(function ($createdAt) use ($schedInWindowStart, $schedInWindowEnd) {
-                                        $logTime = Carbon::parse($createdAt);
-                                        return $logTime->gte($schedInWindowStart) && $logTime->lte($schedInWindowEnd);
-                                    })
-                                    ->min();
-
-                                if ($firstIn) {
-                                    $firstInTime = Carbon::parse($firstIn)->startOfMinute();
-                                    $schedOutWindowStart = $firstInTime->copy();
-                                    $schedOutWindowEnd = Carbon::parse($nextDay . ' ' . $rawSched->time_out)->addHours(8);
-
-                                    $lastOut = $nextDayLogs
-                                        ->where('status', 'OUT')
-                                        ->pluck('created_at')
-                                        ->filter(function ($createdAt) use ($schedOutWindowStart, $schedOutWindowEnd) {
-                                            $logTime = Carbon::parse($createdAt);
-                                            return $logTime->gte($schedOutWindowStart) && $logTime->lte($schedOutWindowEnd);
-                                        })
-                                        ->max();
-
-                                    $scheduleMatchedPm = true;
-                                    $scheduleMatchedAm = (bool) $lastOut;
-                                }
-                            } else {
-                                $calcSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
-                                $calcSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
-                                if ($calcSchedOut->lte($calcSchedIn)) {
-                                    $calcSchedOut->addDay();
-                                }
-
-                                // Anchor matching to the plotted schedule first so spillover
-                                // logs from a previous overnight shift do not drive today's
-                                // half-day or tardiness logic.
-                                $windowStart = $calcSchedIn->copy()->subHours(6);
-                                $windowEnd = $calcSchedOut->copy()->addHours(8);
-
-                                $scheduleMatchedLogs = $logs->filter(function ($log) use ($windowStart, $windowEnd) {
-                                    $logTime = Carbon::parse($log->created_at);
-                                    return $logTime->gte($windowStart) && $logTime->lte($windowEnd);
-                                });
-
-                                $firstIn = $scheduleMatchedLogs->where('status', 'IN')->min('created_at');
-                                if ($firstIn) {
-                                    $firstInTime = Carbon::parse($firstIn)->startOfMinute();
-                                    $lastOut = $scheduleMatchedLogs
-                                        ->where('status', 'OUT')
-                                        ->pluck('created_at')
-                                        ->filter(fn($out) => Carbon::parse($out)->startOfMinute()->gte($firstInTime))
-                                        ->max();
-
-                                    $pairedLogs = $scheduleMatchedLogs->filter(function ($log) use ($firstInTime, $lastOut) {
-                                        $logTime = Carbon::parse($log->created_at)->startOfMinute();
-                                        if ($logTime->lt($firstInTime)) {
-                                            return false;
-                                        }
-                                        if ($lastOut) {
-                                            return $logTime->lte(Carbon::parse($lastOut)->startOfMinute());
-                                        }
-                                        return true;
-                                    });
-
-                                    $scheduleMatchedAm = $pairedLogs->contains(function ($log) {
-                                        return Carbon::parse($log->created_at)->format('H:i:s') < '12:00:00';
-                                    });
-                                    $scheduleMatchedPm = $pairedLogs->contains(function ($log) {
-                                        return Carbon::parse($log->created_at)->format('H:i:s') >= '12:00:00';
-                                    });
-                                }
-                            }
-                        }
-
-                        $hasTodayIn = ($data['date_timein_am'] !== '' || $data['date_timein_pm'] !== '');
-                        $hasTodayOut = ($data['date_timeout_am'] !== '' || $data['date_timeout_pm'] !== '');
-                        $isOvernightSpilloverOnly =
-                            !$hasTodayIn &&
-                            $hasTodayOut &&
-                            $data['date_timeout_am'] !== '' &&
-                            $data['date_timeout_pm'] === '' &&
-                            $previousDayIsOvernightSchedule;
-
-                        if ($isOvernightSpilloverOnly) {
-                            if ($isOffSchedule) {
-                                // Overnight shift ends on a next-day OFF — suppress the OFF label,
-                                // keep the departure visible on this calendar date.
-                                $data['suppress_off_label'] = true;
-                            }
-                            // Always keep the departure log visible. It belongs on this calendar date
-                            // as the end of the previous day's overnight shift.
-                        }
-
-                        $calcSched = null;
-                        if ($isOvernightSpilloverOnly) {
-                            $calcSched = null;
-                        } elseif ($rawSched) {
-                            $calcSched = $rawSched;
-                        }
-
-                        $hasIncompleteScheduledLogs =
-                            $rawSched &&
-                            !$isOffSchedule &&
-                            !$isOvernightSpilloverOnly &&
-                            ($hasTodayIn || $hasTodayOut || $firstIn || $lastOut) &&
-                            !($firstIn && $lastOut);
-
-                        if (!$skipLateUndertimeComputation && $hasIncompleteScheduledLogs) {
-                            $firstIn = null;
-                            $lastOut = null;
-
-                            $absentUndertimeMinutes = 0;
-                            if ($rawSched) {
-                                $absentSchedIn = Carbon::parse($currentDay . ' ' . $rawSched->time_in);
-                                $absentSchedOut = Carbon::parse($currentDay . ' ' . $rawSched->time_out);
-                                if ($absentSchedOut->lte($absentSchedIn)) {
-                                    $absentSchedOut->addDay();
-                                }
-
-                                $absentUndertimeMinutes = $data['rendered_minutes'] > 0
-                                    ? (int) $data['rendered_minutes']
-                                    : $absentSchedIn->diffInMinutes($absentSchedOut);
-                            }
-
-                            if ($absentUndertimeMinutes > 0) {
-                                $undertimeCount++;
-                                $undertimeTotalMinutes += $absentUndertimeMinutes;
-                                $data['undertime_hours'] = floor($absentUndertimeMinutes / 60) ?: '';
-                                $data['undertime_minutes'] = ($absentUndertimeMinutes % 60) ?: '';
-                            }
-                        }
-
-                        // Flat half-day addition: one entire half of the day (AM or PM) has zero
-                        // logs while the other half has a complete IN+OUT pair, on a full-day
-                        // schedule with a configured break. The precise math below is scoped to
-                        // the half that has logs, and half the schedule's rendered minutes is
-                        // added to the late bucket on top of it.
-                        $hasAmAttendance = ($data['date_timein_am'] !== '' || $data['date_timeout_am'] !== '');
-                        $hasPmAttendance = ($data['date_timein_pm'] !== '' || $data['date_timeout_pm'] !== '');
-                        $isFullDaySchedule = $rawSched
-                            && !$isOffSchedule
-                            && !$isOvernightSchedule
-                            && (int) ($data['rendered_minutes'] ?? 0) > 240;
-                        $hasBreakConfigured = $calcSched
-                            && !empty($calcSched->break_out)
-                            && !empty($calcSched->break_in);
-                        $isHalfDayMissingHalf = $isFullDaySchedule
-                            && $hasBreakConfigured
-                            && !$isOvernightSpilloverOnly
-                            && $firstIn
-                            && $lastOut
-                            && ($hasAmAttendance xor $hasPmAttendance);
-
-                        // Do not compute late/undertime for days without an IN log.
-                        // This avoids false penalties when an AM OUT is just a spillover from a previous day.
-                        if (!$skipLateUndertimeComputation && $calcSched && !$hasApprovedPassSlip && $firstIn) {
-                            $lateMinutes = 0;
-                            $undertimeMinutes = 0;
-
-                            if ($firstIn) {
-                                $firstInTime = Carbon::parse($firstIn)->startOfMinute();
-                                // Half-day-missing-AM: firstIn is actually the PM arrival, so compare
-                                // it against the PM boundary (break_in) instead of the AM schedule,
-                                // which would otherwise register the entire missing AM span as "late".
-                                if ($isHalfDayMissingHalf && !$hasAmAttendance) {
-                                    $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
-                                    $schedInLatest = $schedIn->copy();
-                                } else {
-                                    $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
-                                    $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
-                                }
-                                if ($schedInLatest->lt($schedIn)) {
-                                    $schedInLatest->addDay();
-                                }
-
-                                if ($firstInTime->gt($schedInLatest)) {
-                                    $lateDiffMinutes = $schedInLatest->diffInMinutes($firstInTime);
-
-                                    // Subtract any scheduled break that falls within [schedInLatest, firstInTime]
-                                    // so the break period is not penalized as late time.
-                                    if (!empty($calcSched->break_out) && !empty($calcSched->break_in)) {
-                                        $breakOutTime = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
-                                        $breakInTime  = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
-                                        if ($breakInTime->lte($breakOutTime)) {
-                                            $breakInTime->addDay();
-                                        }
-
-                                        $overlapStart = $schedInLatest->copy()->max($breakOutTime);
-                                        $overlapEnd   = $firstInTime->copy()->min($breakInTime);
-
-                                        if ($overlapEnd->gt($overlapStart)) {
-                                            $lateDiffMinutes = max(0, $lateDiffMinutes - $overlapStart->diffInMinutes($overlapEnd));
-                                        }
-                                    }
-
-                                    $lateMinutes += $lateDiffMinutes;
-                                }
-                            }
-
-                            if ($lastOut) {
-                                $lastOutTime = Carbon::parse($lastOut)->startOfMinute();
-
-                                // Normal Full Day Schedule Logic
-                                $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->time_in);
-                                $schedOut = Carbon::parse($currentDay . ' ' . $calcSched->time_out);
-                                if ($schedOut->lte($schedIn)) {
-                                    // Night shift: schedule out is on the next day.
-                                    $schedOut->addDay();
-                                }
-                                $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
-
-                                // Half-day-missing-PM: lastOut is actually the AM departure, so require
-                                // it against the AM boundary (break_out) instead of the full day's time_out,
-                                // and skip gliding (it shifts the day's departure requirement based on
-                                // arrival, which isn't meaningful when the day was cut short at the half).
-                                if ($isHalfDayMissingHalf && !$hasPmAttendance) {
-                                    $requiredOut = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
-                                } elseif ($isGliding && $firstIn && !($isHalfDayMissingHalf && !$hasAmAttendance)) {
-                                    $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
-                                    $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
-                                    $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
-                                    if ($schedInLatest->lt($schedIn)) {
-                                        $schedInLatest->addDay();
-                                    }
-                                    if ($schedOutLatest->lt($schedOut)) {
-                                        $schedOutLatest->addDay();
-                                    }
-
-                                    // Gliding rule:
-                                    // - IN within allowed window shifts required OUT within OUT window.
-                                    // - IN beyond latest IN is already "late"; cap required OUT to latest OUT
-                                    //   to avoid double-penalizing the same overage as both late and undertime.
-                                    if ($effectiveIn->lte($schedIn)) {
-                                        $requiredOut = $schedOut->copy();
-                                    } elseif ($effectiveIn->lte($schedInLatest)) {
-                                        $offsetMinutes = $schedIn->diffInMinutes($effectiveIn);
-                                        $requiredOut = $schedOut->copy()->addMinutes($offsetMinutes);
-                                        if ($requiredOut->gt($schedOutLatest)) {
-                                            $requiredOut = $schedOutLatest->copy();
-                                        }
-                                    } else {
-                                        $requiredOut = $schedOutLatest->copy();
-                                    }
-                                } else {
-                                    // Fixed: undertime is based on plotted schedule out, not on late arrival.
-                                    $requiredOut = $schedOut;
-                                }
-
-                                if ($lastOutTime->lt($requiredOut)) {
-                                    $undertimeMinutes = $lastOutTime->diffInMinutes($requiredOut);
-
-                                    // Subtract any scheduled break that falls within the [lastOut, requiredOut] window.
-                                    // This prevents penalizing an employee for break time they never consumed
-                                    // (e.g. leaving at 12:09 PM on a 12:00–1:00 PM break should not add 51 min of undertime).
-                                    if (!empty($calcSched->break_out) && !empty($calcSched->break_in)) {
-                                        $breakOutTime = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
-                                        $breakInTime  = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
-                                        if ($breakInTime->lte($breakOutTime)) {
-                                            $breakInTime->addDay();
-                                        }
-
-                                        $overlapStart = $lastOutTime->copy()->max($breakOutTime);
-                                        $overlapEnd   = $requiredOut->copy()->min($breakInTime);
-
-                                        if ($overlapEnd->gt($overlapStart)) {
-                                            $undertimeMinutes = max(0, $undertimeMinutes - $overlapStart->diffInMinutes($overlapEnd));
-                                        }
-                                    }
-                                }
-                            }
-
-                            if ($isHalfDayMissingHalf) {
-                                $halfDayMinutes = (int) round($data['rendered_minutes'] / 2);
-                                if ($halfDayMinutes > 0) {
-                                    // Missing AM (only showed up for PM): treat the whole missed
-                                    // morning as an extreme late arrival.
-                                    // Missing PM (left after AM, never returned): treat the whole
-                                    // missed afternoon as undertime, not lateness.
-                                    if (!$hasAmAttendance) {
-                                        $lateMinutes += $halfDayMinutes;
-                                    } else {
-                                        $undertimeMinutes += $halfDayMinutes;
-                                    }
-                                }
-                            }
-
-                            if ($lateMinutes > 0)
-                                $lateCount++;
-                            if ($undertimeMinutes > 0)
-                                $undertimeCount++;
-                            $lateTotalMinutes += $lateMinutes;
-                            $undertimeTotalMinutes += $undertimeMinutes;
-                            $data['late_minutes'] = $lateMinutes;
-
-                            $totalMinutes = $lateMinutes + $undertimeMinutes;
-                            if ($totalMinutes > 0) {
-                                $data['undertime_hours'] = floor($totalMinutes / 60) ?: '';
-                                $data['undertime_minutes'] = ($totalMinutes % 60) ?: '';
-                            }
+                        $totalMinutes = $lateMinutes + $undertimeMinutes;
+                        if ($totalMinutes > 0) {
+                            $data['undertime_hours'] = floor($totalMinutes / 60) ?: '';
+                            $data['undertime_minutes'] = ($totalMinutes % 60) ?: '';
                         }
                     }
 
