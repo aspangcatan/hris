@@ -254,11 +254,6 @@ class PayrollCutoffTest extends TestCase
     {
         Auth::shouldReceive('id')->andReturn($this->userId);
         Auth::shouldReceive('check')->andReturn(true);
-        Auth::shouldReceive('user')->andReturn((object) [
-            'id'       => $this->userId,
-            'section'  => 1,
-            'division' => 1,
-        ]);
         session(['access_rights' => 'admin']);
     }
 
@@ -270,6 +265,23 @@ class PayrollCutoffTest extends TestCase
             'user_id' => $this->userId,
             'syscode' => 'hris',
             'level'   => 'admin',
+        ]);
+
+        $assignatorySnapshot = DB::table('payroll_assignatories')->get()->map(fn($row) => (array) $row)->all();
+        DB::table('payroll_assignatories')->delete();
+        DB::table('payroll_assignatories')->insert([
+            [
+                'order_no' => 1, 'label' => 'Section Head', 'user_id' => $this->userId,
+                'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
+            ],
+            [
+                'order_no' => 2, 'label' => 'Division Head', 'user_id' => $this->userId,
+                'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
+            ],
+            [
+                'order_no' => 3, 'label' => 'HR', 'user_id' => $this->userId,
+                'is_active' => 1, 'created_at' => now(), 'updated_at' => now(),
+            ],
         ]);
 
         $masterId = $this->seedCutoffMaster('2027-01-01', '2027-01-15', 'Smoke Test Cutoff');
@@ -313,17 +325,17 @@ class PayrollCutoffTest extends TestCase
                 ->orderBy('order_no')
                 ->get();
             $this->assertCount(3, $approvals);
-            $this->assertEquals(['SH', 'DH', 'HR'], $approvals->pluck('role')->toArray());
+            $this->assertEquals(['Section Head', 'Division Head', 'HR'], $approvals->pluck('label')->toArray());
             $this->assertEquals(['pending', 'pending', 'pending'], $approvals->pluck('status')->toArray());
 
-            foreach (['SH', 'DH', 'HR'] as $expectedRole) {
+            foreach (['Section Head', 'Division Head', 'HR'] as $expectedLabel) {
                 $before = DB::table('hris.payroll_approvals')
                     ->where('payroll_id', $payrollId)
                     ->where('status', 'pending')
                     ->orderBy('order_no')
                     ->first();
-                $this->assertNotNull($before, "Expected a pending approval step for role {$expectedRole}");
-                $this->assertEquals($expectedRole, $before->role);
+                $this->assertNotNull($before, "Expected a pending approval step for {$expectedLabel}");
+                $this->assertEquals($expectedLabel, $before->label);
 
                 $actionResponse = $this->withoutMiddleware()->postJson('/payroll/approval_action', [
                     'payroll_id' => $payrollId,
@@ -355,6 +367,10 @@ class PayrollCutoffTest extends TestCase
             DB::table('hris.payrolls')->where('id', $payrollId)->delete();
             DB::table('hris.cutoff_summaries')->where('cutoff_id', $masterId)->delete();
             DB::table('tdh_user.user_priv')->where('user_id', $this->userId)->where('syscode', 'hris')->delete();
+            DB::table('payroll_assignatories')->delete();
+            if (!empty($assignatorySnapshot)) {
+                DB::table('payroll_assignatories')->insert($assignatorySnapshot);
+            }
         }
     }
 }

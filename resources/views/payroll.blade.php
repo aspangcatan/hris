@@ -701,8 +701,8 @@
                             actions.push(`<li><a class="dropdown-item" href="#" onclick="submitForApproval(${item.id})">Submit for Approval</a></li>`);
                         }
                         if (item.can_approve) {
-                            actions.push(`<li><a class="dropdown-item text-success" href="#" onclick="approvePayroll(${item.id})">Approve (${item.pending_approval_role})</a></li>`);
-                            actions.push(`<li><a class="dropdown-item text-danger" href="#" onclick="rejectPayroll(${item.id})">Reject (${item.pending_approval_role})</a></li>`);
+                            actions.push(`<li><a class="dropdown-item text-success" href="#" onclick="approvePayroll(${item.id})">Approve (${item.pending_approval_label})</a></li>`);
+                            actions.push(`<li><a class="dropdown-item text-danger" href="#" onclick="rejectPayroll(${item.id})">Reject (${item.pending_approval_label})</a></li>`);
                         }
                         if (item.can_release) {
                             actions.push(`<li><a class="dropdown-item" href="#" onclick="releasePayroll(${item.id})">Release Payroll</a></li>`);
