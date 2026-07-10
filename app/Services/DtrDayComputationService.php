@@ -79,7 +79,11 @@ class DtrDayComputationService
      * Preserves DTRServices::buildPresentAbsentByRange()'s existing semantics
      * as-is (uncontested, not part of the late/undertime divergence this
      * service fixes): schedule-plotted dates if any exist in range, otherwise
-     * every non-holiday weekday.
+     * every non-holiday weekday. OFF-coded schedule dates (rest days, e.g.
+     * the Friday/weekend of a compressed work week) are additionally
+     * excluded - a day the employee isn't scheduled to work can't be an
+     * absence, the same way it's excluded from late/undertime via
+     * $isOffSchedule in computeDay().
      */
     private function resolveExpectedWorkDates(Collection $schedules, string $startDate, string $endDate, array $holidays): array
     {
@@ -89,6 +93,7 @@ class DtrDayComputationService
                     return $date >= $startDate && $date <= $endDate;
                 })
                 ->reject(fn($date) => array_key_exists($date, $holidays))
+                ->reject(fn($date) => $this->isOffScheduleCode($schedules[$date]->code ?? null))
                 ->values()
                 ->all();
         }
@@ -100,6 +105,12 @@ class DtrDayComputationService
             }
         }
         return $dates;
+    }
+
+    private function isOffScheduleCode(?string $code): bool
+    {
+        $code = trim((string) $code);
+        return $code !== '' && strtoupper($code) === 'OFF';
     }
 
     /**

@@ -201,6 +201,7 @@ class DTRServices
         $scheduleMap = [];
         foreach ($plottedSchedules as $schedule) {
             $scheduleMap[$schedule->schedule_date] = (object) [
+                'code' => $schedule->code ?? null,
                 'type' => $schedule->type ?? 'FIXED',
                 'time_in' => $schedule->time_in,
                 'time_out' => $schedule->time_out,

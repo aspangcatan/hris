@@ -52,6 +52,24 @@ class DtrServicesUnifiedComputationTest extends TestCase
         ]);
     }
 
+    /**
+     * Points the test employee at the real, shared "OFF" schedule template
+     * (schedule_master_lists.code = 'OFF') instead of inserting a new
+     * template row - that table is a system-wide reusable list (e.g. one
+     * "OFF" row referenced by every employee's rest days), so creating
+     * another one risks colliding with production lookups. Only the
+     * per-employee mapping row in hris.schedules is test-owned and gets
+     * cleaned up in tearDown().
+     */
+    private function seedOffSchedule(string $date): void
+    {
+        $offScheduleId = DB::table('hris.schedule_master_lists')->where('code', 'OFF')->value('id');
+        DB::table('hris.schedules')->updateOrInsert(
+            ['employee_id' => $this->userId, 'schedule_date' => $date],
+            ['schedule_id' => $offScheduleId, 'updated_by' => $this->userId, 'created_at' => now()]
+        );
+    }
+
     /** @test */
     public function cutoff_generation_now_subtracts_break_time_matching_printdtr(): void
     {
@@ -86,5 +104,42 @@ class DtrServicesUnifiedComputationTest extends TestCase
         // all under the old algorithm, since it never modeled half-day-
         // missing-AM). Now it must match printDTR's 250.
         $this->assertEquals(250, $result['late_minutes']);
+    }
+
+    /** @test */
+    public function off_scheduled_day_is_not_counted_as_absent(): void
+    {
+        // Rest day (schedule code 'OFF'), no attendance logs at all - the
+        // ordinary weekend/rest-day case. Regression for the cutoff summary
+        // counting these as absences: mapSchedulesWithBreaks() used to drop
+        // the 'code' field, so computeDay() could never detect $isOffSchedule,
+        // and resolveExpectedWorkDates() never excluded OFF days either.
+        $this->seedOffSchedule('2027-06-05');
+
+        $result = app(DTRServices::class)->getTotalLateAbsent($this->userId, '2027-06-05', '2027-06-05');
+
+        $this->assertEquals(0, $result['absences']);
+        $this->assertEquals(0, $result['late_minutes']);
+        $this->assertEquals(0, $result['undertime_minutes']);
+    }
+
+    /** @test */
+    public function off_scheduled_day_with_attendance_is_not_charged_undertime(): void
+    {
+        // Employee actually comes in on a scheduled rest day. The OFF
+        // template's time_in/time_out are both 00:00:00, so once 'code' is
+        // read correctly, isOffSchedule short-circuits the schedule-window
+        // matching entirely - otherwise it's misread as a 00:00-24:00 shift
+        // and a real clock-in produces a huge bogus undertime charge (~1380
+        // minutes in production) instead of 0.
+        $this->seedOffSchedule('2027-06-06');
+        $this->seedLog('2027-06-06 07:25:00', 'IN');
+        $this->seedLog('2027-06-06 18:30:00', 'OUT');
+
+        $result = app(DTRServices::class)->getTotalLateAbsent($this->userId, '2027-06-06', '2027-06-06');
+
+        $this->assertEquals(0, $result['absences']);
+        $this->assertEquals(0, $result['late_minutes']);
+        $this->assertEquals(0, $result['undertime_minutes']);
     }
 }
