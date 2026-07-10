@@ -51,6 +51,34 @@ class PayrollComponentFormulaTest extends TestCase
         session(['access_rights' => 'admin']);
     }
 
+    /**
+     * Excludes every pre-existing global/active payroll component (e.g. PERA,
+     * seeded independently of this test) for the test user, so an
+     * other_earnings assertion reflects only the TEST_FORMULA_* component(s)
+     * this test set up, not unrelated production seed data.
+     */
+    private function excludeOtherGlobalComponentsForTestUser(): void
+    {
+        $otherComponentIds = DB::table('hris.payroll_components')
+            ->where('is_global', 1)
+            ->where('is_active', 1)
+            ->whereNotIn('code', $this->testCodes)
+            ->pluck('id');
+
+        foreach ($otherComponentIds as $componentId) {
+            DB::table('hris.employee_payroll_components')->insert([
+                'payroll_component_id' => $componentId,
+                'userid' => $this->wireTestUserId,
+                'amount' => 0,
+                'amount_override' => null,
+                'is_active' => 0,
+                'is_excluded' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
     /** @test */
     public function rejects_a_percentage_component_with_no_base_selected()
     {
@@ -551,5 +579,247 @@ class PayrollComponentFormulaTest extends TestCase
         // The bad update must not have been persisted - A is still basic_salary-based.
         $stored = DB::table('hris.payroll_components')->where('code', 'TEST_FORMULA_A')->first();
         $this->assertEquals('basic_salary', $stored->base_type);
+    }
+
+    /** @test */
+    public function a_percentage_component_flows_through_the_full_payroll_computation()
+    {
+        DB::table('tdh_user.users')->where('id', $this->wireTestUserId)->delete();
+        DB::table('tdh_user.users')->insert([
+            'id' => $this->wireTestUserId,
+            'fname' => 'Formula',
+            'lname' => 'Tester',
+            'username' => 'formulatester' . $this->wireTestUserId,
+            'password' => 'x',
+            'division' => 2,
+            'section' => 21,
+            'designation' => 52,
+        ]);
+
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)->delete();
+        DB::table('hris.payroll_settings')->insert([
+            'userid' => $this->wireTestUserId,
+            'basic_salary' => 20000,
+            'salary_grade' => 11,
+            'step' => 1,
+        ]);
+
+        DB::table('hris.payroll_components')->insert([
+            'code' => 'TEST_FORMULA_A',
+            'name' => 'Test Hazard Pay',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 1,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->excludeOtherGlobalComponentsForTestUser();
+
+        $masterId = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'title' => 'Formula Test Cutoff',
+            'period_start' => '2027-08-01',
+            'period_end' => '2027-08-15',
+            'generated_by' => $this->wireTestUserId,
+            'generated_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payrollId = DB::table('hris.payrolls')->insertGetId([
+            'cutoff_id' => $masterId,
+            'title' => 'Formula Test Payroll',
+            'start_date' => '2027-08-01',
+            'end_date' => '2027-08-15',
+            'cutoff_start_date' => '2027-08-01',
+            'cutoff_end_date' => '2027-08-15',
+            'cutoff_title' => 'Formula Test Cutoff',
+            'payroll_type' => 'Regular',
+            'rate_type' => 'Non Pro-rated',
+            'status' => 'draft',
+            'prepared_by' => $this->wireTestUserId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.cutoff_summaries')->insert([
+            'employee_id' => $this->wireTestUserId,
+            'cutoff_id' => $masterId,
+            'period_start' => '2027-08-01',
+            'period_end' => '2027-08-15',
+            'total_working_days' => 10,
+            'days_present' => 10,
+            'days_absent' => 0,
+            'late_minutes' => 0,
+            'undertime_minutes' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actAsAdmin();
+        $response = $this->withoutMiddleware()->postJson('/save_payroll_employee', [
+            'payroll_id' => $payrollId,
+            'employees' => [[
+                'userid' => $this->wireTestUserId,
+                'salary_adjustment' => 0,
+                'adjustments' => [],
+            ]],
+        ]);
+        $response->assertOk();
+
+        $payrollEmployee = DB::table('hris.payroll_employees')
+            ->where('payroll_id', $payrollId)
+            ->where('employee_id', $this->wireTestUserId)
+            ->first();
+        $this->assertNotNull($payrollEmployee);
+        // Hazard Pay = 25% of the 20,000 basic salary = 5,000 other_earnings.
+        $this->assertEqualsWithDelta(5000.0, (float) $payrollEmployee->other_earnings, 0.01);
+
+        DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->pluck('id'))
+            ->delete();
+        DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->delete();
+        DB::table('hris.payrolls')->where('id', $payrollId)->delete();
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $masterId)->delete();
+        DB::table('hris.cutoff_summaries_master')->where('id', $masterId)->delete();
+    }
+
+    /** @test */
+    public function changing_basic_salary_changes_the_computed_component_on_the_next_payroll_run_with_no_code_change()
+    {
+        DB::table('tdh_user.users')->where('id', $this->wireTestUserId)->delete();
+        DB::table('tdh_user.users')->insert([
+            'id' => $this->wireTestUserId,
+            'fname' => 'Formula',
+            'lname' => 'Tester',
+            'username' => 'formulatester' . $this->wireTestUserId,
+            'password' => 'x',
+            'division' => 2,
+            'section' => 21,
+            'designation' => 52,
+        ]);
+
+        DB::table('hris.payroll_components')->insert([
+            'code' => 'TEST_FORMULA_A',
+            'name' => 'Test Hazard Pay',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 1,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->excludeOtherGlobalComponentsForTestUser();
+
+        $masterId = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'title' => 'Formula Salary Change Cutoff',
+            'period_start' => '2027-09-01',
+            'period_end' => '2027-09-15',
+            'generated_by' => $this->wireTestUserId,
+            'generated_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payrollId = DB::table('hris.payrolls')->insertGetId([
+            'cutoff_id' => $masterId,
+            'title' => 'Formula Salary Change Payroll',
+            'start_date' => '2027-09-01',
+            'end_date' => '2027-09-15',
+            'cutoff_start_date' => '2027-09-01',
+            'cutoff_end_date' => '2027-09-15',
+            'cutoff_title' => 'Formula Salary Change Cutoff',
+            'payroll_type' => 'Regular',
+            'rate_type' => 'Non Pro-rated',
+            'status' => 'draft',
+            'prepared_by' => $this->wireTestUserId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.cutoff_summaries')->insert([
+            'employee_id' => $this->wireTestUserId,
+            'cutoff_id' => $masterId,
+            'period_start' => '2027-09-01',
+            'period_end' => '2027-09-15',
+            'total_working_days' => 10,
+            'days_present' => 10,
+            'days_absent' => 0,
+            'late_minutes' => 0,
+            'undertime_minutes' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actAsAdmin();
+
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)->delete();
+        DB::table('hris.payroll_settings')->insert([
+            'userid' => $this->wireTestUserId,
+            'basic_salary' => 20000,
+            'salary_grade' => 11,
+            'step' => 1,
+        ]);
+
+        $this->withoutMiddleware()->postJson('/save_payroll_employee', [
+            'payroll_id' => $payrollId,
+            'employees' => [[
+                'userid' => $this->wireTestUserId,
+                'salary_adjustment' => 0,
+                'adjustments' => [],
+            ]],
+        ])->assertOk();
+
+        $firstRun = DB::table('hris.payroll_employees')
+            ->where('payroll_id', $payrollId)
+            ->where('employee_id', $this->wireTestUserId)
+            ->first();
+        $this->assertEqualsWithDelta(5000.0, (float) $firstRun->other_earnings, 0.01);
+
+        // A salary grade/step change: basic_salary goes from 20,000 to
+        // 30,000. Nothing about the payroll code changes between these two
+        // calls - just this one row of data.
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)
+            ->update(['basic_salary' => 30000]);
+
+        $this->withoutMiddleware()->postJson('/save_payroll_employee', [
+            'payroll_id' => $payrollId,
+            'employees' => [[
+                'userid' => $this->wireTestUserId,
+                'salary_adjustment' => 0,
+                'adjustments' => [],
+            ]],
+        ])->assertOk();
+
+        $secondRun = DB::table('hris.payroll_employees')
+            ->where('payroll_id', $payrollId)
+            ->where('employee_id', $this->wireTestUserId)
+            ->first();
+        // 25% of the new 30,000 basic salary = 7,500.
+        $this->assertEqualsWithDelta(7500.0, (float) $secondRun->other_earnings, 0.01);
+
+        DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->pluck('id'))
+            ->delete();
+        DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->delete();
+        DB::table('hris.payrolls')->where('id', $payrollId)->delete();
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $masterId)->delete();
+        DB::table('hris.cutoff_summaries_master')->where('id', $masterId)->delete();
     }
 }
