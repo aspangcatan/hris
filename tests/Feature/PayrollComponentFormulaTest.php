@@ -169,4 +169,147 @@ class PayrollComponentFormulaTest extends TestCase
 
         $this->assertNull($error);
     }
+
+    /** @test */
+    public function resolves_a_basic_salary_percentage_component()
+    {
+        $rows = collect([
+            (object) [
+                'code' => 'TEST_FORMULA_A',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'basic_salary',
+                'base_component_code' => null,
+                'rate_percent' => 25,
+            ],
+        ]);
+
+        $resolved = $this->callResolveComponentAmounts($rows, 20000.0);
+
+        $this->assertEqualsWithDelta(5000.0, $resolved->firstWhere('code', 'TEST_FORMULA_A')->amount, 0.001);
+    }
+
+    /** @test */
+    public function resolves_a_component_chained_off_another_computed_component_regardless_of_payload_order()
+    {
+        $rows = collect([
+            (object) [
+                'code' => 'TEST_FORMULA_B',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'component',
+                'base_component_code' => 'TEST_FORMULA_A',
+                'rate_percent' => 10,
+            ],
+            (object) [
+                'code' => 'TEST_FORMULA_A',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'basic_salary',
+                'base_component_code' => null,
+                'rate_percent' => 25,
+            ],
+        ]);
+
+        // B is listed before A in $rows, but B depends on A - proving
+        // resolution order follows the dependency graph, not payload order.
+        $resolved = $this->callResolveComponentAmounts($rows, 20000.0);
+
+        $this->assertEqualsWithDelta(5000.0, $resolved->firstWhere('code', 'TEST_FORMULA_A')->amount, 0.001);
+        $this->assertEqualsWithDelta(500.0, $resolved->firstWhere('code', 'TEST_FORMULA_B')->amount, 0.001);
+    }
+
+    /** @test */
+    public function an_amount_override_wins_over_the_formula_and_feeds_dependents()
+    {
+        $rows = collect([
+            (object) [
+                'code' => 'TEST_FORMULA_A',
+                'default_amount' => 0,
+                'amount_override' => 9999.0,
+                'calculation_type' => 'percentage',
+                'base_type' => 'basic_salary',
+                'base_component_code' => null,
+                'rate_percent' => 25,
+            ],
+            (object) [
+                'code' => 'TEST_FORMULA_B',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'component',
+                'base_component_code' => 'TEST_FORMULA_A',
+                'rate_percent' => 10,
+            ],
+        ]);
+
+        $resolved = $this->callResolveComponentAmounts($rows, 20000.0);
+
+        $this->assertEqualsWithDelta(9999.0, $resolved->firstWhere('code', 'TEST_FORMULA_A')->amount, 0.001);
+        // 10% of the override (9,999), not of the 25%-of-basic-salary formula.
+        $this->assertEqualsWithDelta(999.9, $resolved->firstWhere('code', 'TEST_FORMULA_B')->amount, 0.001);
+    }
+
+    /** @test */
+    public function rounds_computed_amounts_to_three_decimal_places()
+    {
+        $rows = collect([
+            (object) [
+                'code' => 'TEST_FORMULA_A',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'basic_salary',
+                'base_component_code' => null,
+                'rate_percent' => 33.333,
+            ],
+        ]);
+
+        $resolved = $this->callResolveComponentAmounts($rows, 100.0);
+
+        $this->assertEqualsWithDelta(33.333, $resolved->firstWhere('code', 'TEST_FORMULA_A')->amount, 0.0005);
+    }
+
+    /** @test */
+    public function a_cyclic_pair_resolves_to_zero_instead_of_looping_forever()
+    {
+        $rows = collect([
+            (object) [
+                'code' => 'TEST_FORMULA_A',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'component',
+                'base_component_code' => 'TEST_FORMULA_B',
+                'rate_percent' => 25,
+            ],
+            (object) [
+                'code' => 'TEST_FORMULA_B',
+                'default_amount' => 0,
+                'amount_override' => null,
+                'calculation_type' => 'percentage',
+                'base_type' => 'component',
+                'base_component_code' => 'TEST_FORMULA_A',
+                'rate_percent' => 10,
+            ],
+        ]);
+
+        // Defensive backstop only - validateComponentFormulas() (Task 2) is
+        // what actually keeps this shape out of real saved data.
+        $resolved = $this->callResolveComponentAmounts($rows, 20000.0);
+
+        $this->assertEqualsWithDelta(0.0, $resolved->firstWhere('code', 'TEST_FORMULA_A')->amount, 0.001);
+        $this->assertEqualsWithDelta(0.0, $resolved->firstWhere('code', 'TEST_FORMULA_B')->amount, 0.001);
+    }
+
+    private function callResolveComponentAmounts(\Illuminate\Support\Collection $rows, float $basicSalary): \Illuminate\Support\Collection
+    {
+        $service = app(PayrollServices::class);
+        $method = new ReflectionMethod(PayrollServices::class, 'resolveComponentAmounts');
+        $method->setAccessible(true);
+        return $method->invoke($service, $rows, $basicSalary);
+    }
 }

@@ -693,6 +693,102 @@ class PayrollServices
         return $payrollEmployeeId;
     }
 
+    /**
+     * Resolves each row's final 'amount' in dependency order (a component's
+     * base is resolved before the component that references it), per
+     * docs/superpowers/specs/2026-07-10-computed-payroll-components-design.md.
+     * Returns the same rows with 'amount' set; every other field untouched.
+     */
+    private function resolveComponentAmounts(\Illuminate\Support\Collection $rows, float $basicSalary): \Illuminate\Support\Collection
+    {
+        $byCode = $rows->keyBy('code');
+        $order = $this->topoSortComponentCodes($byCode);
+
+        $resolved = [];
+        foreach ($order as $code) {
+            $resolved[$code] = $this->resolveComponentAmount($byCode[$code], $resolved, $basicSalary);
+        }
+
+        return $rows->map(function ($row) use ($resolved) {
+            $row->amount = $resolved[$row->code] ?? 0.0;
+            return $row;
+        });
+    }
+
+    /**
+     * A component in a reference cycle is deliberately left out of
+     * $resolved by topoSortComponentCodes() (it logs a warning and bails
+     * before recording that code) - the `?? 0.0` fallback below means every
+     * component in the cycle silently resolves to 0 rather than looping
+     * forever. Save-time validation (validateComponentFormulas()) is what
+     * actually keeps cycles out of the database; this is just a defensive
+     * backstop.
+     */
+    private function resolveComponentAmount($row, array $resolved, float $basicSalary): float
+    {
+        if ($row->amount_override !== null) {
+            return round((float) $row->amount_override, 3);
+        }
+
+        $calculationType = $row->calculation_type ?? 'fixed';
+        if ($calculationType !== 'percentage') {
+            return round((float) ($row->default_amount ?? 0), 3);
+        }
+
+        $rate = (float) ($row->rate_percent ?? 0);
+
+        if (($row->base_type ?? null) === 'basic_salary') {
+            return round($basicSalary * $rate / 100, 3);
+        }
+
+        if (($row->base_type ?? null) === 'component') {
+            $baseAmount = $resolved[$row->base_component_code] ?? 0.0;
+            return round($baseAmount * $rate / 100, 3);
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Post-order DFS: a component's base (if any) is appended to $order
+     * before the component itself, so resolveComponentAmount() can always
+     * look up an already-resolved base. A code revisited while still
+     * 'visiting' is a cycle - logged and left out of $order (and therefore
+     * out of $resolved in resolveComponentAmounts()).
+     */
+    private function topoSortComponentCodes(\Illuminate\Support\Collection $byCode): array
+    {
+        $order = [];
+        $state = [];
+
+        $visit = function ($code) use (&$visit, &$order, &$state, $byCode) {
+            if (($state[$code] ?? null) === 'done') {
+                return;
+            }
+            if (($state[$code] ?? null) === 'visiting') {
+                \Illuminate\Support\Facades\Log::warning("Payroll component formula cycle detected involving \"{$code}\"; treating as 0.");
+                return;
+            }
+
+            $state[$code] = 'visiting';
+            $row = $byCode->get($code);
+            if ($row && ($row->calculation_type ?? 'fixed') === 'percentage' && ($row->base_type ?? null) === 'component') {
+                $baseCode = $row->base_component_code;
+                if ($baseCode !== null && $byCode->has($baseCode)) {
+                    $visit($baseCode);
+                }
+            }
+            $state[$code] = 'done';
+            $order[] = $code;
+        };
+
+        foreach ($byCode->keys() as $code) {
+            $visit($code);
+        }
+
+        return $order;
+    }
+
     public function deletePayrollEmployees($payroll_id)
     {
         return DB::table('hris.payroll_employees')
