@@ -199,30 +199,67 @@ class PayrollController extends Controller
                 return response()->json(['success' => false, 'message' => 'Invalid payload.'], 422);
             }
 
+            $normalized = [];
             foreach ($components as $component) {
                 if (empty($component['code']) || empty($component['name']) || empty($component['type'])) {
                     continue;
                 }
 
                 $code = strtoupper(trim((string) $component['code']));
-                $name = trim((string) $component['name']);
-                $type = strtolower(trim((string) $component['type'])) === 'deduction' ? 'deduction' : 'earning';
-                $taxable = !empty($component['taxable']);
-                $defaultAmount = isset($component['default_amount']) ? (float) $component['default_amount'] : 0;
-                $isGlobal = !empty($component['is_global']);
-                $isActive = array_key_exists('is_active', $component) ? (bool) $component['is_active'] : true;
-                $isCutoffAdjustable = !empty($component['is_cutoff_adjustable']);
+                $calculationType = strtolower((string) ($component['calculation_type'] ?? 'fixed')) === 'percentage' ? 'percentage' : 'fixed';
+                $baseType = $component['base_type'] ?? null;
+                $baseType = in_array($baseType, ['basic_salary', 'component'], true) ? $baseType : null;
+                $baseComponentCode = !empty($component['base_component_code']) ? strtoupper(trim((string) $component['base_component_code'])) : null;
+                $ratePercent = isset($component['rate_percent']) && $component['rate_percent'] !== '' ? (float) $component['rate_percent'] : null;
 
+                $normalized[$code] = [
+                    'name' => trim((string) $component['name']),
+                    'type' => strtolower(trim((string) $component['type'])) === 'deduction' ? 'deduction' : 'earning',
+                    'taxable' => !empty($component['taxable']),
+                    'default_amount' => isset($component['default_amount']) ? (float) $component['default_amount'] : 0,
+                    'is_global' => !empty($component['is_global']),
+                    'is_active' => array_key_exists('is_active', $component) ? (bool) $component['is_active'] : true,
+                    'is_cutoff_adjustable' => !empty($component['is_cutoff_adjustable']),
+                    'calculation_type' => $calculationType,
+                    'base_type' => $calculationType === 'percentage' ? $baseType : null,
+                    'base_component_code' => $calculationType === 'percentage' && $baseType === 'component' ? $baseComponentCode : null,
+                    'rate_percent' => $calculationType === 'percentage' ? $ratePercent : null,
+                ];
+            }
+
+            // Validate the full resulting set (every existing component, with
+            // this save's changes overlaid) before writing anything, so a bad
+            // formula never lands half-saved. Inactive existing components are
+            // included too - deactivated-but-still-referenced bases are valid
+            // (they resolve to 0), only truly unknown codes should be rejected.
+            $existing = DB::table('hris.payroll_components')
+                ->get(['code', 'calculation_type', 'base_type', 'base_component_code', 'rate_percent'])
+                ->keyBy('code')
+                ->map(fn($row) => (array) $row)
+                ->all();
+
+            $componentsByCode = array_merge($existing, $normalized);
+
+            $error = $this->payrollServices->validateComponentFormulas($componentsByCode);
+            if ($error) {
+                return response()->json(['success' => false, 'message' => $error], 422);
+            }
+
+            foreach ($normalized as $code => $component) {
                 DB::table('hris.payroll_components')->updateOrInsert(
                     ['code' => $code],
                     [
-                        'name' => $name,
-                        'type' => $type,
-                        'is_global' => $isGlobal ? 1 : 0,
-                        'taxable' => $taxable,
-                        'default_amount' => $defaultAmount,
-                        'is_active' => $isActive ? 1 : 0,
-                        'is_cutoff_adjustable' => $isCutoffAdjustable ? 1 : 0,
+                        'name' => $component['name'],
+                        'type' => $component['type'],
+                        'is_global' => $component['is_global'] ? 1 : 0,
+                        'taxable' => $component['taxable'],
+                        'default_amount' => $component['default_amount'],
+                        'calculation_type' => $component['calculation_type'],
+                        'base_type' => $component['base_type'],
+                        'base_component_code' => $component['base_component_code'],
+                        'rate_percent' => $component['rate_percent'],
+                        'is_active' => $component['is_active'] ? 1 : 0,
+                        'is_cutoff_adjustable' => $component['is_cutoff_adjustable'] ? 1 : 0,
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]

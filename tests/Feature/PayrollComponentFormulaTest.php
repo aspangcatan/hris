@@ -456,4 +456,100 @@ class PayrollComponentFormulaTest extends TestCase
 
         DB::table('hris.employee_payroll_components')->where('payroll_component_id', $baseId)->where('userid', $this->wireTestUserId)->delete();
     }
+
+    /** @test */
+    public function saving_a_component_via_the_endpoint_persists_the_formula_fields()
+    {
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->postJson('/payroll-components', [
+            'components' => [[
+                'code' => 'TEST_FORMULA_A',
+                'name' => 'Test Hazard Pay',
+                'type' => 'earning',
+                'taxable' => false,
+                'default_amount' => 0,
+                'is_global' => true,
+                'is_active' => true,
+                'is_cutoff_adjustable' => false,
+                'calculation_type' => 'percentage',
+                'base_type' => 'basic_salary',
+                'base_component_code' => null,
+                'rate_percent' => 25,
+            ]],
+        ]);
+
+        $response->assertOk();
+
+        $stored = DB::table('hris.payroll_components')->where('code', 'TEST_FORMULA_A')->first();
+        $this->assertNotNull($stored);
+        $this->assertEquals('percentage', $stored->calculation_type);
+        $this->assertEquals('basic_salary', $stored->base_type);
+        $this->assertEquals(25.0, (float) $stored->rate_percent);
+    }
+
+    /** @test */
+    public function the_endpoint_rejects_a_component_that_would_create_a_circular_reference()
+    {
+        $this->actAsAdmin();
+
+        $this->withoutMiddleware()->postJson('/payroll-components', [
+            'components' => [[
+                'code' => 'TEST_FORMULA_A',
+                'name' => 'Test A',
+                'type' => 'earning',
+                'taxable' => false,
+                'default_amount' => 0,
+                'is_global' => true,
+                'is_active' => true,
+                'is_cutoff_adjustable' => false,
+                'calculation_type' => 'percentage',
+                'base_type' => 'basic_salary',
+                'base_component_code' => null,
+                'rate_percent' => 25,
+            ]],
+        ])->assertOk();
+
+        $this->withoutMiddleware()->postJson('/payroll-components', [
+            'components' => [[
+                'code' => 'TEST_FORMULA_B',
+                'name' => 'Test B',
+                'type' => 'earning',
+                'taxable' => false,
+                'default_amount' => 0,
+                'is_global' => true,
+                'is_active' => true,
+                'is_cutoff_adjustable' => false,
+                'calculation_type' => 'percentage',
+                'base_type' => 'component',
+                'base_component_code' => 'TEST_FORMULA_A',
+                'rate_percent' => 10,
+            ]],
+        ])->assertOk();
+
+        // Now try to make A a percentage of B, closing the loop A -> B -> A.
+        $response = $this->withoutMiddleware()->postJson('/payroll-components', [
+            'components' => [[
+                'code' => 'TEST_FORMULA_A',
+                'name' => 'Test A',
+                'type' => 'earning',
+                'taxable' => false,
+                'default_amount' => 0,
+                'is_global' => true,
+                'is_active' => true,
+                'is_cutoff_adjustable' => false,
+                'calculation_type' => 'percentage',
+                'base_type' => 'component',
+                'base_component_code' => 'TEST_FORMULA_B',
+                'rate_percent' => 5,
+            ]],
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('Circular reference', $response->json('message'));
+
+        // The bad update must not have been persisted - A is still basic_salary-based.
+        $stored = DB::table('hris.payroll_components')->where('code', 'TEST_FORMULA_A')->first();
+        $this->assertEquals('basic_salary', $stored->base_type);
+    }
 }
