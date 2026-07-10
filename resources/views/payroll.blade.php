@@ -162,6 +162,13 @@
             loadTaxPurposes();
             loadCutoffPeriods();
 
+            $("#tax_purpose").select2({
+                dropdownParent: $("#create_payroll_modal"),
+                placeholder: "Select tax purpose",
+                allowClear: true,
+                width: "100%"
+            });
+
             // Row-action dropdowns are appended dynamically inside #payroll_list,
             // so bind via delegation. Lift the table shell's overflow clip while
             // a dropdown is open so it isn't cut off near the bottom of the table.
@@ -296,11 +303,12 @@
                         return;
                     }
                     const purposes = [...new Set((data.data || []).map(item => item.purpose).filter(Boolean))];
-                    const $list = $("#tax_purpose_list");
-                    $list.empty();
+                    const $select = $("#tax_purpose");
+                    $select.empty().append('<option value="">Select tax purpose</option>');
                     purposes.forEach(purpose => {
-                        $list.append(`<option value="${purpose}"></option>`);
+                        $select.append(`<option value="${purpose}">${purpose}</option>`);
                     });
+                    $select.val("").trigger("change");
                 })
                 .catch(err => console.error(err));
         }

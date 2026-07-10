@@ -180,9 +180,9 @@
                     </div>
                     <div class="col-md-6">
                         <label for="tax_purpose" class="form-label">Tax Purpose</label>
-                        <input type="text" class="form-control" id="tax_purpose" list="tax_purpose_list"
-                               placeholder="e.g. Payroll Monthly Salary">
-                        <datalist id="tax_purpose_list"></datalist>
+                        <select class="form-control" id="tax_purpose">
+                            <option value="">Select tax purpose</option>
+                        </select>
                     </div>
                     <!-- Remarks -->
                     <div class="col-md-12">
