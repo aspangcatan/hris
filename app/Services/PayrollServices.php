@@ -451,6 +451,64 @@ class PayrollServices
         return $aMin < $bMax && $bMin < $aMax;
     }
 
+    /**
+     * Checks a resulting set of components (existing + incoming, keyed by
+     * code) for formula problems before anything is persisted: a percentage
+     * component must name a valid, non-self base and a non-negative rate,
+     * and its base chain must not loop back to itself. Returns a
+     * human-readable error, or null if the set is consistent.
+     *
+     * @param array<string, array{calculation_type: string, base_type: ?string, base_component_code: ?string, rate_percent: mixed}> $componentsByCode
+     */
+    public function validateComponentFormulas(array $componentsByCode): ?string
+    {
+        foreach ($componentsByCode as $code => $component) {
+            if (($component['calculation_type'] ?? 'fixed') !== 'percentage') {
+                continue;
+            }
+
+            $baseType = $component['base_type'] ?? null;
+            $baseCode = $component['base_component_code'] ?? null;
+            $rate = $component['rate_percent'] ?? null;
+
+            if ($baseType === 'component') {
+                if (empty($baseCode)) {
+                    return "Component \"{$code}\" is percentage-based but has no base component selected.";
+                }
+                if ($baseCode === $code) {
+                    return "Component \"{$code}\" cannot reference itself as its base.";
+                }
+                if (!array_key_exists($baseCode, $componentsByCode)) {
+                    return "Component \"{$code}\" references unknown base component \"{$baseCode}\".";
+                }
+
+                $visited = [$code => true];
+                $current = $baseCode;
+                while ($current !== null) {
+                    if (isset($visited[$current])) {
+                        return "Circular reference detected: component \"{$code}\" eventually references itself through \"{$current}\".";
+                    }
+                    $visited[$current] = true;
+                    $currentComponent = $componentsByCode[$current] ?? null;
+                    if (!$currentComponent
+                        || ($currentComponent['calculation_type'] ?? 'fixed') !== 'percentage'
+                        || ($currentComponent['base_type'] ?? null) !== 'component') {
+                        break;
+                    }
+                    $current = $currentComponent['base_component_code'] ?? null;
+                }
+            } elseif ($baseType !== 'basic_salary') {
+                return "Component \"{$code}\" is percentage-based but has no valid base type.";
+            }
+
+            if ($rate === null || (float) $rate < 0) {
+                return "Component \"{$code}\" has an invalid percentage rate.";
+            }
+        }
+
+        return null;
+    }
+
     private function generateAcronym($designation)
     {
         if (!$designation) return '';
