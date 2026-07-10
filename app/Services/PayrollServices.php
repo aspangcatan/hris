@@ -693,6 +693,101 @@ class PayrollServices
         return $payrollEmployeeId;
     }
 
+    public function deletePayrollEmployees($payroll_id)
+    {
+        return DB::table('hris.payroll_employees')
+            ->where('payroll_id', '=', $payroll_id)
+            ->delete();
+    }
+
+    public function getPayrollEmployeeCount($payroll_id)
+    {
+        return DB::table('hris.payroll_employees')
+            ->where('payroll_id', '=', $payroll_id)
+            ->count();
+    }
+
+    private function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd)
+    {
+        $globals = DB::table('hris.payroll_components as pc')
+            ->leftJoin('hris.employee_payroll_components as epc', function ($join) use ($userId) {
+                $join->on('epc.payroll_component_id', '=', 'pc.id')
+                    ->where('epc.userid', '=', $userId);
+            })
+            ->where('pc.is_active', 1)
+            ->where('pc.is_global', 1)
+            ->select(
+                'pc.id as payroll_component_id',
+                'pc.code',
+                'pc.name',
+                'pc.type',
+                'pc.taxable',
+                'pc.default_amount',
+                'epc.amount_override',
+                'epc.is_active as employee_active',
+                'epc.is_excluded',
+                'epc.effective_from',
+                'epc.effective_to'
+            )
+            ->get()
+            ->filter(function ($row) use ($periodStart, $periodEnd) {
+                if ($row->is_excluded || $row->employee_active === 0) {
+                    return false;
+                }
+
+                if ($periodStart && $row->effective_to) {
+                    if ($row->effective_to < $periodStart) return false;
+                }
+                if ($periodEnd && $row->effective_from) {
+                    if ($row->effective_from > $periodEnd) return false;
+                }
+                return true;
+            })
+            ->map(function ($row) {
+                $amount = $row->amount_override !== null ? $row->amount_override : $row->default_amount;
+                return (object) [
+                    'payroll_component_id' => $row->payroll_component_id,
+                    'code' => $row->code,
+                    'name' => $row->name,
+                    'type' => $row->type,
+                    'taxable' => $row->taxable,
+                    'amount' => $amount ?? 0,
+                ];
+            });
+
+        $employeeSpecific = DB::table('hris.employee_payroll_components as epc')
+            ->join('hris.payroll_components as pc', 'pc.id', '=', 'epc.payroll_component_id')
+            ->where('epc.userid', $userId)
+            ->where('pc.is_active', 1)
+            ->where(function ($q) {
+                $q->where('pc.is_global', 0)->orWhereNull('pc.is_global');
+            })
+            ->where('epc.is_active', 1)
+            ->select(
+                'pc.id as payroll_component_id',
+                'pc.code',
+                'pc.name',
+                'pc.type',
+                'pc.taxable',
+                'epc.amount_override',
+                'epc.amount'
+            )
+            ->get()
+            ->map(function ($row) {
+                $amount = $row->amount_override !== null ? $row->amount_override : $row->amount;
+                return (object) [
+                    'payroll_component_id' => $row->payroll_component_id,
+                    'code' => $row->code,
+                    'name' => $row->name,
+                    'type' => $row->type,
+                    'taxable' => $row->taxable,
+                    'amount' => $amount ?? 0,
+                ];
+            });
+
+        return $globals->merge($employeeSpecific);
+    }
+
     /**
      * Resolves each row's final 'amount' in dependency order (a component's
      * base is resolved before the component that references it), per
@@ -787,101 +882,6 @@ class PayrollServices
         }
 
         return $order;
-    }
-
-    public function deletePayrollEmployees($payroll_id)
-    {
-        return DB::table('hris.payroll_employees')
-            ->where('payroll_id', '=', $payroll_id)
-            ->delete();
-    }
-
-    public function getPayrollEmployeeCount($payroll_id)
-    {
-        return DB::table('hris.payroll_employees')
-            ->where('payroll_id', '=', $payroll_id)
-            ->count();
-    }
-
-    private function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd)
-    {
-        $globals = DB::table('hris.payroll_components as pc')
-            ->leftJoin('hris.employee_payroll_components as epc', function ($join) use ($userId) {
-                $join->on('epc.payroll_component_id', '=', 'pc.id')
-                    ->where('epc.userid', '=', $userId);
-            })
-            ->where('pc.is_active', 1)
-            ->where('pc.is_global', 1)
-            ->select(
-                'pc.id as payroll_component_id',
-                'pc.code',
-                'pc.name',
-                'pc.type',
-                'pc.taxable',
-                'pc.default_amount',
-                'epc.amount_override',
-                'epc.is_active as employee_active',
-                'epc.is_excluded',
-                'epc.effective_from',
-                'epc.effective_to'
-            )
-            ->get()
-            ->filter(function ($row) use ($periodStart, $periodEnd) {
-                if ($row->is_excluded || $row->employee_active === 0) {
-                    return false;
-                }
-
-                if ($periodStart && $row->effective_to) {
-                    if ($row->effective_to < $periodStart) return false;
-                }
-                if ($periodEnd && $row->effective_from) {
-                    if ($row->effective_from > $periodEnd) return false;
-                }
-                return true;
-            })
-            ->map(function ($row) {
-                $amount = $row->amount_override !== null ? $row->amount_override : $row->default_amount;
-                return (object) [
-                    'payroll_component_id' => $row->payroll_component_id,
-                    'code' => $row->code,
-                    'name' => $row->name,
-                    'type' => $row->type,
-                    'taxable' => $row->taxable,
-                    'amount' => $amount ?? 0,
-                ];
-            });
-
-        $employeeSpecific = DB::table('hris.employee_payroll_components as epc')
-            ->join('hris.payroll_components as pc', 'pc.id', '=', 'epc.payroll_component_id')
-            ->where('epc.userid', $userId)
-            ->where('pc.is_active', 1)
-            ->where(function ($q) {
-                $q->where('pc.is_global', 0)->orWhereNull('pc.is_global');
-            })
-            ->where('epc.is_active', 1)
-            ->select(
-                'pc.id as payroll_component_id',
-                'pc.code',
-                'pc.name',
-                'pc.type',
-                'pc.taxable',
-                'epc.amount_override',
-                'epc.amount'
-            )
-            ->get()
-            ->map(function ($row) {
-                $amount = $row->amount_override !== null ? $row->amount_override : $row->amount;
-                return (object) [
-                    'payroll_component_id' => $row->payroll_component_id,
-                    'code' => $row->code,
-                    'name' => $row->name,
-                    'type' => $row->type,
-                    'taxable' => $row->taxable,
-                    'amount' => $amount ?? 0,
-                ];
-            });
-
-        return $globals->merge($employeeSpecific);
     }
 
     /**
