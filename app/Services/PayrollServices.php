@@ -628,7 +628,7 @@ class PayrollServices
         $absentDeduction = $totalAbsentDays * $daily_rate;
         $totalTardinessDeductions = $lateUndertimeDeduction + $absentDeduction;
 
-        $dynamicComponents = $this->getEmployeeDynamicComponents($employee["userid"], $periodStart, $periodEnd);
+        $dynamicComponents = $this->getEmployeeDynamicComponents($employee["userid"], $periodStart, $periodEnd, (float) $basic_salary);
         $computedComponents = $this->getComputedComponents($employee, $totalTardinessDeductions);
         $allComponents = $dynamicComponents->merge($computedComponents);
         $dynamicEarnings = $allComponents->where('type', 'earning')->sum('amount');
@@ -707,9 +707,9 @@ class PayrollServices
             ->count();
     }
 
-    private function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd)
+    private function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd, float $basicSalary)
     {
-        $globals = DB::table('hris.payroll_components as pc')
+        $globalRows = DB::table('hris.payroll_components as pc')
             ->leftJoin('hris.employee_payroll_components as epc', function ($join) use ($userId) {
                 $join->on('epc.payroll_component_id', '=', 'pc.id')
                     ->where('epc.userid', '=', $userId);
@@ -723,6 +723,10 @@ class PayrollServices
                 'pc.type',
                 'pc.taxable',
                 'pc.default_amount',
+                'pc.calculation_type',
+                'pc.base_type',
+                'pc.base_component_code',
+                'pc.rate_percent',
                 'epc.amount_override',
                 'epc.is_active as employee_active',
                 'epc.is_excluded',
@@ -742,16 +746,17 @@ class PayrollServices
                     if ($row->effective_from > $periodEnd) return false;
                 }
                 return true;
-            })
+            });
+
+        $globals = $this->resolveComponentAmounts($globalRows, $basicSalary)
             ->map(function ($row) {
-                $amount = $row->amount_override !== null ? $row->amount_override : $row->default_amount;
                 return (object) [
                     'payroll_component_id' => $row->payroll_component_id,
                     'code' => $row->code,
                     'name' => $row->name,
                     'type' => $row->type,
                     'taxable' => $row->taxable,
-                    'amount' => $amount ?? 0,
+                    'amount' => $row->amount,
                 ];
             });
 

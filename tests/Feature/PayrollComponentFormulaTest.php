@@ -15,6 +15,8 @@ class PayrollComponentFormulaTest extends TestCase
 
     private array $testCodes = ['TEST_FORMULA_A', 'TEST_FORMULA_B', 'TEST_FORMULA_C'];
 
+    private int $wireTestUserId = 9602;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,8 +29,12 @@ class PayrollComponentFormulaTest extends TestCase
 
     protected function tearDown(): void
     {
-        // payroll_components is MyISAM in this environment, so
+        // payroll_components/payroll_settings/tdh_user.users/
+        // employee_payroll_components are MyISAM in this environment, so
         // DatabaseTransactions rollback is a silent no-op - clean up explicitly.
+        DB::table('hris.employee_payroll_components')->where('userid', $this->wireTestUserId)->delete();
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)->delete();
+        DB::table('tdh_user.users')->where('id', $this->wireTestUserId)->delete();
         $this->cleanupTestComponents();
         parent::tearDown();
     }
@@ -311,5 +317,143 @@ class PayrollComponentFormulaTest extends TestCase
         $method = new ReflectionMethod(PayrollServices::class, 'resolveComponentAmounts');
         $method->setAccessible(true);
         return $method->invoke($service, $rows, $basicSalary);
+    }
+
+    /** @test */
+    public function get_employee_dynamic_components_resolves_a_percentage_component_against_the_employees_basic_salary()
+    {
+        DB::table('tdh_user.users')->where('id', $this->wireTestUserId)->delete();
+        DB::table('tdh_user.users')->insert([
+            'id' => $this->wireTestUserId,
+            'fname' => 'Formula',
+            'lname' => 'Tester',
+            'username' => 'formulatester' . $this->wireTestUserId,
+            'password' => 'x',
+            'division' => 2,
+            'section' => 21,
+            'designation' => 52,
+        ]);
+
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)->delete();
+        DB::table('hris.payroll_settings')->insert([
+            'userid' => $this->wireTestUserId,
+            'basic_salary' => 20000,
+            'salary_grade' => 11,
+            'step' => 1,
+        ]);
+
+        DB::table('hris.payroll_components')->insert([
+            'code' => 'TEST_FORMULA_A',
+            'name' => 'Test Hazard Pay',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 0,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $service = app(PayrollServices::class);
+        $method = new ReflectionMethod(PayrollServices::class, 'getEmployeeDynamicComponents');
+        $method->setAccessible(true);
+        $components = $method->invoke($service, $this->wireTestUserId, '2027-07-01', '2027-07-15', 20000.0);
+
+        $component = $components->firstWhere('code', 'TEST_FORMULA_A');
+        $this->assertNotNull($component);
+        $this->assertEqualsWithDelta(5000.0, $component->amount, 0.001);
+    }
+
+    /** @test */
+    public function a_base_component_excluded_for_the_employee_resolves_its_dependent_to_zero()
+    {
+        DB::table('tdh_user.users')->where('id', $this->wireTestUserId)->delete();
+        DB::table('tdh_user.users')->insert([
+            'id' => $this->wireTestUserId,
+            'fname' => 'Formula',
+            'lname' => 'Tester',
+            'username' => 'formulatester' . $this->wireTestUserId,
+            'password' => 'x',
+            'division' => 2,
+            'section' => 21,
+            'designation' => 52,
+        ]);
+
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)->delete();
+        DB::table('hris.payroll_settings')->insert([
+            'userid' => $this->wireTestUserId,
+            'basic_salary' => 20000,
+            'salary_grade' => 11,
+            'step' => 1,
+        ]);
+
+        $baseId = DB::table('hris.payroll_components')->insertGetId([
+            'code' => 'TEST_FORMULA_A',
+            'name' => 'Test Base Earning',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 0,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 998,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.payroll_components')->insert([
+            'code' => 'TEST_FORMULA_B',
+            'name' => 'Test Dependent Earning',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 0,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'component',
+            'base_component_code' => 'TEST_FORMULA_A',
+            'rate_percent' => 10,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // This employee is explicitly excluded from the base component.
+        DB::table('hris.employee_payroll_components')->insert([
+            'payroll_component_id' => $baseId,
+            'userid' => $this->wireTestUserId,
+            'amount' => 0,
+            'amount_override' => null,
+            'is_active' => 0,
+            'is_excluded' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $service = app(PayrollServices::class);
+        $method = new ReflectionMethod(PayrollServices::class, 'getEmployeeDynamicComponents');
+        $method->setAccessible(true);
+        $components = $method->invoke($service, $this->wireTestUserId, '2027-07-01', '2027-07-15', 20000.0);
+
+        // TEST_FORMULA_A itself is filtered out entirely (excluded), and
+        // TEST_FORMULA_B - 10% of a base that isn't there - resolves to 0
+        // rather than erroring or being dropped.
+        $this->assertNull($components->firstWhere('code', 'TEST_FORMULA_A'));
+        $dependent = $components->firstWhere('code', 'TEST_FORMULA_B');
+        $this->assertNotNull($dependent);
+        $this->assertEqualsWithDelta(0.0, $dependent->amount, 0.001);
+
+        DB::table('hris.employee_payroll_components')->where('payroll_component_id', $baseId)->where('userid', $this->wireTestUserId)->delete();
     }
 }
