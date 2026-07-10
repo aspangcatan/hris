@@ -417,7 +417,7 @@ class PayrollComponentFormulaTest extends TestCase
             'type' => 'earning',
             'is_global' => 1,
             'taxable' => 0,
-            'default_amount' => 0,
+            'default_amount' => 777,
             'calculation_type' => 'percentage',
             'base_type' => 'component',
             'base_component_code' => 'TEST_FORMULA_A',
