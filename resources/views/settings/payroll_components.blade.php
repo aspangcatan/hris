@@ -118,8 +118,25 @@
                             </select>
                         </div>
                         <div class="col-md-4">
+                            <label class="form-label">Computation Type</label>
+                            <select class="form-control" id="component_calc_type">
+                                <option value="fixed">Fixed Amount</option>
+                                <option value="percentage">Percentage</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="component_default_wrap">
                             <label class="form-label">Default Amount</label>
                             <input type="number" class="form-control" id="component_default" value="0.00">
+                        </div>
+                        <div class="col-md-4 d-none" id="component_base_wrap">
+                            <label class="form-label">Base</label>
+                            <select class="form-control" id="component_base">
+                                <option value="__BASIC_SALARY__">Basic Salary</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-none" id="component_rate_wrap">
+                            <label class="form-label">Percentage Rate (%)</label>
+                            <input type="number" class="form-control" id="component_rate" value="0.00" step="0.001">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
                             <div class="form-check">
@@ -160,6 +177,15 @@
 
         $(document).ready(function () {
             loadComponents();
+
+            $("#component_base").select2({
+                dropdownParent: $("#component_modal"),
+                width: "100%"
+            });
+
+            $("#component_calc_type").on("change", function () {
+                toggleComputationFields();
+            });
 
             $("#btn_add_component").click(function () {
                 openComponentModal();
@@ -234,16 +260,16 @@
             const taxable = component.taxable ? "Yes" : "No";
             const active = component.is_active ? "Yes" : "No";
             const adjustable = component.is_cutoff_adjustable ? "Yes" : "No";
-            const defaultAmount = component.default_amount !== undefined && component.default_amount !== null
-                ? parseFloat(component.default_amount).toFixed(2)
-                : "0.00";
+            const defaultDisplay = component.calculation_type === "percentage"
+                ? `${parseFloat(component.rate_percent || 0)}% of ${component.base_type === "basic_salary" ? "Basic Salary" : (component.base_component_code || "?")}`
+                : (component.default_amount !== undefined && component.default_amount !== null ? parseFloat(component.default_amount).toFixed(2) : "0.00");
 
             return `
                 <tr>
                     <td>${component.code}</td>
                     <td>${component.name}</td>
                     <td>${taxable}</td>
-                    <td>${defaultAmount}</td>
+                    <td>${defaultDisplay}</td>
                     <td>${active}</td>
                     <td>${adjustable}</td>
                     <td class="text-end">
@@ -257,6 +283,13 @@
                 </tr>`;
         }
 
+        function toggleComputationFields() {
+            const isPercentage = $("#component_calc_type").val() === "percentage";
+            $("#component_default_wrap").toggleClass("d-none", isPercentage);
+            $("#component_base_wrap").toggleClass("d-none", !isPercentage);
+            $("#component_rate_wrap").toggleClass("d-none", !isPercentage);
+        }
+
         function openComponentModal(component = null) {
             editMode = !!component;
             editCode = component ? component.code : "";
@@ -268,6 +301,26 @@
             $("#component_taxable").prop("checked", !!(component && component.taxable));
             $("#component_active").prop("checked", component ? !!component.is_active : true);
             $("#component_cutoff_adjustable").prop("checked", !!(component && component.is_cutoff_adjustable));
+
+            const $base = $("#component_base");
+            $base.empty().append('<option value="__BASIC_SALARY__">Basic Salary</option>');
+            earnings.concat(deductions)
+                .filter(item => item.code !== editCode)
+                .forEach(item => {
+                    $base.append(`<option value="${item.code}">${item.code} - ${item.name}</option>`);
+                });
+
+            const calcType = component && component.calculation_type === "percentage" ? "percentage" : "fixed";
+            $("#component_calc_type").val(calcType);
+
+            const baseValue = component && component.base_type === "component"
+                ? component.base_component_code
+                : "__BASIC_SALARY__";
+            $base.val(baseValue).trigger("change");
+
+            $("#component_rate").val(component && component.rate_percent !== null && component.rate_percent !== undefined ? component.rate_percent : "0.00");
+
+            toggleComputationFields();
             $("#component_modal").modal("show");
         }
 
@@ -280,9 +333,17 @@
             const cutoffAdjustable = $("#component_cutoff_adjustable").is(":checked");
             const defaultRaw = $("#component_default").val();
             const defaultAmount = defaultRaw === "" ? 0 : parseFloat(defaultRaw);
+            const calculationType = $("#component_calc_type").val() === "percentage" ? "percentage" : "fixed";
+            const baseValue = $("#component_base").val();
+            const ratePercent = parseFloat($("#component_rate").val());
 
             if (!code || !name) {
                 toastr.error("Code and Name are required.", "Validation");
+                return;
+            }
+
+            if (calculationType === "percentage" && (isNaN(ratePercent) || ratePercent < 0)) {
+                toastr.error("Enter a valid, non-negative percentage rate.", "Validation");
                 return;
             }
 
@@ -294,7 +355,13 @@
                 default_amount: isNaN(defaultAmount) ? 0 : defaultAmount,
                 is_global: true,
                 is_active: active,
-                is_cutoff_adjustable: cutoffAdjustable
+                is_cutoff_adjustable: cutoffAdjustable,
+                calculation_type: calculationType,
+                base_type: calculationType === "percentage"
+                    ? (baseValue === "__BASIC_SALARY__" ? "basic_salary" : "component")
+                    : null,
+                base_component_code: calculationType === "percentage" && baseValue !== "__BASIC_SALARY__" ? baseValue : null,
+                rate_percent: calculationType === "percentage" ? ratePercent : null
             };
 
             submitComponents([payload]);
