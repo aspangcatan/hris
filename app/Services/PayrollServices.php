@@ -509,6 +509,33 @@ class PayrollServices
         return null;
     }
 
+    /**
+     * Checks a set of per-employee component overrides for a negative
+     * rate_percent_override before anything is persisted. A missing or null
+     * rate_percent_override is fine (it just means "use the catalog rate").
+     * Returns a human-readable error, or null if every override is valid.
+     *
+     * @param array<int, array{code?: string, rate_percent_override?: mixed}> $components
+     */
+    public function validateRatePercentOverrides(array $components): ?string
+    {
+        foreach ($components as $component) {
+            if (!array_key_exists('rate_percent_override', $component)) {
+                continue;
+            }
+            $rateOverride = $component['rate_percent_override'];
+            if ($rateOverride === null || $rateOverride === '') {
+                continue;
+            }
+            if ((float) $rateOverride < 0) {
+                $code = $component['code'] ?? '?';
+                return "Component \"{$code}\" has an invalid rate override.";
+            }
+        }
+
+        return null;
+    }
+
     private function generateAcronym($designation)
     {
         if (!$designation) return '';

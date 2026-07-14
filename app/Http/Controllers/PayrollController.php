@@ -38,8 +38,10 @@ class PayrollController extends Controller
                     'pc.taxable',
                     'pc.is_global',
                     'pc.default_amount',
+                    'pc.calculation_type',
                     'epc.amount',
                     'epc.amount_override',
+                    'epc.rate_percent_override',
                     'epc.is_active',
                     'epc.is_excluded',
                     'epc.effective_from',
@@ -69,6 +71,13 @@ class PayrollController extends Controller
             $dynamicComponents = $request->input('components', null);
             if ($dynamicComponents !== null && !is_array($dynamicComponents)) {
                 $dynamicComponents = [];
+            }
+
+            if ($dynamicComponents !== null) {
+                $rateError = $this->payrollServices->validateRatePercentOverrides($dynamicComponents);
+                if ($rateError) {
+                    return response()->json(['message' => $rateError], 422);
+                }
             }
 
             DB::table('payroll_settings')->updateOrInsert(
@@ -120,6 +129,8 @@ class PayrollController extends Controller
                 $taxable = !empty($component['taxable']);
                 $amount = isset($component['amount']) ? (float) $component['amount'] : 0;
                 $amountOverride = array_key_exists('amount_override', $component) ? $component['amount_override'] : null;
+                $rateOverrideRaw = array_key_exists('rate_percent_override', $component) ? $component['rate_percent_override'] : null;
+                $rateOverride = ($rateOverrideRaw === null || $rateOverrideRaw === '') ? null : (float) $rateOverrideRaw;
                 $isExcluded = !empty($component['is_excluded']);
                 $effectiveFrom = $component['effective_from'] ?? null;
                 $effectiveTo = $component['effective_to'] ?? null;
@@ -164,6 +175,7 @@ class PayrollController extends Controller
                     [
                         'amount' => $amount,
                         'amount_override' => $amountOverride,
+                        'rate_percent_override' => $rateOverride,
                         'is_active' => $isExcluded ? 0 : 1,
                         'is_excluded' => $isExcluded ? 1 : 0,
                         'effective_from' => $effectiveFrom,
