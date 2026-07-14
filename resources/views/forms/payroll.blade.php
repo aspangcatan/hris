@@ -104,16 +104,17 @@
 
         <div class="payroll-tab-section">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
-                <h5 class="text-primary mb-0">Global Earnings (Overrides)</h5>
-                <span class="small text-muted">Defaults apply to all employees unless overridden here.</span>
+                <h5 class="text-primary mb-0">Earnings</h5>
+                <span class="small text-muted">Global components apply by default unless overridden. Non-global components apply only if given an amount here.</span>
             </div>
             <div class="table-responsive payroll-tab-table-shell">
                 <table class="table table-sm align-middle">
                     <thead class="table-light">
                     <tr>
-                        <th style="width: 20%;">Earning</th>
+                        <th style="width: 18%;">Earning</th>
+                        <th style="width: 8%;">Global</th>
                         <th style="width: 12%;">Default</th>
-                        <th style="width: 16%;">Override Amount</th>
+                        <th style="width: 16%;">Amount</th>
                         <th style="width: 10%;">Exclude</th>
                         <th style="width: 14%;">Effective From</th>
                         <th style="width: 14%;">Effective To</th>
@@ -123,22 +124,23 @@
                 </table>
             </div>
             <div class="small text-muted mt-2">
-                Leave override blank to use the global default amount.
+                Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee.
             </div>
         </div>
 
         <div class="payroll-tab-section">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
-                <h5 class="text-primary mb-0">Global Deductions (Overrides)</h5>
-                <span class="small text-muted">Defaults apply to all employees unless overridden here.</span>
+                <h5 class="text-primary mb-0">Deductions</h5>
+                <span class="small text-muted">Global components apply by default unless overridden. Non-global components apply only if given an amount here.</span>
             </div>
             <div class="table-responsive payroll-tab-table-shell">
                 <table class="table table-sm align-middle">
                     <thead class="table-light">
                     <tr>
-                        <th style="width: 20%;">Deduction</th>
+                        <th style="width: 18%;">Deduction</th>
+                        <th style="width: 8%;">Global</th>
                         <th style="width: 12%;">Default</th>
-                        <th style="width: 16%;">Override Amount</th>
+                        <th style="width: 16%;">Amount</th>
                         <th style="width: 10%;">Exclude</th>
                         <th style="width: 14%;">Effective From</th>
                         <th style="width: 14%;">Effective To</th>
@@ -148,7 +150,7 @@
                 </table>
             </div>
             <div class="small text-muted mt-2">
-                Leave override blank to use the global default amount.
+                Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee.
             </div>
         </div>
 

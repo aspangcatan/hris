@@ -31,7 +31,7 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
         <div>
             <h4 class="fw-bold mb-1">Earnings &amp; Deductions</h4>
-            <div class="text-muted small">Manage global payroll components applied by default.</div>
+            <div class="text-muted small">Manage all payroll components. Mark a component Global to apply it to every employee by default; leave it non-global to assign it per-employee instead.</div>
         </div>
         <button class="btn btn-success btn-edit" id="btn_add_component">
             <i class="bi bi-plus-circle me-1"></i>
@@ -50,13 +50,14 @@
                         <table class="table align-middle">
                             <thead>
                             <tr>
-                                <th style="width: 16%;">Code</th>
+                                <th style="width: 14%;">Code</th>
                                 <th>Name</th>
-                                <th style="width: 10%;">Taxable</th>
-                                <th style="width: 16%;">Default</th>
-                                <th style="width: 12%;">Active</th>
-                                <th style="width: 14%;">Adjustable per Cutoff</th>
-                                <th style="width: 10%;"></th>
+                                <th style="width: 9%;">Taxable</th>
+                                <th style="width: 9%;">Global</th>
+                                <th style="width: 14%;">Default</th>
+                                <th style="width: 10%;">Active</th>
+                                <th style="width: 13%;">Adjustable per Cutoff</th>
+                                <th style="width: 8%;"></th>
                             </tr>
                             </thead>
                             <tbody id="earnings_table_body"></tbody>
@@ -75,12 +76,14 @@
                         <table class="table align-middle">
                             <thead>
                             <tr>
-                                <th style="width: 18%;">Code</th>
+                                <th style="width: 14%;">Code</th>
                                 <th>Name</th>
-                                <th style="width: 12%;">Taxable</th>
-                                <th style="width: 18%;">Default</th>
-                                <th style="width: 14%;">Active</th>
-                                <th style="width: 10%;"></th>
+                                <th style="width: 9%;">Taxable</th>
+                                <th style="width: 9%;">Global</th>
+                                <th style="width: 14%;">Default</th>
+                                <th style="width: 10%;">Active</th>
+                                <th style="width: 13%;">Adjustable per Cutoff</th>
+                                <th style="width: 8%;"></th>
                             </tr>
                             </thead>
                             <tbody id="deductions_table_body"></tbody>
@@ -156,8 +159,15 @@
                                 <label class="form-check-label" for="component_cutoff_adjustable">Adjustable per Cutoff</label>
                             </div>
                         </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="component_global">
+                                <label class="form-check-label" for="component_global">Global (applies to every employee)</label>
+                            </div>
+                        </div>
                     </div>
                     <p class="text-muted small mt-2 mb-0">When checked, this component gets a quick manual-entry field in the Payroll module's Review &amp; Compute step for every cutoff.</p>
+                    <p class="text-muted small mt-1 mb-0">Global components are auto-applied to every employee at the default amount/formula above. Leave unchecked for components that vary per employee (loan balances, contribution tiers, etc.) — those are assigned individually from the employee's Payroll tab.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
@@ -226,8 +236,8 @@
                         return;
                     }
                     const items = data.data || [];
-                    earnings = items.filter(item => item.type === 'earning' && item.is_global);
-                    deductions = items.filter(item => item.type === 'deduction' && item.is_global);
+                    earnings = items.filter(item => item.type === 'earning');
+                    deductions = items.filter(item => item.type === 'deduction');
                     renderComponents();
                 })
                 .catch(err => console.error(err));
@@ -240,7 +250,7 @@
             $deductions.empty();
 
             if (!earnings.length) {
-                $earnings.append("<tr><td colspan='7' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
+                $earnings.append("<tr><td colspan='8' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
             } else {
                 earnings.forEach(component => {
                     $earnings.append(renderRow(component));
@@ -248,7 +258,7 @@
             }
 
             if (!deductions.length) {
-                $deductions.append("<tr><td colspan='7' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
+                $deductions.append("<tr><td colspan='8' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
             } else {
                 deductions.forEach(component => {
                     $deductions.append(renderRow(component));
@@ -258,6 +268,7 @@
 
         function renderRow(component) {
             const taxable = component.taxable ? "Yes" : "No";
+            const global = component.is_global ? "Yes" : "No";
             const active = component.is_active ? "Yes" : "No";
             const adjustable = component.is_cutoff_adjustable ? "Yes" : "No";
             const defaultDisplay = component.calculation_type === "percentage"
@@ -269,6 +280,7 @@
                     <td>${component.code}</td>
                     <td>${component.name}</td>
                     <td>${taxable}</td>
+                    <td>${global}</td>
                     <td>${defaultDisplay}</td>
                     <td>${active}</td>
                     <td>${adjustable}</td>
@@ -301,6 +313,7 @@
             $("#component_taxable").prop("checked", !!(component && component.taxable));
             $("#component_active").prop("checked", component ? !!component.is_active : true);
             $("#component_cutoff_adjustable").prop("checked", !!(component && component.is_cutoff_adjustable));
+            $("#component_global").prop("checked", !!(component && component.is_global));
 
             const $base = $("#component_base");
             $base.empty().append('<option value="__BASIC_SALARY__">Basic Salary</option>');
@@ -331,6 +344,7 @@
             const taxable = $("#component_taxable").is(":checked");
             const active = $("#component_active").is(":checked");
             const cutoffAdjustable = $("#component_cutoff_adjustable").is(":checked");
+            const isGlobal = $("#component_global").is(":checked");
             const defaultRaw = $("#component_default").val();
             const defaultAmount = defaultRaw === "" ? 0 : parseFloat(defaultRaw);
             const calculationType = $("#component_calc_type").val() === "percentage" ? "percentage" : "fixed";
@@ -353,7 +367,7 @@
                 type: type,
                 taxable: taxable,
                 default_amount: isNaN(defaultAmount) ? 0 : defaultAmount,
-                is_global: true,
+                is_global: isGlobal,
                 is_active: active,
                 is_cutoff_adjustable: cutoffAdjustable,
                 calculation_type: calculationType,

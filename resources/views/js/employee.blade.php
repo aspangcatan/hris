@@ -65,9 +65,9 @@
     let is_reference_loaded = false;
     let is_survey_loaded = false;
     let is_service_loaded = false;
-    let payroll_globals_loaded = false;
-    let globalEarnings = [];
-    let globalDeductions = [];
+    let payroll_catalog_loaded = false;
+    let catalogEarnings = [];
+    let catalogDeductions = [];
 
     $(document).ready(function () {
         $("input[name='citizenship']").change(function () {
@@ -658,7 +658,7 @@
                         input.val(key === 'salary_grade' || key === 'step' ? parseInt(value) : parseFloat(value).toFixed(2));
                     }
                 }
-                ensureGlobalComponents().then(() => {
+                ensureComponentCatalog().then(() => {
                     renderDynamicComponents(data.components || []);
                 });
             })
@@ -667,7 +667,7 @@
             });
     }
 
-    function loadGlobalComponents() {
+    function loadComponentCatalog() {
         return fetch('{{ route('getPayrollComponents') }}')
             .then(res => res.json())
             .then(data => {
@@ -675,18 +675,18 @@
                     return;
                 }
                 const items = data.data || [];
-                globalEarnings = items.filter(item => item.type === 'earning' && item.is_global);
-                globalDeductions = items.filter(item => item.type === 'deduction' && item.is_global);
-                payroll_globals_loaded = true;
+                catalogEarnings = items.filter(item => item.type === 'earning');
+                catalogDeductions = items.filter(item => item.type === 'deduction');
+                payroll_catalog_loaded = true;
             })
             .catch(err => console.error(err));
     }
 
-    function ensureGlobalComponents() {
-        if (payroll_globals_loaded) {
+    function ensureComponentCatalog() {
+        if (payroll_catalog_loaded) {
             return Promise.resolve();
         }
-        return loadGlobalComponents();
+        return loadComponentCatalog();
     }
 
     function renderDynamicComponents(components) {
@@ -700,21 +700,21 @@
             employeeComponentMap[component.code] = component;
         });
 
-        if (!globalEarnings.length) {
-            $earningsBody.append("<tr><td colspan='6' class='text-muted text-center py-3'>No global earnings configured.</td></tr>");
+        if (!catalogEarnings.length) {
+            $earningsBody.append("<tr><td colspan='7' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
         } else {
-            globalEarnings.forEach(component => {
+            catalogEarnings.forEach(component => {
                 const override = employeeComponentMap[component.code] || {};
                 addDynamicComponentRow(component, override, $earningsBody);
             });
         }
 
-        if (!globalDeductions.length) {
-            $deductionsBody.append("<tr><td colspan='6' class='text-muted text-center py-3'>No global deductions configured.</td></tr>");
+        if (!catalogDeductions.length) {
+            $deductionsBody.append("<tr><td colspan='7' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
             return;
         }
 
-        globalDeductions.forEach(component => {
+        catalogDeductions.forEach(component => {
             const override = employeeComponentMap[component.code] || {};
             addDynamicComponentRow(component, override, $deductionsBody);
         });
@@ -723,6 +723,7 @@
     function addDynamicComponentRow(component = {}, override = {}, $body) {
         const code = component.code || "";
         const name = component.name || "";
+        const isGlobal = !!component.is_global;
         const defaultAmount = component.default_amount !== undefined && component.default_amount !== null
             ? parseFloat(component.default_amount).toFixed(2)
             : "0.00";
@@ -739,7 +740,8 @@
                     <div class="fw-semibold">${name}</div>
                     <div class="small text-muted">${code}</div>
                 </td>
-                <td>${defaultAmount}</td>
+                <td>${isGlobal ? "Yes" : "No"}</td>
+                <td>${isGlobal ? defaultAmount : "&mdash;"}</td>
                 <td><input type="number" class="form-control form-control-sm component-amount" value="${overrideAmount}"></td>
                 <td class="text-center">
                     <input type="checkbox" class="form-check-input component-exclude" ${excluded}>
@@ -753,8 +755,8 @@
 
     function collectDynamicComponents() {
         const components = [];
-        components.push(...collectDynamicOverrides($("#dynamic_components_earnings_body tr"), globalEarnings));
-        components.push(...collectDynamicOverrides($("#dynamic_components_deductions_body tr"), globalDeductions));
+        components.push(...collectDynamicOverrides($("#dynamic_components_earnings_body tr"), catalogEarnings));
+        components.push(...collectDynamicOverrides($("#dynamic_components_deductions_body tr"), catalogDeductions));
         return components;
     }
 
@@ -789,7 +791,7 @@
                 name: component.name,
                 type: component.type,
                 taxable: component.taxable,
-                is_global: true,
+                is_global: !!component.is_global,
                 default_amount: parseFloat(component.default_amount || 0),
                 amount_override: hasOverride ? overrideAmount : null,
                 is_excluded: excluded,
