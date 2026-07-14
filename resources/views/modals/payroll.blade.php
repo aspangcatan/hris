@@ -70,20 +70,21 @@
                             <table class="table table-sm align-middle">
                                 <thead class="table-light">
                                 <tr>
-                                    <th style="width: 18%;">Earning</th>
-                                    <th style="width: 8%;">Global</th>
-                                    <th style="width: 12%;">Default</th>
-                                    <th style="width: 16%;">Amount</th>
-                                    <th style="width: 10%;">Exclude</th>
-                                    <th style="width: 14%;">Effective From</th>
-                                    <th style="width: 14%;">Effective To</th>
+                                    <th style="width: 16%;">Earning</th>
+                                    <th style="width: 7%;">Global</th>
+                                    <th style="width: 11%;">Default</th>
+                                    <th style="width: 12%;">Amount</th>
+                                    <th style="width: 12%;">Rate Override %</th>
+                                    <th style="width: 8%;">Exclude</th>
+                                    <th style="width: 13%;">Effective From</th>
+                                    <th style="width: 13%;">Effective To</th>
                                 </tr>
                                 </thead>
                                 <tbody id="dynamic_components_earnings_body"></tbody>
                             </table>
                         </div>
                         <div class="small text-muted">
-                            Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee.
+                            Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee. Rate Override % only applies to percentage-based components and replaces the catalog's rate while still computing off basic salary.
                         </div>
                     </div>
 
@@ -97,20 +98,21 @@
                             <table class="table table-sm align-middle">
                                 <thead class="table-light">
                                 <tr>
-                                    <th style="width: 18%;">Deduction</th>
-                                    <th style="width: 8%;">Global</th>
-                                    <th style="width: 12%;">Default</th>
-                                    <th style="width: 16%;">Amount</th>
-                                    <th style="width: 10%;">Exclude</th>
-                                    <th style="width: 14%;">Effective From</th>
-                                    <th style="width: 14%;">Effective To</th>
+                                    <th style="width: 16%;">Deduction</th>
+                                    <th style="width: 7%;">Global</th>
+                                    <th style="width: 11%;">Default</th>
+                                    <th style="width: 12%;">Amount</th>
+                                    <th style="width: 12%;">Rate Override %</th>
+                                    <th style="width: 8%;">Exclude</th>
+                                    <th style="width: 13%;">Effective From</th>
+                                    <th style="width: 13%;">Effective To</th>
                                 </tr>
                                 </thead>
                                 <tbody id="dynamic_components_deductions_body"></tbody>
                             </table>
                         </div>
                         <div class="small text-muted">
-                            Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee.
+                            Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee. Rate Override % only applies to percentage-based components and replaces the catalog's rate while still computing off basic salary.
                         </div>
                     </div>
                 </div>

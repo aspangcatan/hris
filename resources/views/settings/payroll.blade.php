@@ -198,8 +198,12 @@
                         body: JSON.stringify(params)
                     }
                 )
-                    .then(res => res.json())
-                    .then(data => {
+                    .then(res => res.json().then(data => ({ok: res.ok, data})))
+                    .then(({ok, data}) => {
+                        if (!ok) {
+                            toastr.error(data.message || "Failed to save payroll settings.", "Error");
+                            return;
+                        }
                         toastr.success(data.message, 'Information');
                     }).catch(err => {
                     console.log(err);
@@ -249,7 +253,7 @@
             });
 
             if (!catalogEarnings.length) {
-                $earningsBody.append("<tr><td colspan='7' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
+                $earningsBody.append("<tr><td colspan='8' class='text-muted text-center py-3'>No earnings configured.</td></tr>");
             } else {
                 catalogEarnings.forEach(component => {
                     const override = employeeComponentMap[component.code] || {};
@@ -258,7 +262,7 @@
             }
 
             if (!catalogDeductions.length) {
-                $deductionsBody.append("<tr><td colspan='7' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
+                $deductionsBody.append("<tr><td colspan='8' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
                 return;
             }
 
@@ -272,15 +276,27 @@
             const code = component.code || "";
             const name = component.name || "";
             const isGlobal = !!component.is_global;
+            const isPercentage = component.calculation_type === "percentage";
             const defaultAmount = component.default_amount !== undefined && component.default_amount !== null
                 ? parseFloat(component.default_amount).toFixed(2)
                 : "0.00";
+            const defaultDisplay = !isGlobal
+                ? "&mdash;"
+                : (isPercentage
+                    ? `${parseFloat(component.rate_percent || 0)}% of ${component.base_type === "basic_salary" ? "Basic Salary" : (component.base_component_code || "?")}`
+                    : defaultAmount);
             const overrideAmount = override.amount_override !== undefined && override.amount_override !== null
                 ? parseFloat(override.amount_override).toFixed(2)
+                : "";
+            const rateOverride = override.rate_percent_override !== undefined && override.rate_percent_override !== null
+                ? parseFloat(override.rate_percent_override)
                 : "";
             const excluded = override.is_excluded ? "checked" : "";
             const effectiveFrom = override.effective_from || "";
             const effectiveTo = override.effective_to || "";
+            const rateOverrideCell = isPercentage
+                ? `<input type="number" class="form-control form-control-sm component-rate-override" step="0.001" value="${rateOverride}">`
+                : "&mdash;";
 
             const row = `
                 <tr data-code="${code}" data-default="${defaultAmount}">
@@ -289,8 +305,9 @@
                         <div class="small text-muted">${code}</div>
                     </td>
                     <td>${isGlobal ? "Yes" : "No"}</td>
-                    <td>${isGlobal ? defaultAmount : "&mdash;"}</td>
+                    <td>${defaultDisplay}</td>
                     <td><input type="number" class="form-control form-control-sm component-amount" value="${overrideAmount}"></td>
+                    <td>${rateOverrideCell}</td>
                     <td class="text-center">
                         <input type="checkbox" class="form-check-input component-exclude" ${excluded}>
                     </td>
@@ -320,12 +337,15 @@
                 const defaultAmount = parseFloat($row.data("default") || "0");
                 const overrideRaw = $row.find(".component-amount").val();
                 const overrideAmount = overrideRaw === "" ? null : parseFloat(overrideRaw);
+                const rateOverrideRaw = $row.find(".component-rate-override").val();
+                const rateOverride = (rateOverrideRaw === undefined || rateOverrideRaw === "") ? null : parseFloat(rateOverrideRaw);
                 const excluded = $row.find(".component-exclude").is(":checked");
                 const effectiveFrom = $row.find(".component-effective-from").val();
                 const effectiveTo = $row.find(".component-effective-to").val();
 
                 const hasOverride = overrideAmount !== null && !isNaN(overrideAmount) && overrideAmount !== defaultAmount;
-                if (!excluded && !hasOverride && !effectiveFrom && !effectiveTo) {
+                const hasRateOverride = rateOverride !== null && !isNaN(rateOverride);
+                if (!excluded && !hasOverride && !hasRateOverride && !effectiveFrom && !effectiveTo) {
                     return;
                 }
 
@@ -342,6 +362,7 @@
                     is_global: !!component.is_global,
                     default_amount: parseFloat(component.default_amount || 0),
                     amount_override: hasOverride ? overrideAmount : null,
+                    rate_percent_override: hasRateOverride ? rateOverride : null,
                     is_excluded: excluded,
                     effective_from: effectiveFrom || null,
                     effective_to: effectiveTo || null
