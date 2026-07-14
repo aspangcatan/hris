@@ -728,6 +728,7 @@ class PayrollServices
                 'pc.base_component_code',
                 'pc.rate_percent',
                 'epc.amount_override',
+                'epc.rate_percent_override',
                 'epc.is_active as employee_active',
                 'epc.is_excluded',
                 'epc.effective_from',
@@ -835,7 +836,8 @@ class PayrollServices
             return round((float) ($row->default_amount ?? 0), 3);
         }
 
-        $rate = (float) ($row->rate_percent ?? 0);
+        $rateOverride = $row->rate_percent_override ?? null;
+        $rate = $rateOverride !== null ? (float) $rateOverride : (float) ($row->rate_percent ?? 0);
 
         if (($row->base_type ?? null) === 'basic_salary') {
             return round($basicSalary * $rate / 100, 3);
