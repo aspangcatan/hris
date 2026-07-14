@@ -36,6 +36,13 @@ class PayrollComponentRateOverrideTest extends TestCase
 
     private function cleanup(): void
     {
+        DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', DB::table('hris.payroll_employees')->where('employee_id', $this->wireTestUserId)->pluck('id'))
+            ->delete();
+        DB::table('hris.payroll_employees')->where('employee_id', $this->wireTestUserId)->delete();
+        DB::table('hris.cutoff_summaries')->where('employee_id', $this->wireTestUserId)->delete();
+        DB::table('hris.cutoff_summaries_master')->where('generated_by', $this->wireTestUserId)->delete();
+        DB::table('hris.payrolls')->where('prepared_by', $this->wireTestUserId)->delete();
         DB::table('hris.employee_payroll_components')->where('userid', $this->wireTestUserId)->delete();
         DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)->delete();
         DB::table('tdh_user.users')->where('id', $this->wireTestUserId)->delete();
@@ -61,6 +68,34 @@ class PayrollComponentRateOverrideTest extends TestCase
             'section' => 21,
             'designation' => 52,
         ]);
+    }
+
+    /**
+     * Excludes every pre-existing global/active payroll component (e.g. PERA,
+     * seeded independently of this test) for the test user, so an
+     * other_earnings assertion reflects only the TEST_RATE_WIRE component
+     * this test set up, not unrelated production seed data.
+     */
+    private function excludeOtherGlobalComponentsForTestUser(): void
+    {
+        $otherComponentIds = DB::table('hris.payroll_components')
+            ->where('is_global', 1)
+            ->where('is_active', 1)
+            ->where('code', '!=', $this->componentCode)
+            ->pluck('id');
+
+        foreach ($otherComponentIds as $componentId) {
+            DB::table('hris.employee_payroll_components')->insert([
+                'payroll_component_id' => $componentId,
+                'userid' => $this->wireTestUserId,
+                'amount' => 0,
+                'amount_override' => null,
+                'is_active' => 0,
+                'is_excluded' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     private function callResolveComponentAmounts(\Illuminate\Support\Collection $rows, float $basicSalary): \Illuminate\Support\Collection
@@ -297,5 +332,145 @@ class PayrollComponentRateOverrideTest extends TestCase
         $reloadedComponent = collect($reload->json('components'))->firstWhere('code', $this->componentCode);
         $this->assertNotNull($reloadedComponent);
         $this->assertEqualsWithDelta(30.0, (float) $reloadedComponent['rate_percent_override'], 0.001);
+    }
+
+    /** @test */
+    public function a_rate_override_flows_through_the_full_payroll_computation_and_tracks_a_later_salary_change()
+    {
+        DB::table('hris.payroll_components')->insert([
+            'code' => $this->componentCode,
+            'name' => 'Test Rate Component',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 1,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->seedTestUser();
+        $this->excludeOtherGlobalComponentsForTestUser();
+
+        $masterId = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'title' => 'Rate Override Test Cutoff',
+            'period_start' => '2027-10-01',
+            'period_end' => '2027-10-15',
+            'generated_by' => $this->wireTestUserId,
+            'generated_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payrollId = DB::table('hris.payrolls')->insertGetId([
+            'cutoff_id' => $masterId,
+            'title' => 'Rate Override Test Payroll',
+            'start_date' => '2027-10-01',
+            'end_date' => '2027-10-15',
+            'cutoff_start_date' => '2027-10-01',
+            'cutoff_end_date' => '2027-10-15',
+            'cutoff_title' => 'Rate Override Test Cutoff',
+            'payroll_type' => 'Regular',
+            'rate_type' => 'Non Pro-rated',
+            'status' => 'draft',
+            'prepared_by' => $this->wireTestUserId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.cutoff_summaries')->insert([
+            'employee_id' => $this->wireTestUserId,
+            'cutoff_id' => $masterId,
+            'period_start' => '2027-10-01',
+            'period_end' => '2027-10-15',
+            'total_working_days' => 10,
+            'days_present' => 10,
+            'days_absent' => 0,
+            'late_minutes' => 0,
+            'undertime_minutes' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actAsAdmin();
+
+        DB::table('hris.payroll_settings')->insert([
+            'userid' => $this->wireTestUserId,
+            'basic_salary' => 20000,
+            'salary_grade' => 24,
+            'step' => 1,
+        ]);
+
+        // Give this employee a 30% rate override (catalog default is 25%).
+        $this->withoutMiddleware()->postJson('/save_payroll_settings', [
+            'userid' => $this->wireTestUserId,
+            'salary_grade' => 24,
+            'step' => 1,
+            'basic_salary' => 20000,
+            'components' => [[
+                'code' => $this->componentCode,
+                'name' => 'Test Rate Component',
+                'type' => 'earning',
+                'taxable' => true,
+                'is_global' => true,
+                'default_amount' => 0,
+                'amount_override' => null,
+                'rate_percent_override' => 30,
+                'is_excluded' => false,
+                'effective_from' => null,
+                'effective_to' => null,
+            ]],
+        ])->assertOk();
+
+        $this->withoutMiddleware()->postJson('/save_payroll_employee', [
+            'payroll_id' => $payrollId,
+            'employees' => [[
+                'userid' => $this->wireTestUserId,
+                'salary_adjustment' => 0,
+                'adjustments' => [],
+            ]],
+        ])->assertOk();
+
+        $firstRun = DB::table('hris.payroll_employees')
+            ->where('payroll_id', $payrollId)
+            ->where('employee_id', $this->wireTestUserId)
+            ->first();
+        // 30% of 20,000 = 6,000 - the override rate, not the catalog's 25%.
+        $this->assertEqualsWithDelta(6000.0, (float) $firstRun->other_earnings, 0.01);
+
+        // A salary change between two runs: basic_salary goes from 20,000 to
+        // 24,000. The rate override (30%) must still apply against the new
+        // salary with no code change.
+        DB::table('hris.payroll_settings')->where('userid', $this->wireTestUserId)
+            ->update(['basic_salary' => 24000]);
+
+        $this->withoutMiddleware()->postJson('/save_payroll_employee', [
+            'payroll_id' => $payrollId,
+            'employees' => [[
+                'userid' => $this->wireTestUserId,
+                'salary_adjustment' => 0,
+                'adjustments' => [],
+            ]],
+        ])->assertOk();
+
+        $secondRun = DB::table('hris.payroll_employees')
+            ->where('payroll_id', $payrollId)
+            ->where('employee_id', $this->wireTestUserId)
+            ->first();
+        // 30% of the new 24,000 basic salary = 7,200.
+        $this->assertEqualsWithDelta(7200.0, (float) $secondRun->other_earnings, 0.01);
+
+        DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->pluck('id'))
+            ->delete();
+        DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->delete();
+        DB::table('hris.payrolls')->where('id', $payrollId)->delete();
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $masterId)->delete();
+        DB::table('hris.cutoff_summaries_master')->where('id', $masterId)->delete();
     }
 }
