@@ -473,4 +473,132 @@ class PayrollComponentRateOverrideTest extends TestCase
         DB::table('hris.cutoff_summaries')->where('cutoff_id', $masterId)->delete();
         DB::table('hris.cutoff_summaries_master')->where('id', $masterId)->delete();
     }
+
+    /** @test */
+    public function rejects_a_rate_override_that_would_overflow_the_column_via_the_save_endpoint()
+    {
+        DB::table('hris.payroll_components')->insert([
+            'code' => $this->componentCode,
+            'name' => 'Test Rate Component',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 0,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->seedTestUser();
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->postJson('/save_payroll_settings', [
+            'userid' => $this->wireTestUserId,
+            'salary_grade' => 11,
+            'step' => 1,
+            'basic_salary' => 20000,
+            'components' => [[
+                'code' => $this->componentCode,
+                'name' => 'Test Rate Component',
+                'type' => 'earning',
+                'taxable' => false,
+                'is_global' => true,
+                'default_amount' => 0,
+                'amount_override' => null,
+                'rate_percent_override' => 999999,
+                'is_excluded' => false,
+                'effective_from' => null,
+                'effective_to' => null,
+            ]],
+        ]);
+
+        $response->assertStatus(422);
+
+        $assignment = DB::table('hris.employee_payroll_components')
+            ->where('userid', $this->wireTestUserId)
+            ->first();
+        $this->assertNull($assignment);
+    }
+
+    /** @test */
+    public function rejects_a_non_numeric_rate_override_via_the_save_endpoint()
+    {
+        DB::table('hris.payroll_components')->insert([
+            'code' => $this->componentCode,
+            'name' => 'Test Rate Component',
+            'type' => 'earning',
+            'is_global' => 1,
+            'taxable' => 0,
+            'default_amount' => 0,
+            'calculation_type' => 'percentage',
+            'base_type' => 'basic_salary',
+            'base_component_code' => null,
+            'rate_percent' => 25,
+            'is_active' => 1,
+            'is_cutoff_adjustable' => 0,
+            'sort_order' => 999,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->seedTestUser();
+        $this->actAsAdmin();
+
+        $response = $this->withoutMiddleware()->postJson('/save_payroll_settings', [
+            'userid' => $this->wireTestUserId,
+            'salary_grade' => 11,
+            'step' => 1,
+            'basic_salary' => 20000,
+            'components' => [[
+                'code' => $this->componentCode,
+                'name' => 'Test Rate Component',
+                'type' => 'earning',
+                'taxable' => false,
+                'is_global' => true,
+                'default_amount' => 0,
+                'amount_override' => null,
+                'rate_percent_override' => 'not-a-number',
+                'is_excluded' => false,
+                'effective_from' => null,
+                'effective_to' => null,
+            ]],
+        ]);
+
+        $response->assertStatus(422);
+
+        $assignment = DB::table('hris.employee_payroll_components')
+            ->where('userid', $this->wireTestUserId)
+            ->first();
+        $this->assertNull($assignment);
+    }
+
+    /** @test */
+    public function validate_rate_percent_overrides_rejects_overflow_and_non_numeric_values()
+    {
+        $service = app(\App\Services\PayrollServices::class);
+
+        $overflowError = $service->validateRatePercentOverrides([
+            ['code' => 'A', 'rate_percent_override' => 100000],
+        ]);
+        $this->assertNotNull($overflowError);
+
+        $nonNumericError = $service->validateRatePercentOverrides([
+            ['code' => 'B', 'rate_percent_override' => 'abc'],
+        ]);
+        $this->assertNotNull($nonNumericError);
+
+        $validError = $service->validateRatePercentOverrides([
+            ['code' => 'C', 'rate_percent_override' => 99999.999],
+        ]);
+        $this->assertNull($validError);
+
+        $noOverrideError = $service->validateRatePercentOverrides([
+            ['code' => 'D', 'rate_percent_override' => null],
+        ]);
+        $this->assertNull($noOverrideError);
+    }
 }

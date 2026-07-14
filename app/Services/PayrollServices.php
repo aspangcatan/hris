@@ -527,7 +527,11 @@ class PayrollServices
             if ($rateOverride === null || $rateOverride === '') {
                 continue;
             }
-            if ((float) $rateOverride < 0) {
+            if (!is_numeric($rateOverride)) {
+                $code = $component['code'] ?? '?';
+                return "Component \"{$code}\" has an invalid rate override.";
+            }
+            if ((float) $rateOverride < 0 || (float) $rateOverride > 99999.999) {
                 $code = $component['code'] ?? '?';
                 return "Component \"{$code}\" has an invalid rate override.";
             }
