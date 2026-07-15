@@ -267,4 +267,27 @@ class LeaveDateDisapprovalTest extends TestCase
         $flagged = DB::table('hris.leave_date_applied')->where('id', $seed['date_ids'][0])->first();
         $this->assertEquals(0, (int) $flagged->final_disapproved);
     }
+
+    /** @test */
+    public function a_pending_status_submission_does_not_apply_date_disapprovals()
+    {
+        $seed = $this->seedApplication();
+        $this->actAsSh();
+
+        $response = $this->withoutMiddleware()->postJson('/update/approval_status', [
+            'id' => $seed['app_id'],
+            'status' => 'pending',
+            'remarks' => 'Still deciding',
+            'disapproved_dates' => [
+                ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'Might be an issue'],
+            ],
+        ]);
+        $response->assertOk();
+
+        $untouched = DB::table('hris.leave_date_applied')->where('id', $seed['date_ids'][0])->first();
+        $this->assertEquals(0, (int) $untouched->sh_flagged_disapprove);
+        $this->assertEquals(0, (int) $untouched->final_disapproved);
+
+        $this->assertEqualsWithDelta(5.000, $this->creditBalance(), 0.001);
+    }
 }

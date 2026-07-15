@@ -353,7 +353,7 @@ class LeaveApprovalService
                 return;
             }
 
-            if (in_array($effectiveRole, ['SH', 'DH'], true)) {
+            if ($normalizedStatus === 'approved' && in_array($effectiveRole, ['SH', 'DH'], true)) {
                 $this->applyDateDisapprovals($leave_id, $effectiveRole, $disapprovedDates);
             }
 
