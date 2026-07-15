@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call(MinuteConversionSeeder::class);
+        $this->call(MonthlyEarnedPointsSeeder::class);
         $this->call(PermissionSeeder::class);
         $this->call(PayrollComponentSeeder::class);
         $this->call(PayrollTaxRuleSeeder::class);
