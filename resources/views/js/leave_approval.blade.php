@@ -125,6 +125,41 @@
             .finally(() => setLeaveApprovalButtonLoading(triggerButton, false));
     }
 
+    function renderDateDisapproveCell(d, role) {
+        if (role === 'SH' || role === 'DH') {
+            const checked = role === 'SH'
+                ? !!d.sh_flagged_disapprove
+                : (!!d.sh_flagged_disapprove || !!d.final_disapproved);
+            const remark = role === 'SH'
+                ? (d.sh_disapproval_remark || '')
+                : (d.dh_disapproval_remark || d.sh_disapproval_remark || '');
+            const label = role === 'SH' ? 'Flag for disapproval' : 'Disapprove this date';
+
+            return `
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input date-disapprove-cb" data-date-id="${d.id}" id="dd_${d.id}" ${checked ? 'checked' : ''}>
+                    <label class="form-check-label small" for="dd_${d.id}">${label}</label>
+                </div>
+                <input type="text" class="form-control form-control-sm mt-1 date-disapprove-remark" data-date-id="${d.id}" placeholder="Reason (optional)" value="${remark}" style="${checked ? '' : 'display:none;'}">
+            `;
+        }
+
+        return d.final_disapproved ? `<span class="badge bg-danger">Disapproved</span>` : '';
+    }
+
+    $(document).on('change', '.date-disapprove-cb', function () {
+        $(this).closest('td').find('.date-disapprove-remark').toggle(this.checked);
+    });
+
+    function collectDisapprovedDates() {
+        const result = [];
+        $('#dates_applied_body .date-disapprove-cb:checked').each(function () {
+            const remark = $(this).closest('td').find('.date-disapprove-remark').val().trim();
+            result.push({ date_applied_id: $(this).data('date-id'), remark: remark || null });
+        });
+        return result;
+    }
+
     function renderLeaveModal(data) {
         $('#leave_name').text(data.name);
         $('#leave_type').text(data.type);
@@ -144,7 +179,7 @@
         }
 
         $('#dates_applied_body').html(data.dates.map(d =>
-            `<tr><td>${d.leave_type || ''}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`
+            `<tr><td>${d.leave_type || ''}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td><td>${renderDateDisapproveCell(d, data.current_approval_role)}</td></tr>`
         ).join(""));
 
         updateStepStatus('#step1', data.approvals.sh);
@@ -194,7 +229,12 @@
         fetch('{{ route('updateApprovalStatus') }}', {
             method: "POST",
             headers: {"Content-Type": "application/json", "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")},
-            body: JSON.stringify({id: leave_id, remarks: $("#leave_remarks").val().trim(), status: this.value})
+            body: JSON.stringify({
+                id: leave_id,
+                remarks: $("#leave_remarks").val().trim(),
+                status: this.value,
+                disapproved_dates: collectDisapprovedDates()
+            })
         })
             .then(r => r.json())
             .then(data => {

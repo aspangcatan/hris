@@ -174,9 +174,10 @@
                     <table class="table table-bordered mb-0">
                         <thead class="table-light">
                         <tr>
-                            <th>Leave Type</th>
-                            <th style="width: 30%;">Date</th>
-                            <th style="width: 25%;">Duration</th>
+                            <th style="width: 26%;">Leave Type</th>
+                            <th style="width: 18%;">Date</th>
+                            <th style="width: 14%;">Duration</th>
+                            <th style="width: 42%;">Disapprove</th>
                         </tr>
                         </thead>
                         <tbody id="dates_applied_body">
