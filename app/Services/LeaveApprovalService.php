@@ -263,10 +263,7 @@ class LeaveApprovalService
 
         $myApproval = $this->findUserApprovedStep($leaveId);
 
-        $roleToLogType = ['SH' => 1, 'DH' => 2, 'HR' => 3];
-        $logTypeFrom   = $roleToLogType[$myApproval->role] ?? null;
-
-        DB::transaction(function () use ($leaveId, $myApproval, $logTypeFrom) {
+        DB::transaction(function () use ($leaveId, $myApproval) {
             DB::table('hris.leave_application_approvals')
                 ->where('leave_application_id', $leaveId)
                 ->where('role', $myApproval->role)
@@ -281,6 +278,10 @@ class LeaveApprovalService
                 ->where('id', $leaveId)
                 ->where('status', 'Approved')
                 ->update(['status' => 'Pending', 'updated_at' => Carbon::now()]);
+
+            if ($myApproval->role === 'DH') {
+                $this->reverseDhDateDisapprovals($leaveId);
+            }
         });
     }
 
@@ -455,6 +456,40 @@ class LeaveApprovalService
             } else {
                 $creditQuery->decrement('based_credit', $date->credits_deducted);
             }
+        }
+    }
+
+    /**
+     * Reverses every date the Division Head disapproved on this
+     * application, restoring credits that were re-deducted and clearing
+     * final_disapproved - called when a DH undoes their own approval.
+     * sh_flagged_disapprove/sh_disapproval_remark are left untouched, so
+     * when DH redoes their review, the Supervisor's original suggestion is
+     * still there to work from.
+     */
+    private function reverseDhDateDisapprovals(int $leaveId): void
+    {
+        $app = DB::table('hris.leave_applications')->where('id', $leaveId)->first(['user_id']);
+
+        $disapprovedDates = DB::table('hris.leave_date_applied')
+            ->where('leave_application_id', $leaveId)
+            ->where('final_disapproved', 1)
+            ->get(['id', 'leave_type_id', 'credits_deducted']);
+
+        foreach ($disapprovedDates as $date) {
+            if ($date->leave_type_id) {
+                DB::table('hris.leave_credits')
+                    ->where('user_id', $app->user_id)
+                    ->where('leave_id', $date->leave_type_id)
+                    ->decrement('based_credit', $date->credits_deducted);
+            }
+
+            DB::table('hris.leave_date_applied')
+                ->where('id', $date->id)
+                ->update([
+                    'final_disapproved'     => false,
+                    'dh_disapproval_remark' => null,
+                ]);
         }
     }
 }

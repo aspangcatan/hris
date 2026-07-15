@@ -290,4 +290,45 @@ class LeaveDateDisapprovalTest extends TestCase
 
         $this->assertEqualsWithDelta(5.000, $this->creditBalance(), 0.001);
     }
+
+    /** @test */
+    public function dh_undoing_their_approval_reverses_disapproved_dates_and_credits()
+    {
+        $seed = $this->seedApplication();
+
+        DB::table('hris.leave_date_applied')->where('id', $seed['date_ids'][0])->update([
+            'sh_flagged_disapprove' => 1, 'sh_disapproval_remark' => 'No coverage',
+        ]);
+        DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $seed['app_id'])->where('role', 'SH')
+            ->update(['status' => 'approved', 'approved_at' => now()]);
+
+        $this->actAsDh();
+        $this->withoutMiddleware()->postJson('/update/approval_status', [
+            'id' => $seed['app_id'],
+            'status' => 'Approved',
+            'remarks' => 'Agreed',
+            'disapproved_dates' => [
+                ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'Confirmed'],
+            ],
+        ])->assertOk();
+
+        $this->assertEqualsWithDelta(6.000, $this->creditBalance(), 0.001);
+
+        $response = $this->withoutMiddleware()->postJson('/undo_approval', ['id' => $seed['app_id']]);
+        $response->assertOk();
+
+        $reverted = DB::table('hris.leave_date_applied')->where('id', $seed['date_ids'][0])->first();
+        $this->assertEquals(0, (int) $reverted->final_disapproved);
+        $this->assertNull($reverted->dh_disapproval_remark);
+        // SH's original suggestion survives the undo.
+        $this->assertEquals(1, (int) $reverted->sh_flagged_disapprove);
+        $this->assertEquals('No coverage', $reverted->sh_disapproval_remark);
+
+        // Credit re-deducted back to the pre-DH-approval balance.
+        $this->assertEqualsWithDelta(5.000, $this->creditBalance(), 0.001);
+
+        $dhRow = DB::table('hris.leave_application_approvals')->where('leave_application_id', $seed['app_id'])->where('role', 'DH')->first();
+        $this->assertEquals('pending', $dhRow->status);
+    }
 }
