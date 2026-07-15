@@ -281,18 +281,10 @@ class LeaveApprovalService
                 ->where('id', $leaveId)
                 ->where('status', 'Approved')
                 ->update(['status' => 'Pending', 'updated_at' => Carbon::now()]);
-
-            // Remove this stage's log and any downstream forwarding logs
-            if ($logTypeFrom !== null) {
-                DB::table('hris.leave_application_logs')
-                    ->where('leave_application_id', $leaveId)
-                    ->where('type', '>=', $logTypeFrom)
-                    ->delete();
-            }
         });
     }
 
-    public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null): void
+    public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null, array $disapprovedDates = []): void
     {
         $app = DB::table('hris.leave_applications')->where('id', $leave_id)->first(['id']);
         if (!$app) {
@@ -311,7 +303,7 @@ class LeaveApprovalService
             throw new \RuntimeException('Current user is not allowed to approve this leave application.');
         }
 
-        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus) {
+        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates) {
             // Enforce SH → DH → HR order
             if ($effectiveRole === 'DH') {
                 $shApproved = DB::table('hris.leave_application_approvals')
@@ -361,6 +353,10 @@ class LeaveApprovalService
                 return;
             }
 
+            if (in_array($effectiveRole, ['SH', 'DH'], true)) {
+                $this->applyDateDisapprovals($leave_id, $effectiveRole, $disapprovedDates);
+            }
+
             if ($effectiveRole === 'HR') {
                 DB::table('hris.leave_applications')
                     ->where('id', $leave_id)
@@ -387,6 +383,78 @@ class LeaveApprovalService
                 ->where('user_id', $app->user_id)
                 ->where('leave_id', $typeId)
                 ->increment('based_credit', $rows->sum('credits_deducted'));
+        }
+    }
+
+    /**
+     * Applies per-date disapproval flags for the SH or DH stage of a leave
+     * application, on top of that stage's own overall approve/reject
+     * decision - see
+     * docs/superpowers/specs/2026-07-15-per-date-leave-disapproval-design.md.
+     *
+     * SH's action only ever records a suggestion (sh_flagged_disapprove) -
+     * it never touches final_disapproved or credits. DH's action is the
+     * final, operative verdict: $disapprovedDates is DH's complete desired
+     * state for the application, and any date whose final_disapproved value
+     * changes as a result has its credits restored (newly disapproved) or
+     * re-deducted (overridden back to approved).
+     *
+     * @param array<int, array{date_applied_id: mixed, remark?: ?string}> $disapprovedDates
+     */
+    private function applyDateDisapprovals(int $leaveId, string $role, array $disapprovedDates): void
+    {
+        $remarkByDateId = collect($disapprovedDates)->mapWithKeys(
+            fn($d) => [(int) $d['date_applied_id'] => $d['remark'] ?? null]
+        );
+
+        $dates = DB::table('hris.leave_date_applied')
+            ->where('leave_application_id', $leaveId)
+            ->get(['id', 'leave_type_id', 'credits_deducted', 'final_disapproved']);
+
+        if ($role === 'SH') {
+            foreach ($dates as $date) {
+                $flagged = $remarkByDateId->has($date->id);
+                DB::table('hris.leave_date_applied')
+                    ->where('id', $date->id)
+                    ->update([
+                        'sh_flagged_disapprove' => $flagged,
+                        'sh_disapproval_remark' => $flagged ? $remarkByDateId->get($date->id) : null,
+                    ]);
+            }
+            return;
+        }
+
+        // DH: $disapprovedDates is the complete final state for every date.
+        $app = DB::table('hris.leave_applications')->where('id', $leaveId)->first(['user_id']);
+
+        foreach ($dates as $date) {
+            $willBeDisapproved = $remarkByDateId->has($date->id);
+            $wasDisapproved    = (bool) $date->final_disapproved;
+
+            if ($wasDisapproved === $willBeDisapproved) {
+                continue;
+            }
+
+            DB::table('hris.leave_date_applied')
+                ->where('id', $date->id)
+                ->update([
+                    'final_disapproved'     => $willBeDisapproved,
+                    'dh_disapproval_remark' => $willBeDisapproved ? $remarkByDateId->get($date->id) : null,
+                ]);
+
+            if (!$date->leave_type_id) {
+                continue;
+            }
+
+            $creditQuery = DB::table('hris.leave_credits')
+                ->where('user_id', $app->user_id)
+                ->where('leave_id', $date->leave_type_id);
+
+            if ($willBeDisapproved) {
+                $creditQuery->increment('based_credit', $date->credits_deducted);
+            } else {
+                $creditQuery->decrement('based_credit', $date->credits_deducted);
+            }
         }
     }
 }

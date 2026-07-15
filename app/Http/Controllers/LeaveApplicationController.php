@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\LeaveApplication;
 use App\Services\LeaveApplicationService;
 use App\Services\LeaveApprovalService;
-use App\Services\LeaveLogsService;
 use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,14 +12,12 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApplicationController extends Controller
 {
-    protected LeaveLogsService $leaveLogService;
     protected LeaveApplicationService $leaveApplicationService;
     protected LeaveApprovalService $leaveApprovalService;
     protected PermissionService $permissions;
 
-    public function __construct(LeaveLogsService $leaveLogsService, LeaveApplicationService $leaveApplicationService, LeaveApprovalService $leaveApprovalService, PermissionService $permissions)
+    public function __construct(LeaveApplicationService $leaveApplicationService, LeaveApprovalService $leaveApprovalService, PermissionService $permissions)
     {
-        $this->leaveLogService = $leaveLogsService;
         $this->leaveApplicationService = $leaveApplicationService;
         $this->leaveApprovalService = $leaveApprovalService;
         $this->permissions = $permissions;
@@ -179,60 +176,20 @@ class LeaveApplicationController extends Controller
     public function updateApprovalStatus(Request $request)
     {
         try {
-            $this->leaveApprovalService->updateApprovalStatus($request->id, null, $request->remarks, $request->status);
-            return response()->json(['message' => 'Update status done']);
-        } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
-        }
-    }
-
-    public function approveLeave(Request $request)
-    {
-        try {
-            $role = $this->leaveApprovalService->resolveCurrentApprovalRoleForLeave($request->id);
-            $updated = 0;
-
-            switch ($role) {
-                case "SH":
-                    $updated = $this->leaveLogService->updateStatus($request->id, '1', 'Approved');
-                    $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '2');
-                    break;
-                case "DH":
-                    $updated = $this->leaveLogService->updateStatus($request->id, '2', 'Approved');
-                    $this->leaveLogService->insertLogs($request->id, Auth::user()->division, '3');
-                    break;
-                case "HR":
-                    $updated = $this->leaveLogService->updateStatus($request->id, '3', 'Approved');
-                    $this->leaveApplicationService->updateStatus($request->id, 'Approved');
-                    break;
-            }
-
-            if ($updated === 0) {
-                return response()->json(['message' => 'No matching leave record found.'], 404);
-            }
-
-            return response()->json(['message' => 'Leave successfully approved']);
-        } catch (\Exception $exception) {
-            return response()->json(['message' => $exception->getMessage()], 500);
-        }
-    }
-
-    public function getApplicationLogs(Request $request)
-    {
-        try {
-            $logs = DB::table('hris.leave_application_logs')
-                ->where('leave_application_id', '=', $request->id)
-                ->select('type', 'remarks', 'updated_at as date_approved')
-                ->orderBy('id', 'desc')
-                ->get();
-
-            return response()->json([
-                'logs' => [
-                    'section'  => $logs->where('type', 1)->first(),
-                    'division' => $logs->where('type', 2)->first(),
-                    'hr'       => $logs->where('type', 3)->first(),
-                ],
+            $validated = $request->validate([
+                'disapproved_dates'                   => 'nullable|array',
+                'disapproved_dates.*.date_applied_id' => 'required|integer',
+                'disapproved_dates.*.remark'          => 'nullable|string|max:255',
             ]);
+
+            $this->leaveApprovalService->updateApprovalStatus(
+                $request->id,
+                null,
+                $request->remarks,
+                $request->status,
+                $validated['disapproved_dates'] ?? []
+            );
+            return response()->json(['message' => 'Update status done']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
