@@ -331,4 +331,24 @@ class LeaveDateDisapprovalTest extends TestCase
         $dhRow = DB::table('hris.leave_application_approvals')->where('leave_application_id', $seed['app_id'])->where('role', 'DH')->first();
         $this->assertEquals('pending', $dhRow->status);
     }
+
+    /** @test */
+    public function get_leave_application_exposes_per_date_flags_and_current_approval_role()
+    {
+        $seed = $this->seedApplication();
+        DB::table('hris.leave_date_applied')->where('id', $seed['date_ids'][0])->update([
+            'sh_flagged_disapprove' => 1, 'sh_disapproval_remark' => 'No coverage',
+        ]);
+
+        $this->actAsSh();
+        $response = $this->withoutMiddleware()->getJson('/leave-applications/' . $seed['app_id']);
+        $response->assertOk();
+        $response->assertJson(['current_approval_role' => 'SH']);
+
+        $dates = collect($response->json('dates'));
+        $flagged = $dates->firstWhere('id', $seed['date_ids'][0]);
+        $this->assertTrue($flagged['sh_flagged_disapprove']);
+        $this->assertEquals('No coverage', $flagged['sh_disapproval_remark']);
+        $this->assertFalse($flagged['final_disapproved']);
+    }
 }

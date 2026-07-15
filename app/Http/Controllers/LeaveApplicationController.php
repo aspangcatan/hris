@@ -363,13 +363,19 @@ class LeaveApplicationController extends Controller
                     'url'           => route('leave-attachments.serve', ['filename' => basename($a->file_path)]),
                     'original_name' => $a->original_name ?? basename($a->file_path),
                 ])->values(),
-            'can_undo'        => $this->leaveApprovalService->canUndoApproval($id),
-            'dates'           => collect($leave->dates ?? [])->map(fn($d) => [
-                'date'          => $d->date_applied,
-                'duration'      => $d->hours,
-                'leave_type_id' => $d->leave_type_id ?? null,
-                'leave_type'    => $d->leave_type_name ?? '',
-                'is_cancelled'  => ($d->status ?? '') === 'cancelled',
+            'can_undo'              => $this->leaveApprovalService->canUndoApproval($id),
+            'current_approval_role' => $this->leaveApprovalService->resolveCurrentApprovalRoleForLeave($id),
+            'dates'                 => collect($leave->dates ?? [])->map(fn($d) => [
+                'id'                    => $d->id,
+                'date'                  => $d->date_applied,
+                'duration'              => $d->hours,
+                'leave_type_id'         => $d->leave_type_id ?? null,
+                'leave_type'            => $d->leave_type_name ?? '',
+                'is_cancelled'          => ($d->status ?? '') === 'cancelled',
+                'sh_flagged_disapprove' => (bool) ($d->sh_flagged_disapprove ?? false),
+                'sh_disapproval_remark' => $d->sh_disapproval_remark ?? null,
+                'final_disapproved'     => (bool) ($d->final_disapproved ?? false),
+                'dh_disapproval_remark' => $d->dh_disapproval_remark ?? null,
             ])->values(),
         ]);
     }
