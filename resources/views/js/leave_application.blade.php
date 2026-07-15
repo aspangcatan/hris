@@ -842,7 +842,10 @@
                     const cancelledBadge = d.is_cancelled
                         ? ` <span class="badge bg-danger" style="font-size:.7rem">Cancelled</span>`
                         : '';
-                    return `<tr><td>${d.leave_type || ''}${cancelledBadge}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td></tr>`;
+                    const disapprovedBadge = d.final_disapproved
+                        ? `<span class="badge bg-danger">Disapproved</span>`
+                        : '';
+                    return `<tr><td>${d.leave_type || ''}${cancelledBadge}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td><td>${disapprovedBadge}</td></tr>`;
                 }).join("")
             );
 
