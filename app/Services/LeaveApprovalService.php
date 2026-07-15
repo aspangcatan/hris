@@ -375,6 +375,7 @@ class LeaveApprovalService
 
         $dates = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $leaveId)
+            ->where('final_disapproved', 0)
             ->get(['leave_type_id', 'credits_deducted']);
 
         $creditsByType = $dates->groupBy('leave_type_id');

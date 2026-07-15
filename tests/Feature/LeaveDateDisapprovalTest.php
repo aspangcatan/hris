@@ -351,4 +351,44 @@ class LeaveDateDisapprovalTest extends TestCase
         $this->assertEquals('No coverage', $flagged['sh_disapproval_remark']);
         $this->assertFalse($flagged['final_disapproved']);
     }
+
+    /** @test */
+    public function hr_rejecting_after_a_dh_disapproval_does_not_double_credit_the_already_restored_date()
+    {
+        $seed = $this->seedApplication();
+
+        DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $seed['app_id'])->where('role', 'SH')
+            ->update(['status' => 'approved', 'approved_at' => now()]);
+
+        $this->actAsDh();
+        $this->withoutMiddleware()->postJson('/update/approval_status', [
+            'id' => $seed['app_id'],
+            'status' => 'Approved',
+            'remarks' => 'Agreed',
+            'disapproved_dates' => [
+                ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'Confirmed'],
+            ],
+        ])->assertOk();
+
+        $this->assertEqualsWithDelta(6.000, $this->creditBalance(), 0.001);
+
+        Auth::shouldReceive('id')->andReturn(9999);
+        Auth::shouldReceive('user')->andReturn((object) [
+            'id' => 9999, 'section' => 0, 'division' => 0,
+        ]);
+        Auth::shouldReceive('check')->andReturn(true);
+        session(['access_rights' => 'hr']);
+
+        $response = $this->withoutMiddleware()->postJson('/update/approval_status', [
+            'id' => $seed['app_id'],
+            'status' => 'Rejected',
+            'remarks' => 'Rejecting at HR level',
+        ]);
+        $response->assertOk();
+
+        // 6.000 (after DH's restore) + 1.000 for date_ids[1] (never restored) = 7.000.
+        // NOT 8.000, which would mean date_ids[0]'s credit got restored twice.
+        $this->assertEqualsWithDelta(7.000, $this->creditBalance(), 0.001);
+    }
 }
