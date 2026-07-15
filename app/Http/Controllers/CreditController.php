@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\DTRServices;
 use App\Services\LeaveCreditService;
 use App\Services\PayrollServices;
 use Carbon\Carbon;
@@ -11,59 +10,12 @@ use Illuminate\Support\Facades\DB;
 
 class CreditController extends Controller
 {
-    protected $dtrService, $leaveCreditService, $payrollServices;
+    protected $leaveCreditService, $payrollServices;
 
-    public function __construct(DTRServices $dtrService, LeaveCreditService $leaveCreditService, PayrollServices $payrollServices)
+    public function __construct(LeaveCreditService $leaveCreditService, PayrollServices $payrollServices)
     {
-        $this->dtrService = $dtrService;
         $this->leaveCreditService = $leaveCreditService;
         $this->payrollServices = $payrollServices;
-    }
-
-    public function updateCreditBalance(Request $request)
-    {
-        try {
-            $employees = DB::table('hris.schedules as s')
-                ->join('tdh_user.users as u', 'u.id', '=', 's.employee_id')
-                ->select('s.employee_id')
-                ->whereMonth('s.schedule_date', $request->month)
-                ->whereYear('s.schedule_date', $request->year)
-                ->where('u.division', $request->division)
-                ->where('u.section', $request->section)
-                ->groupBy('s.employee_id')
-                ->get();
-
-            $month = $request->month;
-            $year = $request->year;
-
-            $start_date = Carbon::createFromDate($year, $month, 1)->startOfDay();
-            $end_date = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
-
-            foreach ($employees as $employee) {
-                $userid = $employee->employee_id;
-                $totalPresent = $this->dtrService->getTotalPresent($userid, $request->month, $request->year);
-
-                $result = $this->dtrService->getTotalLateAbsent($userid, $start_date, $end_date);
-                $totalLateUndertimeMinutes = $result['late_minutes'] + $result['undertime_minutes'];
-
-                $data = $this->leaveCreditService->computeEarnedCredits(
-                    $totalPresent,
-                    $totalLateUndertimeMinutes,
-                    $request->month,
-                    $request->year
-                );
-                $this->leaveCreditService->updateEarnedCredits($userid, $request->year, $request->month, $totalPresent, $totalLateUndertimeMinutes, $data['monthly_points_earned'], $data['total_deductions']);
-            }
-
-            return response()->json(['message' => "Success"]);
-        } catch (\Exception $exception) {
-            return response()->json([
-                'error' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-                'trace' => $exception->getTraceAsString()
-            ], 500);
-        }
     }
 
     public function getCreditEarned(Request $request)

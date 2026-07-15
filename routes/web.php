@@ -265,7 +265,6 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('timetable');
 
 
-    Route::post('/update_credit_balance', [\App\Http\Controllers\CreditController::class, 'updateCreditBalance'])->name('updateCreditBalance');
     Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
     Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit')->middleware('permission:leave.manage_credits');
     Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
@@ -433,7 +432,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/password/update', [\App\Http\Controllers\UserController::class, 'changePassword'])->name('changePassword');
 #NEW LEAVE APPLICATION
     Route::get('/get_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'index'])->name('getLeaveApplications');
-    Route::get('/get_leave_applications_logs', [\App\Http\Controllers\LeaveApplicationController::class, 'getApplicationLogs'])->name('getApplicationLogs');
     Route::post('/insert_leave_applications', [\App\Http\Controllers\LeaveApplicationController::class, 'insertLeaveApplication'])->name('insertLeaveApplication');
 
     Route::get('/leave-applications/{id}', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveApplication'])->name('leave-applications.show');
@@ -454,7 +452,6 @@ Route::group(['middleware' => 'auth'], function () {
 
 #LEAVE APPROVAL
     Route::get('/get_leave_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'getLeaveForApproval'])->name('getLeaveForApproval');
-    Route::post('/approve_leave', [\App\Http\Controllers\LeaveApplicationController::class, 'approveLeave'])->name('approveLeave');
     Route::post('/update/approval_status', [\App\Http\Controllers\LeaveApplicationController::class, 'updateApprovalStatus'])->name('updateApprovalStatus');
     Route::post('/undo_approval', [\App\Http\Controllers\LeaveApplicationController::class, 'undoApproval'])->name('undoApproval');
 

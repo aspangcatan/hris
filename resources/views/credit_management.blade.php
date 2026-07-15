@@ -68,13 +68,6 @@
                         <label for="year">Section</label>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <button id="updateCreditsBtn" class="btn btn-success w-100 btn-lg" onclick="updateCredits()">
-                        <span id="updateCreditsText">Update Credits</span>
-                        <span id="updateCreditsLoader" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                    </button>
-                </div>
-
             </div>
         </div>
 
@@ -164,79 +157,6 @@
                     alert("Ooops, something went wrong. Please reload");
                 });
         }
-
-        function updateCredits() {
-            const month = $("#month").val();
-            const year = $("#year").val();
-            const division = $("#division").val();
-            const section = $("#section").val();
-
-            if (month === "" || year === "" || division === "" || section === "") {
-                Swal.fire({
-                    icon: "warning",
-                    title: "Missing Fields",
-                    text: "Please fill in all filter fields"
-                });
-                return;
-            }
-
-            Swal.fire({
-                title: "Are you sure?",
-                text: "Do you want to update credits?",
-                icon: "question",
-                showCancelButton: true,
-                confirmButtonText: "Yes, update",
-                cancelButtonText: "Cancel"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // disable button and show loader
-                    const btn = document.getElementById("updateCreditsBtn");
-                    const btnText = document.getElementById("updateCreditsText");
-                    const btnLoader = document.getElementById("updateCreditsLoader");
-
-                    btn.disabled = true;
-                    btnText.textContent = "Updating...";
-                    btnLoader.classList.remove("d-none");
-
-                    fetch('{{ route('updateCreditBalance') }}', {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
-                        },
-                        body: JSON.stringify({
-                            month: month,
-                            year: year,
-                            division: division,
-                            section: section
-                        })
-                    })
-                        .then((res) => res.json())
-                        .then((data) => {
-                            Swal.fire({
-                                icon: "success",
-                                title: "Updated",
-                                text: data.message
-                            });
-                            getCreditEarned(month, year, division, section);
-                        })
-                        .catch((err) => {
-                            Swal.fire({
-                                icon: "error",
-                                title: "Oops!",
-                                text: err
-                            });
-                        })
-                        .finally(() => {
-                            // re-enable button
-                            btn.disabled = false;
-                            btnText.textContent = "Update Credits";
-                            btnLoader.classList.add("d-none");
-                        });
-                }
-            });
-        }
-
 
         function getCreditEarned(month, year, division, section) {
 
