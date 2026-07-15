@@ -165,7 +165,7 @@
         $('#remarks_history').html(remarks);
         const canAct = activeFilter === 'pending';
         $('#approveLeaveBtn, #rejectLeaveBtn').toggle(canAct);
-        $('#undoApprovalBtn').toggle(!!data.can_undo);
+        $('#undoApprovalBtn').toggleClass('d-none', !data.can_undo);
 
         $('#viewLeaveModal').modal('show');
     }
