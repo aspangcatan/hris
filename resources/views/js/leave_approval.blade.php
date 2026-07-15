@@ -140,7 +140,7 @@
                     <input type="checkbox" class="form-check-input date-disapprove-cb" data-date-id="${d.id}" id="dd_${d.id}" ${checked ? 'checked' : ''}>
                     <label class="form-check-label small" for="dd_${d.id}">${label}</label>
                 </div>
-                <input type="text" class="form-control form-control-sm mt-1 date-disapprove-remark" data-date-id="${d.id}" placeholder="Reason (optional)" value="${remark}" style="${checked ? '' : 'display:none;'}">
+                <input type="text" class="form-control form-control-sm mt-1 date-disapprove-remark" data-date-id="${d.id}" placeholder="Reason (optional)" value="${String(remark).replace(/"/g, '&quot;')}" style="${checked ? '' : 'display:none;'}">
             `;
         }
 
