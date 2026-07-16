@@ -9,6 +9,7 @@
     const ROUTE_SHOW_LEAVE     = "{{ route('leave-applications.show', ':id') }}";
     const ROUTE_PRINT_LEAVE    = "{{ route('printLeaveForm') }}";
     const ROUTE_CREDIT_BAL     = "{{ route('getCreditBalances') }}";
+    const ROUTE_CALENDAR_EVENTS = "{{ route('calendar.events') }}";
 
     const USER_SEX = "{{ strtoupper(\App\Models\Employee::where('user_id', Auth::id())->value('sex') ?? '') }}";
     const GENDER_RESTRICTED_TYPES = {
@@ -26,6 +27,9 @@
 
     // Available leave types with balance > 0 — populated by loadCreditBalance()
     const LEAVE_TYPES = [];
+
+    // Holiday dates (YYYY-MM-DD strings), fetched lazily on first "Add Date Range" use
+    let HOLIDAY_DATES = null;
 
     /**
      * LEAVE_DETAIL_CONFIG — single source of truth for detail section.
@@ -534,6 +538,94 @@
     }
 
     /** ------------------------
+     *  Add Date Range
+     * ------------------------ */
+    function toggleDateRangePanel() {
+        const $panel = $("#date_range_panel");
+        if ($panel.hasClass("d-none")) {
+            $("#range_leave_type").html('<option value="">-- Select Type --</option>' + buildLeaveTypeOptions(null));
+            $panel.removeClass("d-none");
+        } else {
+            $panel.addClass("d-none");
+        }
+    }
+
+    async function loadHolidayDates() {
+        if (HOLIDAY_DATES !== null) return HOLIDAY_DATES;
+        try {
+            const events = await fetchData(ROUTE_CALENDAR_EVENTS);
+            HOLIDAY_DATES = events.map(e => e.start);
+        } catch {
+            HOLIDAY_DATES = [];
+        }
+        return HOLIDAY_DATES;
+    }
+
+    // Minimum allowed start date for the range panel, scoped to its own
+    // selected leave type (not the whole table's rows, unlike getMinLeaveDate()).
+    function getRangeMinDate() {
+        const lid = parseInt($("#range_leave_type").val());
+        const lt = LEAVE_TYPES.find(t => t.id === lid);
+        const d = new Date();
+        d.setDate(d.getDate() + (lt ? lt.days_prior : 0));
+        return d.toISOString().split('T')[0];
+    }
+
+    $(document).on('change', '#range_leave_type', function () {
+        const minDate = getRangeMinDate();
+        $("#range_start_date").attr('min', minDate);
+        if ($("#range_start_date").val() && $("#range_start_date").val() < minDate) $("#range_start_date").val('');
+    });
+
+    $(document).on('change', '#range_start_date', function () {
+        $("#range_end_date").attr('min', $(this).val());
+    });
+
+    async function generateDateRange() {
+        const leaveTypeId = parseInt($("#range_leave_type").val());
+        const startVal = $("#range_start_date").val();
+        const endVal = $("#range_end_date").val();
+        const hours = $("#range_hours").val();
+
+        if (!leaveTypeId) { toastr.error("Please select a leave type for the range", "Required"); return; }
+        if (!startVal || !endVal) { toastr.error("Please specify both a start and end date", "Required"); return; }
+        if (endVal < startVal) { toastr.error("End date must be on or after the start date", "Required"); return; }
+
+        const holidays = await loadHolidayDates();
+
+        let added = 0;
+        const cursor = new Date(startVal + 'T00:00:00');
+        const end = new Date(endVal + 'T00:00:00');
+
+        while (cursor <= end) {
+            const iso = cursor.toISOString().split('T')[0];
+            const day = cursor.getDay();
+            const isWeekend = day === 0 || day === 6;
+            const isHoliday = holidays.includes(iso);
+
+            if (!isWeekend && !isHoliday) {
+                addRow(leaveTypeId);
+                const $row = $("#dates_table_body tr:last");
+                $row.find("input[type='date']").val(iso);
+                $row.find("select[name='leave_hours[]']").val(hours);
+                added++;
+            }
+
+            cursor.setDate(cursor.getDate() + 1);
+        }
+
+        if (added === 0) {
+            toastr.error("No working days in that range (all weekends/holidays)", "Nothing to add");
+            return;
+        }
+
+        $("#range_start_date").val('');
+        $("#range_end_date").val('');
+        $("#date_range_panel").addClass("d-none");
+        toastr.success(`Added ${added} date${added === 1 ? '' : 's'} to the application`, "Success");
+    }
+
+    /** ------------------------
      *  Init Leave Types + Balances
      * ------------------------ */
     async function init_leave() {
@@ -907,6 +999,8 @@
         $("#leave_form input").not("[type='radio'], [type='checkbox']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
         $("#dates_table_body").empty();
+        $("#range_leave_type").val('');
+        $("#date_range_panel").addClass("d-none");
         $("#leave_attachment").val('');
         $("#new_files_preview").empty();
         $("#existing_attachments").addClass('d-none');

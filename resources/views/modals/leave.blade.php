@@ -49,7 +49,42 @@
                     <!-- Date Applied for Leave -->
                     <div class="d-flex align-items-center justify-content-between mt-4">
                         <div class="fw-bold">Date applied for leave</div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date</button>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="toggleDateRangePanel()">Add Date Range</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date</button>
+                        </div>
+                    </div>
+
+                    <div id="date_range_panel" class="border rounded p-3 mt-2 bg-light d-none">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Leave Type</label>
+                                <select class="form-control form-control-sm" id="range_leave_type"></select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Start Date</label>
+                                <input type="date" class="form-control form-control-sm" id="range_start_date">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">End Date</label>
+                                <input type="date" class="form-control form-control-sm" id="range_end_date">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1">Hours/Day</label>
+                                <select class="form-control form-control-sm" id="range_hours">
+                                    <option value="4">4</option>
+                                    <option value="8" selected>8</option>
+                                    <option value="10">10</option>
+                                    <option value="12">12</option>
+                                    <option value="16">16</option>
+                                    <option value="24">24</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-sm btn-primary w-100" onclick="generateDateRange()">Add</button>
+                            </div>
+                        </div>
+                        <div class="small text-muted mt-2">Weekends and declared holidays are skipped automatically.</div>
                     </div>
 
                     <table class="table table-bordered table-sm mt-2" id="dates_table">
