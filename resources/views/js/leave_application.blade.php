@@ -626,6 +626,16 @@
             return;
         }
 
+        // addRow() sets each new row's leave-type <select> via a pre-marked
+        // "selected" option rather than a real user interaction, so it never
+        // fires a native change event — run the same reactive updates the
+        // per-row change handler runs, or details/commutation/attachment/date
+        // minimums silently stay stuck in their pre-selection state.
+        refreshDetailsVisibility();
+        updateDateInputMins();
+        refreshCommutationVisibility();
+        refreshAttachmentVisibility();
+
         $("#range_start_date").val('');
         $("#range_end_date").val('');
         $("#date_range_panel").addClass("d-none");
