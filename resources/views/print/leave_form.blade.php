@@ -589,6 +589,123 @@
             border: none;
         }
 
+        .sig-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sig-modal-overlay.open {
+            display: flex;
+        }
+
+        .sig-modal {
+            background: #fff;
+            border-radius: 10px;
+            width: 520px;
+            max-width: 92vw;
+            padding: 18px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            color: #000;
+            position: relative;
+        }
+
+        .sig-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            border: none;
+            background: none;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            color: #333;
+        }
+
+        .sig-modal h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            text-align: center;
+        }
+
+        .sig-canvas-wrap {
+            border: 2px solid #000;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .sig-canvas-wrap canvas {
+            display: block;
+            width: 100%;
+            height: 180px;
+            cursor: crosshair;
+        }
+
+        .sig-canvas-placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 10px;
+            color: #9ca3af;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .sig-row {
+            border-top: 1px solid #000;
+            text-align: center;
+            padding: 10px 0;
+            font-weight: 700;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .sig-row:hover {
+            background: #f3f4f6;
+        }
+
+        .sig-row input[type="file"] {
+            display: none;
+        }
+
+        .sig-error {
+            display: none;
+            color: #b91c1c;
+            font-size: 11px;
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        .sig-links {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .sig-links button {
+            border: none;
+            background: none;
+            color: #2563eb;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        @media print {
+            .sig-modal-overlay {
+                display: none !important;
+            }
+        }
+
         @media print {
             .print-toolbar {
                 display: none;
@@ -607,7 +724,30 @@
     $sectionHeadRemarks = trim((string) ($sectionHeadApproval->remarks ?? ''));
 @endphp
 <div class="print-toolbar">
+    <button type="button" id="btn_open_signature" onclick="openSignatureModal()" style="margin-right: 8px;">Add Signature</button>
     <button type="button" onclick="window.print()">Print</button>
+</div>
+
+<div class="sig-modal-overlay" id="sig_modal_overlay">
+    <div class="sig-modal">
+        <button type="button" class="sig-modal-close" onclick="closeSignatureModal()">&times;</button>
+        <h3>Applicant Signature</h3>
+
+        <div class="sig-canvas-wrap">
+            <canvas id="sig_canvas"></canvas>
+            <div class="sig-canvas-placeholder" id="sig_placeholder">You can manually draw your signature here<br>or override with upload</div>
+        </div>
+        <div class="sig-links">
+            <button type="button" onclick="clearSignatureCanvas()">Clear</button>
+        </div>
+
+        <label class="sig-row" for="sig_upload_input">UPLOAD SIGNATURE</label>
+        <input type="file" id="sig_upload_input" accept="image/*" onchange="handleSignatureUpload(event)">
+
+        <div class="sig-row" onclick="saveSignature()" style="border-bottom: none;">SAVE CHANGES</div>
+
+        <div class="sig-error" id="sig_error">Please draw or upload a signature before saving.</div>
+    </div>
 </div>
 
 <div class="page">
@@ -799,10 +939,7 @@
                         <span class="check">{{ $leaveApplication->commutation === 'Requested' ? 'X' : '' }}</span>
                         <span class="option-copy">Requested</span>
                     </div>
-                    <div class="applicant-line">
-                        @if($applicantSignature)
-                            <img src="{{ $applicantSignature }}" alt="Signature of Applicant" class="signature-img">
-                        @endif
+                    <div class="applicant-line" id="applicant_line">
                         <span class="sign-line">(Signature of Applicant)</span>
                     </div>
                 </td>
@@ -912,5 +1049,104 @@
         </div>
     </div>
 @endforeach
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4/dist/signature_pad.umd.min.js"></script>
+<script>
+    let signaturePad = null;
+    let sigCanvasInitialized = false;
+    let hasSignatureContent = false;
+
+    function initSignatureCanvas() {
+        const canvas = document.getElementById('sig_canvas');
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+
+        signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)' });
+        signaturePad.addEventListener('beginStroke', function () {
+            hasSignatureContent = true;
+            updateSignaturePlaceholder();
+        });
+        sigCanvasInitialized = true;
+    }
+
+    function updateSignaturePlaceholder() {
+        document.getElementById('sig_placeholder').style.display =
+            (hasSignatureContent || (signaturePad && !signaturePad.isEmpty())) ? 'none' : 'flex';
+    }
+
+    function openSignatureModal() {
+        document.getElementById('sig_error').style.display = 'none';
+        document.getElementById('sig_modal_overlay').classList.add('open');
+        if (!sigCanvasInitialized) {
+            initSignatureCanvas();
+        }
+        updateSignaturePlaceholder();
+    }
+
+    function closeSignatureModal() {
+        document.getElementById('sig_modal_overlay').classList.remove('open');
+    }
+
+    function clearSignatureCanvas() {
+        if (!signaturePad) return;
+        signaturePad.clear();
+        hasSignatureContent = false;
+        document.getElementById('sig_upload_input').value = '';
+        document.getElementById('sig_error').style.display = 'none';
+        updateSignaturePlaceholder();
+    }
+
+    function handleSignatureUpload(event) {
+        const file = event.target.files[0];
+        if (!file || !signaturePad) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const canvas = document.getElementById('sig_canvas');
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const w = canvas.width / ratio;
+                const h = canvas.height / ratio;
+                const scale = Math.min(w / img.width, h / img.height, 1);
+                const drawW = img.width * scale;
+                const drawH = img.height * scale;
+                const x = (w - drawW) / 2;
+                const y = (h - drawH) / 2;
+
+                signaturePad.clear();
+                canvas.getContext('2d').drawImage(img, x, y, drawW, drawH);
+                hasSignatureContent = true;
+                document.getElementById('sig_error').style.display = 'none';
+                updateSignaturePlaceholder();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function saveSignature() {
+        const hasSignature = hasSignatureContent || (signaturePad && !signaturePad.isEmpty());
+        if (!hasSignature) {
+            document.getElementById('sig_error').style.display = 'block';
+            return;
+        }
+
+        const dataUrl = signaturePad.toDataURL('image/png');
+        const $line = document.getElementById('applicant_line');
+        let img = $line.querySelector('.signature-img');
+        if (!img) {
+            img = document.createElement('img');
+            img.className = 'signature-img';
+            img.alt = 'Signature of Applicant';
+            $line.insertBefore(img, $line.firstChild);
+        }
+        img.src = dataUrl;
+
+        closeSignatureModal();
+    }
+</script>
 </body>
 </html>
