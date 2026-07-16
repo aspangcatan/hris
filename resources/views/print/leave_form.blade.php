@@ -372,6 +372,17 @@
             padding-top: 2px;
         }
 
+        .applicant-line .signature-img {
+            display: block;
+            max-height: 34px;
+            max-width: 65%;
+            margin: 6px auto 0;
+        }
+
+        .applicant-line .signature-img + .sign-line {
+            margin-top: 2px;
+        }
+
         .action-table {
             border-left: 1px solid #000;
             border-right: 1px solid #000;
@@ -789,6 +800,9 @@
                         <span class="option-copy">Requested</span>
                     </div>
                     <div class="applicant-line">
+                        @if($applicantSignature)
+                            <img src="{{ $applicantSignature }}" alt="Signature of Applicant" class="signature-img">
+                        @endif
                         <span class="sign-line">(Signature of Applicant)</span>
                     </div>
                 </td>
