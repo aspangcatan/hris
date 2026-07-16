@@ -76,6 +76,9 @@
                     <th>Status</th>
                     <th>Monthly Earned</th>
                     <th>Monetizable</th>
+                    <th>Days Prior</th>
+                    <th>Commutation</th>
+                    <th>Default Credit</th>
                     <th colspan="2" style="width: 4%"></th>
                 </tr>
                 </thead>

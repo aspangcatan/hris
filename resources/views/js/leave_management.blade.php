@@ -22,6 +22,10 @@
             $("#code").val("");
             $("#leave_status").val("active");
             $("#monthly_earned").val("1");
+            $("#monetizable").val("0");
+            $("#days_prior").val("0");
+            $("#commutation").val("0");
+            $("#default_credit").val("");
             $("#leave_type_modal").modal("show");
         });
 
@@ -34,13 +38,19 @@
         const status = $("#leave_status").val();
         const monthly_earned = $("#monthly_earned").val();
         const monetizable = $("#monetizable").val();
+        const days_prior = $("#days_prior").val();
+        const commutation = $("#commutation").val();
+        const default_credit = $("#default_credit").val();
 
         const params = {
             description: description,
             code: code,
             status: status,
             monthly_earned: monthly_earned,
-            monetizable: monetizable
+            monetizable: monetizable,
+            days_prior: days_prior,
+            commutation: commutation,
+            default_credit: default_credit || null
         }
 
         const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
@@ -72,12 +82,18 @@
         const status        = $("#leave_" + id + " td:eq(2)").data("value");
         const monthlyEarned = $("#leave_" + id + " td:eq(3)").data("value");
         const monetizable   = $("#leave_" + id + " td:eq(4)").data("value");
+        const daysPrior     = $("#leave_" + id + " td:eq(5)").data("value");
+        const commutation   = $("#leave_" + id + " td:eq(6)").data("value");
+        const defaultCredit = $("#leave_" + id + " td:eq(7)").data("value");
 
         $("#description").val(description);
         $("#code").val(code);
         $("#leave_status").val(status || "active");
         $("#monthly_earned").val((monthlyEarned !== undefined && monthlyEarned !== null) ? monthlyEarned : "1");
         $("#monetizable").val((monetizable !== undefined && monetizable !== null) ? monetizable : "0");
+        $("#days_prior").val((daysPrior !== undefined && daysPrior !== null) ? daysPrior : "0");
+        $("#commutation").val((commutation !== undefined && commutation !== null) ? commutation : "0");
+        $("#default_credit").val((defaultCredit !== undefined && defaultCredit !== null && defaultCredit !== "") ? defaultCredit : "");
         $("#leave_type_modal").modal("show");
     }
 
@@ -122,7 +138,7 @@
                 const pagination = payload.pagination || null;
 
                 if (!data.length) {
-                    $("#leave_list").append("<tr><td colspan='7'>No record found</td></tr>");
+                    $("#leave_list").append("<tr><td colspan='10'>No record found</td></tr>");
                     $("#pagination_container").addClass("d-none");
                     return;
                 }
@@ -141,6 +157,10 @@
                     const monthlyEarnedLabel = parseInt(it.monthly_earned || 0, 10) === 1 ? "Yes" : "No";
                     const monetizableVal   = parseInt(it.monetizable ?? 0, 10);
                     const monetizableLabel = monetizableVal === 1 ? "Yes" : "No";
+                    const daysPriorVal     = parseInt(it.days_prior ?? 0, 10);
+                    const commutationVal   = parseInt(it.commutation ?? 0, 10);
+                    const commutationLabel = commutationVal === 1 ? "Yes" : "No";
+                    const defaultCreditVal = (it.default_credit !== undefined && it.default_credit !== null) ? it.default_credit : "";
                     const tr = `
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
@@ -148,6 +168,9 @@
                         <td data-value="` + statusLabel + `">` + statusLabel + `</td>
                         <td data-value="` + (it.monthly_earned ?? 0) + `">` + monthlyEarnedLabel + `</td>
                         <td data-value="` + monetizableVal + `">` + monetizableLabel + `</td>
+                        <td data-value="` + daysPriorVal + `">` + daysPriorVal + `</td>
+                        <td data-value="` + commutationVal + `">` + commutationLabel + `</td>
+                        <td data-value="` + defaultCreditVal + `">` + (defaultCreditVal === "" ? "—" : defaultCreditVal) + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>
