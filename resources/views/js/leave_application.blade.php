@@ -59,8 +59,8 @@
             options: [
                 { label: 'In Hospital (Specify Illness)', hasExtra: true },
                 { label: 'Out Patient (Specify Illness)', hasExtra: true },
-                { label: 'Work-Related', hasExtra: false },
-                { label: 'Non-Work Related', hasExtra: false },
+                { label: 'Work-Related (Specify)', hasExtra: true },
+                { label: 'Non-Work Related (Specify)', hasExtra: true },
             ],
         },
         {
