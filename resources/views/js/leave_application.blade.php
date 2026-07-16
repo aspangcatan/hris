@@ -561,6 +561,13 @@
         return HOLIDAY_DATES;
     }
 
+    // Formats a Date using its LOCAL calendar fields (not toISOString(), which
+    // converts to UTC first — in a positive-UTC-offset timezone like this
+    // app's Asia/Manila, that silently shifts the date back by one day).
+    function toLocalIsoDate(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
     // Minimum allowed start date for the range panel, scoped to its own
     // selected leave type (not the whole table's rows, unlike getMinLeaveDate()).
     function getRangeMinDate() {
@@ -568,7 +575,7 @@
         const lt = LEAVE_TYPES.find(t => t.id === lid);
         const d = new Date();
         d.setDate(d.getDate() + (lt ? lt.days_prior : 0));
-        return d.toISOString().split('T')[0];
+        return toLocalIsoDate(d);
     }
 
     $(document).on('change', '#range_leave_type', function () {
@@ -598,7 +605,7 @@
         const end = new Date(endVal + 'T00:00:00');
 
         while (cursor <= end) {
-            const iso = cursor.toISOString().split('T')[0];
+            const iso = toLocalIsoDate(cursor);
             const day = cursor.getDay();
             const isWeekend = day === 0 || day === 6;
             const isHoliday = holidays.includes(iso);
