@@ -25,6 +25,82 @@
     const file_leave_modal = new bootstrap.Modal(document.getElementById('file_leave_modal'));
     const leave_modal = new bootstrap.Modal(document.getElementById('leave_modal'));
 
+    // Signature pads, keyed by a short name ('applicant' here; 'approver' lives in js/leave_approval.blade.php).
+    // Shared helpers so both files can reuse the same canvas/upload/clear mechanics.
+    const SIGNATURE_PADS = {};
+    const SIGNATURE_HAS_CONTENT = {};
+
+    function initSignaturePad(key) {
+        const canvas = document.getElementById(`${key}_signature_canvas`);
+        if (!canvas) return null;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+
+        const pad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)' });
+        pad.addEventListener('beginStroke', function () {
+            SIGNATURE_HAS_CONTENT[key] = true;
+            updateSignaturePlaceholder(key);
+        });
+        SIGNATURE_PADS[key] = pad;
+        SIGNATURE_HAS_CONTENT[key] = false;
+        return pad;
+    }
+
+    function updateSignaturePlaceholder(key) {
+        const placeholder = document.getElementById(`${key}_signature_placeholder`);
+        if (!placeholder) return;
+        const hasContent = SIGNATURE_HAS_CONTENT[key] || (SIGNATURE_PADS[key] && !SIGNATURE_PADS[key].isEmpty());
+        placeholder.style.display = hasContent ? 'none' : 'flex';
+    }
+
+    function clearSignaturePad(key) {
+        const pad = SIGNATURE_PADS[key];
+        if (!pad) return;
+        pad.clear();
+        SIGNATURE_HAS_CONTENT[key] = false;
+        const upload = document.getElementById(`${key}_signature_upload`);
+        if (upload) upload.value = '';
+        updateSignaturePlaceholder(key);
+    }
+
+    function handleSignatureUpload(key, event) {
+        const file = event.target.files[0];
+        const pad = SIGNATURE_PADS[key];
+        if (!file || !pad) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const canvas = document.getElementById(`${key}_signature_canvas`);
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const w = canvas.width / ratio;
+                const h = canvas.height / ratio;
+                const scale = Math.min(w / img.width, h / img.height, 1);
+                const drawW = img.width * scale;
+                const drawH = img.height * scale;
+                const x = (w - drawW) / 2;
+                const y = (h - drawH) / 2;
+
+                pad.clear();
+                canvas.getContext('2d').drawImage(img, x, y, drawW, drawH);
+                SIGNATURE_HAS_CONTENT[key] = true;
+                updateSignaturePlaceholder(key);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function getSignatureDataUrl(key) {
+        const pad = SIGNATURE_PADS[key];
+        const hasContent = SIGNATURE_HAS_CONTENT[key] || (pad && !pad.isEmpty());
+        if (!hasContent) return null;
+        return pad.toDataURL('image/png');
+    }
+
     // Available leave types with balance > 0 — populated by loadCreditBalance()
     const LEAVE_TYPES = [];
 
@@ -151,6 +227,7 @@
             addRow();
             resetDetailsSection();
             refreshCommutationVisibility(); // set initial commutation state (no types checked yet → hidden)
+            initApplicantSignaturePad();
             file_leave_modal.toggle();
         });
 
@@ -281,6 +358,12 @@
             toastr.error("Please specify commutation", "Required");
         }
 
+        const applicantSignature = getSignatureDataUrl('applicant');
+        if (!applicantSignature) {
+            is_valid = false;
+            toastr.error("Please draw or upload your signature", "Required");
+        }
+
         // Validate attachment when any date has a type requiring it
         const attachmentRequired = date_applied_array.some(d => {
             const lt = LEAVE_TYPES.find(t => t.id === d.leave_type_id);
@@ -324,6 +407,7 @@
             details_map,
             commutation,
             dates: date_applied_array,  // each item has { date_applied, hours, leave_type_id }
+            applicant_signature: applicantSignature,
         };
 
         const btn = $("#btn_save_leave");
@@ -914,6 +998,7 @@
                 existingAttachments = [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }];
             }
             renderExistingAttachments(existingAttachments);
+            initApplicantSignaturePad();
 
             file_leave_modal.toggle();
         } catch {
@@ -1008,6 +1093,12 @@
             $(selector).addClass("pending");
             $(selector + " .circle").addClass("pending");
         }
+    }
+
+    function initApplicantSignaturePad() {
+        // A fresh canvas every time the modal opens - editing an application
+        // requires a brand-new signature each time, never a reused/stale one.
+        initSignaturePad('applicant');
     }
 
     function clearForm() {
