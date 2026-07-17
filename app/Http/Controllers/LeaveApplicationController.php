@@ -218,6 +218,7 @@ class LeaveApplicationController extends Controller
                 'dates.*.date_applied'      => 'required|date',
                 'dates.*.hours'             => 'required|integer|in:4,8,10,12,16,24',
                 'dates.*.leave_type_id'     => 'required|integer',
+                'applicant_signature'       => 'required|string',
             ]);
 
             if ($validator->fails()) {
@@ -413,6 +414,7 @@ class LeaveApplicationController extends Controller
                 'dates.*.date_applied'       => 'required|date',
                 'dates.*.hours'              => 'required|integer|in:4,8,10,12,16,24',
                 'dates.*.leave_type_id'      => 'required|integer',
+                'applicant_signature'        => 'required|string',
             ]);
 
             $this->leaveApplicationService->updateLeaveApplication($id, $validated);

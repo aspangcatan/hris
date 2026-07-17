@@ -82,12 +82,13 @@ class LeaveApplicationService
 
             // ONE leave_application record
             $appId = DB::table('leave_applications')->insertGetId([
-                'user_id'     => Auth::id(),
-                'commutation' => $data['commutation'] ?? null,
-                'attachment'  => $data['attachment'] ?? null,
-                'status'      => 'pending',
-                'created_at'  => now(),
-                'updated_at'  => now(),
+                'user_id'             => Auth::id(),
+                'commutation'         => $data['commutation'] ?? null,
+                'attachment'          => $data['attachment'] ?? null,
+                'applicant_signature' => $data['applicant_signature'],
+                'status'              => 'pending',
+                'created_at'          => now(),
+                'updated_at'          => now(),
             ]);
 
             // Leave details (without leave_id and credits_deducted — now per date)
@@ -271,8 +272,9 @@ class LeaveApplicationService
             );
 
             DB::table('leave_applications')->where('id', $appId)->update([
-                'commutation' => $data['commutation'] ?? null,
-                'updated_at'  => now(),
+                'commutation'         => $data['commutation'] ?? null,
+                'applicant_signature' => $data['applicant_signature'],
+                'updated_at'          => now(),
             ]);
         });
     }
