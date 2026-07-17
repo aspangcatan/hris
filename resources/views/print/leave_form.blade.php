@@ -593,7 +593,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(15, 23, 42, 0.55);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -605,45 +605,85 @@
 
         .sig-modal {
             background: #fff;
-            border-radius: 10px;
-            width: 520px;
+            border-radius: 14px;
+            width: 460px;
             max-width: 92vw;
-            padding: 18px;
+            padding: 22px 22px 0;
             font-family: Arial, Helvetica, sans-serif;
             font-size: 13px;
-            color: #000;
+            color: #0f172a;
             position: relative;
+            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
+            overflow: hidden;
         }
 
         .sig-modal-close {
             position: absolute;
-            top: 10px;
-            right: 14px;
+            top: 12px;
+            right: 12px;
+            width: 26px;
+            height: 26px;
             border: none;
-            background: none;
-            font-size: 18px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            font-size: 16px;
             line-height: 1;
             cursor: pointer;
-            color: #333;
+            color: #475569;
+        }
+
+        .sig-modal-close:hover {
+            background: #e2e8f0;
+            color: #0f172a;
         }
 
         .sig-modal h3 {
-            margin: 0 0 10px;
-            font-size: 15px;
+            margin: 0 0 4px;
+            font-size: 16px;
+            font-weight: 700;
             text-align: center;
         }
 
+        .sig-modal .sig-subtitle {
+            margin: 0 0 16px;
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .sig-canvas-head {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 6px;
+        }
+
+        .sig-clear-btn {
+            border: none;
+            background: none;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 2px 4px;
+        }
+
+        .sig-clear-btn:hover {
+            text-decoration: underline;
+        }
+
         .sig-canvas-wrap {
-            border: 2px solid #000;
-            border-radius: 6px;
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
             position: relative;
         }
 
         .sig-canvas-wrap canvas {
             display: block;
             width: 100%;
-            height: 180px;
+            height: 190px;
             cursor: crosshair;
+            border-radius: 10px;
         }
 
         .sig-canvas-placeholder {
@@ -654,50 +694,58 @@
             justify-content: center;
             text-align: center;
             padding: 10px;
-            color: #9ca3af;
+            color: #94a3b8;
             font-size: 12px;
+            line-height: 1.5;
             pointer-events: none;
-        }
-
-        .sig-row {
-            border-top: 1px solid #000;
-            text-align: center;
-            padding: 10px 0;
-            font-weight: 700;
-            cursor: pointer;
-            background: #fff;
-        }
-
-        .sig-row:hover {
-            background: #f3f4f6;
-        }
-
-        .sig-row input[type="file"] {
-            display: none;
         }
 
         .sig-error {
             display: none;
-            color: #b91c1c;
+            color: #dc2626;
             font-size: 11px;
+            font-weight: 700;
             text-align: center;
-            margin-top: 6px;
-        }
-
-        .sig-links {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-top: 8px;
         }
 
-        .sig-links button {
-            border: none;
-            background: none;
-            color: #2563eb;
+        .sig-actions {
+            margin: 18px -22px 0;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .sig-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            text-align: center;
+            padding: 13px 0;
+            font-weight: 700;
             font-size: 12px;
+            letter-spacing: 0.02em;
             cursor: pointer;
-            padding: 0;
+            background: #fff;
+            color: #334155;
+        }
+
+        .sig-row:hover {
+            background: #f8fafc;
+        }
+
+        .sig-row.sig-row-primary {
+            border-top: 1px solid #e2e8f0;
+            background: #2563eb;
+            color: #fff;
+            border-radius: 0 0 14px 14px;
+        }
+
+        .sig-row.sig-row-primary:hover {
+            background: #1d4ed8;
+        }
+
+        #sig_upload_input {
+            display: none;
         }
 
         @media print {
@@ -732,21 +780,24 @@
     <div class="sig-modal">
         <button type="button" class="sig-modal-close" onclick="closeSignatureModal()">&times;</button>
         <h3>Applicant Signature</h3>
+        <p class="sig-subtitle">This will be embedded into the printed form only &mdash; nothing is saved.</p>
 
+        <div class="sig-canvas-head">
+            <button type="button" class="sig-clear-btn" onclick="clearSignatureCanvas()">Clear</button>
+        </div>
         <div class="sig-canvas-wrap">
             <canvas id="sig_canvas"></canvas>
             <div class="sig-canvas-placeholder" id="sig_placeholder">You can manually draw your signature here<br>or override with upload</div>
         </div>
-        <div class="sig-links">
-            <button type="button" onclick="clearSignatureCanvas()">Clear</button>
-        </div>
-
-        <label class="sig-row" for="sig_upload_input">UPLOAD SIGNATURE</label>
-        <input type="file" id="sig_upload_input" accept="image/*" onchange="handleSignatureUpload(event)">
-
-        <div class="sig-row" onclick="saveSignature()" style="border-bottom: none;">SAVE CHANGES</div>
 
         <div class="sig-error" id="sig_error">Please draw or upload a signature before saving.</div>
+
+        <div class="sig-actions">
+            <label class="sig-row" for="sig_upload_input">&#128228; Upload Signature</label>
+            <input type="file" id="sig_upload_input" accept="image/*" onchange="handleSignatureUpload(event)">
+
+            <div class="sig-row sig-row-primary" onclick="saveSignature()">Save Changes</div>
+        </div>
     </div>
 </div>
 
