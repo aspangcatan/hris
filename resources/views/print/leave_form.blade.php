@@ -626,7 +626,6 @@
             margin-top: 14px;
             padding-top: 4px;
             border-top: 1px solid #000;
-            width: 45%;
         }
 
         .attachment-title {
