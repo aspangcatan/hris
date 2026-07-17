@@ -623,7 +623,10 @@
         .instructions-footnote {
             font-size: 9px;
             font-style: italic;
-            margin-top: 10px;
+            margin-top: 14px;
+            padding-top: 4px;
+            border-top: 1px solid #000;
+            width: 45%;
         }
 
         .attachment-title {
@@ -1250,7 +1253,7 @@
         </li>
     </ol>
 
-    <div class="instructions-footnote">* For leave of absence for thirty (30) calendar days or more and terminal leave, application shall be accompanied by a clearance from money, property and work-related accountabilities (pursuant to CSC Memorandum Circular No. 2, s. 1985).</div>
+    <div class="instructions-footnote">* For leave of absence for thirty (30) calendar days or more and terminal leave, application shall be accompanied by a clearance from money, property and <span style="text-decoration: underline;">work-related accountabilities</span> (pursuant to CSC Memorandum Circular No. 2, s. 1985).</div>
     </div>
 </div>
 
