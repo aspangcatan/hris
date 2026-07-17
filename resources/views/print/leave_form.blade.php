@@ -616,6 +616,10 @@
             margin-bottom: 3px;
         }
 
+        .instructions-sublist-alpha {
+            list-style-type: lower-alpha;
+        }
+
         .instructions-footnote {
             font-size: 9px;
             font-style: italic;
@@ -1200,13 +1204,13 @@
             <ul class="instructions-sublist">
                 <li>It shall be filed in advance or immediately upon the woman employee's return from such leave.</li>
                 <li>It shall be accompanied by any of the following supporting documents:
-                    <ul class="instructions-sublist">
+                    <ol class="instructions-sublist instructions-sublist-alpha">
                         <li>Barangay Protection Order (BPO) obtained from the barangay;</li>
-                        <li>Temporary/Permanent Protection Order (TPO/PPO) obtained from the court; or</li>
-                        <li>If the protection order is not yet issued by the barangay or the court, a certification issued by the Punong Barangay/Kagawad or Prosecutor or the Clerk of Court that the application for the BPO, TPO or PPO has been filed with the said office shall be sufficient to support the application for the ten-day leave.</li>
-                    </ul>
+                        <li>Temporary/Permanent Protection Order (TPO/PPO) obtained from the court;</li>
+                        <li>If the protection order is not yet issued by the barangay or the court, a certification issued by the Punong Barangay/Kagawad or Prosecutor or the Clerk of Court that the application for the BPO, TPO or PPO has been filed with the said office shall be sufficient to support the application for the ten-day leave; or</li>
+                        <li>In the absence of the BPO/TPO/PPO or the certification, a police report specifying the details of the occurrence of violence on the victim and a medical certificate may be considered, at the discretion of the immediate supervisor of the woman employee concerned.</li>
+                    </ol>
                 </li>
-                <li>In the absence of the BPO/TPO/PPO or the certification, a police report specifying the details of the occurrence of violence on the victim and a medical certificate may be considered, at the discretion of the immediate supervisor of the woman employee concerned.</li>
             </ul>
         </li>
         <li>
