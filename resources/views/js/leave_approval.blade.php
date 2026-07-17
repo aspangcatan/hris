@@ -1,6 +1,87 @@
 <script>
     let page = 1, leave_id = 0, leave_approval_last_page = 1, activeFilter = 'pending';
+    let current_approval_role = null;
+    let approverSignatureNeeded = false;
     const leaveApprovalViewButtonHtml = `<i class="bi bi-eye-fill text-success"></i>`;
+
+    // Signature pad helpers — 'approver' key. Duplicated from js/leave_application.blade.php
+    // since this page never loads that file (each page loads only its own JS companion).
+    const SIGNATURE_PADS = {};
+    const SIGNATURE_HAS_CONTENT = {};
+
+    function initSignaturePad(key) {
+        const canvas = document.getElementById(`${key}_signature_canvas`);
+        if (!canvas) return null;
+        if (SIGNATURE_PADS[key]) {
+            SIGNATURE_PADS[key].off();
+        }
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+
+        const pad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)' });
+        pad.addEventListener('beginStroke', function () {
+            SIGNATURE_HAS_CONTENT[key] = true;
+            updateSignaturePlaceholder(key);
+        });
+        SIGNATURE_PADS[key] = pad;
+        SIGNATURE_HAS_CONTENT[key] = false;
+        return pad;
+    }
+
+    function updateSignaturePlaceholder(key) {
+        const placeholder = document.getElementById(`${key}_signature_placeholder`);
+        if (!placeholder) return;
+        const hasContent = SIGNATURE_HAS_CONTENT[key] || (SIGNATURE_PADS[key] && !SIGNATURE_PADS[key].isEmpty());
+        placeholder.style.display = hasContent ? 'none' : 'flex';
+    }
+
+    function clearSignaturePad(key) {
+        const pad = SIGNATURE_PADS[key];
+        if (!pad) return;
+        pad.clear();
+        SIGNATURE_HAS_CONTENT[key] = false;
+        const upload = document.getElementById(`${key}_signature_upload`);
+        if (upload) upload.value = '';
+        updateSignaturePlaceholder(key);
+    }
+
+    function handleSignatureUpload(key, event) {
+        const file = event.target.files[0];
+        const pad = SIGNATURE_PADS[key];
+        if (!file || !pad) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const canvas = document.getElementById(`${key}_signature_canvas`);
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const w = canvas.width / ratio;
+                const h = canvas.height / ratio;
+                const scale = Math.min(w / img.width, h / img.height, 1);
+                const drawW = img.width * scale;
+                const drawH = img.height * scale;
+                const x = (w - drawW) / 2;
+                const y = (h - drawH) / 2;
+
+                pad.clear();
+                canvas.getContext('2d').drawImage(img, x, y, drawW, drawH);
+                SIGNATURE_HAS_CONTENT[key] = true;
+                updateSignaturePlaceholder(key);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function getSignatureDataUrl(key) {
+        const pad = SIGNATURE_PADS[key];
+        const hasContent = SIGNATURE_HAS_CONTENT[key] || (pad && !pad.isEmpty());
+        if (!hasContent) return null;
+        return pad.toDataURL('image/png');
+    }
 
     $(function () {
         $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
@@ -28,6 +109,12 @@
             if (!targetPage || targetPage === page || targetPage < 1 || targetPage > leave_approval_last_page) return;
             page = targetPage;
             getLeaves();
+        });
+
+        $('#viewLeaveModal').on('shown.bs.modal', function () {
+            if (approverSignatureNeeded) {
+                initSignaturePad('approver');
+            }
         });
 
         getLeaves();
@@ -202,6 +289,10 @@
         $('#approveLeaveBtn, #rejectLeaveBtn').toggle(canAct);
         $('#undoApprovalBtn').toggleClass('d-none', !data.can_undo);
 
+        current_approval_role = data.current_approval_role;
+        approverSignatureNeeded = canAct && (current_approval_role === 'SH' || current_approval_role === 'DH');
+        $('#approver_signature_section').toggleClass('d-none', !approverSignatureNeeded);
+
         $('#viewLeaveModal').modal('show');
     }
 
@@ -223,6 +314,15 @@
     }
 
     function handleApproval() {
+        const status = this.value;
+        const requiresSignature = status === 'Approved' && (current_approval_role === 'SH' || current_approval_role === 'DH');
+        const signature = requiresSignature ? getSignatureDataUrl('approver') : null;
+
+        if (requiresSignature && !signature) {
+            toastr.error("Please draw or upload your signature before approving", "Required");
+            return;
+        }
+
         const button = this;
         const originalHtml = button.innerHTML;
         $(button).prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
@@ -232,8 +332,9 @@
             body: JSON.stringify({
                 id: leave_id,
                 remarks: $("#leave_remarks").val().trim(),
-                status: this.value,
-                disapproved_dates: collectDisapprovedDates()
+                status: status,
+                disapproved_dates: collectDisapprovedDates(),
+                signature: signature
             })
         })
             .then(r => r.json())
