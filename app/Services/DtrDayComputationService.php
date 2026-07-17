@@ -459,6 +459,22 @@ class DtrDayComputationService
                         } else {
                             $requiredOut = $schedOutLatest->copy();
                         }
+                    } elseif ($firstIn && !($isHalfDayMissingHalf && !$hasAmAttendance)) {
+                        // Non-gliding (FIXED and any other type): a step, not a
+                        // slide. Arriving at/before time_in earns the plain
+                        // time_out. Any lateness at all - even inside the
+                        // time_in..time_in_latest grace window - requires
+                        // time_out_latest instead. Lateness itself is still
+                        // penalized separately above, unaffected by this.
+                        // For schedules where time_out == time_out_latest
+                        // (the common case), this is a no-op vs. before.
+                        $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
+                        $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
+                        if ($schedOutLatest->lt($schedOut)) {
+                            $schedOutLatest->addDay();
+                        }
+
+                        $requiredOut = $effectiveIn->lte($schedIn) ? $schedOut->copy() : $schedOutLatest->copy();
                     } else {
                         $requiredOut = $schedOut;
                     }
