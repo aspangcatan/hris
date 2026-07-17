@@ -579,6 +579,8 @@
             font-weight: 700;
             text-transform: uppercase;
             margin-bottom: 10px;
+            border: 1px solid black;
+            padding:5px;
         }
 
         .instructions-intro {
@@ -658,171 +660,6 @@
             border: none;
         }
 
-        .sig-modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.55);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .sig-modal-overlay.open {
-            display: flex;
-        }
-
-        .sig-modal {
-            background: #fff;
-            border-radius: 14px;
-            width: 460px;
-            max-width: 92vw;
-            padding: 22px 22px 0;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 13px;
-            color: #0f172a;
-            position: relative;
-            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.28);
-            overflow: hidden;
-        }
-
-        .sig-modal-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 26px;
-            height: 26px;
-            border: none;
-            border-radius: 50%;
-            background: #f1f5f9;
-            font-size: 16px;
-            line-height: 1;
-            cursor: pointer;
-            color: #475569;
-        }
-
-        .sig-modal-close:hover {
-            background: #e2e8f0;
-            color: #0f172a;
-        }
-
-        .sig-modal h3 {
-            margin: 0 0 4px;
-            font-size: 16px;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        .sig-modal .sig-subtitle {
-            margin: 0 0 16px;
-            font-size: 11px;
-            color: #64748b;
-            text-align: center;
-        }
-
-        .sig-canvas-head {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 6px;
-        }
-
-        .sig-clear-btn {
-            border: none;
-            background: none;
-            color: #2563eb;
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-            padding: 2px 4px;
-        }
-
-        .sig-clear-btn:hover {
-            text-decoration: underline;
-        }
-
-        .sig-canvas-wrap {
-            border: 1.5px dashed #cbd5e1;
-            border-radius: 10px;
-            background: #f8fafc;
-            position: relative;
-        }
-
-        .sig-canvas-wrap canvas {
-            display: block;
-            width: 100%;
-            height: 190px;
-            cursor: crosshair;
-            border-radius: 10px;
-        }
-
-        .sig-canvas-placeholder {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 10px;
-            color: #94a3b8;
-            font-size: 12px;
-            line-height: 1.5;
-            pointer-events: none;
-        }
-
-        .sig-error {
-            display: none;
-            color: #dc2626;
-            font-size: 11px;
-            font-weight: 700;
-            text-align: center;
-            margin-top: 8px;
-        }
-
-        .sig-actions {
-            margin: 18px -22px 0;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .sig-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            text-align: center;
-            padding: 13px 0;
-            font-weight: 700;
-            font-size: 12px;
-            letter-spacing: 0.02em;
-            cursor: pointer;
-            background: #fff;
-            color: #334155;
-        }
-
-        .sig-row:hover {
-            background: #f8fafc;
-        }
-
-        .sig-row.sig-row-primary {
-            border-top: 1px solid #e2e8f0;
-            background: #2563eb;
-            color: #fff;
-            border-radius: 0 0 14px 14px;
-        }
-
-        .sig-row.sig-row-primary:hover {
-            background: #1d4ed8;
-        }
-
-        #sig_upload_input {
-            display: none;
-        }
-
-        @media print {
-            .sig-modal-overlay {
-                display: none !important;
-            }
-        }
-
         @media print {
             .print-toolbar {
                 display: none;
@@ -841,33 +678,7 @@
     $sectionHeadRemarks = trim((string) ($sectionHeadApproval->remarks ?? ''));
 @endphp
 <div class="print-toolbar">
-    <button type="button" id="btn_open_signature" onclick="openSignatureModal()" style="margin-right: 8px;">Add Signature</button>
     <button type="button" onclick="window.print()">Print</button>
-</div>
-
-<div class="sig-modal-overlay" id="sig_modal_overlay">
-    <div class="sig-modal">
-        <button type="button" class="sig-modal-close" onclick="closeSignatureModal()">&times;</button>
-        <h3>Applicant Signature</h3>
-        <p class="sig-subtitle">This will be embedded into the printed form only &mdash; nothing is saved.</p>
-
-        <div class="sig-canvas-head">
-            <button type="button" class="sig-clear-btn" onclick="clearSignatureCanvas()">Clear</button>
-        </div>
-        <div class="sig-canvas-wrap">
-            <canvas id="sig_canvas"></canvas>
-            <div class="sig-canvas-placeholder" id="sig_placeholder">You can manually draw your signature here<br>or override with upload</div>
-        </div>
-
-        <div class="sig-error" id="sig_error">Please draw or upload a signature before saving.</div>
-
-        <div class="sig-actions">
-            <label class="sig-row" for="sig_upload_input">&#128228; Upload Signature</label>
-            <input type="file" id="sig_upload_input" accept="image/*" onchange="handleSignatureUpload(event)">
-
-            <div class="sig-row sig-row-primary" onclick="saveSignature()">Save Changes</div>
-        </div>
-    </div>
 </div>
 
 <div class="page">
@@ -1060,6 +871,9 @@
                         <span class="option-copy">Requested</span>
                     </div>
                     <div class="applicant-line" id="applicant_line">
+                        @if($applicantSignature)
+                            <img src="{{ $applicantSignature }}" alt="Signature of Applicant" class="signature-img">
+                        @endif
                         <span class="sign-line">(Signature of Applicant)</span>
                     </div>
                 </td>
@@ -1119,6 +933,9 @@
                     </div>
 
                     <div class="bottom-authority" style="margin-top: 22px;">
+                        @if($shSignature)
+                            <img src="{{ $shSignature }}" alt="Signature of Authorized Officer" style="display:block; max-height: 34px; max-width: 65%; margin: 0 auto;">
+                        @endif
                         <span class="name-inline">{{ $authorizedOfficerName }}</span>
                         <div class="line"></div>
                         <div class="caption">(Authorized Officer)</div>
@@ -1147,6 +964,9 @@
             <tr>
                 <td colspan="2">
                     <div class="bottom-authority">
+                        @if($dhSignature)
+                            <img src="{{ $dhSignature }}" alt="Signature of Authorized Official" style="display:block; max-height: 34px; max-width: 65%; margin: 0 auto;">
+                        @endif
                         <span class="name-inline">{{ $authorizedOfficialName }}</span>
                         <div class="line"></div>
                         <div class="caption">(Authorized Official)</div>
@@ -1158,9 +978,9 @@
 </div>
 
 <div class="page instructions-page">
-    <div class="instructions-sheet">
+    <div class="instructions-sheet" style="padding:60px">
     <div class="instructions-title">Instructions and Requirements</div>
-    <div class="instructions-intro">Application for any type of leave shall be made on this Form and to be accomplished at least in duplicate with documentary requirements, as follows:</div>
+    <div class="instructions-intro">Application for any type of leave shall be made on this Form and to be <strong><u>accomplished at least in duplicate</u></strong> with documentary requirements, as follows:</div>
 
     <ol class="instructions-list">
         <li>
@@ -1175,7 +995,7 @@
             <div class="instr-header">Sick leave*</div>
             <ul class="instructions-sublist">
                 <li>It shall be filed immediately upon employee's return from such leave.</li>
-                <li>If filed in advance or exceeding five (5) days, application shall be accompanied by a medical certificate. In case medical consultation was not availed of, an affidavit should be executed by an applicant.</li>
+                <li>If filed in advance or exceeding five (5) days, application shall be accompanied by a <u>medical certificate</u>. In case medical consultation was not availed of, an <u>affidavit</u> should be executed by an applicant.</li>
             </ul>
         </li>
         <li>
@@ -1274,103 +1094,5 @@
     </div>
 @endforeach
 
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4/dist/signature_pad.umd.min.js"></script>
-<script>
-    let signaturePad = null;
-    let sigCanvasInitialized = false;
-    let hasSignatureContent = false;
-
-    function initSignatureCanvas() {
-        const canvas = document.getElementById('sig_canvas');
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext('2d').scale(ratio, ratio);
-
-        signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgba(255,255,255,0)' });
-        signaturePad.addEventListener('beginStroke', function () {
-            hasSignatureContent = true;
-            updateSignaturePlaceholder();
-        });
-        sigCanvasInitialized = true;
-    }
-
-    function updateSignaturePlaceholder() {
-        document.getElementById('sig_placeholder').style.display =
-            (hasSignatureContent || (signaturePad && !signaturePad.isEmpty())) ? 'none' : 'flex';
-    }
-
-    function openSignatureModal() {
-        document.getElementById('sig_error').style.display = 'none';
-        document.getElementById('sig_modal_overlay').classList.add('open');
-        if (!sigCanvasInitialized) {
-            initSignatureCanvas();
-        }
-        updateSignaturePlaceholder();
-    }
-
-    function closeSignatureModal() {
-        document.getElementById('sig_modal_overlay').classList.remove('open');
-    }
-
-    function clearSignatureCanvas() {
-        if (!signaturePad) return;
-        signaturePad.clear();
-        hasSignatureContent = false;
-        document.getElementById('sig_upload_input').value = '';
-        document.getElementById('sig_error').style.display = 'none';
-        updateSignaturePlaceholder();
-    }
-
-    function handleSignatureUpload(event) {
-        const file = event.target.files[0];
-        if (!file || !signaturePad) return;
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const img = new Image();
-            img.onload = function () {
-                const canvas = document.getElementById('sig_canvas');
-                const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                const w = canvas.width / ratio;
-                const h = canvas.height / ratio;
-                const scale = Math.min(w / img.width, h / img.height, 1);
-                const drawW = img.width * scale;
-                const drawH = img.height * scale;
-                const x = (w - drawW) / 2;
-                const y = (h - drawH) / 2;
-
-                signaturePad.clear();
-                canvas.getContext('2d').drawImage(img, x, y, drawW, drawH);
-                hasSignatureContent = true;
-                document.getElementById('sig_error').style.display = 'none';
-                updateSignaturePlaceholder();
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function saveSignature() {
-        const hasSignature = hasSignatureContent || (signaturePad && !signaturePad.isEmpty());
-        if (!hasSignature) {
-            document.getElementById('sig_error').style.display = 'block';
-            return;
-        }
-
-        const dataUrl = signaturePad.toDataURL('image/png');
-        const $line = document.getElementById('applicant_line');
-        let img = $line.querySelector('.signature-img');
-        if (!img) {
-            img = document.createElement('img');
-            img.className = 'signature-img';
-            img.alt = 'Signature of Applicant';
-            $line.insertBefore(img, $line.firstChild);
-        }
-        img.src = dataUrl;
-
-        closeSignatureModal();
-    }
-</script>
 </body>
 </html>
