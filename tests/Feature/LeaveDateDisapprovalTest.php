@@ -137,6 +137,7 @@ class LeaveDateDisapprovalTest extends TestCase
             'id' => $seed['app_id'],
             'status' => 'Approved',
             'remarks' => 'Overall fine',
+            'signature' => 'data:image/png;base64,SHSAMPLE==',
             'disapproved_dates' => [
                 ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'No coverage that day'],
             ],
@@ -175,6 +176,7 @@ class LeaveDateDisapprovalTest extends TestCase
             'id' => $seed['app_id'],
             'status' => 'Approved',
             'remarks' => 'Agreed',
+            'signature' => 'data:image/png;base64,DHSAMPLE==',
             'disapproved_dates' => [
                 ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'Confirmed no coverage'],
             ],
@@ -207,6 +209,7 @@ class LeaveDateDisapprovalTest extends TestCase
             'id' => $seed['app_id'],
             'status' => 'Approved',
             'remarks' => 'Coverage was actually fine',
+            'signature' => 'data:image/png;base64,DHSAMPLE==',
             'disapproved_dates' => [],
         ]);
         $response->assertOk();
@@ -231,6 +234,7 @@ class LeaveDateDisapprovalTest extends TestCase
             'id' => $seed['app_id'],
             'status' => 'Approved',
             'remarks' => 'Caught this one myself',
+            'signature' => 'data:image/png;base64,DHSAMPLE==',
             'disapproved_dates' => [
                 ['date_applied_id' => $seed['date_ids'][1], 'remark' => 'DH caught a conflict'],
             ],
@@ -308,6 +312,7 @@ class LeaveDateDisapprovalTest extends TestCase
             'id' => $seed['app_id'],
             'status' => 'Approved',
             'remarks' => 'Agreed',
+            'signature' => 'data:image/png;base64,DHSAMPLE==',
             'disapproved_dates' => [
                 ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'Confirmed'],
             ],
@@ -366,6 +371,7 @@ class LeaveDateDisapprovalTest extends TestCase
             'id' => $seed['app_id'],
             'status' => 'Approved',
             'remarks' => 'Agreed',
+            'signature' => 'data:image/png;base64,DHSAMPLE==',
             'disapproved_dates' => [
                 ['date_applied_id' => $seed['date_ids'][0], 'remark' => 'Confirmed'],
             ],
