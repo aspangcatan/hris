@@ -352,6 +352,7 @@ class PrintController extends Controller
                 'd.description as designation',
                 'u.division as division_id',
                 'l.commutation',
+                'l.applicant_signature',
                 'l.id',
             ])
             ->first();
@@ -386,7 +387,12 @@ class PrintController extends Controller
         $sectionHeadApproval = DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $request->id)
             ->where('role', 'SH')
-            ->first(['status', 'remarks']);
+            ->first(['status', 'remarks', 'signature']);
+
+        $divisionHeadApproval = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $request->id)
+            ->where('role', 'DH')
+            ->first(['signature']);
 
         $attachments = DB::table('leave_application_attachments')
             ->where('leave_application_id', $request->id)
@@ -434,6 +440,9 @@ class PrintController extends Controller
         }
 
         return view('print.leave_form', [
+            'applicantSignature'     => $leave_application->applicant_signature ?: null,
+            'shSignature'            => $sectionHeadApproval->signature ?? null,
+            'dhSignature'            => $divisionHeadApproval->signature ?? null,
             'leaveApplication'       => $leave_application,
             'leaveDetails'           => $leaveDetails,
             'selectedLeaveIds'       => $selectedLeaveIds,
