@@ -33,6 +33,9 @@
     function initSignaturePad(key) {
         const canvas = document.getElementById(`${key}_signature_canvas`);
         if (!canvas) return null;
+        if (SIGNATURE_PADS[key]) {
+            SIGNATURE_PADS[key].off();
+        }
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
@@ -227,7 +230,6 @@
             addRow();
             resetDetailsSection();
             refreshCommutationVisibility(); // set initial commutation state (no types checked yet → hidden)
-            initApplicantSignaturePad();
             file_leave_modal.toggle();
         });
 
@@ -244,6 +246,14 @@
         });
 
         $("#btn_save_leave").click(handleSaveLeave);
+
+        // Init the applicant signature pad only once the modal is actually visible
+        // (canvas offsetWidth/offsetHeight are 0 while display:none, which would
+        // size the canvas bitmap to 0x0). Fires for both "File" and "Edit" opens
+        // since both share this one modal.
+        $('#file_leave_modal').on('shown.bs.modal', function () {
+            initApplicantSignaturePad();
+        });
 
         init_leave();
         getLeaves();
@@ -998,7 +1008,6 @@
                 existingAttachments = [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }];
             }
             renderExistingAttachments(existingAttachments);
-            initApplicantSignaturePad();
 
             file_leave_modal.toggle();
         } catch {
