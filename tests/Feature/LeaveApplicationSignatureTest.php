@@ -246,4 +246,30 @@ class LeaveApplicationSignatureTest extends TestCase
         $response->assertOk();
         $this->assertNull(DB::table('hris.leave_application_approvals')->where('leave_application_id', $appId)->where('role', 'HR')->value('signature'));
     }
+
+    /** @test */
+    public function undoing_an_approval_clears_the_stored_signature(): void
+    {
+        $this->actAsEmployee();
+        $this->withoutMiddleware()->post('/insert_leave_applications', $this->filePayload())->assertOk();
+        $appId = DB::table('hris.leave_applications')->where('user_id', $this->employeeId)->value('id');
+
+        $this->actAsSh();
+        $shSignature = 'data:image/png;base64,SHSIGNATURE==';
+        $this->withoutMiddleware()->postJson('/update/approval_status', [
+            'id' => $appId,
+            'status' => 'Approved',
+            'remarks' => 'Fine',
+            'signature' => $shSignature,
+        ])->assertOk();
+
+        $this->assertEquals($shSignature, DB::table('hris.leave_application_approvals')->where('leave_application_id', $appId)->where('role', 'SH')->value('signature'));
+
+        $this->withoutMiddleware()->postJson('/undo_approval', ['id' => $appId])->assertOk();
+
+        // A stale signature must not survive an undo - a printed form must
+        // never show a signature for an approval step that's no longer valid.
+        $this->assertNull(DB::table('hris.leave_application_approvals')->where('leave_application_id', $appId)->where('role', 'SH')->value('signature'));
+        $this->assertEquals('pending', DB::table('hris.leave_application_approvals')->where('leave_application_id', $appId)->where('role', 'SH')->value('status'));
+    }
 }

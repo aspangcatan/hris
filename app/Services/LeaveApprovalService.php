@@ -270,6 +270,7 @@ class LeaveApprovalService
                 ->update([
                     'status'      => 'pending',
                     'approved_at' => null,
+                    'signature'   => null,
                     'updated_at'  => Carbon::now(),
                 ]);
 
