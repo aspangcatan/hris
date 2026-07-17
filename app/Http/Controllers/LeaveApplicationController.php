@@ -180,6 +180,7 @@ class LeaveApplicationController extends Controller
                 'disapproved_dates'                   => 'nullable|array',
                 'disapproved_dates.*.date_applied_id' => 'required|integer',
                 'disapproved_dates.*.remark'          => 'nullable|string|max:255',
+                'signature'                            => 'nullable|string',
             ]);
 
             $this->leaveApprovalService->updateApprovalStatus(
@@ -187,7 +188,8 @@ class LeaveApplicationController extends Controller
                 null,
                 $request->remarks,
                 $request->status,
-                $validated['disapproved_dates'] ?? []
+                $validated['disapproved_dates'] ?? [],
+                $validated['signature'] ?? null
             );
             return response()->json(['message' => 'Update status done']);
         } catch (\Exception $exception) {

@@ -285,7 +285,7 @@ class LeaveApprovalService
         });
     }
 
-    public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null, array $disapprovedDates = []): void
+    public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null, array $disapprovedDates = [], ?string $signature = null): void
     {
         $app = DB::table('hris.leave_applications')->where('id', $leave_id)->first(['id']);
         if (!$app) {
@@ -304,7 +304,12 @@ class LeaveApprovalService
             throw new \RuntimeException('Current user is not allowed to approve this leave application.');
         }
 
-        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates) {
+        $requiresSignature = $normalizedStatus === 'approved' && in_array($effectiveRole, ['SH', 'DH'], true);
+        if ($requiresSignature && empty($signature)) {
+            throw new \InvalidArgumentException('A signature is required to approve this leave application.');
+        }
+
+        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates, $signature, $requiresSignature) {
             // Enforce SH → DH → HR order
             if ($effectiveRole === 'DH') {
                 $shApproved = DB::table('hris.leave_application_approvals')
@@ -336,15 +341,20 @@ class LeaveApprovalService
                 }
             }
 
+            $approvalUpdate = [
+                'status'      => $normalizedStatus,
+                'remarks'     => $remarks,
+                'approved_at' => Carbon::now(),
+                'updated_at'  => Carbon::now(),
+            ];
+            if ($requiresSignature) {
+                $approvalUpdate['signature'] = $signature;
+            }
+
             DB::table('hris.leave_application_approvals')
                 ->where('leave_application_id', $leave_id)
                 ->where('role', $effectiveRole)
-                ->update([
-                    'status'      => $normalizedStatus,
-                    'remarks'     => $remarks,
-                    'approved_at' => Carbon::now(),
-                    'updated_at'  => Carbon::now(),
-                ]);
+                ->update($approvalUpdate);
 
             if ($normalizedStatus === 'rejected') {
                 $this->restoreCredits($leave_id);
