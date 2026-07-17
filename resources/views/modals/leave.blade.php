@@ -1,3 +1,5 @@
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4/dist/signature_pad.umd.min.js"></script>
+
 <div class="modal fade premium-modal" id="leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -145,6 +147,21 @@
                             </div>
                         </div>
                     </div>
+
+                    <hr/>
+                    <div class="d-flex align-items-center justify-content-between mt-4">
+                        <div class="fw-bold">Applicant Signature</div>
+                        <button type="button" class="btn btn-sm btn-link p-0" onclick="clearSignaturePad('applicant')">Clear</button>
+                    </div>
+                    <div class="small text-muted mb-2">Draw your signature below, or upload an image. Required to submit — filing or editing this application signs it as an acknowledgment of its current contents.</div>
+                    <div style="border: 1.5px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; position: relative;">
+                        <canvas id="applicant_signature_canvas" style="display:block; width:100%; height:150px;"></canvas>
+                        <div id="applicant_signature_placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px; color:#94a3b8; font-size:12px; pointer-events:none;">Draw your signature here, or upload an image below</div>
+                    </div>
+                    <div class="mt-2">
+                        <label class="btn btn-sm btn-outline-secondary mb-0" for="applicant_signature_upload">Upload Signature</label>
+                        <input type="file" id="applicant_signature_upload" accept="image/*" class="d-none" onchange="handleSignatureUpload('applicant', event)">
+                    </div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
@@ -233,6 +250,21 @@
                                   class="form-control"
                                   rows="3"
                                   placeholder="Enter your remarks here..."></textarea>
+
+                        <div id="approver_signature_section" class="mt-3 d-none">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <label class="form-label mb-0"><strong>Your Signature (required to Approve):</strong></label>
+                                <button type="button" class="btn btn-sm btn-link p-0" onclick="clearSignaturePad('approver')">Clear</button>
+                            </div>
+                            <div style="border: 1.5px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; position: relative;">
+                                <canvas id="approver_signature_canvas" style="display:block; width:100%; height:130px;"></canvas>
+                                <div id="approver_signature_placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px; color:#94a3b8; font-size:12px; pointer-events:none;">Draw your signature here, or upload an image below</div>
+                            </div>
+                            <div class="mt-2">
+                                <label class="btn btn-sm btn-outline-secondary mb-0" for="approver_signature_upload">Upload Signature</label>
+                                <input type="file" id="approver_signature_upload" accept="image/*" class="d-none" onchange="handleSignatureUpload('approver', event)">
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>
