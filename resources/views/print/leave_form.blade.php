@@ -567,6 +567,12 @@
             page-break-before: always;
         }
 
+        .instructions-sheet {
+            border: 1px solid #000;
+            padding: 8mm;
+            min-height: 283mm;
+        }
+
         .instructions-title {
             text-align: center;
             font-size: 13px;
@@ -584,9 +590,12 @@
             margin: 0;
             padding-left: 16px;
             font-size: 10px;
+            columns: 2;
+            column-gap: 8mm;
         }
 
         .instructions-list > li {
+            break-inside: avoid;
             margin-bottom: 7px;
         }
 
@@ -1139,6 +1148,7 @@
 </div>
 
 <div class="page instructions-page">
+    <div class="instructions-sheet">
     <div class="instructions-title">Instructions and Requirements</div>
     <div class="instructions-intro">Application for any type of leave shall be made on this Form and to be accomplished at least in duplicate with documentary requirements, as follows:</div>
 
@@ -1237,6 +1247,7 @@
     </ol>
 
     <div class="instructions-footnote">* For leave of absence for thirty (30) calendar days or more and terminal leave, application shall be accompanied by a clearance from money, property and work-related accountabilities (pursuant to CSC Memorandum Circular No. 2, s. 1985).</div>
+    </div>
 </div>
 
 @foreach($attachments as $attachment)
