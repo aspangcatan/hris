@@ -1785,7 +1785,7 @@
             reload: () => getChildren(),
             fields: [
                 { key: 'name',      label: 'Full Name',    type: 'text' },
-                { key: 'birthdate', label: 'Date of Birth', type: 'date', sendAs: 'birthday',
+                { key: 'birthdate', label: 'Date of Birth', type: 'date',
                   display: v => v ? moment(v).format('MM/DD/YYYY') : '' }
             ]
         },

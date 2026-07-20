@@ -19,6 +19,7 @@ use App\Models\SpouseRealProperties;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class SalnController extends Controller
 {
@@ -136,6 +137,14 @@ class SalnController extends Controller
     public function insertSalnChildren(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'birthdate' => 'required|date',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $saln_children = SalnChildren::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -194,6 +203,20 @@ class SalnController extends Controller
     public function insertRealProperties(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'description' => 'required|string',
+                'kind' => 'required|string',
+                'exact_location' => 'required|string',
+                'assessed_value' => 'required|numeric',
+                'current_fair' => 'required|numeric',
+                'acquisition_year' => 'required|integer|digits:4',
+                'acquisition_mode' => 'required|string',
+                'acquisition_cost' => 'required|numeric',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $real_properties = RealProperties::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -257,6 +280,15 @@ class SalnController extends Controller
     public function insertPersonalProperties(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'gadget' => 'required|string',
+                'various_years' => 'required|string',
+                'acquisition_cost' => 'required|numeric',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $personal_properties = PersonalProperties::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -316,6 +348,15 @@ class SalnController extends Controller
     public function insertLiabilities(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'nature' => 'required|string',
+                'creditors_name' => 'required|string',
+                'outstanding_balance' => 'required|numeric',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $liabilities = Liabilities::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -375,6 +416,16 @@ class SalnController extends Controller
     public function insertBusinessInterest(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'enterprise' => 'required|string',
+                'address' => 'required|string',
+                'nature' => 'required|string',
+                'date_acquisition' => 'required|date',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $business_interest = BusinessInterest::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -435,6 +486,16 @@ class SalnController extends Controller
     public function insertGovernmentRelative(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string',
+                'relationship' => 'required|string',
+                'position' => 'required|string',
+                'agency' => 'required|string',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $government_relative = GovernmentRelative::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -495,6 +556,13 @@ class SalnController extends Controller
     public function insertMarriages(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'spouse' => 'required|string|max:100',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $marriages = Marriages::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -551,6 +619,20 @@ class SalnController extends Controller
     public function insertSpouseRealProperties(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'description' => 'required|string',
+                'kind' => 'required|string',
+                'exact_location' => 'required|string',
+                'assessed_value' => 'required|numeric',
+                'current_fair' => 'required|numeric',
+                'acquisition_year' => 'required|integer|digits:4',
+                'acquisition_mode' => 'required|string',
+                'acquisition_cost' => 'required|numeric',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $real_properties = SpouseRealProperties::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -616,6 +698,15 @@ class SalnController extends Controller
     public function insertSpousePersonalProperties(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'gadget' => 'required|string',
+                'various_years' => 'required|string',
+                'acquisition_cost' => 'required|numeric',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $personal_properties = SpousePersonalProperties::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -676,6 +767,15 @@ class SalnController extends Controller
     public function insertSpouseLiabilities(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'nature' => 'required|string',
+                'creditors_name' => 'required|string',
+                'outstanding_balance' => 'required|numeric',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $liabilities = SpouseLiabilities::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
@@ -736,6 +836,16 @@ class SalnController extends Controller
     public function insertSpouseBusinessInterest(Request $request)
     {
         try {
+            $validator = Validator::make($request->all(), [
+                'enterprise' => 'required|string',
+                'address' => 'required|string',
+                'nature' => 'required|string',
+                'date_acquisition' => 'required|date',
+            ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
+
             $id = $request->id;
             $business_interest = SpouseBusinessInterest::where(function ($query) use ($id) {
                 $query->where('id', '=', $id);
