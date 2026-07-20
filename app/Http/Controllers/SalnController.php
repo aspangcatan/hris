@@ -942,25 +942,46 @@ class SalnController extends Controller
             
             $declarant->save();
 
-            // If joint filing, update spouse record as well
-            if ($filingType === 'Joint Filing') {
-                $spouse = Spouse::where('user_id', Auth::id())
-                    ->whereYear('compliance_for', $complianceYear)
-                    ->first();
+            // Update spouse record regardless of filing_type - filing_type governs
+            // whether the spouse's assets are aggregated into this SALN filing,
+            // not whether their basic profile/ID info gets saved. The Spouse tab
+            // is always visible/editable and the save confirmation dialog already
+            // promises "Spouse Profile & all Spouse data" will be saved, so
+            // gating this behind Joint Filing only silently discarded typed-in
+            // data (the reported bug).
+            $spouse = Spouse::where('user_id', Auth::id())
+                ->whereYear('compliance_for', $complianceYear)
+                ->first();
 
-                if (!$spouse) {
-                    $spouse = new Spouse;
-                    $spouse->user_id = Auth::id();
+            if (!$spouse) {
+                $spouse = new Spouse;
+                $spouse->user_id = Auth::id();
+            }
+
+            $spouse->position = $request->spouse_position;
+            $spouse->agency = $request->spouse_agency;
+            $spouse->office = $request->spouse_office;
+            $spouse->government_id_issued = $request->spouse_government_id_issued;
+            $spouse->government_id_no = $request->spouse_government_id_no;
+            $spouse->date_issued = $request->spouse_date_issued;
+            $spouse->compliance_for = $complianceDate;
+            $spouse->save();
+
+            // Spouse's name lives in family_backgrounds (shared with the general
+            // Employee Profile module, not SALN-specific) - only touch the 3
+            // spouse name columns so we never clobber father/mother/other
+            // spouse fields (occupation, employer, etc.) already saved there.
+            if ($request->has('spouse_fname') || $request->has('spouse_mname') || $request->has('spouse_lname')) {
+                $familyBackground = FamilyBackground::where('user_id', Auth::id())->first();
+                if (!$familyBackground) {
+                    $familyBackground = new FamilyBackground;
+                    $familyBackground->user_id = Auth::id();
                 }
 
-                $spouse->position = $request->spouse_position;
-                $spouse->agency = $request->spouse_agency;
-                $spouse->office = $request->spouse_office;
-                $spouse->government_id_issued = $request->spouse_government_id_issued;
-                $spouse->government_id_no = $request->spouse_government_id_no;
-                $spouse->date_issued = $request->spouse_date_issued;
-                $spouse->compliance_for = $complianceDate;
-                $spouse->save();
+                $familyBackground->spouse_fname = $request->spouse_fname;
+                $familyBackground->spouse_mname = $request->spouse_mname;
+                $familyBackground->spouse_lname = $request->spouse_lname;
+                $familyBackground->save();
             }
 
             $netWorthData = $this->calculateNetWorth(Auth::id(), $complianceYear, $filingType);
