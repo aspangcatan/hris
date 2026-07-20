@@ -909,11 +909,25 @@ class SalnController extends Controller
     public function updateSalnCompliance(Request $request)
     {
         try {
-            $request->validate([
+            // saln_declarant.position/agency/office/government_id_issued/
+            // government_id_no are NOT NULL with no default - the single
+            // "Save & Finalize" button that hits this endpoint always sends
+            // all of them together (no partial-update call site exists), so
+            // requiring them here is safe and turns a raw SQL crash into a
+            // clean, user-facing message instead.
+            $validator = Validator::make($request->all(), [
                 'compliance_for' => 'required|date',
                 'compliance_type' => 'required|in:Assumption of office,Annual Filing,Exit',
-                'filing_type' => 'required|in:Joint Filing,Separate Filing,Not Applicable'
+                'filing_type' => 'required|in:Joint Filing,Separate Filing,Not Applicable',
+                'declarant_position' => 'required|string',
+                'declarant_agency' => 'required|string',
+                'declarant_office' => 'required|string',
+                'declarant_government_id_issued' => 'required|string',
+                'declarant_government_id_no' => 'required|string',
             ]);
+            if ($validator->fails()) {
+                return response(['code' => 500, 'message' => $validator->errors()->first()]);
+            }
 
             $complianceDate = $request->compliance_for; // Full date (YYYY-MM-DD)
             $complianceYear = date('Y', strtotime($complianceDate)); // Extract year for querying
