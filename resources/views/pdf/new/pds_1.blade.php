@@ -34,7 +34,7 @@ if (!function_exists('honorsAdjustFontSize')) {
 <div id="page_1" style="border:1px solid black">
     <div>
         <div style="font-weight: bold;font-size:14.66px;font-family: 'Calibri';padding-left:2.5px">CS Form No. 212</div>
-        <div style="font-size: 12px;padding-left:2.5px">Revised 2025</div>
+        <div style="font-size: 12px;padding-left:2.5px">Revised 2026</div>
         <div
             style="text-align: center;font-weight: bold;font-size: 29.33px;font-family:'Arial Black',sans-serif !important;">
             PERSONAL DATA SHEET
@@ -1144,4 +1144,4 @@ if (!function_exists('honorsAdjustFontSize')) {
                 </tr>
     </table>
 </div>
-<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2025), Page 1 of 4</div>
+<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2026), Page 1 of 4</div>
