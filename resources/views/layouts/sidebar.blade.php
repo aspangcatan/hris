@@ -173,6 +173,10 @@
         {{-- LEAVE MANAGEMENT --}}
         @if(permission_check('leave.file') || permission_check('leave.approve'))
             <li class="nav-heading">Leave Management</li>
+            {{-- Leave Application sidebar link hidden 2026-07-20 - module still in testing.
+                 The route/page itself is untouched and still reachable directly by URL;
+                 only this nav entry is suppressed. Restore by uncommenting below. --}}
+            {{--
             @permission('leave.file')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('leave_application') ? '' : 'collapsed' }}"
@@ -182,6 +186,7 @@
                     </a>
                 </li>
             @endpermission
+            --}}
             @permission('leave.approve')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('leave_approval') ? '' : 'collapsed' }}"
