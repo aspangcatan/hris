@@ -79,9 +79,9 @@
                 DEPARTMENT/AGENCY/OFFICE/COMPANY<br/>
                 (Write in full/Do not abbreviate)
             </td>
-            <td rowspan="2" class="hide" style=";border-right: solid 1px black">MONTHLY<br/>SALARY
+            <td rowspan="2" style=";border-right: solid 1px black">MONTHLY<br/>SALARY
             </td>
-            <td rowspan="2" class="hide" style="border-right: solid 1px black;font-size: 9px !important;">
+            <td rowspan="2"style="border-right: solid 1px black;font-size: 9px !important;">
                 SALARY/JOB/<br/>PAY
                 GRADE(if<br/>applicable)&<br/>STEP
                 (Format<br/>"00-0")/<br/>INCREMENT
@@ -104,9 +104,9 @@
                 <td style="width: 44%;border-right: solid 1px black;font-size: 10px"
                     class="center-value">{{ strtoupper($key['agency']) }}</td>
                 <td style="width: 7%;border-right: solid 1px black;font-size: 11px"
-                    class="center-value hide">{{ strtoupper($key['monthly_salary']) }}</td>
+                    class="center-value">{{ strtoupper($key['monthly_salary']) }}</td>
                 <td style="width: 8%;border-right: solid 1px black;font-size: 11px"
-                    class="center-value hide">{{ strtoupper($key['salary_grade']) }}</td>
+                    class="center-value">{{ strtoupper($key['salary_grade']) }}</td>
                 <td style="width: 12%;border-right: solid 1px black;font-size: 11px"
                     class="center-value">{{ strtoupper($key['appointment_status']) }}</td>
                 <td style="width: 8%;" class="center-value">{{ strtoupper($key['is_government']) }}</td>

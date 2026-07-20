@@ -26,7 +26,27 @@
       "Bash(php --version)",
       "Bash(git -C \"c:/wamp64/projects/hris\" diff 665d6d8..HEAD)",
       "Bash(git -C C:/wamp64/projects/hris add app/Services/OvertimeServices.php tests/Feature/OvertimeApprovalTest.php)",
-      "Bash(git -C C:/wamp64/projects/hris commit -m ' *)"
+      "Bash(git -C C:/wamp64/projects/hris commit -m ' *)",
+      "Bash(git -C /c/wamp64/projects/hris status --short)",
+      "Bash(git -C /c/wamp64/projects/hris diff routes/web.php)",
+      "Read(//c/Users/DOH/.claude/plugins/cache/superpowers-dev/superpowers/5.1.0/skills/subagent-driven-development/**)",
+      "Bash(git -C /c/wamp64/projects/hris log --oneline -3)",
+      "Read(//c/Users/DOH/.claude/plugins/cache/superpowers-dev/superpowers/5.1.0/skills/requesting-code-review/**)",
+      "Bash(git -C /c/wamp64/projects/hris diff --stat)",
+      "Bash(git -C /c/wamp64/projects/hris diff .claude/settings.local.json)",
+      "Bash(git -C /c/wamp64/projects/hris add resources/views/forms/payroll.blade.php resources/views/js/employee.blade.php resources/views/modals/payroll.blade.php resources/views/settings/payroll.blade.php resources/views/settings/payroll_components.blade.php tests/Feature/EmployeePayrollComponentAssignmentTest.php)",
+      "Bash(git -C /c/wamp64/projects/hris commit -m ' *)",
+      "Bash(git -C /c/wamp64/projects/hris log --oneline -5)",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(grep -c \"public function.*@test\\\\|/\\\\*\\\\* @test \\\\*/\" tests/Feature/PayrollComponentRateOverrideTest.php)",
+      "Bash(grep -c \"/\\\\*\\\\* @test \\\\*/\" tests/Feature/PayrollComponentRateOverrideTest.php)",
+      "Bash(git -C /c/wamp64/projects/hris log --oneline -6)",
+      "Bash(mysql -u root hris -e \"SELECT COUNT\\(*\\) FROM employee_payroll_components WHERE userid=9801; SELECT COUNT\\(*\\) FROM payroll_settings WHERE userid=9801; SELECT COUNT\\(*\\) FROM payroll_components WHERE code='TEST_RATE_WIRE';\")",
+      "Bash(grep -n \"rate_percent_override\" resources/views/**/*.blade.php)",
+      "Bash(grep -rln \"rate_percent_override\" resources/views/)",
+      "Bash(xargs grep -l \"save_payroll_settings\")",
+      "Bash(git -C /c/wamp64/projects/hris show --stat HEAD)"
     ],
     "additionalDirectories": [
       "c:\\wamp64\\projects\\hris\\docs\\superpowers\\specs"
