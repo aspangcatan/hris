@@ -1190,34 +1190,40 @@ class SalnController extends Controller
                 return response(['code' => 404, 'message' => 'SALN record not found for date ' . $complianceDate]);
             }
 
-            // Delete all related records for this specific compliance date
-            $tables = [
-                RealProperties::class,
-                PersonalProperties::class,
-                Liabilities::class,
-                BusinessInterest::class,
-                GovernmentRelative::class,
-                SalnChildren::class,
-                Marriages::class,
-                Spouse::class,
-                SpouseRealProperties::class,
-                SpousePersonalProperties::class,
-                SpouseLiabilities::class,
-                SpouseBusinessInterest::class,
-            ];
+            // Delete all related records for this specific compliance date.
+            // Wrapped in a transaction for when these tables are InnoDB - all
+            // SALN tables are currently MyISAM, which silently ignores
+            // transactions (no real rollback-on-failure today), but this
+            // keeps the code correct for whenever that changes.
+            DB::transaction(function () use ($complianceDate, $userId, $declarant) {
+                $tables = [
+                    RealProperties::class,
+                    PersonalProperties::class,
+                    Liabilities::class,
+                    BusinessInterest::class,
+                    GovernmentRelative::class,
+                    SalnChildren::class,
+                    Marriages::class,
+                    Spouse::class,
+                    SpouseRealProperties::class,
+                    SpousePersonalProperties::class,
+                    SpouseLiabilities::class,
+                    SpouseBusinessInterest::class,
+                ];
 
-            foreach ($tables as $model) {
-                $query = $model::where('compliance_for', $complianceDate);
-                if ($model === Marriages::class) {
-                    $query->where('userid', $userId);
-                } else {
-                    $query->where('user_id', $userId);
+                foreach ($tables as $model) {
+                    $query = $model::where('compliance_for', $complianceDate);
+                    if ($model === Marriages::class) {
+                        $query->where('userid', $userId);
+                    } else {
+                        $query->where('user_id', $userId);
+                    }
+                    $query->delete();
                 }
-                $query->delete();
-            }
 
-            // Finally delete the declarant record
-            $declarant->delete();
+                // Finally delete the declarant record
+                $declarant->delete();
+            });
 
             return response(['code' => 200, 'message' => 'SALN record and all related data deleted successfully.']);
         } catch (\Exception $exception) {
