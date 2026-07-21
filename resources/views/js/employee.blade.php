@@ -464,6 +464,13 @@
             );
         });
 
+        $("#btn_print_pds_2025").click(function () {
+            window.open(
+                '{{ route('printPds') }}?id=' + employee_id + '&pds_version=2025',
+                '_blank' // <- This is what makes it open in a new window.
+            );
+        });
+
         $("button.nav-link").click(function () {
             switch ($(this).attr("data-bs-target")) {
                 case "#address":

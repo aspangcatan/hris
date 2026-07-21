@@ -113,4 +113,4 @@
                 </tr>
     </table>
 </div>
-<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised 2026), Page 1 of 4</div>
+<div style="text-align: right;font-size: 9.33px;font-style: italic">CS FORM 212 (Revised {{ $pds_version ?? '2026' }}), Page 1 of 4</div>

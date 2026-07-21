@@ -1,7 +1,7 @@
 <div id="page_6" style="border:1px solid black">
     <table style="border-top: solid 1px black">
         <tr style="background: gray">
-            <td colspan="8"
+            <td colspan="{{ $pds_version === '2025' ? 6 : 8 }}"
                 class="title">V. WORK EXPERIENCE<br/><span style="font-size: 11.33px">(Include private employment. Start from your recent work)
                     Description of duties should be indicated in the attached Work Experience sheet.</span>
             </td>
@@ -20,13 +20,15 @@
                 DEPARTMENT/AGENCY/OFFICE/COMPANY<br/>
                 (Write in full/Do not abbreviate)
             </td>
-            <td class="hide" rowspan="2" style=";border-right: solid 1px black">MONTHLY<br/>SALARY
+            @unless($pds_version === '2025')
+            <td rowspan="2" style=";border-right: solid 1px black">MONTHLY<br/>SALARY
             </td>
-            <td class="hide" rowspan="2" style="border-right: solid 1px black;font-size: 9px !important;">
+            <td rowspan="2" style="border-right: solid 1px black;font-size: 9px !important;">
                 SALARY/JOB/<br/>PAY
                 GRADE(if<br/>applicable)&<br/>STEP
                 (Format<br/>"00-0")/<br/>INCREMENT
             </td>
+            @endunless
             <td rowspan="2" style="border-right: solid 1px black">STATUS OF<br/>APPOINTMENT</td>
             <td rowspan="2">GOV'T<br/>SERVICE<br/>(Y/N)</td>
         </tr>
@@ -44,17 +46,19 @@
                     class="center-value">{{ strtoupper($key['position']) }}</td>
                 <td style="width: 44%;border-right: solid 1px black;font-size: 10px"
                     class="center-value">{{ strtoupper($key['agency']) }}</td>
+                @unless($pds_version === '2025')
                 <td style="width: 7%;border-right: solid 1px black;font-size: 11px"
-                    class="center-value hide">{{ strtoupper($key['monthly_salary']) }}</td>
+                    class="center-value">{{ strtoupper($key['monthly_salary']) }}</td>
                 <td style="width: 8%;border-right: solid 1px black;font-size: 11px"
-                    class="center-value hide">{{ strtoupper($key['salary_grade']) }}</td>
+                    class="center-value">{{ strtoupper($key['salary_grade']) }}</td>
+                @endunless
                 <td style="width: 12%;border-right: solid 1px black;font-size: 11px"
                     class="center-value">{{ strtoupper($key['appointment_status']) }}</td>
                 <td style="width: 8%;" class="center-value">{{ strtoupper($key['is_government']) }}</td>
             </tr>
         @endforeach
         <tr style="border-top: solid 1px  black;text-align: center">
-            <td colspan="8" style="color:red;font-weight: bold;height:  unset !important;" class="gray">(Continue on
+            <td colspan="{{ $pds_version === '2025' ? 6 : 8 }}" style="color:red;font-weight: bold;height:  unset !important;" class="gray">(Continue on
                 separate sheet if necessary)
             </td>
         </tr>

@@ -66,6 +66,7 @@
                                     <h3 id="employee_designation"></h3>
                                     <div class="social-links mt-2">
                                         <button class="btn btn-sm btn-success d-none" id="btn_print_pds">Print PDS</button>
+                                        <button class="btn btn-sm btn-success d-none" id="btn_print_pds_2025">Print PDS 2025</button>
                                     </div>
                                 </div>
                             </div>

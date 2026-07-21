@@ -1195,6 +1195,8 @@ class PrintController extends Controller
                 $user_id = $request->id;
             }
 
+            $pds_version = $request->pds_version === '2025' ? '2025' : '2026';
+
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];
             $SURVEYS = [
@@ -1676,7 +1678,8 @@ class PrintController extends Controller
                 'survey' => $surveys,
                 'reference' => $references,
                 'pds_date' => $request->pds_date,
-                'sworn_date' => $request->sworn_date
+                'sworn_date' => $request->sworn_date,
+                'pds_version' => $pds_version
             ]);
 
             $pdf->setPaper('A4', 'landscape');

@@ -54,6 +54,7 @@
     const other_information_modal = new bootstrap.Modal(document.getElementById('other_information_modal'));
     const print_modal = new bootstrap.Modal(document.getElementById('print_modal'));
 
+    let pdsVersionToPrint = '2026';
     let children_id = 0;
     let education_id = 0;
     let civil_service_id = 0;
@@ -99,7 +100,8 @@
             }
         });
 
-        $("#btn_print_pds").click(function () {
+        $("#btn_print_pds, #btn_print_pds_2025").click(function () {
+            pdsVersionToPrint = $(this).data("pds-version") || '2026';
             $("#pds_date").val(moment().format("YYYY-MM-DD"));
             print_modal.toggle();
         });
@@ -123,7 +125,7 @@
             date = moment(date).format("DD/MM/YYYY");
             sworn_date = moment(sworn_date).format("DD/MM/YYYY");
             window.open(
-                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows + "&sworn_date=" + sworn_date,
+                '{{ route('printPds') }}?id=0&pds_date=' + date + "&experience_rows=" + experience_rows + "&learning_rows=" + learning_rows + "&sworn_date=" + sworn_date + "&pds_version=" + pdsVersionToPrint,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
