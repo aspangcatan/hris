@@ -21,6 +21,53 @@ class LeaveApplicationService
             ]);
     }
 
+    /**
+     * Keeps the HR_COMPLIANCE approval step in sync with whether the
+     * application currently has any attachments - see
+     * docs/superpowers/specs/2026-07-21-leave-hr-compliance-step-design.md.
+     * Called after every attachment add/remove and once right after
+     * filing. Never removes an already-approved compliance step, even if
+     * every attachment is later deleted - no retroactive undo.
+     */
+    public function syncComplianceStep(int $appId): void
+    {
+        DB::transaction(function () use ($appId) {
+            $hasAttachments = DB::table('leave_application_attachments')
+                ->where('leave_application_id', $appId)
+                ->exists();
+
+            $compliance = DB::table('leave_application_approvals')
+                ->where('leave_application_id', $appId)
+                ->where('role', 'HR_COMPLIANCE')
+                ->first(['id', 'status']);
+
+            if ($hasAttachments && !$compliance) {
+                DB::table('leave_application_approvals')
+                    ->where('leave_application_id', $appId)
+                    ->increment('order_no');
+
+                DB::table('leave_application_approvals')->insert([
+                    'leave_application_id' => $appId,
+                    'approver_id'          => 15,
+                    'role'                 => 'HR_COMPLIANCE',
+                    'order_no'             => 1,
+                    'status'               => 'pending',
+                    'created_at'           => now(),
+                    'updated_at'           => now(),
+                ]);
+            } elseif (!$hasAttachments && $compliance && strtolower($compliance->status) === 'pending') {
+                DB::table('leave_application_approvals')
+                    ->where('id', $compliance->id)
+                    ->delete();
+
+                DB::table('leave_application_approvals')
+                    ->where('leave_application_id', $appId)
+                    ->where('order_no', '>', 1)
+                    ->decrement('order_no');
+            }
+        });
+    }
+
     public function insertLeaveApplication(array $data)
     {
         return DB::transaction(function () use ($data) {

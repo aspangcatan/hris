@@ -217,4 +217,68 @@ class LeaveHrComplianceStepTest extends TestCase
 
         $this->assertEquals(['SH', 'DH', 'HR'], $roles);
     }
+
+    /** @test */
+    public function sync_compliance_step_inserts_it_when_an_attachment_exists_and_none_does_yet(): void
+    {
+        $this->actAsEmployee();
+        $payload = [
+            'data' => json_encode([
+                'commutation' => 'Not Requested',
+                'dates' => [
+                    ['date_applied' => '2027-03-08', 'hours' => 8, 'leave_type_id' => $this->leaveTypeId],
+                ],
+                'applicant_signature' => $this->sampleSignature,
+            ]),
+        ];
+        $this->withoutMiddleware()->post('/insert_leave_applications', $payload)->assertOk();
+        $appId = DB::table('hris.leave_applications')->where('user_id', $this->employeeId)->value('id');
+
+        DB::table('hris.leave_application_attachments')->insert([
+            'leave_application_id' => $appId,
+            'file_path' => 'leave_attachments/manual.pdf',
+            'original_name' => 'manual.pdf',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        app(\App\Services\LeaveApplicationService::class)->syncComplianceStep($appId);
+
+        $roles = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->orderBy('order_no')->pluck('role')->toArray();
+        $this->assertEquals(['HR_COMPLIANCE', 'SH', 'DH', 'HR'], $roles);
+    }
+
+    /** @test */
+    public function sync_compliance_step_removes_a_still_pending_step_once_attachments_are_gone(): void
+    {
+        $appId = $this->fileWithAttachment();
+        DB::table('hris.leave_application_attachments')->where('leave_application_id', $appId)->delete();
+
+        app(\App\Services\LeaveApplicationService::class)->syncComplianceStep($appId);
+
+        $roles = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->orderBy('order_no')->pluck('role')->toArray();
+        $this->assertEquals(['SH', 'DH', 'HR'], $roles);
+    }
+
+    /** @test */
+    public function sync_compliance_step_leaves_an_approved_step_in_place_even_if_attachments_are_removed(): void
+    {
+        $appId = $this->fileWithAttachment();
+
+        $this->actAsHr();
+        $this->withoutMiddleware()->postJson('/update/approval_status', [
+            'id' => $appId, 'status' => 'Approved', 'remarks' => 'Compliant',
+        ])->assertOk();
+
+        DB::table('hris.leave_application_attachments')->where('leave_application_id', $appId)->delete();
+        app(\App\Services\LeaveApplicationService::class)->syncComplianceStep($appId);
+
+        $roles = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->orderBy('order_no')->pluck('role')->toArray();
+        $this->assertEquals(['HR_COMPLIANCE', 'SH', 'DH', 'HR'], $roles);
+        $this->assertEquals('approved', DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->where('role', 'HR_COMPLIANCE')->value('status'));
+    }
 }
