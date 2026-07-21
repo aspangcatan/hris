@@ -1197,6 +1197,14 @@ class PrintController extends Controller
 
             $pds_version = $request->pds_version === '2025' ? '2025' : '2026';
 
+            // Both default to the print modal's own defaults (see
+            // modals/print.blade.php) so direct/admin links that omit
+            // these params - which don't go through that modal - don't
+            // crash indexing $work_experience[$i]/$learning[$i] with a
+            // null loop bound.
+            $experience_rows = $request->experience_rows !== null ? (int) $request->experience_rows : 23;
+            $learning_rows = $request->learning_rows !== null ? (int) $request->learning_rows : 24;
+
             #CONSTANTS
             $LEVELS = ['ELEMENTARY', 'SECONDARY', 'VOCATIONAL/TRADE COURSE', 'COLLEGE', 'GRADUATE STUDIES'];
             $SURVEYS = [
@@ -1415,7 +1423,7 @@ class PrintController extends Controller
                 ];
             }
 
-            for ($i = 0; $i < $request->experience_rows; $i++) {
+            for ($i = 0; $i < $experience_rows; $i++) {
                 $work_column_1 = "N/A";
                 $work_column_2 = "N/A";
                 $work_column_3 = "N/A";
@@ -1466,8 +1474,8 @@ class PrintController extends Controller
             $work_outer_counter = 0;
             $work_counter = 0;
 
-            if (count($work_experience) > $request->experience_rows) {
-                for ($i = $request->experience_rows; $i < count($work_experience); $i++) {
+            if (count($work_experience) > $experience_rows) {
+                for ($i = $experience_rows; $i < count($work_experience); $i++) {
                     if ($work_counter % 40 == 0 && $work_counter > 0) {
                         $next_page_work_outer_array[$work_outer_counter++] = $next_page_work_inner_array;
                         $work_counter = 0;
@@ -1540,7 +1548,7 @@ class PrintController extends Controller
             }
 
 
-            for ($i = 0; $i < $request->learning_rows; $i++) {
+            for ($i = 0; $i < $learning_rows; $i++) {
                 $learning_column_1 = "N/A";
                 $learning_column_2 = "N/A";
                 $learning_column_3 = "N/A";
@@ -1583,8 +1591,8 @@ class PrintController extends Controller
             $outer_counter = 0;
             $counter = 0;
 
-            if (count($learning) > $request->learning_rows) {
-                for ($i = $request->learning_rows; $i < count($learning); $i++) {
+            if (count($learning) > $learning_rows) {
+                for ($i = $learning_rows; $i < count($learning); $i++) {
                     if ($counter % 40 == 0 && $counter > 0) {
                         $next_page_learning_outer_array[$outer_counter++] = $next_page_learning_inner_array;
                         $counter = 0;

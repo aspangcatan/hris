@@ -824,7 +824,7 @@ if (!function_exists('honorsAdjustFontSize')) {
                 <div style="margin-left: 15px">BUSINESS ADDRESS</div>
             </td>
             <td colspan="2" class="value" style="border-right: solid 1px black;">
-                <div class="value" style="{{ adjustFontSize(strtoupper($family->spouse_business_address) ?? '', 12) }}">
+                <div class="value" style="{{ adjustFontSize(($family && $family->spouse_business_address) ? strtoupper($family->spouse_business_address) : '', 12) }}">
                     @if($family)
                         @if($family->spouse_business_address)
                             {{ strtoupper($family->spouse_business_address) }}
