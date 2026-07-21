@@ -45,7 +45,7 @@ class LeaveApprovalService
                 && (int) $pendingApproval->approver_id === (int) $user->division;
         }
 
-        if ($pendingApproval->role === 'HR') {
+        if ($pendingApproval->role === 'HR' || $pendingApproval->role === 'HR_COMPLIANCE') {
             return $this->canActAsHr();
         }
 
@@ -123,7 +123,7 @@ class LeaveApprovalService
 
                     if ($canActAsHr) {
                         $approvalQuery->orWhere(function ($q) {
-                            $q->where('lp.role', 'HR')->where('lp.approver_id', 15);
+                            $q->whereIn('lp.role', ['HR', 'HR_COMPLIANCE'])->where('lp.approver_id', 15);
                         });
                     }
                 });
@@ -164,7 +164,7 @@ class LeaveApprovalService
                         $q->orWhereExists(function ($sub) {
                             $sub->from('hris.leave_application_approvals as lp2')
                                 ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->where('lp2.role', 'HR')
+                                ->whereIn('lp2.role', ['HR', 'HR_COMPLIANCE'])
                                 ->where('lp2.approver_id', 15)
                                 ->where('lp2.status', 'approved');
                         });
@@ -200,7 +200,7 @@ class LeaveApprovalService
                         $q->orWhereExists(function ($sub) {
                             $sub->from('hris.leave_application_approvals as lp2')
                                 ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->where('lp2.role', 'HR')
+                                ->whereIn('lp2.role', ['HR', 'HR_COMPLIANCE'])
                                 ->where('lp2.approver_id', 15);
                         });
                     }
@@ -311,35 +311,25 @@ class LeaveApprovalService
         }
 
         DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates, $signature, $requiresSignature) {
-            // Enforce SH → DH → HR order
-            if ($effectiveRole === 'DH') {
-                $shApproved = DB::table('hris.leave_application_approvals')
-                    ->where('leave_application_id', $leave_id)
-                    ->where('role', 'SH')
-                    ->whereRaw('LOWER(status) = ?', ['approved'])
-                    ->exists();
+            // Enforce chain order generically: every earlier step (by
+            // order_no) must already be approved before this role's step
+            // can be acted on. Works for both the 3-step (SH/DH/HR) and
+            // 4-step (HR_COMPLIANCE/SH/DH/HR) chains without knowing which
+            // roles precede which - see
+            // docs/superpowers/specs/2026-07-21-leave-hr-compliance-step-design.md.
+            $myOrderNo = DB::table('hris.leave_application_approvals')
+                ->where('leave_application_id', $leave_id)
+                ->where('role', $effectiveRole)
+                ->value('order_no');
 
-                if (!$shApproved) {
-                    throw new \RuntimeException('Section head approval is required before division head approval.');
-                }
-            }
+            $priorIncomplete = DB::table('hris.leave_application_approvals')
+                ->where('leave_application_id', $leave_id)
+                ->where('order_no', '<', $myOrderNo)
+                ->whereRaw('LOWER(status) != ?', ['approved'])
+                ->exists();
 
-            if ($effectiveRole === 'HR') {
-                $shApproved = DB::table('hris.leave_application_approvals')
-                    ->where('leave_application_id', $leave_id)
-                    ->where('role', 'SH')
-                    ->whereRaw('LOWER(status) = ?', ['approved'])
-                    ->exists();
-
-                $dhApproved = DB::table('hris.leave_application_approvals')
-                    ->where('leave_application_id', $leave_id)
-                    ->where('role', 'DH')
-                    ->whereRaw('LOWER(status) = ?', ['approved'])
-                    ->exists();
-
-                if (!$shApproved || !$dhApproved) {
-                    throw new \RuntimeException('Section and division head approvals are required before HR approval.');
-                }
+            if ($priorIncomplete) {
+                throw new \RuntimeException('A prior approval step must be completed first.');
             }
 
             $approvalUpdate = [
