@@ -269,19 +269,25 @@
             `<tr><td>${d.leave_type || ''}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td><td>${renderDateDisapproveCell(d, data.current_approval_role)}</td></tr>`
         ).join(""));
 
+        $('#step0').toggleClass('d-none', !data.approvals.hr_compliance);
+        if (data.approvals.hr_compliance) {
+            updateStepStatus('#step0', data.approvals.hr_compliance);
+        }
         updateStepStatus('#step1', data.approvals.sh);
         updateStepStatus('#step2', data.approvals.dh);
         updateStepStatus('#step3', data.approvals.hr);
 
-        let remarks = ["sh", "dh", "hr"].map(role => {
+        let remarks = ["hr_compliance", "sh", "dh", "hr"].map(role => {
             let a = data.approvals[role];
-            return a?.remarks ? `
+            if (!a?.remarks) return "";
+            const label = role === "hr_compliance" ? "HR COMPLIANCE" : role.toUpperCase();
+            return `
             <div class="mb-2">
-                <strong>${role.toUpperCase()}:</strong>
+                <strong>${label}:</strong>
                 <p class="mb-0">${a.remarks}</p>
                 <small class="text-muted">Status: ${a.status}</small>
             </div>
-        ` : "";
+        `;
         }).join("") || `<p class="text-muted">No remarks yet.</p>`;
 
         $('#remarks_history').html(remarks);

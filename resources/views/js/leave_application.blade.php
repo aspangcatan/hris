@@ -1052,14 +1052,19 @@
                 }).join("")
             );
 
+            $('#step0').toggleClass('d-none', !data.approvals.hr_compliance);
+            if (data.approvals.hr_compliance) {
+                updateStepStatus('#step0', data.approvals.hr_compliance);
+            }
             updateStepStatus('#step1', data.approvals.sh);
             updateStepStatus('#step2', data.approvals.dh);
             updateStepStatus('#step3', data.approvals.hr);
 
             let remarksHtml = "";
-            ["sh", "dh", "hr"].forEach(role => {
+            ["hr_compliance", "sh", "dh", "hr"].forEach(role => {
                 if (data.approvals[role]?.remarks) {
-                    const label = role === "sh" ? "Supervisor"
+                    const label = role === "hr_compliance" ? "HR (Compliance Check)"
+                        : role === "sh" ? "Supervisor"
                         : role === "dh" ? "Division Head" : "Human Resource";
                     remarksHtml += `
                         <div class="mb-2">

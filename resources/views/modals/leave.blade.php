@@ -187,6 +187,10 @@
                 <!-- Steps -->
                 <div class="mb-5">
                     <div class="steps d-flex justify-content-between position-relative">
+                        <div class="step text-center d-none" id="step0">
+                            <div class="circle">1</div>
+                            <div class="label">HR Compliance</div>
+                        </div>
                         <div class="step text-center" id="step1">
                             <div class="circle">1</div>
                             <div class="label">Supervisor</div>
