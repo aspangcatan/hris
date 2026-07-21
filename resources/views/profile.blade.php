@@ -44,16 +44,10 @@
                         {{ \Illuminate\Support\Facades\Auth::user()->fname." ".\Illuminate\Support\Facades\Auth::user()->lname }}
                     </p>
                     <p class="mt-1 text-sm text-slate-300">{{ session('designation') }}</p>
-                    <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
-                        <button class="inline-flex items-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-300"
-                                id="btn_print_pds" data-pds-version="2026">
-                            Print PDS
-                        </button>
-                        <button class="inline-flex items-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-300"
-                                id="btn_print_pds_2025" data-pds-version="2025">
-                            Print PDS 2025
-                        </button>
-                    </div>
+                    <button class="mt-4 inline-flex items-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-300"
+                            id="btn_print_pds">
+                        Print PDS
+                    </button>
                 </div>
             </div>
             <div class="grid gap-4 lg:w-8/12 lg:grid-cols-2">

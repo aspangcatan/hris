@@ -63,8 +63,11 @@
                 </div>
                 <div class="mt-5 flex items-center justify-end gap-2">
                     <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button class="btn btn-success btn-modal-save" id="btn_confirm_print">
-                        <i class="bi bi-printer me-1"></i>Print
+                    <button class="btn btn-success btn-modal-save" id="btn_confirm_print_2026">
+                        <i class="bi bi-printer me-1"></i>Print 2026
+                    </button>
+                    <button class="btn btn-success btn-modal-save" id="btn_confirm_print_2025">
+                        <i class="bi bi-printer me-1"></i>Print 2025
                     </button>
                 </div>
             </div>
