@@ -243,6 +243,8 @@ class LeaveApplicationController extends Controller
                 }
             }
 
+            $this->leaveApplicationService->syncComplianceStep($appId);
+
             return response()->json([
                 'success'              => true,
                 'message'              => 'Leave application submitted successfully.',
@@ -300,6 +302,8 @@ class LeaveApplicationController extends Controller
                 ];
             }
 
+            $this->leaveApplicationService->syncComplianceStep($id);
+
             return response()->json(['message' => 'Attachments uploaded.', 'attachments' => $stored]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -313,7 +317,7 @@ class LeaveApplicationController extends Controller
                 ->join('leave_applications', 'leave_applications.id', '=', 'leave_application_attachments.leave_application_id')
                 ->where('leave_application_attachments.id', $attachmentId)
                 ->where('leave_applications.user_id', \Illuminate\Support\Facades\Auth::id())
-                ->first(['leave_application_attachments.id', 'leave_application_attachments.file_path']);
+                ->first(['leave_application_attachments.id', 'leave_application_attachments.file_path', 'leave_application_attachments.leave_application_id']);
 
             if (!$row) {
                 return response()->json(['error' => 'Attachment not found.'], 404);
@@ -321,6 +325,8 @@ class LeaveApplicationController extends Controller
 
             \Illuminate\Support\Facades\Storage::disk('public')->delete($row->file_path);
             DB::table('leave_application_attachments')->where('id', $attachmentId)->delete();
+
+            $this->leaveApplicationService->syncComplianceStep($row->leave_application_id);
 
             return response()->json(['message' => 'Attachment deleted.']);
         } catch (\Exception $e) {
@@ -352,11 +358,12 @@ class LeaveApplicationController extends Controller
                 'detail'   => $d->detail,
                 'extra'    => $d->extra,
             ])->values(),
-            'approvals'       => [
-                'sh' => $leave->approvals['SH'] ?? ['status' => 'pending', 'remarks' => ''],
-                'dh' => $leave->approvals['DH'] ?? ['status' => 'pending', 'remarks' => ''],
-                'hr' => $leave->approvals['HR'] ?? ['status' => 'pending', 'remarks' => ''],
-            ],
+            'approvals'       => array_filter([
+                'hr_compliance' => $leave->approvals['HR_COMPLIANCE'] ?? null,
+                'sh'            => $leave->approvals['SH'] ?? ['status' => 'pending', 'remarks' => ''],
+                'dh'            => $leave->approvals['DH'] ?? ['status' => 'pending', 'remarks' => ''],
+                'hr'            => $leave->approvals['HR'] ?? ['status' => 'pending', 'remarks' => ''],
+            ]),
             'attachment_url'  => $leave->attachment ? route('leave-attachments.serve', ['filename' => basename($leave->attachment)]) : null,
             'attachments'     => DB::table('leave_application_attachments')
                 ->where('leave_application_id', $id)

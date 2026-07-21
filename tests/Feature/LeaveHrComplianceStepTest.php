@@ -281,4 +281,48 @@ class LeaveHrComplianceStepTest extends TestCase
         $this->assertEquals('approved', DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $appId)->where('role', 'HR_COMPLIANCE')->value('status'));
     }
+
+    /** @test */
+    public function get_leave_application_exposes_hr_compliance_only_when_it_exists(): void
+    {
+        $appId = $this->fileWithAttachment();
+
+        $this->actAsEmployee();
+        $response = $this->withoutMiddleware()->getJson("/leave-applications/{$appId}");
+        $response->assertOk();
+        $this->assertArrayHasKey('hr_compliance', $response->json('approvals'));
+        $this->assertEquals('pending', $response->json('approvals.hr_compliance.status'));
+
+        $this->actAsEmployee();
+        $payload = [
+            'data' => json_encode([
+                'commutation' => 'Not Requested',
+                'dates' => [
+                    ['date_applied' => '2027-03-09', 'hours' => 8, 'leave_type_id' => $this->leaveTypeId],
+                ],
+                'applicant_signature' => $this->sampleSignature,
+            ]),
+        ];
+        $this->withoutMiddleware()->post('/insert_leave_applications', $payload)->assertOk();
+        $noAttachmentAppId = DB::table('hris.leave_applications')->where('user_id', $this->employeeId)
+            ->where('id', '!=', $appId)->value('id');
+
+        $response2 = $this->withoutMiddleware()->getJson("/leave-applications/{$noAttachmentAppId}");
+        $response2->assertOk();
+        $this->assertArrayNotHasKey('hr_compliance', $response2->json('approvals'));
+    }
+
+    /** @test */
+    public function deleting_the_last_attachment_before_sh_approves_removes_the_compliance_step(): void
+    {
+        $appId = $this->fileWithAttachment();
+        $attachmentId = DB::table('hris.leave_application_attachments')->where('leave_application_id', $appId)->value('id');
+
+        $this->actAsEmployee();
+        $this->withoutMiddleware()->delete("/leave-application-attachments/{$attachmentId}")->assertOk();
+
+        $roles = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->orderBy('order_no')->pluck('role')->toArray();
+        $this->assertEquals(['SH', 'DH', 'HR'], $roles);
+    }
 }
