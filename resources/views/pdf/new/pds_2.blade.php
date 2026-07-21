@@ -106,7 +106,7 @@
                 <td style="width: 44%;border-right: solid 1px black;font-size: 10px"
                     class="center-value">{{ strtoupper($key['agency']) }}</td>
                 @unless($pds_version === '2025')
-                <td style="width: 7%;border-right: solid 1px black;font-size: 11px"
+                <td style="width: 9%;border-right: solid 1px black;font-size: 11px"
                     class="center-value">{{ strtoupper($key['monthly_salary']) }}</td>
                 <td style="width: 8%;border-right: solid 1px black;font-size: 11px"
                     class="center-value">{{ strtoupper($key['salary_grade']) }}</td>
