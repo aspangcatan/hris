@@ -41,11 +41,11 @@
                         <label class="mb-1 block text-sm font-semibold text-slate-700">To</label>
                         <input type="date" class="form-control premium-input" id="work_to" placeholder="">
                     </div>
-                    <div class="d-none">
+                    <div>
                         <label class="mb-1 block text-sm font-semibold text-slate-700">Salary</label>
                         <input type="number" class="form-control premium-input" id="work_salary" placeholder="">
                     </div>
-                    <div class="d-none">
+                    <div>
                         <label class="mb-1 block text-sm font-semibold text-slate-700">Salary Grade (e.g. 00-0)</label>
                         <input type="text" class="form-control premium-input" id="work_salary_grade" placeholder="">
                     </div>
