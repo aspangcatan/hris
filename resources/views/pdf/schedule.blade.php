@@ -188,7 +188,7 @@
             @foreach($day_numbers as $idx => $day)
                 <th class="day day-number">{{ $day }}</th>
             @endforeach
-            <th class="remarks" rowspan="2">REMARKS</th>
+            <th class="remarks" rowspan="2">SIGNATURE</th>
         </tr>
         <tr class="day-label">
             @foreach($day_labels as $idx => $label)
