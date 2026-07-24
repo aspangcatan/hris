@@ -146,7 +146,7 @@
         data.forEach(it => $("#leave_approval_list").append(`
         <tr>
             <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
-            <td>${it.description}</td>
+            <td>${it.description} ${it.is_lwop ? '<span class="badge bg-warning text-dark ms-1">LWOP</span>' : ''}</td>
             <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
             <td><button class="btn btn-sm leave-view-btn" onclick="viewApplication(${it.id}, this)">${leaveApprovalViewButtonHtml}</button></td>
         </tr>
