@@ -89,6 +89,7 @@ class LeaveApprovalService
                       WHERE ld2.leave_application_id = la.id LIMIT 1) as detail"),
             'la.status',
             'la.created_at',
+            'la.is_lwop',
             'u.fname',
             'u.mname',
             'u.lname',
