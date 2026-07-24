@@ -37,7 +37,8 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="modal-title-text">Leave Application</div>
+                <div class="modal-title-text" id="file_leave_modal_title">Leave Application</div>
+                <input type="hidden" id="is_lwop_flag" value="0">
 
                 <div class="text-white bg-danger rounded p-2 error_container d-none">
                     <div class="d-flex align-items-center">
@@ -209,7 +210,7 @@
                 <!-- Leave Info -->
                 <div class="mt-5">
                     <p><strong>Name:</strong> <span id="leave_name"></span></p>
-                    <p><strong>Type:</strong> <span id="leave_type"></span></p>
+                    <p><strong>Type:</strong> <span id="leave_type"></span> <span id="lwop_badge" class="badge bg-warning text-dark d-none">LWOP</span></p>
                     <p><strong>Details:</strong></p>
                     <div id="leave_details_container" class="border rounded p-3 bg-light"></div>
                     <p class="mt-3"><strong>Commutation:</strong> <span id="leave_commutation"></span></p>
