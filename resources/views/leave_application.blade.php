@@ -44,6 +44,12 @@
                 Monetizations
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-lwop" data-bs-toggle="tab"
+                    data-bs-target="#pane-lwop" type="button" role="tab">
+                LWOP
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="leaveTabContent">
@@ -115,6 +121,41 @@
                         <ul class="pagination pagination-sm mb-0" id="monetization_pagination_links"></ul>
                     </nav>
                     <div id="monetization_page_indicator" class="small text-muted"></div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Tab 3: LWOP --}}
+        <div class="tab-pane fade" id="pane-lwop" role="tabpanel">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h5 class="fw-bold mb-0" style="color:#0f172a">LWOP Applications</h5>
+                    <span style="font-size:.9rem;color:#64748b">Leave Without Pay — files even without available credits.</span>
+                </div>
+                <button class="btn btn-success btn-sm" id="btn_file_lwop">
+                    <i class="bi bi-plus-lg me-1"></i> File LWOP
+                </button>
+            </div>
+            <div class="table-responsive leave-app-table-shell">
+                <table class="table text-center table-bordered align-middle">
+                    <thead>
+                    <tr>
+                        <th>Leave Type</th>
+                        <th>Dates Applied</th>
+                        <th>Status</th>
+                        <th style="width:4%"></th>
+                    </tr>
+                    </thead>
+                    <tbody id="lwop_history_list"></tbody>
+                </table>
+            </div>
+            <div class="mt-3" id="lwop_pagination_container">
+                <div class="d-flex flex-column align-items-center justify-content-center gap-2">
+                    <div id="lwop_page_items_count" class="small text-muted"></div>
+                    <nav aria-label="LWOP pagination">
+                        <ul class="pagination pagination-sm mb-0" id="lwop_pagination_links"></ul>
+                    </nav>
+                    <div id="lwop_page_indicator" class="small text-muted"></div>
                 </div>
             </div>
         </div>
