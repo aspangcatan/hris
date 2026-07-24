@@ -26,12 +26,14 @@ class LeaveApplicationController extends Controller
     public function index(Request $request)
     {
         try {
-            $type = $request->search_type;
+            $type    = $request->search_type;
+            $isLwop  = $request->boolean('is_lwop');
 
             $query = DB::table('leave_applications as la')
                 ->join('leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
                 ->join('leave_types as lt', 'lda.leave_type_id', '=', 'lt.id')
                 ->where('la.user_id', Auth::id())
+                ->where('la.is_lwop', $isLwop)
                 ->when($type, fn($q) => $q->where('lt.description', 'LIKE', "%{$type}%"))
                 ->orderBy('la.id', 'DESC')
                 ->select('la.id', 'la.status')
@@ -221,6 +223,7 @@ class LeaveApplicationController extends Controller
                 'dates.*.hours'             => 'required|integer|in:4,8,10,12,16,24',
                 'dates.*.leave_type_id'     => 'required|integer',
                 'applicant_signature'       => 'required|string',
+                'is_lwop'                   => 'nullable|boolean',
             ]);
 
             if ($validator->fails()) {
@@ -350,6 +353,7 @@ class LeaveApplicationController extends Controller
             'details'         => $leave->detail,
             'extra'           => $leave->extra,
             'commutation'     => $leave->commutation,
+            'is_lwop'         => (bool) $leave->is_lwop,
             'created_at'      => $leave->created_at,
             'leave_ids'       => $detailsCollection->pluck('leave_id')->values(),
             'leave_types_map' => $detailsCollection->keyBy('leave_id')->map(fn($d) => $d->leave_type)->toArray(),
@@ -424,6 +428,7 @@ class LeaveApplicationController extends Controller
                 'dates.*.hours'              => 'required|integer|in:4,8,10,12,16,24',
                 'dates.*.leave_type_id'      => 'required|integer',
                 'applicant_signature'        => 'required|string',
+                'is_lwop'                    => 'sometimes|boolean',
             ]);
 
             $this->leaveApplicationService->updateLeaveApplication($id, $validated);

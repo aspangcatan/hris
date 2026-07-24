@@ -350,7 +350,7 @@ class LeaveApplicationService
         $application = DB::table('hris.leave_applications as la')
             ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
             ->where('la.id', $id)
-            ->select('la.id', 'u.fname', 'u.lname', 'u.mname', 'la.commutation', 'la.attachment', 'la.created_at')
+            ->select('la.id', 'u.fname', 'u.lname', 'u.mname', 'la.commutation', 'la.attachment', 'la.created_at', 'la.is_lwop')
             ->first();
 
         if (!$application) {
