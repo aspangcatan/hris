@@ -251,6 +251,7 @@
         $('#leave_name').text(data.name);
         $('#leave_type').text(data.type);
         $('#leave_commutation').text(data.commutation);
+        $('#lwop_badge').toggleClass('d-none', !data.is_lwop);
         $('#leave_details_container').html(renderLeaveDetailsHtml(data));
 
         const allAttachments = (data.attachments && data.attachments.length > 0)
