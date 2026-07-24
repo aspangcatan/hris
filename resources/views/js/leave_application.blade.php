@@ -233,6 +233,16 @@
             file_leave_modal.toggle();
         });
 
+        $("#btn_file_lwop").click(async function () {
+            clearForm();
+            setLwopMode(true);
+            await init_leave();           // refresh balances & populate LEAVE_TYPES
+            addRow();
+            resetDetailsSection();
+            refreshCommutationVisibility();
+            file_leave_modal.toggle();
+        });
+
         $("#btn_reload").click(init_leave);
         $("#btn_search").click(() => { page = 1; getLeaves(); });
 
@@ -392,22 +402,26 @@
             toastr.error("At least one attachment is required for Maternity/Paternity Leave", "Required");
         }
 
-        // Guard: ensure hours filed per leave type do not exceed available balance
-        const hoursPerType = {};
-        date_applied_array.forEach(d => {
-            if (!d.leave_type_id) return;
-            hoursPerType[d.leave_type_id] = (hoursPerType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
-        });
-        for (const [typeId, totalHours] of Object.entries(hoursPerType)) {
-            const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
-            if (!lt) continue;
-            const availableHours = parseFloat(lt.balance) * 8 / 1.25;
-            if (totalHours > availableHours) {
-                is_valid = false;
-                toastr.error(
-                    `Insufficient ${lt.description} credits. You have ${availableHours.toFixed(2)} hrs available but are filing ${totalHours} hrs.`,
-                    "Insufficient Balance"
-                );
+        // Guard: ensure hours filed per leave type do not exceed available balance.
+        // Skipped entirely in LWOP mode — filing without credits is the whole point.
+        const isLwop = $('#is_lwop_flag').val() === '1';
+        if (!isLwop) {
+            const hoursPerType = {};
+            date_applied_array.forEach(d => {
+                if (!d.leave_type_id) return;
+                hoursPerType[d.leave_type_id] = (hoursPerType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
+            });
+            for (const [typeId, totalHours] of Object.entries(hoursPerType)) {
+                const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
+                if (!lt) continue;
+                const availableHours = parseFloat(lt.balance) * 8 / 1.25;
+                if (totalHours > availableHours) {
+                    is_valid = false;
+                    toastr.error(
+                        `Insufficient ${lt.description} credits. You have ${availableHours.toFixed(2)} hrs available but are filing ${totalHours} hrs.`,
+                        "Insufficient Balance"
+                    );
+                }
             }
         }
 
@@ -418,6 +432,7 @@
             commutation,
             dates: date_applied_array,  // each item has { date_applied, hours, leave_type_id }
             applicant_signature: applicantSignature,
+            is_lwop: isLwop,
         };
 
         const btn = $("#btn_save_leave");
@@ -589,8 +604,9 @@
     }
 
     function buildLeaveTypeOptions(selectedId) {
+        const isLwop = $('#is_lwop_flag').val() === '1';
         return LEAVE_TYPES
-            .filter(lt => parseFloat(lt.balance) > 0)
+            .filter(lt => isLwop || parseFloat(lt.balance) > 0)
             .map(lt =>
                 `<option value="${lt.id}" ${lt.id === selectedId ? 'selected' : ''}>${lt.description}</option>`
             ).join('');
@@ -934,6 +950,7 @@
             });
 
             await init_leave();
+            setLwopMode(!!data.is_lwop);
             $("#dates_table_body").empty();
             resetDetailsSection();
 
@@ -1025,6 +1042,7 @@
             $('#leave_name').text(data.name);
             $('#leave_type').text(data.type);
             $('#leave_commutation').text(data.commutation);
+            $('#lwop_badge').toggleClass('d-none', !data.is_lwop);
 
             // Show all attachments (new multi-attachment array + legacy single)
             const allAttachments = (data.attachments && data.attachments.length > 0)
@@ -1115,8 +1133,14 @@
         initSignaturePad('applicant');
     }
 
+    function setLwopMode(isLwop) {
+        $('#is_lwop_flag').val(isLwop ? '1' : '0');
+        $('#file_leave_modal_title').text(isLwop ? 'LWOP Application' : 'Leave Application');
+    }
+
     function clearForm() {
         editing_leave_id = null;
+        setLwopMode(false);
         $("#btn_save_leave").text("SUBMIT");
         $("#leave_form input").not("[type='radio'], [type='checkbox']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
@@ -1398,5 +1422,136 @@
     $('#tab-monetizations').on('shown.bs.tab', function () {
         monetization_page = 1;
         getMonetizations();
+    });
+
+    /** ================================================
+     *  LWOP APPLICATIONS
+     * ================================================ */
+    let lwop_page      = 1;
+    let lwop_last_page = 1;
+
+    async function getLwopHistory() {
+        $("#lwop_history_list").html("<tr><td colspan='4'>Loading data, please wait...</td></tr>");
+        $("#lwop_pagination_links").empty();
+        $("#lwop_page_indicator").text("");
+
+        try {
+            const payload = await fetchData(`${ROUTE_GET_LEAVES}?page=${lwop_page}&is_lwop=1`);
+            const data       = payload.results    || [];
+            const pagination = payload.pagination || null;
+
+            $("#lwop_history_list").empty();
+            $("#lwop_pagination_links").empty();
+            $("#lwop_page_indicator").text("");
+
+            if (!data.length) {
+                $("#lwop_pagination_container").addClass("d-none");
+                $("#lwop_history_list").html("<tr><td colspan='4'>No record found</td></tr>");
+                return;
+            }
+
+            $("#lwop_pagination_container").removeClass("d-none");
+            let max_visible = data.length;
+
+            if (pagination) {
+                lwop_page      = pagination.current_page;
+                lwop_last_page = pagination.last_page;
+                $("#lwop_page_items_count").text(`${pagination.from} - ${pagination.to} of ${pagination.total}`);
+                $("#lwop_page_indicator").text(`Page ${pagination.current_page} of ${pagination.last_page}`);
+                renderLwopPaginationLinks(pagination);
+            } else {
+                $("#lwop_page_items_count").text(`${((lwop_page - 1) * 10) + 1} - ${((lwop_page - 1) * 10) + max_visible}`);
+                $("#lwop_page_indicator").text(`Page ${lwop_page}`);
+            }
+
+            data.slice(0, max_visible).forEach(it => {
+                const dates  = Object.values(it.dates_applied).map(d => moment(d.date_applied).format("MM/DD/YYYY"));
+                const status = it.status === "Approved" ? `<span class="badge bg-success">APPROVED</span>`
+                    : it.status === "Rejected" ? `<span class="badge bg-danger">REJECTED</span>`
+                        : `<span class="badge bg-secondary">PENDING</span>`;
+
+                const editItem = it.is_editable
+                    ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="editApplication(${it.id})"><i class="bi bi-pencil-fill text-warning me-2"></i> Edit</a></li>`
+                    : '';
+                const deleteItem = it.is_deletable
+                    ? `<li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelApplication(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>`
+                    : '';
+
+                $("#lwop_history_list").append(`
+                <tr id="lwop_id_${it.id}">
+                    <td>${it.description}</td>
+                    <td>${dates.join(", ")}</td>
+                    <td>${status}</td>
+                    <td>
+                        <div class="dropdown dropstart">
+                            <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: transparent">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                ${editItem}
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="viewApplication(${it.id})">
+                                        <i class="bi bi-eye-fill text-success me-2"></i> View
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="printApplication(${it.id})">
+                                        <i class="bi bi-printer text-primary me-2"></i> Print
+                                    </a>
+                                </li>
+                                ${deleteItem}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                `);
+            });
+        } catch {
+            $("#lwop_history_list").html("<tr><td colspan='4'>Error loading data</td></tr>");
+        }
+    }
+
+    function renderLwopPaginationLinks(pagination) {
+        const $links = $("#lwop_pagination_links");
+        if (!$links.length || !pagination || !pagination.last_page) return;
+
+        const current = pagination.current_page;
+        const last    = pagination.last_page;
+        const start   = Math.max(1, current - 2);
+        const end     = Math.min(last, current + 2);
+
+        $links.empty();
+        $links.append("<li class='page-item" + (current <= 1 ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current - 1) + "'>Prev</a></li>");
+
+        if (start > 1) {
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='1'>1</a></li>");
+            if (start > 2) $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+        }
+
+        for (let i = start; i <= end; i++) {
+            $links.append("<li class='page-item" + (i === current ? " active" : "") + "'><a class='page-link' href='#' data-page='" + i + "'>" + i + "</a></li>");
+        }
+
+        if (end < last) {
+            if (end < last - 1) $links.append("<li class='page-item disabled'><span class='page-link'>...</span></li>");
+            $links.append("<li class='page-item'><a class='page-link' href='#' data-page='" + last + "'>" + last + "</a></li>");
+        }
+
+        $links.append("<li class='page-item" + (current >= last ? " disabled" : "") + "'><a class='page-link' href='#' data-page='" + (current + 1) + "'>Next</a></li>");
+    }
+
+    $("body").on("click", "#lwop_pagination_links .page-link[data-page]", function (e) {
+        e.preventDefault();
+        const targetPage = parseInt($(this).attr("data-page"), 10);
+        if (!targetPage || targetPage === lwop_page) return;
+        if (targetPage < 1 || targetPage > lwop_last_page) return;
+        lwop_page = targetPage;
+        getLwopHistory();
+    });
+
+    // Load LWOP list when tab is activated
+    $('#tab-lwop').on('shown.bs.tab', function () {
+        lwop_page = 1;
+        getLwopHistory();
     });
 </script>
