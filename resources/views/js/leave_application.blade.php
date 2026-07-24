@@ -138,9 +138,12 @@
             options: [
                 { label: 'In Hospital (Specify Illness)', hasExtra: true },
                 { label: 'Out Patient (Specify Illness)', hasExtra: true },
-                { label: 'Work-Related (Specify)', hasExtra: true },
-                { label: 'Non-Work Related (Specify)', hasExtra: true },
             ],
+            classification: {
+                label:     'Classification:',
+                groupName: 'detail_sick_classification',
+                options:   ['Work-Related', 'Non-Work Related'],
+            },
         },
         {
             keywords: ['special leave benefits for women'],
@@ -169,17 +172,28 @@
         LEAVE_DETAIL_CONFIG.forEach(cfg => {
             const optionsHtml = cfg.options.map(opt => `
                 <div class="form-check d-flex align-items-center mt-1">
-                    <input class="form-check-input me-2" type="radio" name="${cfg.groupId}" disabled data-has-extra="${opt.hasExtra}">
+                    <input class="form-check-input me-2" type="radio" name="${cfg.groupId}" data-role="primary" disabled data-has-extra="${opt.hasExtra}">
                     <label class="form-check-label me-2">${opt.label}</label>
                     ${opt.hasExtra ? '<input class="form-control w-50" type="text" disabled placeholder="Required">' : ''}
                 </div>
             `).join('');
+
+            const classificationHtml = cfg.classification ? `
+                <div class="small fw-semibold mt-2 mb-1">${cfg.classification.label}</div>
+                ${cfg.classification.options.map(label => `
+                    <div class="form-check d-flex align-items-center mt-1">
+                        <input class="form-check-input me-2" type="radio" name="${cfg.classification.groupName}" data-role="classification" disabled>
+                        <label class="form-check-label me-2">${label}</label>
+                    </div>
+                `).join('')}
+            ` : '';
 
             $container.append(`
                 <div id="${cfg.groupId}" class="detail-group detail-disabled mt-3"
                      style="opacity:0.4; pointer-events:none;">
                     <div>${cfg.label}</div>
                     ${optionsHtml}
+                    ${classificationHtml}
                 </div>
             `);
         });
@@ -330,12 +344,19 @@
             if (!cfg) return;
             const $group = $(`#${cfg.groupId}`);
             if ($group.hasClass('detail-disabled')) return;
-            const checked = $group.find('input[type="radio"]:checked');
+            const checked = $group.find('input[type="radio"][data-role="primary"]:checked');
             if (!checked.length) return;
             const $extraInput = checked.siblings('input[type="text"]');
+            let extra = ($extraInput.length ? $extraInput.val().trim() : '') || null;
+            if (cfg.classification) {
+                const classificationLabel = $group.find('input[data-role="classification"]:checked').siblings('label').text().trim();
+                if (classificationLabel) {
+                    extra = extra ? `${extra} (${classificationLabel})` : `(${classificationLabel})`;
+                }
+            }
             details_map[lid] = {
                 detail: checked.siblings('label').text().trim(),
-                extra:  ($extraInput.length ? $extraInput.val().trim() : '') || null,
+                extra:  extra,
             };
         });
         const commutation = $("input[name='commutation']:checked").next().text();
@@ -349,11 +370,11 @@
             is_valid = false;
             toastr.error("Please select a leave type for every date row", "Required");
         }
-        // Every active detail group must have a radio selected
+        // Every active detail group must have its primary reason selected
         const detailMissing = LEAVE_DETAIL_CONFIG.some(cfg => {
             const $group = $(`#${cfg.groupId}`);
             return !$group.hasClass('detail-disabled')
-                && $group.find('input[type="radio"]:checked').length === 0;
+                && $group.find('input[type="radio"][data-role="primary"]:checked').length === 0;
         });
         if (detailMissing) {
             is_valid = false;
@@ -363,7 +384,7 @@
         const extraMissing = LEAVE_DETAIL_CONFIG.some(cfg => {
             const $group = $(`#${cfg.groupId}`);
             if ($group.hasClass('detail-disabled')) return false;
-            const checked = $group.find('input[type="radio"]:checked');
+            const checked = $group.find('input[type="radio"][data-role="primary"]:checked');
             if (!checked.length) return false;
             if (checked.attr('data-has-extra') !== 'true') return false;
             const $extraInput = checked.siblings('input[type="text"]');
@@ -372,6 +393,17 @@
         if (extraMissing) {
             is_valid = false;
             toastr.error("Please fill in the required detail text for your selected option", "Required");
+        }
+        // Groups with a classification sub-group require it to be selected too
+        const classificationMissing = LEAVE_DETAIL_CONFIG.some(cfg => {
+            if (!cfg.classification) return false;
+            const $group = $(`#${cfg.groupId}`);
+            return !$group.hasClass('detail-disabled')
+                && $group.find('input[data-role="classification"]:checked').length === 0;
+        });
+        if (classificationMissing) {
+            is_valid = false;
+            toastr.error("Please specify the classification (Work-Related/Non-Work Related)", "Required");
         }
         if (!commutation) {
             is_valid = false;
@@ -1006,11 +1038,23 @@
                     if (!cfg) return;
                     const $group = $(`#${cfg.groupId}`);
                     if ($group.hasClass('detail-disabled')) return;
-                    $group.find('input[type="radio"]').each(function () {
+                    $group.find('input[type="radio"][data-role="primary"]').each(function () {
                         if ($(this).siblings('label').text().trim() === dt.detail) {
                             $(this).prop('checked', true);
                             if ($(this).attr('data-has-extra') === 'true' && dt.extra) {
-                                $(this).siblings('input[type="text"]').val(dt.extra);
+                                let extraText = dt.extra;
+                                if (cfg.classification) {
+                                    const m = dt.extra.match(/^(.*)\s\((.+)\)$/);
+                                    if (m && cfg.classification.options.includes(m[2])) {
+                                        extraText = m[1].trim();
+                                        $group.find('input[data-role="classification"]').each(function () {
+                                            if ($(this).siblings('label').text().trim() === m[2]) {
+                                                $(this).prop('checked', true);
+                                            }
+                                        });
+                                    }
+                                }
+                                $(this).siblings('input[type="text"]').val(extraText);
                             }
                             return false;
                         }
