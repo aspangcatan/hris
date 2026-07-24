@@ -481,6 +481,7 @@
             toastr.success(body.message || (isEdit ? "Leave updated successfully" : "Leave submitted successfully"), "Information");
             clearForm();
             getLeaves();
+            getLwopHistory();
             init_leave();
         } catch {
             // error already handled in fetchData
@@ -929,6 +930,7 @@
             }
             toastr.success(body.message || 'Leave application deleted.', 'Success');
             getLeaves();
+            getLwopHistory();
             loadCreditBalance();
         } catch {
             toastr.error('An error occurred while deleting the leave application.', 'Error');
