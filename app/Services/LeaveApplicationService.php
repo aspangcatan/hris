@@ -71,6 +71,7 @@ class LeaveApplicationService
     public function insertLeaveApplication(array $data)
     {
         return DB::transaction(function () use ($data) {
+            $isLwop   = (bool) ($data['is_lwop'] ?? false);
             $dates    = $data['dates']; // each: { date_applied, hours, leave_type_id }
             $leaveIds = collect($dates)->pluck('leave_type_id')->unique()->filter()->values()->toArray();
             $n        = count($leaveIds);
@@ -106,24 +107,27 @@ class LeaveApplicationService
             }
 
             // Validate credit balance per type (credits proportional to actual days per type)
-            foreach ($leaveIds as $leaveId) {
-                $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+            // Skipped entirely for LWOP — an LWOP filing never checks or deducts credits.
+            if (!$isLwop) {
+                foreach ($leaveIds as $leaveId) {
+                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
+                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
 
-                $credit    = DB::table('leave_credits')
-                    ->where('user_id', Auth::id())
-                    ->where('leave_id', $leaveId)
-                    ->first(['based_credit', 'used_credit']);
-                $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
+                    $credit    = DB::table('leave_credits')
+                        ->where('user_id', Auth::id())
+                        ->where('leave_id', $leaveId)
+                        ->first(['based_credit', 'used_credit']);
+                    $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
 
-                $desc = $leaveTypes[$leaveId]->description;
+                    $desc = $leaveTypes[$leaveId]->description;
 
-                if ($available === null) {
-                    throw new \Exception("No leave credits found for {$desc}.");
-                }
+                    if ($available === null) {
+                        throw new \Exception("No leave credits found for {$desc}.");
+                    }
 
-                if ($available < $typeCredits) {
-                    throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
+                    if ($available < $typeCredits) {
+                        throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
+                    }
                 }
             }
 
@@ -134,6 +138,7 @@ class LeaveApplicationService
                 'attachment'          => $data['attachment'] ?? null,
                 'applicant_signature' => $data['applicant_signature'],
                 'status'              => 'pending',
+                'is_lwop'             => $isLwop,
                 'created_at'          => now(),
                 'updated_at'          => now(),
             ]);
@@ -153,18 +158,23 @@ class LeaveApplicationService
                 ]);
             }
 
-            // Deduct credits per leave type
-            foreach ($leaveIds as $leaveId) {
-                $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+            // Deduct credits per leave type — skipped entirely for LWOP.
+            if (!$isLwop) {
+                foreach ($leaveIds as $leaveId) {
+                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
+                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
 
-                DB::table('leave_credits')
-                    ->where('user_id', Auth::id())
-                    ->where('leave_id', $leaveId)
-                    ->decrement('based_credit', $typeCredits);
+                    DB::table('leave_credits')
+                        ->where('user_id', Auth::id())
+                        ->where('leave_id', $leaveId)
+                        ->decrement('based_credit', $typeCredits);
+                }
             }
 
-            // Insert dates with leave_type_id, status, and per-date credits_deducted
+            // Insert dates with leave_type_id, status, and per-date credits_deducted.
+            // credits_deducted is always 0 for LWOP — this also makes the downstream
+            // approval-rejection credit-restore logic a natural no-op for LWOP rows,
+            // since it restores by summing credits_deducted.
             DB::table('leave_date_applied')->insert(
                 collect($dates)->map(fn($d) => [
                     'leave_application_id' => $appId,
@@ -172,7 +182,7 @@ class LeaveApplicationService
                     'date_applied'         => $d['date_applied'],
                     'hours'                => $d['hours'],
                     'status'               => 'active',
-                    'credits_deducted'     => round(($d['hours'] / 8) * self::CREDIT_RATE_PER_DAY, 3),
+                    'credits_deducted'     => $isLwop ? 0 : round(($d['hours'] / 8) * self::CREDIT_RATE_PER_DAY, 3),
                 ])->toArray()
             );
 
@@ -190,6 +200,8 @@ class LeaveApplicationService
     public function updateLeaveApplication(int $appId, array $data): void
     {
         DB::transaction(function () use ($appId, $data) {
+            $isLwop = (bool) ($data['is_lwop'] ?? false);
+
             $app = DB::table('leave_applications')
                 ->where('id', $appId)
                 ->where('user_id', Auth::id())
@@ -209,7 +221,9 @@ class LeaveApplicationService
                 throw new \Exception('Cannot edit: this application has already been forwarded for approval.');
             }
 
-            // Restore credits from existing dates (grouped by leave_type_id)
+            // Restore credits from existing dates (grouped by leave_type_id).
+            // For an LWOP application every existing credits_deducted is already 0,
+            // so this naturally restores nothing.
             $oldDates = DB::table('hris.leave_date_applied')
                 ->where('leave_application_id', $appId)
                 ->get(['leave_type_id', 'credits_deducted']);
@@ -259,24 +273,26 @@ class LeaveApplicationService
                 }
             }
 
-            foreach ($leaveIds as $leaveId) {
-                $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+            if (!$isLwop) {
+                foreach ($leaveIds as $leaveId) {
+                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
+                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
 
-                $credit    = DB::table('leave_credits')
-                    ->where('user_id', Auth::id())
-                    ->where('leave_id', $leaveId)
-                    ->first(['based_credit', 'used_credit']);
-                $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
+                    $credit    = DB::table('leave_credits')
+                        ->where('user_id', Auth::id())
+                        ->where('leave_id', $leaveId)
+                        ->first(['based_credit', 'used_credit']);
+                    $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
 
-                $desc = $leaveTypes[$leaveId]->description;
+                    $desc = $leaveTypes[$leaveId]->description;
 
-                if ($available === null) {
-                    throw new \Exception("No leave credits found for {$desc}.");
-                }
+                    if ($available === null) {
+                        throw new \Exception("No leave credits found for {$desc}.");
+                    }
 
-                if ($available < $typeCredits) {
-                    throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
+                    if ($available < $typeCredits) {
+                        throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
+                    }
                 }
             }
 
@@ -295,15 +311,17 @@ class LeaveApplicationService
                 ]);
             }
 
-            // Deduct credits per type
-            foreach ($leaveIds as $leaveId) {
-                $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+            // Deduct credits per type — skipped entirely for LWOP.
+            if (!$isLwop) {
+                foreach ($leaveIds as $leaveId) {
+                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
+                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
 
-                DB::table('leave_credits')
-                    ->where('user_id', Auth::id())
-                    ->where('leave_id', $leaveId)
-                    ->decrement('based_credit', $typeCredits);
+                    DB::table('leave_credits')
+                        ->where('user_id', Auth::id())
+                        ->where('leave_id', $leaveId)
+                        ->decrement('based_credit', $typeCredits);
+                }
             }
 
             // Insert new dates
@@ -314,13 +332,14 @@ class LeaveApplicationService
                     'date_applied'         => $d['date_applied'],
                     'hours'                => $d['hours'],
                     'status'               => 'active',
-                    'credits_deducted'     => round(($d['hours'] / 8) * self::CREDIT_RATE_PER_DAY, 3),
+                    'credits_deducted'     => $isLwop ? 0 : round(($d['hours'] / 8) * self::CREDIT_RATE_PER_DAY, 3),
                 ])->toArray()
             );
 
             DB::table('leave_applications')->where('id', $appId)->update([
                 'commutation'         => $data['commutation'] ?? null,
                 'applicant_signature' => $data['applicant_signature'],
+                'is_lwop'             => $isLwop,
                 'updated_at'          => now(),
             ]);
         });
