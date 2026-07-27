@@ -212,11 +212,12 @@
                                 <th>Overtime (mins)</th>
                                 <th>Pass Slips (mins)</th>
                                 <th>Approved Leave</th>
+                                <th>LWOP Days</th>
                             </tr>
                             </thead>
                             <tbody id="cutoff_detail_body">
                             <tr>
-                                <td colspan="9" class="text-muted text-center">No cutoff summaries found.</td>
+                                <td colspan="10" class="text-muted text-center">No cutoff summaries found.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -564,7 +565,7 @@
                     const $tbody = $("#cutoff_detail_body");
                     $tbody.empty();
                     if (!data.success || !data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='9' class='text-muted text-center'>No cutoff summaries found.</td></tr>");
+                        $tbody.append("<tr><td colspan='10' class='text-muted text-center'>No cutoff summaries found.</td></tr>");
                         return;
                     }
 
@@ -583,6 +584,7 @@
                                 <td>${item.approved_overtime_minutes ?? 0}</td>
                                 <td>${item.approved_pass_slips_minutes ?? 0}</td>
                                 <td>${item.approved_leave_days ?? 0}</td>
+                                <td>${item.lwop_days ?? 0}</td>
                             </tr>`;
                         $tbody.append(row);
                     });

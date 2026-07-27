@@ -72,6 +72,7 @@ class DTRServices
     {
         $holidays = $this->getHolidayDatesByRangeWithDetails($start_date, $end_date);
         $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
+        $lwopDates = $this->getApprovedLwopDatesByRange($userid, $start_date, $end_date);
         $hospitalOrders = array_fill_keys($this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date), true);
         $passSlips = array_fill_keys(
             $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date)->pluck('slip_date')->unique()->all(),
@@ -81,13 +82,13 @@ class DTRServices
         $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
         $officialPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
         $absenceExemptDates = array_fill_keys(
-            array_unique(array_merge($leaveDates, $specialDutyDates, $officialPassSlipDates)),
+            array_unique(array_merge($leaveDates, $lwopDates, $specialDutyDates, $officialPassSlipDates)),
             true
         );
 
         return [
             'holidays' => $holidays,
-            'leaves' => array_fill_keys($leaveDates, true),
+            'leaves' => array_fill_keys(array_unique(array_merge($leaveDates, $lwopDates)), true),
             'hospitalOrders' => $hospitalOrders,
             'passSlips' => $passSlips,
             'absenceExemptDates' => $absenceExemptDates,
@@ -358,6 +359,22 @@ class DTRServices
         return DB::table('hris.leave_applications as la')
             ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
             ->where('la.user_id', $userid)
+            ->where('la.is_lwop', 0)
+            ->whereRaw('LOWER(la.status) = ?', ['approved'])
+            ->whereBetween('lda.date_applied', [$startDate, $endDate])
+            ->pluck('lda.date_applied')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
+            ->toArray();
+    }
+
+    private function getApprovedLwopDatesByRange($userid, $startDate, $endDate)
+    {
+        return DB::table('hris.leave_applications as la')
+            ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+            ->where('la.user_id', $userid)
+            ->where('la.is_lwop', 1)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
             ->pluck('lda.date_applied')
@@ -493,6 +510,7 @@ class DTRServices
     {
         $result = $this->getTotalLateAbsent($userid, $startDate, $endDate);
         $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $startDate, $endDate);
+        $approvedLwop = $this->getApprovedLwopDatesByRange($userid, $startDate, $endDate);
         $approvedHospitalOrders = $this->getApprovedHospitalOrderDatesByRange($userid, $startDate, $endDate);
         $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $startDate, $endDate);
         $approvedOvertimeMinutes = $this->getApprovedOvertimeMinutesByRange($userid, $startDate, $endDate);
@@ -516,6 +534,7 @@ class DTRServices
             'approved_overtime_minutes' => $approvedOvertimeMinutes,
             'approved_pass_slips_minutes' => (int) $personalPassSlipMinutes,
             'approved_leave_days' => count(array_unique($approvedLeaves)),
+            'lwop_days' => count(array_unique($approvedLwop)),
             'hospital_order_days' => count(array_unique($approvedHospitalOrders)),
         ];
     }
