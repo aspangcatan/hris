@@ -371,17 +371,30 @@ class DTRServices
 
     private function getApprovedLwopDatesByRange($userid, $startDate, $endDate)
     {
-        return DB::table('hris.leave_applications as la')
+        $bufferedStart = Carbon::parse($startDate)->copy()->subDays(60)->toDateString();
+        $bufferedEnd = Carbon::parse($endDate)->copy()->addDays(60)->toDateString();
+
+        $bufferedLwopDates = DB::table('hris.leave_applications as la')
             ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
             ->where('la.user_id', $userid)
             ->where('la.is_lwop', 1)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
-            ->whereBetween('lda.date_applied', [$startDate, $endDate])
+            ->whereBetween('lda.date_applied', [$bufferedStart, $bufferedEnd])
             ->pluck('lda.date_applied')
             ->map(function ($date) {
                 return Carbon::parse($date)->toDateString();
             })
+            ->unique()
+            ->values()
             ->toArray();
+
+        $bufferedHolidayDates = $this->getHolidayDatesByRange($bufferedStart, $bufferedEnd);
+
+        $effectiveDates = $this->calculateEffectiveLwopDates($bufferedLwopDates, $bufferedHolidayDates);
+
+        return array_values(array_filter($effectiveDates, function ($date) use ($startDate, $endDate) {
+            return $date >= $startDate && $date <= $endDate;
+        }));
     }
 
     private function calculateEffectiveLwopDates(array $lwopDates, array $holidayDates): array
