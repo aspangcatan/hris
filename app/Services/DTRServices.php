@@ -384,6 +384,83 @@ class DTRServices
             ->toArray();
     }
 
+    private function calculateEffectiveLwopDates(array $lwopDates, array $holidayDates): array
+    {
+        $sortedDates = array_values(array_unique($lwopDates));
+        sort($sortedDates);
+
+        $holidaySet = array_fill_keys($holidayDates, true);
+        $runs = $this->groupIntoLwopRuns($sortedDates, $holidaySet);
+
+        $effectiveDates = [];
+        foreach ($runs as $run) {
+            foreach ($run as $date) {
+                $effectiveDates[] = $date;
+            }
+
+            $first = Carbon::parse($run[0]);
+            $last = Carbon::parse(end($run));
+            $span = $first->diffInDays($last) + 1;
+
+            if ($span > 7) {
+                $cursor = $first->copy();
+                while ($cursor->lte($last)) {
+                    $dateString = $cursor->toDateString();
+                    $isBridgeDay = $cursor->isWeekend() || isset($holidaySet[$dateString]);
+                    if ($isBridgeDay && !in_array($dateString, $run, true)) {
+                        $effectiveDates[] = $dateString;
+                    }
+                    $cursor->addDay();
+                }
+            }
+        }
+
+        return array_values(array_unique($effectiveDates));
+    }
+
+    private function groupIntoLwopRuns(array $sortedDates, array $holidaySet): array
+    {
+        $runs = [];
+        $currentRun = [];
+
+        foreach ($sortedDates as $date) {
+            if (empty($currentRun)) {
+                $currentRun[] = $date;
+                continue;
+            }
+
+            $previousDate = end($currentRun);
+            if ($this->isBridgedGap($previousDate, $date, $holidaySet)) {
+                $currentRun[] = $date;
+            } else {
+                $runs[] = $currentRun;
+                $currentRun = [$date];
+            }
+        }
+
+        if (!empty($currentRun)) {
+            $runs[] = $currentRun;
+        }
+
+        return $runs;
+    }
+
+    private function isBridgedGap(string $fromDate, string $toDate, array $holidaySet): bool
+    {
+        $cursor = Carbon::parse($fromDate)->copy()->addDay();
+        $to = Carbon::parse($toDate);
+
+        while ($cursor->lt($to)) {
+            $dateString = $cursor->toDateString();
+            if (!$cursor->isWeekend() && !isset($holidaySet[$dateString])) {
+                return false;
+            }
+            $cursor->addDay();
+        }
+
+        return true;
+    }
+
     private function getApprovedSpecialDutyDates($userid, $month, $year)
     {
         $hospitalOrderDates = DB::table('hris.hospital_order_employees')

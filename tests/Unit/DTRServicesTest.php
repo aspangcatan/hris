@@ -118,4 +118,107 @@ class DTRServicesTest extends TestCase
         $this->assertSame(0, $result['undertime_minutes']);
         $this->assertSame(0, $result['absences']);
     }
+
+    private function invokePrivateMethod(string $method, array $args)
+    {
+        $reflection = new \ReflectionMethod($this->dtrService, $method);
+        $reflection->setAccessible(true);
+
+        return $reflection->invokeArgs($this->dtrService, $args);
+    }
+
+    /** @test */
+    public function it_does_not_absorb_weekend_for_a_short_intermittent_lwop_run()
+    {
+        // Fri 2025-09-05 LWOP, weekend either side, no other filed date nearby.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-05'],
+            [],
+        ]);
+
+        sort($effective);
+        $this->assertSame(['2025-09-05'], $effective);
+    }
+
+    /** @test */
+    public function it_absorbs_bridged_weekend_when_continuous_run_exceeds_seven_days()
+    {
+        // Mon 09-01 .. Fri 09-05 LWOP, weekend 09-06/07, Mon 09-08 .. Tue 09-09 LWOP.
+        // Span = 9 calendar days (> 7) -> weekend absorbed.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05', '2025-09-08', '2025-09-09'],
+            [],
+        ]);
+
+        sort($effective);
+        $this->assertSame([
+            '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04',
+            '2025-09-05', '2025-09-06', '2025-09-07', '2025-09-08', '2025-09-09',
+        ], $effective);
+    }
+
+    /** @test */
+    public function it_does_not_absorb_weekend_when_run_span_is_exactly_seven_days()
+    {
+        // Tue 09-02 .. Fri 09-05 LWOP, weekend 09-06/07, Mon 09-08 LWOP.
+        // Span = 7 calendar days exactly -> NOT absorbed (rule requires > 7).
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05', '2025-09-08'],
+            [],
+        ]);
+
+        sort($effective);
+        $this->assertSame([
+            '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05', '2025-09-08',
+        ], $effective);
+    }
+
+    /** @test */
+    public function it_absorbs_weekend_when_run_span_is_eight_days()
+    {
+        // Same as above plus Tue 09-09 LWOP -> span = 8 calendar days (> 7) -> absorbed.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05', '2025-09-08', '2025-09-09'],
+            [],
+        ]);
+
+        sort($effective);
+        $this->assertSame([
+            '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05',
+            '2025-09-06', '2025-09-07', '2025-09-08', '2025-09-09',
+        ], $effective);
+    }
+
+    /** @test */
+    public function it_bridges_a_midweek_holiday_and_absorbs_it_when_run_exceeds_seven_days()
+    {
+        // Mon 09-01, Tue 09-02 LWOP, Wed 09-03 declared holiday (bridges), Thu 09-04,
+        // Fri 09-05 LWOP, weekend 09-06/07, Mon 09-08, Tue 09-09 LWOP.
+        // Span = 9 calendar days (> 7) -> holiday AND weekend both absorbed.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-01', '2025-09-02', '2025-09-04', '2025-09-05', '2025-09-08', '2025-09-09'],
+            ['2025-09-03'],
+        ]);
+
+        sort($effective);
+        $this->assertSame([
+            '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05',
+            '2025-09-06', '2025-09-07', '2025-09-08', '2025-09-09',
+        ], $effective);
+    }
+
+    /** @test */
+    public function it_treats_an_unauthorized_absence_day_as_breaking_run_continuity()
+    {
+        // Mon 09-01 LWOP, then Tue/Wed/Thu (09-02..09-04) are genuine unfiled absences
+        // (not LWOP, not holiday, not weekend), then Fri 09-05 LWOP.
+        // The gap is NOT bridged, so these are two separate 1-day runs -> no absorption.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-01', '2025-09-05'],
+            [],
+        ]);
+
+        sort($effective);
+        $this->assertSame(['2025-09-01', '2025-09-05'], $effective);
+    }
 }
