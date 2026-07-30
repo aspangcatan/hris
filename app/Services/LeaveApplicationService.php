@@ -8,8 +8,12 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveApplicationService
 {
-    // CSC standard: 1 day (8 hours) = 1.25 credits
-    const CREDIT_RATE_PER_DAY = 1.25;
+    protected MinuteConversionService $minuteConversionService;
+
+    public function __construct(MinuteConversionService $minuteConversionService)
+    {
+        $this->minuteConversionService = $minuteConversionService;
+    }
 
     public function updateStatus(int $leave_id, string $status)
     {
@@ -111,7 +115,7 @@ class LeaveApplicationService
             if (!$isLwop) {
                 foreach ($leaveIds as $leaveId) {
                     $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
 
                     $credit    = DB::table('leave_credits')
                         ->where('user_id', Auth::id())
@@ -162,7 +166,7 @@ class LeaveApplicationService
             if (!$isLwop) {
                 foreach ($leaveIds as $leaveId) {
                     $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
 
                     DB::table('leave_credits')
                         ->where('user_id', Auth::id())
@@ -182,7 +186,7 @@ class LeaveApplicationService
                     'date_applied'         => $d['date_applied'],
                     'hours'                => $d['hours'],
                     'status'               => 'active',
-                    'credits_deducted'     => $isLwop ? 0 : round(($d['hours'] / 8) * self::CREDIT_RATE_PER_DAY, 3),
+                    'credits_deducted'     => $isLwop ? 0 : $this->minuteConversionService->computeDeduction($d['hours'] * 60),
                 ])->toArray()
             );
 
@@ -276,7 +280,7 @@ class LeaveApplicationService
             if (!$isLwop) {
                 foreach ($leaveIds as $leaveId) {
                     $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
 
                     $credit    = DB::table('leave_credits')
                         ->where('user_id', Auth::id())
@@ -315,7 +319,7 @@ class LeaveApplicationService
             if (!$isLwop) {
                 foreach ($leaveIds as $leaveId) {
                     $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = round(($typeHours / 8) * self::CREDIT_RATE_PER_DAY, 3);
+                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
 
                     DB::table('leave_credits')
                         ->where('user_id', Auth::id())
@@ -332,7 +336,7 @@ class LeaveApplicationService
                     'date_applied'         => $d['date_applied'],
                     'hours'                => $d['hours'],
                     'status'               => 'active',
-                    'credits_deducted'     => $isLwop ? 0 : round(($d['hours'] / 8) * self::CREDIT_RATE_PER_DAY, 3),
+                    'credits_deducted'     => $isLwop ? 0 : $this->minuteConversionService->computeDeduction($d['hours'] * 60),
                 ])->toArray()
             );
 

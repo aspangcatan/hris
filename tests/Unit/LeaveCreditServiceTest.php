@@ -24,7 +24,7 @@ class LeaveCreditServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->leaveCreditService = new LeaveCreditService();
+        $this->leaveCreditService = app(LeaveCreditService::class);
 
         // monthly_earned_points/minute_conversions are seeded with real BIR/CSC
         // data (present/minute are unique columns), so this test overwrites the

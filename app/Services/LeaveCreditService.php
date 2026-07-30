@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveCreditService
 {
+    protected MinuteConversionService $minuteConversionService;
+
+    public function __construct(MinuteConversionService $minuteConversionService)
+    {
+        $this->minuteConversionService = $minuteConversionService;
+    }
+
     public function computeEarnedCredits($totalPresent, $totalLateUndertime, $month = null, $year = null)
     {
         try {
@@ -23,21 +30,7 @@ class LeaveCreditService
                     ->where('present', '=', $lookupPresent)
                     ->value('points') ?? 0;
 
-
-            // Get conversion rates (minute => deduction)
-            $minuteConversions = DB::table('minute_conversions')
-                ->pluck('points_deduction', 'minute');
-
-            // Calculate minute-based deduction
-            $fullHours = intdiv($totalLateUndertime, 60);
-            $remainingMinutes = $totalLateUndertime % 60;
-
-            $deductionFor60 = $minuteConversions[60] ?? 0;
-            $deductionForRemaining = $remainingMinutes > 0
-                ? ($minuteConversions[$remainingMinutes] ?? 0)
-                : 0;
-
-            $lateUndertimeDeductions = ($deductionFor60 * $fullHours) + $deductionForRemaining;
+            $lateUndertimeDeductions = $this->minuteConversionService->computeDeduction($totalLateUndertime);
 
             // Calculate net points after deduction
             $netPoints = $monthly_points_earned - $lateUndertimeDeductions;
