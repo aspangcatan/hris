@@ -157,7 +157,7 @@
 @if($canViewEmployeeDtr)
 <script>
 let userid=0,log_id=0,currentPage=1,visibleEmployeeIds=[];
-const perPage=12,accessRights=@json($accessRights),canEditRawTimelog=["admin","it","dh"].includes(accessRights),selectedEmployees=new Set(),defaultViewDtrButtonHtml='<i class="bi bi-eye"></i> View DTR';
+const perPage=12,accessRights=@json($accessRights),rawTimelogEditingEnabled=@json((bool) config('hris.dtr_raw_timelog_editing_enabled')),canEditRawTimelog=rawTimelogEditingEnabled&&["admin","it","dh"].includes(accessRights),selectedEmployees=new Set(),defaultViewDtrButtonHtml='<i class="bi bi-eye"></i> View DTR';
 
 $(document).ready(function(){
     initDates(); initFilters(); getEmployeeDtr(1); updateSelectionSummary();

@@ -46,7 +46,8 @@ class DTRController extends Controller
 
     private function canManageRawTimelog(): bool
     {
-        return $this->permissions->can(Auth::id(), 'dtr.edit');
+        return config('hris.dtr_raw_timelog_editing_enabled')
+            && $this->permissions->can(Auth::id(), 'dtr.edit');
     }
 
     private function canViewEmployeeDtrForUser(int $userId): bool

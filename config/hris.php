@@ -32,4 +32,19 @@ return [
 
     'dtr_halfday_missing_check_enabled' => env('DTR_HALFDAY_MISSING_CHECK_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | DTR Raw Timelog Editing (temporary kill switch)
+    |--------------------------------------------------------------------------
+    |
+    | Controls the admin-side add/edit/delete of raw IN/OUT DTR logs (the
+    | "View DTR" page's raw log modal, backed by storeManual/deleteTimeLog
+    | in DTRController). Set to false to block create/update/delete for
+    | everyone regardless of the 'dtr.edit' permission. Flip back to true
+    | once editing is safe to re-enable.
+    |
+    */
+
+    'dtr_raw_timelog_editing_enabled' => env('DTR_RAW_TIMELOG_EDITING_ENABLED', true),
+
 ];
