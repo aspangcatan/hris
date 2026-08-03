@@ -18,7 +18,37 @@ class DtrServicesUnifiedComputationTest extends TestCase
         DB::table('hris.dtr_logs')->where('userid', $this->userId)->delete();
         DB::table('hris.schedules')->where('employee_id', $this->userId)->delete();
         DB::table('hris.schedule_master_lists')->where('code', 'UNITESTSC')->delete();
+        DB::table('hris.hospital_order_employees')->where('userid', $this->userId)->delete();
+        DB::table('hris.hospital_orders')->where('order_number', 'UNITEST-HO-001')->delete();
         parent::tearDown();
+    }
+
+    /**
+     * Seeds a hospital_orders parent row spanning [startDate, endDate], plus
+     * a single hospital_order_employees filing dated only $filedDate (approved) -
+     * mirroring what the real filing UI actually produces today (it can only
+     * ever file the order's start_date, never any other day in the range).
+     */
+    private function seedHospitalOrder(string $startDate, string $endDate, string $filedDate): void
+    {
+        $hoId = DB::table('hris.hospital_orders')->insertGetId([
+            'order_number' => 'UNITEST-HO-001',
+            'order_date' => $startDate,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'created_by' => $this->userId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.hospital_order_employees')->insert([
+            'ho_id' => $hoId,
+            'userid' => $this->userId,
+            'filed_date' => $filedDate,
+            'status' => 'approved',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function seedSchedule(string $date, string $timeIn, string $timeOut, ?string $breakOut, ?string $breakIn): void
@@ -141,5 +171,42 @@ class DtrServicesUnifiedComputationTest extends TestCase
         $this->assertEquals(0, $result['absences']);
         $this->assertEquals(0, $result['late_minutes']);
         $this->assertEquals(0, $result['undertime_minutes']);
+    }
+
+    /** @test */
+    public function multi_day_hospital_order_exempts_the_whole_order_range_not_just_the_filed_date(): void
+    {
+        // 3-day hospital order (06-10 to 06-12), but - matching what the real
+        // filing UI actually produces today - only ONE hospital_order_employees
+        // row exists, dated 06-10 (the order's start_date). Days 2 and 3 have
+        // no filing row of their own at all.
+        $this->seedHospitalOrder('2027-06-10', '2027-06-12', '2027-06-10');
+
+        // seedSchedule() deletes-and-reinserts the shared 'UNITESTSC' master
+        // row on every call, which would orphan the schedules of any earlier
+        // date already seeded in this test - so seed the master row once,
+        // then point all three dates at that same schedule_id directly.
+        $this->seedSchedule('2027-06-10', '08:00:00', '17:00:00', '12:00:00', '13:00:00');
+        $scheduleMasterId = DB::table('hris.schedule_master_lists')->where('code', 'UNITESTSC')->value('id');
+        foreach (['2027-06-11', '2027-06-12'] as $date) {
+            DB::table('hris.schedules')->updateOrInsert(
+                ['employee_id' => $this->userId, 'schedule_date' => $date],
+                ['schedule_id' => $scheduleMasterId, 'updated_by' => $this->userId, 'created_at' => now()]
+            );
+        }
+
+        // Days 2 and 3 have a very late arrival logged - if the order's whole
+        // range isn't honored, these produce real late-minute penalties.
+        $this->seedLog('2027-06-11 10:00:00', 'IN');
+        $this->seedLog('2027-06-11 17:00:00', 'OUT');
+        $this->seedLog('2027-06-12 10:00:00', 'IN');
+        $this->seedLog('2027-06-12 17:00:00', 'OUT');
+
+        $result = app(DTRServices::class)->getTotalLateAbsent($this->userId, '2027-06-10', '2027-06-12');
+
+        // The whole 3-day order range is exempt, even though only day 1 was
+        // ever actually filed - so days 2 and 3's late arrivals are waived too.
+        $this->assertEquals(0, $result['late_minutes']);
+        $this->assertEquals(0, $result['absences']);
     }
 }

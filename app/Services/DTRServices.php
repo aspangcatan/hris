@@ -495,17 +495,34 @@ class DTRServices
         return array_values(array_unique(array_merge($hospitalOrderDates, $overtimeDates)));
     }
 
+    /**
+     * Coverage is the parent hospital_orders' start_date..end_date range,
+     * not the single filed_date on the employee's filing - filing is a
+     * one-time acknowledgement of the order, not a per-day attestation.
+     */
     private function getApprovedSpecialDutyDatesByRange($userid, $startDate, $endDate)
     {
-        $hospitalOrderDates = DB::table('hris.hospital_order_employees')
-            ->where('userid', $userid)
-            ->where('status', 'approved')
-            ->whereBetween('filed_date', [$startDate, $endDate])
-            ->pluck('filed_date')
-            ->map(function ($date) {
-                return Carbon::parse($date)->toDateString();
-            })
-            ->toArray();
+        $rangeStart = Carbon::parse($startDate)->startOfDay();
+        $rangeEnd = Carbon::parse($endDate)->endOfDay();
+
+        $hospitalOrderRanges = DB::table('hris.hospital_order_employees as hoe')
+            ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
+            ->where('hoe.userid', $userid)
+            ->where('hoe.status', 'approved')
+            ->where('ho.start_date', '<=', $endDate)
+            ->where('ho.end_date', '>=', $startDate)
+            ->select('ho.start_date', 'ho.end_date')
+            ->distinct()
+            ->get();
+
+        $hospitalOrderDates = [];
+        foreach ($hospitalOrderRanges as $ho) {
+            $d = Carbon::parse($ho->start_date)->max($rangeStart)->startOfDay();
+            $rangeCap = Carbon::parse($ho->end_date)->min($rangeEnd)->startOfDay();
+            for (; $d->lte($rangeCap); $d->addDay()) {
+                $hospitalOrderDates[] = $d->toDateString();
+            }
+        }
 
         $overtimeDates = DB::table('hris.overtime_requests')
             ->where('userid', $userid)

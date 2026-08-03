@@ -43,6 +43,36 @@ class DtrPrintCharacterizationTest extends TestCase
         )->delete();
         DB::table('hris.leave_applications')->where('user_id', $this->userId)->delete();
         DB::table('hris.leave_types')->where('description', 'Characterization Test Leave Type')->delete();
+        DB::table('hris.hospital_order_employees')->where('userid', $this->userId)->delete();
+        DB::table('hris.hospital_orders')->where('order_number', 'CTEST-HO-001')->delete();
+    }
+
+    /**
+     * Seeds a hospital_orders parent row spanning [startDate, endDate], plus
+     * a single hospital_order_employees filing dated only $filedDate (approved) -
+     * mirroring what the real filing UI actually produces today (it can only
+     * ever file the order's start_date, never any other day in the range).
+     */
+    private function seedHospitalOrder(string $startDate, string $endDate, string $filedDate): void
+    {
+        $hoId = DB::table('hris.hospital_orders')->insertGetId([
+            'order_number' => 'CTEST-HO-001',
+            'order_date' => $startDate,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'created_by' => $this->userId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('hris.hospital_order_employees')->insert([
+            'ho_id' => $hoId,
+            'userid' => $this->userId,
+            'filed_date' => $filedDate,
+            'status' => 'approved',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     private function actAsAdmin(): void
@@ -447,5 +477,25 @@ class DtrPrintCharacterizationTest extends TestCase
         // The signature line's "In Charge" label must survive either way.
         $this->assertStringContainsString('In Charge', $htmlShown);
         $this->assertStringContainsString('In Charge', $htmlHidden);
+    }
+
+    /** @test */
+    public function multi_day_hospital_order_marks_every_day_in_range_not_just_the_filed_date(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        // 3-day hospital order, but - matching what the real filing UI
+        // actually produces today - only ONE hospital_order_employees row
+        // exists, dated the order's start_date (04-10). Days 11 and 12 have
+        // no filing row of their own. No schedule/logs needed: the H.O.
+        // marker for a day with zero timelogs comes purely from the
+        // hospitalOrders exemption map, independent of late/undertime math.
+        $this->seedHospitalOrder('2027-04-10', '2027-04-12', '2027-04-10');
+
+        $data = $this->capturePrintDtrData(4, 2027);
+
+        $this->assertEquals('H.O #CTEST-HO-001', $this->dayResult($data[0], 10)['day_marker']);
+        $this->assertEquals('H.O #CTEST-HO-001', $this->dayResult($data[0], 11)['day_marker']);
+        $this->assertEquals('H.O #CTEST-HO-001', $this->dayResult($data[0], 12)['day_marker']);
     }
 }

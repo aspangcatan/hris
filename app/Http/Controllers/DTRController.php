@@ -713,18 +713,28 @@ class DTRController extends Controller
                 }
 
                 // H.O
+                // Coverage is the parent hospital_orders' start_date..end_date
+                // range, not the single filed_date on the employee's filing -
+                // filing is a one-time acknowledgement of the order, not a
+                // per-day attestation.
+                $monthEnd = Carbon::createFromDate($year, $month, 1)->endOfMonth();
                 $hosRaw = DB::table('hris.hospital_order_employees as hoe')
                     ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
                     ->where('hoe.userid', $employee->id)
                     ->where('hoe.status', 'approved')
-                    ->whereMonth('hoe.filed_date', $month)
-                    ->whereYear('hoe.filed_date', $year)
-                    ->select(DB::raw('DATE(hoe.filed_date) as filed_date'), 'ho.order_number')
+                    ->where('ho.start_date', '<=', $monthEnd->toDateString())
+                    ->where('ho.end_date', '>=', $monthStart->toDateString())
+                    ->select('ho.order_number', 'ho.start_date', 'ho.end_date')
+                    ->distinct()
                     ->get();
 
                 $hospitalOrders = [];
                 foreach ($hosRaw as $ho) {
-                    $hospitalOrders[Carbon::parse($ho->filed_date)->toDateString()] = 'H.O #' . $ho->order_number;
+                    $rangeStart = Carbon::parse($ho->start_date)->max($monthStart);
+                    $rangeEnd = Carbon::parse($ho->end_date)->min($monthEnd);
+                    for ($d = $rangeStart->copy(); $d->lte($rangeEnd); $d->addDay()) {
+                        $hospitalOrders[$d->toDateString()] = 'H.O #' . $ho->order_number;
+                    }
                 }
 
                 // Overtime
