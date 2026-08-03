@@ -197,13 +197,31 @@
 
                 <div class="dtr-card dtr-controls mb-4">
                     <div class="row g-3">
-                        <div class="col-12">
+                        <div class="col-md-4">
                             <div class="form-floating">
                                 <select class="form-select" id="enable_automation" name="enable_automation">
                                     <option value="yes" selected>Yes</option>
                                     <option value="no">No</option>
                                 </select>
                                 <label for="enable_automation">Enable Automation</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <select class="form-select" id="show_day_names" name="show_day_names">
+                                    <option value="yes" selected>Yes</option>
+                                    <option value="no">No</option>
+                                </select>
+                                <label for="show_day_names">Show Weekday Names</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <select class="form-select" id="show_in_charge_name" name="show_in_charge_name">
+                                    <option value="yes" selected>Yes</option>
+                                    <option value="no">No</option>
+                                </select>
+                                <label for="show_in_charge_name">Show In Charge Name</label>
                             </div>
                         </div>
                         <div class="col-md-3">

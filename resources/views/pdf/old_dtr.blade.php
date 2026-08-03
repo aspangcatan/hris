@@ -125,6 +125,8 @@
         };
 
         $noAutomation = ($employee['enable_automation'] ?? 'yes') === 'no';
+        $showDayNames = $employee['show_day_names'] ?? true;
+        $showInChargeName = $employee['show_in_charge_name'] ?? true;
     @endphp
     <table class="employee-sheet">
         <tr> <!-- First Column -->
@@ -188,7 +190,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -197,7 +199,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -206,7 +208,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -215,7 +217,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -286,7 +288,7 @@
                         </tr>
                         <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
                             <td></td>
-                            <td style="border-bottom: 1px solid black;text-align: center"> {{ $employee['in_charged'] }} </td>
+                            <td style="border-bottom: 1px solid black;font-weight:bold;text-align: center"> {{ $showInChargeName ? $employee['in_charged'] : '' }} </td>
                             <td></td>
                         </tr>
                         <tr>
@@ -358,7 +360,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -367,7 +369,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -376,7 +378,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -385,7 +387,7 @@
                             <td style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
-                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'])
+                                @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
                                     {{ $dtr['day_name'] }}
                                 @endif
                             </td>
@@ -454,7 +456,7 @@
                         </tr>
                         <tr style="border-top: 20px solid transparent;"> <!-- Margin added here -->
                             <td></td>
-                            <td style="border-bottom: 1px solid black;text-align: center"> {{ $employee['in_charged'] }} </td>
+                            <td style="border-bottom: 1px solid black;font-weight:bold;text-align: center"> {{ $showInChargeName ? $employee['in_charged'] : '' }} </td>
                             <td></td>
                         </tr>
                         <tr>

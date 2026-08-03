@@ -113,7 +113,7 @@ class DtrPrintCharacterizationTest extends TestCase
      *
      * @return array The 'employees' data array (one entry per requested user)
      */
-    private function capturePrintDtrData(int $month, int $year): array
+    private function capturePrintDtrData(int $month, int $year, array $extraParams = []): array
     {
         $captured = null;
 
@@ -122,8 +122,16 @@ class DtrPrintCharacterizationTest extends TestCase
             throw new \RuntimeException('__captured__');
         });
 
+        $query = http_build_query(array_merge([
+            'userid' => $this->userId,
+            'month' => $month,
+            'year' => $year,
+            'cutoff' => 'full',
+            'enable_automation' => 'yes',
+        ], $extraParams));
+
         try {
-            $this->withoutMiddleware()->get("/print_dtr?userid={$this->userId}&month={$month}&year={$year}&cutoff=full&enable_automation=yes");
+            $this->withoutMiddleware()->get("/print_dtr?{$query}");
         } catch (\RuntimeException $e) {
             if ($e->getMessage() !== '__captured__') {
                 throw $e;
@@ -286,5 +294,158 @@ class DtrPrintCharacterizationTest extends TestCase
 
         // Waived entirely despite the late arrival - late_minutes stays 0.
         $this->assertEquals(0, $day['late_minutes']);
+    }
+
+    /** @test */
+    public function show_day_names_flag_defaults_to_true(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        $this->seedSchedule('2027-04-05', '08:00:00', '17:00:00', '12:00:00', '13:00:00');
+
+        $data = $this->capturePrintDtrData(4, 2027);
+
+        $this->assertTrue($data[0]['show_day_names']);
+    }
+
+    /** @test */
+    public function show_day_names_flag_can_be_disabled_via_query_param(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        $this->seedSchedule('2027-04-05', '08:00:00', '17:00:00', '12:00:00', '13:00:00');
+
+        $data = $this->capturePrintDtrData(4, 2027, ['show_day_names' => 'no']);
+
+        $this->assertFalse($data[0]['show_day_names']);
+    }
+
+    /** @test */
+    public function empty_day_shows_weekday_name_by_default_and_hides_it_when_disabled(): void
+    {
+        // Renders the PDF blade directly with a hand-built fixture - no DB,
+        // no dompdf binary - per this project's convention for permanent
+        // regression coverage of print-template @if conditionals.
+        $buildEmployee = function (bool $showDayNames): array {
+            return [
+                'name' => 'Test Employee',
+                'in_charged' => 'Test Head',
+                'date' => 'April 2027',
+                'dtrs' => collect([[
+                    'day' => 5,
+                    'day_name' => 'Monday',
+                    'isInsideCutoff' => true,
+                    'isEmpty' => true,
+                    'late_minutes' => 0,
+                    'day_marker' => '',
+                    'off_label' => '',
+                    'suppress_off_label' => false,
+                    'planned_schedule' => '',
+                    'rendered_minutes' => 0,
+                    'date_timein_am' => '',
+                    'date_timeout_am' => '',
+                    'date_timein_pm' => '',
+                    'date_timeout_pm' => '',
+                    'undertime_hours' => '',
+                    'undertime_minutes' => '',
+                ]]),
+                'late_count' => 0,
+                'undertime_count' => 0,
+                'late_total_minutes' => 0,
+                'undertime_total_minutes' => 0,
+                'start_day' => 1,
+                'end_day' => 30,
+                'reg_days_am' => '',
+                'reg_days_pm' => '',
+                'sat_days_am' => '',
+                'sat_days_pm' => '',
+                'division' => '2',
+                'enable_automation' => 'yes',
+                'show_day_names' => $showDayNames,
+            ];
+        };
+
+        $htmlShown = view('pdf.old_dtr', ['employees' => [$buildEmployee(true)]])->render();
+        $htmlHidden = view('pdf.old_dtr', ['employees' => [$buildEmployee(false)]])->render();
+
+        $this->assertStringContainsString('Monday', $htmlShown);
+        $this->assertStringNotContainsString('Monday', $htmlHidden);
+    }
+
+    /** @test */
+    public function show_in_charge_name_flag_defaults_to_true(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        $this->seedSchedule('2027-04-05', '08:00:00', '17:00:00', '12:00:00', '13:00:00');
+
+        $data = $this->capturePrintDtrData(4, 2027);
+
+        $this->assertTrue($data[0]['show_in_charge_name']);
+    }
+
+    /** @test */
+    public function show_in_charge_name_flag_can_be_disabled_via_query_param(): void
+    {
+        $this->actAsAdmin();
+        $this->seedUser();
+        $this->seedSchedule('2027-04-05', '08:00:00', '17:00:00', '12:00:00', '13:00:00');
+
+        $data = $this->capturePrintDtrData(4, 2027, ['show_in_charge_name' => 'no']);
+
+        $this->assertFalse($data[0]['show_in_charge_name']);
+    }
+
+    /** @test */
+    public function in_charge_name_prints_by_default_and_blanks_when_disabled_while_keeping_the_label(): void
+    {
+        $buildEmployee = function (bool $showInChargeName): array {
+            return [
+                'name' => 'Test Employee',
+                'in_charged' => 'DONNABELLE L. ARANAS, MPA, CESE, FPCHA',
+                'date' => 'April 2027',
+                'dtrs' => collect([[
+                    'day' => 5,
+                    'day_name' => 'Monday',
+                    'isInsideCutoff' => true,
+                    'isEmpty' => true,
+                    'late_minutes' => 0,
+                    'day_marker' => '',
+                    'off_label' => '',
+                    'suppress_off_label' => false,
+                    'planned_schedule' => '',
+                    'rendered_minutes' => 0,
+                    'date_timein_am' => '',
+                    'date_timeout_am' => '',
+                    'date_timein_pm' => '',
+                    'date_timeout_pm' => '',
+                    'undertime_hours' => '',
+                    'undertime_minutes' => '',
+                ]]),
+                'late_count' => 0,
+                'undertime_count' => 0,
+                'late_total_minutes' => 0,
+                'undertime_total_minutes' => 0,
+                'start_day' => 1,
+                'end_day' => 30,
+                'reg_days_am' => '',
+                'reg_days_pm' => '',
+                'sat_days_am' => '',
+                'sat_days_pm' => '',
+                'division' => '2',
+                'enable_automation' => 'yes',
+                'show_day_names' => true,
+                'show_in_charge_name' => $showInChargeName,
+            ];
+        };
+
+        $htmlShown = view('pdf.old_dtr', ['employees' => [$buildEmployee(true)]])->render();
+        $htmlHidden = view('pdf.old_dtr', ['employees' => [$buildEmployee(false)]])->render();
+
+        $this->assertStringContainsString('DONNABELLE L. ARANAS, MPA, CESE, FPCHA', $htmlShown);
+        $this->assertStringNotContainsString('DONNABELLE L. ARANAS, MPA, CESE, FPCHA', $htmlHidden);
+        // The signature line's "In Charge" label must survive either way.
+        $this->assertStringContainsString('In Charge', $htmlShown);
+        $this->assertStringContainsString('In Charge', $htmlHidden);
     }
 }

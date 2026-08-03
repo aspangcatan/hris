@@ -149,4 +149,51 @@ class DtrDayComputationServiceTest extends TestCase
         $this->assertEquals(7, $result['2027-05-06']['late_minutes']);
         $this->assertEquals(30, $result['2027-05-06']['undertime_minutes']);
     }
+
+    /** @test */
+    public function afternoon_shift_full_day_is_not_misclassified_as_half_day_missing(): void
+    {
+        // 2:00 PM - 10:00 PM schedule with a 30-min dinner break. Every
+        // punch on a shift like this falls after 12:00 noon, so the old
+        // wall-clock-noon AM/PM bucketing saw "no AM attendance" on every
+        // single fully-worked day and misfired the half-day-missing-half
+        // flat ~half-shift penalty. Employee here worked the whole shift
+        // (in before the break, out after the break) - just 7 min late,
+        // 10 min undertime, no half-day penalty should apply at all.
+        $schedules = collect(['2027-06-01' => $this->schedule('14:00:00', '22:00:00', '18:00:00', '18:30:00')]);
+        $logs = collect([
+            $this->log('2027-06-01 14:07:00', 'IN'),
+            $this->log('2027-06-01 21:50:00', 'OUT'),
+        ]);
+
+        $result = $this->service->computeRange(9501, '2027-06-01', '2027-06-01', $schedules, $logs, []);
+
+        $this->assertEquals(7, $result['2027-06-01']['late_minutes']);
+        $this->assertEquals(10, $result['2027-06-01']['undertime_minutes']);
+    }
+
+    /** @test */
+    public function halfday_missing_check_disabled_via_config_falls_back_to_plain_full_day_math(): void
+    {
+        // Asymmetric full-day schedule (08:00-18:00, 30-min break at
+        // 12:00-12:30 - AM segment 240min, PM segment 330min) with only
+        // the PM half worked. With the flag on, this legitimately triggers
+        // isHalfDayMissingHalf: 15min precise late (vs break_in, no grace)
+        // + a flat half-shift charge of round(570/2)=285 = 300 total late.
+        // With the flag off, no half-day special-casing applies at all -
+        // late is just the plain arrival-vs-time_in boundary calc (285),
+        // minus the break it fully skipped over (30) = 255.
+        config(['hris.dtr_halfday_missing_check_enabled' => false]);
+
+        $schedules = collect(['2027-06-02' => $this->schedule('08:00:00', '18:00:00', '12:00:00', '12:30:00')]);
+        $logs = collect([
+            $this->log('2027-06-02 12:45:00', 'IN'),
+            $this->log('2027-06-02 18:00:00', 'OUT'),
+        ]);
+
+        $result = $this->service->computeRange(9501, '2027-06-02', '2027-06-02', $schedules, $logs, []);
+
+        $this->assertEquals(255, $result['2027-06-02']['late_minutes']);
+        $this->assertEquals(0, $result['2027-06-02']['undertime_minutes']);
+    }
 }

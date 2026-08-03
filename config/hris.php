@@ -16,4 +16,20 @@ return [
 
     'pass_slip_auto_approve' => env('PASS_SLIP_AUTO_APPROVE', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | DTR Half-Day-Missing-Half Check (temporary)
+    |--------------------------------------------------------------------------
+    |
+    | Disabled for now: this flat-charge special case (only one of AM/PM
+    | worked on a full-day schedule) has known categorization bugs in the
+    | surrounding incomplete-punch fallback that haven't been sorted out
+    | yet. While off, DtrDayComputationService falls back to plain
+    | full-day boundary math for every day, same as a schedule with no
+    | break configured. Flip back to true once the fallback path is fixed.
+    |
+    */
+
+    'dtr_halfday_missing_check_enabled' => env('DTR_HALFDAY_MISSING_CHECK_ENABLED', false),
+
 ];

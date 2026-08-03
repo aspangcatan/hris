@@ -370,8 +370,32 @@ class DtrDayComputationService
                 }
             }
 
-            $hasAmAttendance = ($hasAmIn || $hasAmOut);
-            $hasPmAttendance = ($hasPmIn || $hasPmOut);
+            // Half-day-missing-half detection must be relative to the
+            // schedule's own break, not wall-clock noon - a wall-clock split
+            // is meaningless for shifts that fall entirely after noon (e.g.
+            // 2PM-10PM): every punch would land in the "PM" bucket, making a
+            // fully-worked day indistinguishable from one missing its first
+            // half. Falls back to the wall-clock AM/PM buckets when no break
+            // is configured, but that only matters for isOffSchedule/no-op
+            // cases below since isHalfDayMissingHalf itself requires a break.
+            $hasPreBreakAttendance = ($hasAmIn || $hasAmOut);
+            $hasPostBreakAttendance = ($hasPmIn || $hasPmOut);
+
+            if ($calcSched && !empty($calcSched->break_out) && !empty($calcSched->break_in)) {
+                $breakOutBoundary = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
+                $breakInBoundary = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
+                if ($breakInBoundary->lte($breakOutBoundary)) {
+                    $breakInBoundary->addDay();
+                }
+
+                $hasPreBreakAttendance = $dayLogs->contains(
+                    fn($log) => Carbon::parse($log->created_at)->lt($breakOutBoundary)
+                );
+                $hasPostBreakAttendance = $dayLogs->contains(
+                    fn($log) => Carbon::parse($log->created_at)->gte($breakInBoundary)
+                );
+            }
+
             $isFullDaySchedule = $rawSched
                 && !$isOffSchedule
                 && !$isOvernightSchedule
@@ -379,12 +403,13 @@ class DtrDayComputationService
             $hasBreakConfigured = $calcSched
                 && !empty($calcSched->break_out)
                 && !empty($calcSched->break_in);
-            $isHalfDayMissingHalf = $isFullDaySchedule
+            $isHalfDayMissingHalf = config('hris.dtr_halfday_missing_check_enabled')
+                && $isFullDaySchedule
                 && $hasBreakConfigured
                 && !$isOvernightSpilloverOnly
                 && $firstIn
                 && $lastOut
-                && ($hasAmAttendance xor $hasPmAttendance);
+                && ($hasPreBreakAttendance xor $hasPostBreakAttendance);
 
             if (!$skipLateUndertimeComputation && $calcSched && !$hasApprovedPassSlip && $firstIn) {
                 $lateMinutes = 0;
@@ -392,7 +417,7 @@ class DtrDayComputationService
 
                 if ($firstIn) {
                     $firstInTime = Carbon::parse($firstIn)->startOfMinute();
-                    if ($isHalfDayMissingHalf && !$hasAmAttendance) {
+                    if ($isHalfDayMissingHalf && !$hasPreBreakAttendance) {
                         $schedIn = Carbon::parse($currentDay . ' ' . $calcSched->break_in);
                         $schedInLatest = $schedIn->copy();
                     } else {
@@ -435,9 +460,9 @@ class DtrDayComputationService
                     }
                     $isGliding = isset($calcSched->type) && trim(strtoupper($calcSched->type)) === 'GLIDING';
 
-                    if ($isHalfDayMissingHalf && !$hasPmAttendance) {
+                    if ($isHalfDayMissingHalf && !$hasPostBreakAttendance) {
                         $requiredOut = Carbon::parse($currentDay . ' ' . $calcSched->break_out);
-                    } elseif ($isGliding && $firstIn && !($isHalfDayMissingHalf && !$hasAmAttendance)) {
+                    } elseif ($isGliding && $firstIn && !($isHalfDayMissingHalf && !$hasPreBreakAttendance)) {
                         $effectiveIn = Carbon::parse($firstIn)->startOfMinute();
                         $schedInLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_in_latest);
                         $schedOutLatest = Carbon::parse($currentDay . ' ' . $calcSched->time_out_latest);
@@ -459,7 +484,7 @@ class DtrDayComputationService
                         } else {
                             $requiredOut = $schedOutLatest->copy();
                         }
-                    } elseif ($firstIn && !($isHalfDayMissingHalf && !$hasAmAttendance)) {
+                    } elseif ($firstIn && !($isHalfDayMissingHalf && !$hasPreBreakAttendance)) {
                         // Non-gliding (FIXED and any other type): a step, not a
                         // slide. Arriving at/before time_in earns the plain
                         // time_out. Any lateness at all - even inside the
@@ -502,7 +527,7 @@ class DtrDayComputationService
                 if ($isHalfDayMissingHalf) {
                     $halfDayMinutes = (int) round($renderedMinutes / 2);
                     if ($halfDayMinutes > 0) {
-                        if (!$hasAmAttendance) {
+                        if (!$hasPreBreakAttendance) {
                             $lateMinutes += $halfDayMinutes;
                         } else {
                             $undertimeMinutes += $halfDayMinutes;

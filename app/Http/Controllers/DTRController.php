@@ -613,6 +613,8 @@ class DTRController extends Controller
             $sat_days_pm = $request->sat_days_pm;
             $enableAutomation = strtolower($request->input('enable_automation', 'yes'));
             $skipAllAutomation = ($enableAutomation === 'no');
+            $showDayNames = strtolower($request->input('show_day_names', 'yes')) !== 'no';
+            $showInChargeName = strtolower($request->input('show_in_charge_name', 'yes')) !== 'no';
 
             if (!empty($fromDateInput) && !empty($toDateInput)) {
                 $fromDate = Carbon::parse($fromDateInput)->startOfDay();
@@ -1091,6 +1093,8 @@ class DTRController extends Controller
                     'sat_days_pm' => $sat_days_pm,
                     'division' => $employee->division,
                     'enable_automation' => $enableAutomation,
+                    'show_day_names' => $showDayNames,
+                    'show_in_charge_name' => $showInChargeName,
                 ];
             }
 
