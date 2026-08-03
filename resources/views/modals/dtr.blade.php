@@ -54,6 +54,20 @@
                         <option value="second">2nd Half (16–end)</option>
                     </select>
                 </div>
+                <div class="mb-3">
+                    <label for="show_day_names" class="form-label">Show Weekday Names</label>
+                    <select class="form-select" id="show_day_names" name="show_day_names">
+                        <option value="yes" selected>Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="show_in_charge_name" class="form-label">Show In Charge Name</label>
+                    <select class="form-select" id="show_in_charge_name" name="show_in_charge_name">
+                        <option value="yes" selected>Yes</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-4">

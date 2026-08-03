@@ -213,9 +213,11 @@
                 const reg_days_pm = $("#reg_days_pm").val();
                 const sat_days_am = $("#sat_days_am").val();
                 const sat_days_pm = $("#sat_days_pm").val();
+                const show_day_names = $("#show_day_names").val() || "yes";
+                const show_in_charge_name = $("#show_in_charge_name").val() || "yes";
 
                 window.open(
-                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&reg_days_am=" + reg_days_am + "&reg_days_pm=" + reg_days_pm + "&sat_days_am=" + sat_days_am + "&sat_days_pm=" + sat_days_pm,
+                    '{{ route('printDTR') }}?month=' + month + "&year=" + year + "&cutoff=" + cutoff + "&reg_days_am=" + reg_days_am + "&reg_days_pm=" + reg_days_pm + "&sat_days_am=" + sat_days_am + "&sat_days_pm=" + sat_days_pm + "&show_day_names=" + show_day_names + "&show_in_charge_name=" + show_in_charge_name,
                     '_blank' // <- This is what makes it open in a new window.
                 );
             });
