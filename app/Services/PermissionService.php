@@ -176,7 +176,10 @@ class PermissionService
             return;
         }
 
-        $codes = ['leave.approve', 'overtime.approve', 'passslip.approve', 'hospital_order.approve'];
+        $codes = [
+            'leave.approve', 'overtime.approve', 'passslip.approve', 'hospital_order.approve',
+            'passslip.file_on_behalf', 'hospital_order.file_on_behalf',
+        ];
 
         $permissions = DB::table('hris.permissions')
             ->whereIn('code', $codes)

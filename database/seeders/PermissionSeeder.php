@@ -27,12 +27,14 @@ class PermissionSeeder extends Seeder
             ['module' => 'overtime',       'code' => 'overtime.approve',        'description' => 'Approve overtime requests'],
             ['module' => 'passslip',       'code' => 'passslip.file',           'description' => 'File pass slips'],
             ['module' => 'passslip',       'code' => 'passslip.approve',        'description' => 'Approve pass slips'],
+            ['module' => 'passslip',       'code' => 'passslip.file_on_behalf', 'description' => 'File pass slips on behalf of managed employees'],
             ['module' => 'schedule',       'code' => 'schedule.view',           'description' => 'View schedules'],
             ['module' => 'schedule',       'code' => 'schedule.manage',         'description' => 'Manage schedules'],
             ['module' => 'saln',           'code' => 'saln.view_own',           'description' => 'View own SALN'],
             ['module' => 'saln',           'code' => 'saln.admin',              'description' => 'Administer all SALNs'],
             ['module' => 'hospital_order', 'code' => 'hospital_order.file',     'description' => 'File hospital orders'],
             ['module' => 'hospital_order', 'code' => 'hospital_order.approve',  'description' => 'Approve/manage hospital orders'],
+            ['module' => 'hospital_order', 'code' => 'hospital_order.file_on_behalf', 'description' => 'File hospital orders on behalf of managed employees'],
             ['module' => 'reports',        'code' => 'reports.quarterly_leave', 'description' => 'Access quarterly leave balance reports'],
         ];
 
