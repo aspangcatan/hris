@@ -39,10 +39,10 @@ class PassSlipController extends Controller
             'target_user_id' => 'nullable|integer',
         ]);
 
-        $targetUserId = $validated['target_user_id'] ?? null;
+        $targetUserId = isset($validated['target_user_id']) ? (int) $validated['target_user_id'] : null;
         unset($validated['target_user_id']);
 
-        if ($targetUserId !== null && $targetUserId !== Auth::id()
+        if ($targetUserId !== null && $targetUserId !== (int) Auth::id()
             && !$this->permissions->can(Auth::id(), 'passslip.file_on_behalf')) {
             return response()->json(['message' => 'You are not allowed to file pass slips on behalf of others.'], 403);
         }

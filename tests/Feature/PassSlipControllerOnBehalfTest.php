@@ -17,18 +17,20 @@ class PassSlipControllerOnBehalfTest extends TestCase
     private int $employeeId = 9501001;
     private int $shUserId = 9501002;
     private int $unauthorizedHeadId = 9501003;
+    private int $outsideEmployeeId = 9501004;
     private int $sectionId = 8501001;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        DB::table('hris.pass_slips')->whereIn('user_id', [$this->employeeId, $this->shUserId])->delete();
+        DB::table('hris.pass_slips')->whereIn('user_id', [$this->employeeId, $this->shUserId, $this->outsideEmployeeId])->delete();
 
         DB::table('tdh_user.users')->insertOrIgnore([
             ['id' => $this->shUserId, 'fname' => 'SH', 'lname' => 'CtrlTest', 'section' => $this->sectionId, 'division' => 0, 'username' => 'sh_ctrl_test', 'password' => 'x'],
             ['id' => $this->unauthorizedHeadId, 'fname' => 'NoPerm', 'lname' => 'CtrlTest', 'section' => 0, 'division' => 0, 'username' => 'noperm_ctrl_test', 'password' => 'x'],
             ['id' => $this->employeeId, 'fname' => 'Emp', 'lname' => 'CtrlTest', 'section' => $this->sectionId, 'division' => 0, 'username' => 'emp_ctrl_test', 'password' => 'x'],
+            ['id' => $this->outsideEmployeeId, 'fname' => 'Outside', 'lname' => 'CtrlTest', 'section' => 0, 'division' => 0, 'username' => 'outside_ctrl_test', 'password' => 'x'],
         ]);
 
         DB::table('tdh_user.section')->insertOrIgnore([
@@ -46,10 +48,10 @@ class PassSlipControllerOnBehalfTest extends TestCase
 
     protected function tearDown(): void
     {
-        DB::table('hris.pass_slips')->whereIn('user_id', [$this->employeeId, $this->shUserId])->delete();
+        DB::table('hris.pass_slips')->whereIn('user_id', [$this->employeeId, $this->shUserId, $this->outsideEmployeeId])->delete();
         DB::table('hris.user_permissions')->whereIn('user_id', [$this->shUserId, $this->unauthorizedHeadId])->delete();
         DB::table('tdh_user.section')->where('id', $this->sectionId)->delete();
-        DB::table('tdh_user.users')->whereIn('id', [$this->shUserId, $this->unauthorizedHeadId, $this->employeeId])->delete();
+        DB::table('tdh_user.users')->whereIn('id', [$this->shUserId, $this->unauthorizedHeadId, $this->employeeId, $this->outsideEmployeeId])->delete();
         parent::tearDown();
     }
 
@@ -107,6 +109,30 @@ class PassSlipControllerOnBehalfTest extends TestCase
         $exists = DB::table('hris.pass_slips')
             ->where('user_id', $this->employeeId)
             ->where('filed_by', $this->unauthorizedHeadId)
+            ->exists();
+        $this->assertFalse($exists);
+    }
+
+    /** @test */
+    public function permitted_head_gets_422_when_target_is_outside_their_managed_scope()
+    {
+        $this->actAs($this->shUserId);
+        $controller = app(PassSlipController::class);
+
+        $request = Request::create('/pass-slip/store', 'POST', [
+            'slip_date' => '2026-08-04',
+            'time_out' => '13:00',
+            'time_in' => '14:00',
+            'type' => 'Official',
+            'target_user_id' => $this->outsideEmployeeId,
+        ]);
+
+        $response = $controller->store($request);
+
+        $this->assertEquals(422, $response->getStatusCode());
+
+        $exists = DB::table('hris.pass_slips')
+            ->where('user_id', $this->outsideEmployeeId)
             ->exists();
         $this->assertFalse($exists);
     }
