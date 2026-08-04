@@ -497,6 +497,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/add-holiday', [CalendarController::class, 'store'])->name('calendar.store');
     Route::post('/update-holiday', [CalendarController::class, 'update'])->name('calendar.update');
     Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete');
+
+    Route::get('/managed-employees', [\App\Http\Controllers\ManagedEmployeeController::class, 'index'])->name('managed-employees.index');
 #HOSPITAL ORDERS
     Route::get('/get_hospital_orders', [HospitalOrderController::class, 'getHospitalOrders'])->name('hospital-orders.get');
     Route::post('/hospital-orders', [HospitalOrderController::class, 'createHospitalOrder'])->name('hospital-orders.store');
