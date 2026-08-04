@@ -36,9 +36,22 @@ class PassSlipController extends Controller
             'time_out' => 'required',
             'time_in' => 'nullable',
             'type' => 'required|in:Personal,Official',
+            'target_user_id' => 'nullable|integer',
         ]);
 
-        $this->service->store($validated);
+        $targetUserId = $validated['target_user_id'] ?? null;
+        unset($validated['target_user_id']);
+
+        if ($targetUserId !== null && $targetUserId !== Auth::id()
+            && !$this->permissions->can(Auth::id(), 'passslip.file_on_behalf')) {
+            return response()->json(['message' => 'You are not allowed to file pass slips on behalf of others.'], 403);
+        }
+
+        try {
+            $this->service->store($validated, $targetUserId);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        }
 
         return response()->json(['message' => 'Pass slip submitted successfully!']);
     }
