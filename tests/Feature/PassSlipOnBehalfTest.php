@@ -249,4 +249,42 @@ class PassSlipOnBehalfTest extends TestCase
         $this->assertNotNull($found);
         $this->assertEquals('approved', $found->status);
     }
+
+    /** @test */
+    public function plain_employee_can_still_delete_their_own_self_filed_slip_as_before()
+    {
+        $this->actAs($this->employeeId);
+        $service = app(PassSlipService::class);
+        $slip = $service->store([
+            'slip_date' => '2026-08-04',
+            'time_out' => '13:00',
+            'time_in' => '14:00',
+            'type' => 'Personal',
+        ]);
+
+        $deleted = $service->destroy($slip->id);
+
+        $this->assertTrue($deleted);
+        $this->assertNull(PassSlip::find($slip->id));
+    }
+
+    /** @test */
+    public function section_heads_own_self_filed_slip_does_not_appear_in_their_own_review_queue()
+    {
+        $this->actAs($this->shUserId);
+        $service = app(PassSlipService::class);
+        $slip = $service->store([
+            'slip_date' => '2026-08-04',
+            'time_out' => '13:00',
+            'time_in' => '14:00',
+            'type' => 'Personal',
+        ]);
+
+        $this->assertNull($slip->filed_by);
+
+        $result = $service->getPendingSlips();
+
+        $found = $result->getCollection()->firstWhere('id', $slip->id);
+        $this->assertNull($found);
+    }
 }
