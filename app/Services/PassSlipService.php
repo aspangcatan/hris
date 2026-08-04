@@ -6,16 +6,15 @@ use App\Models\PassSlip;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PassSlipService
 {
-    private function getManagedSectionIds(): array
+    private OrgHierarchyService $orgHierarchy;
+
+    public function __construct(OrgHierarchyService $orgHierarchy)
     {
-        return DB::table('tdh_user.section')
-            ->where('head', Auth::id())
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        $this->orgHierarchy = $orgHierarchy;
     }
 
     private function isAdmin(): bool
@@ -23,17 +22,37 @@ class PassSlipService
         return in_array(session('access_rights'), ['admin'], true);
     }
 
-    public function store(array $data)
+    public function store(array $data, ?int $targetUserId = null)
     {
+        $actingUserId = Auth::id();
+        $subjectUserId = $actingUserId;
+        $filedBy = null;
+
+        if ($targetUserId !== null && $targetUserId !== $actingUserId) {
+            $managedIds = $this->orgHierarchy->getManagedEmployeeIds($actingUserId);
+            if (!in_array($targetUserId, $managedIds, true)) {
+                throw ValidationException::withMessages([
+                    'target_user_id' => 'You are not authorized to file a pass slip for this employee.',
+                ]);
+            }
+            $subjectUserId = $targetUserId;
+            $filedBy = $actingUserId;
+        }
+
         $payload = [
-            'user_id' => Auth::id(),
+            'user_id' => $subjectUserId,
             'slip_date' => $data['slip_date'],
             'time_out' => $data['time_out'],
             'time_in' => $data['time_in'] ?? null,
             'type' => $data['type'],
+            'filed_by' => $filedBy,
         ];
 
-        if (config('hris.pass_slip_auto_approve')) {
+        if ($filedBy !== null) {
+            $payload['status'] = 'approved';
+            $payload['approver_id'] = $filedBy;
+            $payload['approved_at'] = now();
+        } elseif (config('hris.pass_slip_auto_approve')) {
             $payload['status'] = 'approved';
             $payload['approved_at'] = now();
         }
@@ -43,14 +62,25 @@ class PassSlipService
 
     public function getUserPassSlips()
     {
-        return PassSlip::where('user_id', Auth::id())
+        return PassSlip::with('filedBy')
+            ->where('user_id', Auth::id())
             ->orderByDesc('slip_date')
             ->get();
     }
 
     public function destroy($id)
     {
-        $passSlip = PassSlip::where('user_id', Auth::id())->find($id);
+        $passSlip = PassSlip::where('id', $id)
+            ->where(function ($q) {
+                $q->where(function ($self) {
+                    $self->where('user_id', Auth::id())->whereNull('filed_by');
+                })->orWhere('filed_by', Auth::id());
+            })
+            ->first();
+
+        if (!$passSlip && $this->isAdmin()) {
+            $passSlip = PassSlip::find($id);
+        }
 
         if ($passSlip) {
             return $passSlip->delete();
@@ -62,21 +92,23 @@ class PassSlipService
     public function getPendingSlips(string $search = '', int $perPage = 10)
     {
         $isAdmin = $this->isAdmin();
-        $managedSectionIds = $this->getManagedSectionIds();
+        $managedIds = $this->orgHierarchy->getManagedEmployeeIds(Auth::id());
 
         if ($isAdmin && $search === '') {
-            return PassSlip::with('user')
-                ->where('status', 'pending')
+            return PassSlip::with(['user', 'filedBy'])
+                ->where(function ($q) {
+                    $q->where('status', 'pending')->orWhere('filed_by', Auth::id());
+                })
                 ->orderByDesc('created_at')
                 ->paginate($perPage);
         }
 
         $userQuery = User::query();
         if (!$isAdmin) {
-            if (empty($managedSectionIds)) {
+            if (empty($managedIds)) {
                 return PassSlip::query()->whereRaw('1 = 0')->paginate($perPage);
             }
-            $userQuery->whereIn('section', $managedSectionIds);
+            $userQuery->whereIn('id', $managedIds);
         }
 
         if ($search !== '') {
@@ -93,8 +125,10 @@ class PassSlipService
             return PassSlip::query()->whereRaw('1 = 0')->paginate($perPage);
         }
 
-        return PassSlip::with('user')
-            ->where('status', 'pending')
+        return PassSlip::with(['user', 'filedBy'])
+            ->where(function ($q) use ($userIds) {
+                $q->where('status', 'pending')->orWhere('filed_by', Auth::id());
+            })
             ->whereIn('user_id', $userIds)
             ->orderByDesc('created_at')
             ->paginate($perPage);
@@ -116,8 +150,8 @@ class PassSlipService
             return $slip;
         }
 
-        $managedSectionIds = $this->getManagedSectionIds();
-        if (empty($managedSectionIds)) {
+        $managedIds = $this->orgHierarchy->getManagedEmployeeIds(Auth::id());
+        if (empty($managedIds)) {
             return null;
         }
 
@@ -126,20 +160,15 @@ class PassSlipService
             return null;
         }
 
-        $slipOwner = User::query()->select('id', 'section')->find($slip->user_id);
-        if (!$slipOwner || !in_array((int) $slipOwner->section, $managedSectionIds, true)) {
+        if (!in_array((int) $slip->user_id, $managedIds, true)) {
             return null;
         }
 
-        if ($slip) {
-            $slip->status = $status;
-            $slip->approver_id = Auth::id();
-            $slip->approved_at = now();
-            $slip->save();
-        }
+        $slip->status = $status;
+        $slip->approver_id = Auth::id();
+        $slip->approved_at = now();
+        $slip->save();
 
         return $slip;
     }
-
-
 }

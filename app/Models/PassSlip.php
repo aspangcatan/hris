@@ -21,6 +21,7 @@ class PassSlip extends Model
         'status',
         'approver_id',
         'approved_at',
+        'filed_by',
     ];
 
     public function user()
@@ -31,5 +32,10 @@ class PassSlip extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approver_id');
+    }
+
+    public function filedBy()
+    {
+        return $this->belongsTo(User::class, 'filed_by');
     }
 }
