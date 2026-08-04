@@ -283,7 +283,7 @@
                         ? `<button class="btn btn-action btn-delete delete-btn" data-id="${slip.id}" title="Delete"><i class="bi bi-trash"></i></button>`
                         : '';
                     const filedByLabel = slip.filedBy
-                        ? `<span class="badge bg-info text-dark">Filed by ${slip.filedBy.fname} ${slip.filedBy.lname}</span>`
+                        ? `<span class="badge bg-info text-dark">Filed by ${escapeHtml(slip.filedBy.fname)} ${escapeHtml(slip.filedBy.lname)}</span>`
                         : '-';
 
                     const tr = `
@@ -325,6 +325,15 @@
                     case 'rejected': return 'danger';
                     default: return 'secondary';
                 }
+            }
+
+            function escapeHtml(value) {
+                return String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
             }
         });
     </script>
