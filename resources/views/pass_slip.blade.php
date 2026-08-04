@@ -1,5 +1,8 @@
 @extends('master')
 @section('content')
+    @php
+        $canFileOnBehalf = (bool) session('is_section_head') || (bool) session('is_division_head');
+    @endphp
     <style>
         .ps-board {
             background: #ffffff;
@@ -87,6 +90,14 @@
             <div class="col-lg-4">
                 <div class="ps-panel h-100">
                     <div class="ps-section-title">Create Pass Slip</div>
+                    @if($canFileOnBehalf)
+                        <div class="form-floating mb-3">
+                            <select id="target_user_id" class="form-select">
+                                <option value="">Myself</option>
+                            </select>
+                            <label for="target_user_id">File For</label>
+                        </div>
+                    @endif
                     <div class="form-floating mb-3">
                         <input type="date" id="date" class="form-control">
                         <label for="date">Date</label>
@@ -142,12 +153,13 @@
                                     <th>Time In</th>
                                     <th>Type</th>
                                     <th>Status</th>
+                                    <th>Filed By</th>
                                     <th style="width: 4%"></th>
                                 </tr>
                                 </thead>
                                 <tbody id="pass_slip_list">
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">Loading...</td>
+                                    <td colspan="7" class="text-center text-muted">Loading...</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -168,6 +180,23 @@
             const $timeIn = $('#time_in');
             const $type = $('#type');
             const $list = $('#pass_slip_list');
+            const $target = $('#target_user_id');
+
+            if ($target.length) {
+                $target.select2({
+                    placeholder: 'Myself',
+                    allowClear: true,
+                    width: '100%'
+                });
+
+                fetch('{{ route('managed-employees.index') }}')
+                    .then(res => res.json())
+                    .then(data => {
+                        (data || []).forEach(emp => {
+                            $target.append(new Option(emp.full_name, emp.id, false, false));
+                        });
+                    });
+            }
 
             // Load data when page loads
             loadPassSlips();
@@ -178,6 +207,9 @@
                 $timeOut.val('');
                 $timeIn.val('');
                 $type.prop('selectedIndex', 0);
+                if ($target.length) {
+                    $target.val('').trigger('change');
+                }
             });
 
             // Submit new pass slip
@@ -188,6 +220,10 @@
                     time_in: $timeIn.val(),
                     type: $type.val()
                 };
+
+                if ($target.length && $target.val()) {
+                    data.target_user_id = $target.val();
+                }
 
                 if (!data.slip_date || !data.time_out || !data.type) {
                     alert('Please fill in required fields.');
@@ -221,14 +257,14 @@
 
             // Load Pass Slips
             async function loadPassSlips() {
-                $list.html(`<tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>`);
+                $list.html(`<tr><td colspan="7" class="text-center text-muted">Loading...</td></tr>`);
                 try {
                     const response = await fetch('{{ route('pass-slip.list') }}');
                     const slips = await response.json();
                     renderPassSlipList(slips);
                 } catch (error) {
                     console.error(error);
-                    $list.html(`<tr><td colspan="5" class="text-center text-danger">Error loading data.</td></tr>`);
+                    $list.html(`<tr><td colspan="7" class="text-center text-danger">Error loading data.</td></tr>`);
                 }
             }
 
@@ -237,7 +273,7 @@
                 $list.empty();
 
                 if (slips.length === 0) {
-                    $list.html(`<tr><td colspan="6" class="text-center text-muted">No pass slips found.</td></tr>`);
+                    $list.html(`<tr><td colspan="7" class="text-center text-muted">No pass slips found.</td></tr>`);
                     return;
                 }
 
@@ -246,6 +282,9 @@
                     const deleteButton = slip.status === 'pending'
                         ? `<button class="btn btn-action btn-delete delete-btn" data-id="${slip.id}" title="Delete"><i class="bi bi-trash"></i></button>`
                         : '';
+                    const filedByLabel = slip.filedBy
+                        ? `<span class="badge bg-info text-dark">Filed by ${slip.filedBy.fname} ${slip.filedBy.lname}</span>`
+                        : '-';
 
                     const tr = `
             <tr>
@@ -254,6 +293,7 @@
                 <td>${slip.time_in ? moment(slip.time_in, "HH:mm:ss").format("hh:mm A") : '-'}</td>
                 <td class="text-capitalize">${slip.type}</td>
                 <td><span class="badge bg-${badgeColor} text-uppercase">${slip.status}</span></td>
+                <td>${filedByLabel}</td>
                 <td>${deleteButton}</td>
             </tr>
         `;
