@@ -73,7 +73,26 @@ class HospitalOrderController extends Controller
                 'filed_date' => 'required|date',
                 'time_from' => 'required|date_format:H:i',
                 'time_to' => 'required|date_format:H:i|after:time_from',
+                'target_user_id' => 'nullable|integer',
             ]);
+
+            $targetUserId = $request->target_user_id;
+
+            if ($targetUserId && (int) $targetUserId !== (int) Auth::id()) {
+                if (!$this->permissions->can(Auth::id(), 'hospital_order.file_on_behalf')) {
+                    return response()->json(['error' => 'You are not allowed to file hospital orders on behalf of others.'], 403);
+                }
+
+                $this->hospitalService->fileForEmployee(
+                    $request->ho_id,
+                    (int) $targetUserId,
+                    $request->filed_date,
+                    $request->time_from,
+                    $request->time_to
+                );
+
+                return response()->json(['message' => 'Hospital order filing submitted successfully.']);
+            }
 
             $this->hospitalService->fileForSelf(
                 $request->ho_id,
