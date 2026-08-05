@@ -17,6 +17,7 @@ class HospitalOrderControllerOnBehalfTest extends TestCase
     private int $employeeId = 9601001;
     private int $shUserId = 9601002;
     private int $unauthorizedHeadId = 9601003;
+    private int $outsideEmployeeId = 9601004;
     private int $sectionId = 8601001;
     private int $hoId;
 
@@ -28,6 +29,7 @@ class HospitalOrderControllerOnBehalfTest extends TestCase
             ['id' => $this->shUserId, 'fname' => 'SH', 'lname' => 'HoCtrlTest', 'section' => $this->sectionId, 'division' => 0, 'username' => 'sh_hoctrl_test', 'password' => 'x'],
             ['id' => $this->unauthorizedHeadId, 'fname' => 'NoPerm', 'lname' => 'HoCtrlTest', 'section' => 0, 'division' => 0, 'username' => 'noperm_hoctrl_test', 'password' => 'x'],
             ['id' => $this->employeeId, 'fname' => 'Emp', 'lname' => 'HoCtrlTest', 'section' => $this->sectionId, 'division' => 0, 'username' => 'emp_hoctrl_test', 'password' => 'x'],
+            ['id' => $this->outsideEmployeeId, 'fname' => 'Outside', 'lname' => 'HoCtrlTest', 'section' => 0, 'division' => 0, 'username' => 'outside_hoctrl_test', 'password' => 'x'],
         ]);
 
         DB::table('tdh_user.section')->insertOrIgnore([
@@ -61,7 +63,7 @@ class HospitalOrderControllerOnBehalfTest extends TestCase
         DB::table('hris.hospital_orders')->where('id', $this->hoId)->delete();
         DB::table('hris.user_permissions')->whereIn('user_id', [$this->shUserId, $this->unauthorizedHeadId])->delete();
         DB::table('tdh_user.section')->where('id', $this->sectionId)->delete();
-        DB::table('tdh_user.users')->whereIn('id', [$this->shUserId, $this->unauthorizedHeadId, $this->employeeId])->delete();
+        DB::table('tdh_user.users')->whereIn('id', [$this->shUserId, $this->unauthorizedHeadId, $this->employeeId, $this->outsideEmployeeId])->delete();
         parent::tearDown();
     }
 
@@ -120,6 +122,31 @@ class HospitalOrderControllerOnBehalfTest extends TestCase
         $exists = DB::table('hris.hospital_order_employees')
             ->where('ho_id', $this->hoId)
             ->where('userid', $this->employeeId)
+            ->exists();
+        $this->assertFalse($exists);
+    }
+
+    /** @test */
+    public function permitted_head_gets_422_when_target_is_outside_their_managed_scope()
+    {
+        $this->actAs($this->shUserId);
+        $controller = app(HospitalOrderController::class);
+
+        $request = Request::create('/hospital-orders/file', 'POST', [
+            'ho_id' => $this->hoId,
+            'filed_date' => '2026-08-05',
+            'time_from' => '08:00',
+            'time_to' => '17:00',
+            'target_user_id' => $this->outsideEmployeeId,
+        ]);
+
+        $response = $controller->fileForSelf($request);
+
+        $this->assertEquals(422, $response->getStatusCode());
+
+        $exists = DB::table('hris.hospital_order_employees')
+            ->where('ho_id', $this->hoId)
+            ->where('userid', $this->outsideEmployeeId)
             ->exists();
         $this->assertFalse($exists);
     }
