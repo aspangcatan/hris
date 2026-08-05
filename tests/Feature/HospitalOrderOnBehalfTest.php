@@ -208,4 +208,18 @@ class HospitalOrderOnBehalfTest extends TestCase
         $this->assertNotNull($filing);
         $this->assertEquals('SH HoTest', trim($filing->filed_by_name));
     }
+
+    /** @test */
+    public function plain_employee_can_still_delete_their_own_self_filed_filing_as_before()
+    {
+        $this->actAs($this->employeeId);
+        $service = app(HospitalOrderServices::class);
+        $service->fileForSelf($this->hoId, '2026-08-05', '08:00', '17:00');
+        $filingId = DB::table('hris.hospital_order_employees')
+            ->where('ho_id', $this->hoId)->where('userid', $this->employeeId)->value('id');
+
+        $service->deleteMyFiling($filingId);
+
+        $this->assertNull(DB::table('hris.hospital_order_employees')->where('id', $filingId)->first());
+    }
 }
