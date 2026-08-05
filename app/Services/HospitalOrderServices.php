@@ -9,6 +9,13 @@ use Illuminate\Validation\ValidationException;
 
 class HospitalOrderServices
 {
+    private OrgHierarchyService $orgHierarchy;
+
+    public function __construct(OrgHierarchyService $orgHierarchy)
+    {
+        $this->orgHierarchy = $orgHierarchy;
+    }
+
     private function isAdmin()
     {
         return in_array(session('access_rights'), ['admin'], true);
@@ -98,6 +105,23 @@ class HospitalOrderServices
 
     public function fileForSelf($hoId, $filedDate, $timeFrom, $timeTo)
     {
+        return $this->file($hoId, Auth::id(), null, $filedDate, $timeFrom, $timeTo);
+    }
+
+    public function fileForEmployee($hoId, $targetUserId, $filedDate, $timeFrom, $timeTo)
+    {
+        $managedIds = $this->orgHierarchy->getManagedEmployeeIds(Auth::id());
+        if (!in_array((int) $targetUserId, $managedIds, true)) {
+            throw ValidationException::withMessages([
+                'target_user_id' => 'You are not authorized to file a hospital order for this employee.',
+            ]);
+        }
+
+        return $this->file($hoId, (int) $targetUserId, Auth::id(), $filedDate, $timeFrom, $timeTo);
+    }
+
+    private function file($hoId, $subjectUserId, $filedBy, $filedDate, $timeFrom, $timeTo)
+    {
         $hospitalOrder = DB::table('hris.hospital_orders')
             ->where('id', $hoId)
             ->first();
@@ -126,7 +150,7 @@ class HospitalOrderServices
 
         $exists = DB::table('hris.hospital_order_employees')
             ->where('ho_id', $hoId)
-            ->where('userid', Auth::id())
+            ->where('userid', $subjectUserId)
             ->where('filed_date', $filedDate)
             ->where('time_from', $timeFrom)
             ->where('time_to', $timeTo)
@@ -134,26 +158,37 @@ class HospitalOrderServices
 
         if ($exists) {
             throw ValidationException::withMessages([
-                'filed_date' => 'You already filed this hospital order with the same date and time range.',
+                'filed_date' => 'This employee already has a filing with the same date and time range for this hospital order.',
             ]);
         }
 
-        DB::table('hris.hospital_order_employees')->insert([
+        $payload = [
             'ho_id' => $hoId,
-            'userid' => Auth::id(),
+            'userid' => $subjectUserId,
             'filed_date' => $filedDate,
             'time_from' => $timeFrom,
             'time_to' => $timeTo,
-            'status' => 'pending',
+            'filed_by' => $filedBy,
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
-        ]);
+        ];
+
+        if ($filedBy !== null) {
+            $payload['status'] = 'approved';
+            $payload['reviewed_by'] = $filedBy;
+            $payload['reviewed_at'] = Carbon::now();
+        } else {
+            $payload['status'] = 'pending';
+        }
+
+        DB::table('hris.hospital_order_employees')->insert($payload);
     }
 
     public function getMyFilings()
     {
         return DB::table('hris.hospital_order_employees as hoe')
             ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
+            ->leftJoin('tdh_user.users as filer', 'filer.id', '=', 'hoe.filed_by')
             ->where('hoe.userid', Auth::id())
             ->orderBy('hoe.created_at', 'desc')
             ->get([
@@ -166,6 +201,8 @@ class HospitalOrderServices
                 'hoe.status',
                 'hoe.remarks',
                 'hoe.reviewed_at',
+                'hoe.filed_by',
+                DB::raw("CONCAT(COALESCE(filer.fname, ''), ' ', COALESCE(filer.lname, '')) as filed_by_name"),
             ]);
     }
 
@@ -173,6 +210,7 @@ class HospitalOrderServices
     {
         $query = DB::table('hris.hospital_order_employees as hoe')
             ->join('tdh_user.users as u', 'u.id', '=', 'hoe.userid')
+            ->leftJoin('tdh_user.users as filer', 'filer.id', '=', 'hoe.filed_by')
             ->join('hris.hospital_orders as ho', 'ho.id', '=', 'hoe.ho_id')
             ->orderByRaw("CASE WHEN hoe.status = 'pending' THEN 0 ELSE 1 END")
             ->orderBy('hoe.created_at', 'desc');
@@ -195,6 +233,8 @@ class HospitalOrderServices
             'hoe.status',
             'hoe.remarks',
             'hoe.reviewed_at',
+            'hoe.filed_by',
+            DB::raw("CONCAT(COALESCE(filer.fname, ''), ' ', COALESCE(filer.lname, '')) as filed_by_name"),
         ]);
     }
 
@@ -241,8 +281,7 @@ class HospitalOrderServices
     {
         $filing = DB::table('hris.hospital_order_employees')
             ->where('id', $filingId)
-            ->where('userid', Auth::id())
-            ->first(['id', 'status']);
+            ->first(['id', 'status', 'userid', 'filed_by']);
 
         if (!$filing) {
             throw ValidationException::withMessages([
@@ -250,11 +289,22 @@ class HospitalOrderServices
             ]);
         }
 
-        $status = strtolower((string) $filing->status);
-        if (!in_array($status, ['pending', 'rejected'], true)) {
+        $isSelfFiled = (int) $filing->userid === (int) Auth::id() && empty($filing->filed_by);
+        $isFilingHead = !empty($filing->filed_by) && (int) $filing->filed_by === (int) Auth::id();
+
+        if (!$isSelfFiled && !$isFilingHead && !$this->isAdmin()) {
             throw ValidationException::withMessages([
-                'id' => 'Only pending or rejected filings can be deleted.',
+                'id' => 'Filing record not found.',
             ]);
+        }
+
+        if ($isSelfFiled) {
+            $status = strtolower((string) $filing->status);
+            if (!in_array($status, ['pending', 'rejected'], true)) {
+                throw ValidationException::withMessages([
+                    'id' => 'Only pending or rejected filings can be deleted.',
+                ]);
+            }
         }
 
         DB::table('hris.hospital_order_employees')
