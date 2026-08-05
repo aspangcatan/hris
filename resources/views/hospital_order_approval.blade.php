@@ -125,12 +125,13 @@
                             <th>Date</th>
                             <th>Time Range</th>
                             <th>Status</th>
+                            <th>Filed By</th>
                             <th>Remarks</th>
                             <th>Action</th>
                         </tr>
                         </thead>
                         <tbody id="review_list">
-                        <tr><td colspan="7" class="ho-empty">Loading...</td></tr>
+                        <tr><td colspan="8" class="ho-empty">Loading...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -171,7 +172,7 @@
                 applyReviewFilter();
             })
             .catch(() => {
-                $('#review_list').html('<tr><td colspan="7" class="ho-empty text-danger">Failed to load.</td></tr>');
+                $('#review_list').html('<tr><td colspan="8" class="ho-empty text-danger">Failed to load.</td></tr>');
                 $('#reviewPagination').empty();
                 $('#reviewSummary').text('');
             });
@@ -196,7 +197,7 @@
         $list.empty();
 
         if (!filteredFilingsForReview.length) {
-            $list.html('<tr><td colspan="7" class="ho-empty">No filings for review.</td></tr>');
+            $list.html('<tr><td colspan="8" class="ho-empty">No filings for review.</td></tr>');
             $('#reviewSummary').text('0 results');
             return;
         }
@@ -210,6 +211,9 @@
 
         pageItems.forEach(it => {
             const canReview = String(it.status || '').toLowerCase() === 'pending';
+            const filedByLabel = it.filed_by
+                ? `<span class="ho-chip">${escapeHtml((it.filed_by_name || '').trim())}</span>`
+                : '-';
             $list.append(`
                 <tr>
                     <td>${escapeHtml((it.employee_name || '').replace(/\s+/g, ' ').trim())}</td>
@@ -217,6 +221,7 @@
                     <td>${formatDate(it.filed_date)}</td>
                     <td>${formatTimeRange(it.time_from, it.time_to)}</td>
                     <td>${statusBadge(it.status)}</td>
+                    <td>${filedByLabel}</td>
                     <td>${escapeHtml(it.remarks || '-')}</td>
                     <td>
                         ${canReview ? `
