@@ -97,12 +97,14 @@
                         <th>Time Out</th>
                         <th>Time In</th>
                         <th>Type</th>
+                        <th>Status</th>
+                        <th>Filed By</th>
                         <th>Actions</th>
                     </tr>
                     </thead>
                     <tbody id="pending_slip_list">
                     <tr>
-                        <td colspan="6" class="text-muted text-center">Loading pending slips...</td>
+                        <td colspan="8" class="text-muted text-center">Loading pending slips...</td>
                     </tr>
                     </tbody>
                 </table>
@@ -185,12 +187,28 @@
                 }
 
                 if (slips.length === 0) {
-                    table.html(`<tr><td colspan="6" class="text-center text-muted">No pending pass slips.</td></tr>`);
+                    table.html(`<tr><td colspan="8" class="text-center text-muted">No slips to review.</td></tr>`);
                     return;
                 }
 
                 slips.forEach(slip => {
                     const formattedDate = moment(slip.slip_date, "YYYY-MM-DD").format("MMM D, YYYY");
+                    const status = (slip.status || 'pending').toLowerCase();
+                    const statusColor = status === 'approved' ? 'success' : (status === 'rejected' ? 'danger' : 'secondary');
+                    const filedByLabel = slip.filedBy
+                        ? `<span class="badge bg-info text-dark">${formatFullName(slip.filedBy)}</span>`
+                        : '-';
+                    const actions = status === 'pending'
+                        ? `
+                        <button class="btn btn-action btn-edit approve-btn" data-id="${slip.id}" title="Approve">
+                            <i class="bi bi-check2"></i>
+                        </button>
+                        <button class="btn btn-action btn-delete reject-btn" data-id="${slip.id}" title="Reject">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    `
+                        : '-';
+
                     const row = `
                 <tr>
                     <td>${formatFullName(slip.user)}</td>
@@ -198,14 +216,9 @@
                     <td>${slip.time_out}</td>
                     <td>${slip.time_in ?? '-'}</td>
                     <td class="text-capitalize">${slip.type}</td>
-                    <td>
-                        <button class="btn btn-action btn-edit approve-btn" data-id="${slip.id}" title="Approve">
-                            <i class="bi bi-check2"></i>
-                        </button>
-                        <button class="btn btn-action btn-delete reject-btn" data-id="${slip.id}" title="Reject">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </td>
+                    <td><span class="badge bg-${statusColor} text-uppercase">${status}</span></td>
+                    <td>${filedByLabel}</td>
+                    <td>${actions}</td>
                 </tr>
             `;
                     table.append(row);
@@ -264,12 +277,21 @@
 
         function formatFullName(user) {
             const parts = [
-                user.fname ?? '',
-                user.mname ? user.mname.charAt(0) + '.' : '',
-                user.lname ?? '',
-                user.suffix ?? ''
+                escapeHtml(user.fname ?? ''),
+                user.mname ? escapeHtml(user.mname.charAt(0)) + '.' : '',
+                escapeHtml(user.lname ?? ''),
+                escapeHtml(user.suffix ?? '')
             ];
             return parts.filter(Boolean).join(' ').trim() || 'N/A';
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         function renderPaginationLinks(pagination) {
