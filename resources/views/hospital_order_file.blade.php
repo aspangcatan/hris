@@ -1,6 +1,9 @@
 @extends('master')
 
 @section('content')
+    @php
+        $canFileOnBehalf = (bool) session('is_section_head') || (bool) session('is_division_head');
+    @endphp
     <style>
         .ho-board {
             background: #ffffff;
@@ -115,6 +118,14 @@
 
         <div class="ho-panel">
             <form id="fileHospitalOrderForm" class="row g-3 align-items-end">
+                @if($canFileOnBehalf)
+                    <div class="col-lg-3">
+                        <label class="ho-label">File For</label>
+                        <select class="form-select" name="target_user_id" id="targetUserSelect">
+                            <option value="">Myself</option>
+                        </select>
+                    </div>
+                @endif
                 <div class="col-lg-4">
                     <label class="ho-label">Hospital Order #</label>
                     <select class="form-select" name="ho_id" id="hoSelect" required></select>
@@ -158,12 +169,13 @@
                         <th>Date</th>
                         <th>Time Range</th>
                         <th>Status</th>
+                        <th>Filed By</th>
                         <th>Remarks</th>
                         <th>Action</th>
                     </tr>
                     </thead>
                     <tbody id="my_filing_list">
-                    <tr><td colspan="6" class="ho-empty">Loading...</td></tr>
+                    <tr><td colspan="7" class="ho-empty">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -190,6 +202,15 @@
     $(document).ready(function () {
         getHospitalOrders();
         getMyFilings();
+
+        if ($('#targetUserSelect').length) {
+            $('#targetUserSelect').select2({
+                placeholder: 'Myself',
+                allowClear: true,
+                width: '100%'
+            });
+            loadManagedEmployees();
+        }
 
         $('#hoSelect').on('change', function () {
             const selectedId = Number($(this).val());
@@ -266,6 +287,17 @@
             });
     }
 
+    function loadManagedEmployees() {
+        fetch("{{ route('managed-employees.index') }}")
+            .then(res => res.json())
+            .then(data => {
+                const $select = $('#targetUserSelect');
+                (data || []).forEach(emp => {
+                    $select.append(new Option(emp.full_name, emp.id, false, false));
+                });
+            });
+    }
+
     function getMyFilings() {
         fetch("{{ route('hospital-orders.my-filings') }}")
             .then(res => res.json())
@@ -275,7 +307,7 @@
                 applyFilingFilter();
             })
             .catch(() => {
-                $('#my_filing_list').html('<tr><td colspan="6" class="ho-empty text-danger">Failed to load.</td></tr>');
+                $('#my_filing_list').html('<tr><td colspan="7" class="ho-empty text-danger">Failed to load.</td></tr>');
                 $('#filingPagination').empty();
                 $('#filingSummary').text('');
             });
@@ -298,7 +330,7 @@
         $list.empty();
 
         if (!filteredFilings.length) {
-            $list.html('<tr><td colspan="6" class="ho-empty">No filings found.</td></tr>');
+            $list.html('<tr><td colspan="7" class="ho-empty">No filings found.</td></tr>');
             $('#filingSummary').text('0 results');
             return;
         }
@@ -311,12 +343,16 @@
         const pageItems = filteredFilings.slice(startIndex, startIndex + pageSize);
 
         pageItems.forEach(it => {
+            const filedByLabel = it.filed_by
+                ? `<span class="ho-chip">Filed by ${escapeHtml((it.filed_by_name || '').trim())}</span>`
+                : '-';
             $list.append(`
                 <tr>
                     <td><span class="ho-chip">#${escapeHtml(it.order_number || '')}</span></td>
                     <td>${formatDate(it.filed_date)}</td>
                     <td>${formatTimeRange(it.time_from, it.time_to)}</td>
                     <td>${statusBadge(it.status)}</td>
+                    <td>${filedByLabel}</td>
                     <td>${escapeHtml(it.remarks || '-')}</td>
                     <td>${deleteAction(it)}</td>
                 </tr>
