@@ -257,6 +257,9 @@
                     if (data.error || data.errors) throw data;
                     toastr.success(data.message || 'Filed.', 'Success');
                     this.reset();
+                    if ($('#targetUserSelect').length) {
+                        $('#targetUserSelect').val('').trigger('change');
+                    }
                     $('#filedDateRangeDisplay').val('');
                     $('#fileTimeFromDisplay').val('');
                     $('#fileTimeToDisplay').val('');
