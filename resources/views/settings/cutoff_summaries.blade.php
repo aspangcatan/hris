@@ -72,16 +72,10 @@
                 <h4>Cutoff Summary</h4>
                 <span>Review generated cutoff totals by employee and period.</span>
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-edit" id="btn_create_cutoff">
-                    <i class="bi bi-plus-circle"></i>
-                    CREATE CUTOFF
-                </button>
-                <button class="btn btn-success btn-edit" id="btn_compute_monthly_credits">
-                    <i class="bi bi-calculator"></i>
-                    COMPUTE MONTHLY LEAVE CREDITS
-                </button>
-            </div>
+            <button class="btn btn-edit" id="btn_create_cutoff">
+                <i class="bi bi-plus-circle"></i>
+                CREATE CUTOFF
+            </button>
         </div>
         <div class="saln-filter-lite">
             <div class="row g-3 align-items-end">
@@ -231,49 +225,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade payroll-modal-theme" id="monthly_credits_select_modal" tabindex="-1"
-         aria-labelledby="monthlyCreditsSelectLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header sticky-top">
-                    <h4 class="modal-title text-white" id="monthlyCreditsSelectLabel">Compute Monthly Leave Credits</h4>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                </div>
-                <div class="modal-body" style="padding: 1.5rem;">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Year</label>
-                            <select class="form-control" id="monthly_credits_year"></select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Month</label>
-                            <select class="form-control" id="monthly_credits_month">
-                                <option value="1">January</option>
-                                <option value="2">February</option>
-                                <option value="3">March</option>
-                                <option value="4">April</option>
-                                <option value="5">May</option>
-                                <option value="6">June</option>
-                                <option value="7">July</option>
-                                <option value="8">August</option>
-                                <option value="9">September</option>
-                                <option value="10">October</option>
-                                <option value="11">November</option>
-                                <option value="12">December</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success btn-edit" id="btn_preview_monthly_credits">
-                        <span class="btn-label">Preview</span>
+                    <button type="button" class="btn btn-success btn-edit" id="btn_compute_leave_credits">
+                        <span class="btn-label">Compute Leave Credits Earned</span>
                         <span class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
                     </button>
                 </div>
@@ -296,7 +249,6 @@
                             <thead>
                             <tr>
                                 <th>Employee</th>
-                                <th>Status</th>
                                 <th>Total Present</th>
                                 <th>Late/Undertime (mins)</th>
                                 <th>Earned Points</th>
@@ -306,7 +258,7 @@
                             </thead>
                             <tbody id="leave_credits_body">
                             <tr>
-                                <td colspan="7" class="text-muted text-center">No data computed.</td>
+                                <td colspan="6" class="text-muted text-center">No data computed.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -327,8 +279,7 @@
 @section('js')
     <script>
         let cutoffPeriods = [];
-        let currentCutoffDetail = {start: null, end: null, title: null};
-        let currentMonthlyCredit = {year: null, month: null};
+        let currentCutoffDetail = {id: null, start: null, end: null, title: null};
         let leaveCreditPreview = [];
         $(document).ready(function () {
             loadCutoffPeriods();
@@ -390,7 +341,7 @@
                         <td>${formatDisplayDate(item.period_end)}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-action btn-view btn-view-cutoff"
-                                data-start="${item.period_start}" data-end="${item.period_end}" data-title="${title}"
+                                data-id="${item.id}" data-start="${item.period_start}" data-end="${item.period_end}" data-title="${title}"
                                 title="View cutoff summary">
                             <i class="bi bi-eye"></i>
                         </button>
@@ -584,10 +535,11 @@
         });
 
         $(document).on("click", ".btn-view-cutoff", function () {
+            const id = $(this).data("id");
             const start = $(this).data("start");
             const end = $(this).data("end");
             const title = $(this).data("title");
-            currentCutoffDetail = {start: start, end: end, title: title};
+            currentCutoffDetail = {id: id, start: start, end: end, title: title};
             $("#cutoff_detail_title").text(title);
             $("#cutoff_detail_start").text(formatDisplayDate(start));
             $("#cutoff_detail_end").text(formatDisplayDate(end));
@@ -595,15 +547,8 @@
             $("#cutoff_detail_modal").modal("show");
         });
 
-        $("#btn_compute_monthly_credits").click(function () {
-            populateMonthlyCreditsYearOptions();
-            $("#monthly_credits_select_modal").modal("show");
-        });
-
-        $("#btn_preview_monthly_credits").click(function () {
-            const year = parseInt($("#monthly_credits_year").val(), 10);
-            const month = parseInt($("#monthly_credits_month").val(), 10);
-            previewMonthlyCredits(year, month);
+        $("#btn_compute_leave_credits").click(function () {
+            computeLeaveCredits();
         });
 
         $("#btn_save_leave_credits").click(function () {
@@ -650,32 +595,15 @@
                 });
         }
 
-        function populateMonthlyCreditsYearOptions() {
-            const $select = $("#monthly_credits_year");
-            if ($select.children().length) {
+        function computeLeaveCredits() {
+            if (!currentCutoffDetail.id) {
+                toastr.error("Cutoff period is not set.", "Validation");
                 return;
             }
-
-            const currentYear = new Date().getFullYear();
-            for (let year = currentYear + 1; year >= currentYear - 2; year--) {
-                $select.append(`<option value="${year}">${year}</option>`);
-            }
-            $select.val(currentYear);
-            $("#monthly_credits_month").val(new Date().getMonth() + 1);
-        }
-
-        function previewMonthlyCredits(year, month) {
-            if (!year || !month) {
-                toastr.error("Year and month are required.", "Validation");
-                return;
-            }
-
-            currentMonthlyCredit = {year: year, month: month};
 
             const params = new URLSearchParams();
-            params.append("year", year);
-            params.append("month", month);
-            const $button = $("#btn_preview_monthly_credits");
+            params.append("cutoff_id", currentCutoffDetail.id);
+            const $button = $("#btn_compute_leave_credits");
             setButtonLoading($button, true, "Computing...");
 
             fetch(`{{ route('previewCutoffLeaveCredits') }}?${params.toString()}`)
@@ -686,30 +614,24 @@
                     leaveCreditPreview = [];
 
                     if (!data.success || !data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='7' class='text-muted text-center'>No cutoff summaries found for this month.</td></tr>");
+                        $tbody.append("<tr><td colspan='6' class='text-muted text-center'>No data computed.</td></tr>");
                         return;
                     }
 
                     leaveCreditPreview = data.data;
                     data.data.forEach(item => {
-                        const isComplete = item.status === "complete";
-                        const statusLabel = isComplete
-                            ? '<span class="text-success">Complete</span>'
-                            : `<span class="text-danger">Incomplete${item.missing_periods ? " — missing: " + item.missing_periods.join(", ") : ""}</span>`;
                         const row = `
-                            <tr class="${isComplete ? "" : "text-muted"}">
+                            <tr>
                                 <td>${formatEmployeeName(item.name)}</td>
-                                <td>${statusLabel}</td>
-                                <td>${item.total_present ?? "-"}</td>
-                                <td>${item.total_late_undertime ?? "-"}</td>
-                                <td>${isComplete ? formatThreeDecimals(item.earned_points) : "-"}</td>
-                                <td>${isComplete ? formatThreeDecimals(item.deducted_points) : "-"}</td>
-                                <td>${isComplete ? formatThreeDecimals(item.net_points) : "-"}</td>
+                                <td>${item.total_present ?? 0}</td>
+                                <td>${item.total_late_undertime ?? 0}</td>
+                                <td>${formatThreeDecimals(item.earned_points)}</td>
+                                <td>${formatThreeDecimals(item.deducted_points)}</td>
+                                <td>${formatThreeDecimals(item.net_points)}</td>
                             </tr>`;
                         $tbody.append(row);
                     });
 
-                    $("#monthly_credits_select_modal").modal("hide");
                     $("#leave_credits_modal").modal("show");
                 })
                 .catch(err => {
@@ -717,22 +639,13 @@
                     toastr.error("Failed to compute leave credits.", "Error");
                 })
                 .finally(() => {
-                    setButtonLoading($button, false, "Preview");
+                    setButtonLoading($button, false, "Compute Leave Credits Earned");
                 });
         }
 
         function saveLeaveCredits() {
-            if (!currentMonthlyCredit.year || !currentMonthlyCredit.month) {
-                toastr.error("Month is not set.", "Validation");
-                return;
-            }
-
-            const completeEmployeeIds = leaveCreditPreview
-                .filter(item => item.status === "complete")
-                .map(item => item.employee_id);
-
-            if (!completeEmployeeIds.length) {
-                toastr.error("No employees with a complete month to save.", "Validation");
+            if (!currentCutoffDetail.id) {
+                toastr.error("Cutoff period is not set.", "Validation");
                 return;
             }
 
@@ -746,9 +659,8 @@
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({
-                    year: currentMonthlyCredit.year,
-                    month: currentMonthlyCredit.month,
-                    employees: completeEmployeeIds
+                    cutoff_id: currentCutoffDetail.id,
+                    employees: leaveCreditPreview.map(item => item.employee_id)
                 })
             })
                 .then(res => res.json())

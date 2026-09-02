@@ -1,156 +1,126 @@
-# Monthly Earned Leave Credits — Design
+# Cutoff-Based Earned Leave Credits — Design
+
+## Revision note
+
+This spec originally proposed aggregating an employee's semi-monthly cutoff pairs into a calendar
+month on the fly, on the assumption this org's cutoffs are always 1st-half/2nd-half pairs. After
+implementing and testing that version, the user pointed out (screenshot of a real cutoff spanning
+2026-06-01 to 2026-06-30) that cutoffs here are **arbitrary admin-defined ranges** — sometimes a
+full month, sometimes a half-month — and directed the flow to compute directly from whichever
+single cutoff is being viewed, with the trigger living inside that cutoff's own detail modal. This
+revision replaces the monthly-aggregation design below with that simpler, corrected one. The
+underlying bug fixes (net vs. gross, working-day-scaled lookup) are unchanged.
 
 ## Purpose
 
 The "Compute Leave Credits Earned" flow (`CreditController::previewCutoffLeaveCredits` /
-`applyCutoffLeaveCredits`) is meant to automate CSC-compliant monthly VL/SL credit earning, but
-currently has four bugs (tracked in project memory `csc-earned-credit-automation-gaps`, re-verified
-this session):
+`applyCutoffLeaveCredits`) is meant to automate CSC-compliant VL/SL credit earning, but had two
+real bugs (tracked in project memory `csc-earned-credit-automation-gaps`):
 
 1. The computed late/undertime deduction is never actually subtracted from the stored balance
    (gross points applied instead of net).
-2. The points lookup table assumes every month has exactly 30 working days, so full attendance
-   only earns the full 1.250 in a month that happens to have exactly 30 working days.
-3. The flow operates on one semi-monthly cutoff at a time; CSC credits are earned once per
-   *calendar month*, and the idempotency guard means whichever half-month is processed first
-   silently blocks the other half.
-4. No transactional protection around the balance update + audit log.
+2. The points lookup table assumes every period has exactly 30 working days, so full attendance
+   only earns the full 1.250 in a period that happens to have exactly 30 working days.
 
-This change fixes 1–3 by reworking the flow to operate at calendar-month granularity, aggregating
-the existing per-cutoff `cutoff_summaries` rows on the fly. It keeps the flow manual/button-
-triggered (no scheduled job) and makes **no schema changes** — everything works within the current
-`cutoff_summaries`, `cutoff_summaries_master`, `monthly_earned_points`, `leave_credits`, and
-`credit_earned_logs` tables as they exist today.
+A third originally-suspected gap — "credits should aggregate two semi-monthly cutoffs into one
+calendar month" — turned out not to apply: the admin already scopes each cutoff to whatever period
+they want credits computed for (per the screenshot, a full calendar month), so the fix is to
+compute correctly from that one cutoff's own data, not to aggregate across cutoffs.
 
-Bug #4 is explicitly **not fixed**: every table involved is MyISAM (confirmed via `SHOW TABLE
-STATUS` this session), so `DB::transaction()` would silently no-op. Converting to InnoDB is an
-engine-level schema change, which is out of scope per the "don't touch the schema" constraint on
-this project. The atomicity gap is accepted as-is, matching the rest of this MyISAM schema.
+A separate finding — the current `#btn_compute_leave_credits` button is permanently `d-none` with
+nothing in the file ever removing that class, so this flow has been unreachable from the UI — is
+fixed here too by restoring a real, reachable button.
 
-**Bonus finding:** the current "Compute Leave Credits Earned" button
-(`#btn_compute_leave_credits` in `cutoff_summaries.blade.php`) is permanently `d-none` with nothing
-in the file ever removing that class — it has been unreachable from the UI. This explains why the
-bugs above went unnoticed. This change removes that dead button and adds a real, reachable entry
-point.
+Bug #4 from the original audit (no `DB::transaction()` around the balance update) is **not
+fixed**: every table involved is MyISAM (confirmed via `SHOW TABLE STATUS`), so `DB::transaction()`
+would silently no-op, and converting to InnoDB was ruled out by the user as an out-of-scope schema
+change. Accepted as-is.
 
 ## Scope
 
 `app/Http/Controllers/CreditController.php`, `app/Services/LeaveCreditService.php`,
 `routes/web.php`'s two `cutoff-leave-credits-*` routes, and the "Leave Credits Earned" section of
-`resources/views/settings/cutoff_summaries.blade.php`. The DTR/cutoff-generation logic
-(`PayrollServices`, `DTRServices`, the cutoff-summary detail modal) and payroll salary computation
-are untouched. No backfill of balances already posted under the old per-cutoff logic.
+`resources/views/settings/cutoff_summaries.blade.php`. **No schema/migration changes.** DTR/cutoff
+generation logic and payroll salary computation are untouched. No backfill of balances already
+posted under the old logic.
 
-## Behavior Changes
+## Behavior
 
-1. The trigger becomes **"Compute Monthly Leave Credits"**: pick a Year + Month, not a cutoff
-   period. Still 100% manual — admin clicks Preview, reviews, clicks Save.
-2. Preview aggregates every `cutoff_summaries` row belonging to that calendar month (matched via
-   `cutoff_summaries_master.period_start`) per employee, and reports each employee as **Complete**
-   (has a row for every cutoff master in that month) or **Incomplete** (missing one or more —
-   e.g. 2nd half not generated yet), naming the missing period(s).
-3. Only Complete employees get a computed preview row (present/working-days/late-undertime summed
-   across their cutoffs for the month, net points via the corrected formula). Incomplete employees
-   are listed but excluded from computation.
-4. Save/Apply processes only the employees the preview marked Complete, and credits `net_points`
-   (gross minus deduction) — fixing the gross/net bug.
+1. The trigger lives inside the existing per-cutoff **Cutoff Summary Details** modal (the same one
+   shown when clicking "View cutoff summary" on a generated cutoff) as a **"Compute Leave Credits
+   Earned"** button — restoring the button that was there before but permanently hidden.
+2. Clicking it computes directly from that cutoff's own `cutoff_summaries` rows (`days_present`,
+   `total_working_days`, `late_minutes + undertime_minutes` per employee) — no cross-cutoff
+   aggregation. The month/year used for the `monthly_earned_points` seasonal check and the
+   idempotency key is derived from the cutoff's own `period_start`.
+3. Results preview in the existing "Leave Credits Earned" modal (Employee / Total Present /
+   Late+Undertime / Earned / Deducted / Net Points) before the admin confirms with **Save** — this
+   preview-then-confirm shape is unchanged from the original flow.
+4. Save applies `net_points` (gross minus the late/undertime deduction) to `leave_credits
+   .based_credit`, fixing the gross/net bug.
 5. The points lookup still uses the existing `monthly_earned_points` table (1–30 → points), but the
-   lookup key is now `round((total_present / total_working_days) * 30)` capped at 30, instead of
-   raw `total_present` — so full attendance always resolves to key 30 (full 1.250) regardless of
-   how many working days the real month had. The existing February-specific hack in
-   `computeEarnedCredits()` (lines 22–27, forcing key 30 when present ≥ days-in-month) is removed;
-   the general formula subsumes it for every month.
-6. Idempotency (`leave_credits.last_updated_month` keyed on `"$year-$month"`) is unchanged — it's
-   already correct once every apply operates at month granularity.
+   lookup key is `round((days_present / total_working_days) * 30)` capped at 30 — using *that
+   cutoff's own* `total_working_days` — instead of raw `days_present`, so full attendance always
+   resolves to key 30 regardless of how many working days the cutoff period actually had. The old
+   February-specific hack in `computeEarnedCredits()` is removed; this formula subsumes it.
+6. Idempotency (`leave_credits.last_updated_month` keyed on the cutoff's `"$year-$month"`) is
+   unchanged — re-running apply for a cutoff already processed for that month is a no-op, same as
+   before. It's on the admin to scope cutoffs sensibly (e.g. don't generate two separate cutoffs
+   for the same month and expect both applies to stack).
 
 ## Data Model
 
-No changes. No new tables, no new columns, no engine changes.
+No changes.
 
 ## Backend Flow
 
 **`app/Services/LeaveCreditService.php`:**
-- `computeEarnedCredits()` gains one new optional parameter, inserted before the existing `$month`/
-  `$year`: `computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null,
-  $month = null, $year = null)`.
-  - When `$totalWorkingDays` is provided and > 0: `$lookupPresent = min(30, (int) round(($totalPresent
-    / $totalWorkingDays) * 30))`, and the February hack is skipped entirely (this path replaces it).
-  - When `$totalWorkingDays` is `null` (no caller passes it after this change, but keeps
-    `tests/Unit/LeaveCreditServiceTest.php`'s existing 2-arg calls behaving identically): falls
-    back to exactly today's logic (raw `min($totalPresent, 30)` + the February hack), so those
-    tests need no changes.
-  - Rest of the method (deduction lookup, net points, return shape) is unchanged.
-- `updateEarnedCredits()` is unchanged — the gross/net fix is entirely a call-site change in
-  `CreditController`.
+- `computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month =
+  null, $year = null)` — unchanged from the working-days-scaling fix: when `$totalWorkingDays` is
+  provided and > 0, the lookup key scales to a 30-day equivalent; otherwise falls back to the
+  original raw-present + February-hack behavior (keeps `tests/Unit/LeaveCreditServiceTest.php`'s
+  existing 2-arg calls passing unchanged).
+- `updateEarnedCredits()` unchanged.
 
 **`app/Http/Controllers/CreditController.php`:**
-- `previewCutoffLeaveCredits()` → renamed `previewMonthlyLeaveCredits(Request $request)`.
-  - Validates `year` (`required|integer`), `month` (`required|integer|between:1,12`), optional
-    `employees` array.
-  - Loads that month's `cutoff_summaries_master` rows (`whereYear('period_start', $year)
-    ->whereMonth('period_start', $month)`). If none exist, returns `success: true, data: []` with a
-    message that no cutoffs exist yet for that month.
-  - Loads all `cutoff_summaries` rows whose `cutoff_id` is in that set (optionally filtered to the
-    given employees), joined to `tdh_user.users` for names, grouped by `employee_id`.
-  - Per employee: complete if the set of `cutoff_id`s they have rows for equals the full set of
-    that month's cutoff master ids. Complete employees get their `days_present`,
-    `total_working_days`, and `late_minutes + undertime_minutes` summed across their rows and
-    passed into `computeEarnedCredits()`. Incomplete employees get a `status: 'incomplete'` row
-    naming which cutoff period(s) (by title/date range) they're missing.
-- `applyCutoffLeaveCredits()` → renamed `applyMonthlyLeaveCredits(Request $request)`.
-  - Same validation, plus `employees` required (mirrors today's pattern where the frontend sends
-    back the preview's employee list).
-  - Re-derives month coverage and aggregates server-side from stored `cutoff_summaries` — never
-    trusts client-sent totals, consistent with this project's frozen-snapshot/read-only-downstream
-    convention. Silently skips any requested employee who isn't actually Complete (defense in
-    depth; the UI won't normally send incomplete ones).
-  - For each Complete employee: aggregates, computes via `computeEarnedCredits(...,
-    $totalWorkingDays, $month, $year)`, then calls `updateEarnedCredits($employeeId, $year, $month,
-    $presentSum, $lateUndertimeSum, $computed['net_points'], $computed['total_deductions'])` —
-    passing `net_points` where today it passes `monthly_points_earned`.
-  - Response includes which employee ids were applied vs. skipped as incomplete.
+- `previewCutoffLeaveCredits(Request $request)` — validates `cutoff_id` (required int) and
+  optional `employees` array. Looks up the `cutoff_summaries_master` row by id (422 "Cutoff period
+  not found" if missing), then computes per-employee figures directly from that cutoff's
+  `cutoff_summaries` rows via a shared private `computeCreditsForCutoff()` helper.
+- `applyCutoffLeaveCredits(Request $request)` — validates `cutoff_id` and required `employees`
+  array, re-derives the same per-cutoff figures server-side (never trusts client-sent totals), and
+  calls `updateEarnedCredits()` per employee with `net_points`.
+- `computeCreditsForCutoff(int $cutoffId, ?array $employeeIds)` — the shared logic: resolve the
+  cutoff master, derive `month`/`year` from its `period_start`, query that cutoff's
+  `cutoff_summaries` rows (optionally filtered to given employees) joined to `tdh_user.users`, and
+  run each through `computeEarnedCredits()`.
 
-**`routes/web.php`:** update the two `cutoff-leave-credits-*` route definitions to point at the
-renamed controller methods. Route names/URLs stay identical (`previewCutoffLeaveCredits` /
-`applyCutoffLeaveCredits`), so no other change is needed anywhere that references them by name.
+**`routes/web.php`:** both `cutoff-leave-credits-*` routes point at these two controller methods
+(same names/URLs as the original code — no route changes needed for this revision beyond what was
+already in place).
 
 ## UI
 
 **`resources/views/settings/cutoff_summaries.blade.php`:**
-- Remove `#btn_compute_leave_credits` from `#cutoff_detail_modal`'s footer (dead button, per-cutoff
-  concept no longer applies there).
-- Add a new toolbar button next to `#btn_create_cutoff`: **"Compute Monthly Leave Credits"**,
-  opening a small new modal (`#monthly_credits_select_modal`) with a Year `<select>` and Month
-  `<select>`, and a "Preview" action.
-- Preview calls the (renamed, same-URL) `previewCutoffLeaveCredits` route with `year`/`month` query
-  params and reuses the existing `#leave_credits_modal` table, with one added **Status** column
-  ("Complete" / "Incomplete — missing: …"). Incomplete rows render muted and are excluded from the
-  Save payload.
-- `saveLeaveCredits()` now sends `{year, month, employees: <complete employee_ids only>}` to the
-  (renamed, same-URL) `applyCutoffLeaveCredits` route.
-- Replace the JS `currentCutoffDetail` state used by this flow with `currentMonthlyCredit = {year,
-  month}`; the cutoff-detail modal's own DTR/attendance display is untouched.
+- `#btn_compute_leave_credits` stays in `#cutoff_detail_modal`'s footer, with the `d-none` class
+  removed so it's actually visible.
+- The "View cutoff summary" button now also carries `data-id="${item.id}"` (the `getCutoffPeriods`
+  response already includes `id`), captured into `currentCutoffDetail.id` alongside the existing
+  start/end/title, so the credits flow knows which cutoff it's computing for.
+- `computeLeaveCredits()` calls `previewCutoffLeaveCredits?cutoff_id=...` and renders the existing
+  6-column `#leave_credits_modal` table (no Status column — there's no incomplete-period concept in
+  this design).
+- `saveLeaveCredits()` posts `{cutoff_id, employees}` to `applyCutoffLeaveCredits`.
 
 ## Testing / Verification
 
-- `tests/Unit/LeaveCreditServiceTest.php`: keep the two existing 2-arg-call tests passing unchanged
-  (validates the backward-compatible fallback). Add cases exercising the new working-days scaling —
-  e.g. `computeEarnedCredits(20, 0, 22)` (20/22 present, scaled) vs. `computeEarnedCredits(22, 0,
-  22)` (full attendance, any working-day count → key 30) — asserting the scaled lookup key resolves
-  correctly against the seeded/overridden points table.
-- New Feature test coverage for `CreditController`'s renamed methods (following
-  `PayrollCutoffTest`'s pattern: synthetic high test-user id, `DatabaseTransactions` +
-  explicit MyISAM-safe teardown, `withoutMiddleware()`):
-  - Two seeded `cutoff_summaries` rows (1st + 2nd half) for one employee/month → preview reports
-    `status: complete` with correctly summed present/working-days/late-undertime and net points;
-    apply writes the net figure to `leave_credits.based_credit` and inserts a
-    `credit_earned_logs` row.
-  - Only one half seeded → preview reports `status: incomplete` naming the missing period; apply
-    does not touch that employee's `leave_credits` row.
-  - Re-running apply for an already-processed month is blocked by the existing
-    `last_updated_month` idempotency guard (regression check that fixing the aggregation didn't
-    disturb this).
-- Manual UI smoke check using the safe test employee (`reference-test-employee-apangcatan`) since
-  MySQL is running this session: generate both halves' cutoff summaries for a real month, use the
-  new "Compute Monthly Leave Credits" button end-to-end, confirm the balance change in
-  `hris.leave_credits`, then clean up.
+- `tests/Unit/LeaveCreditServiceTest.php`: unchanged from the working-days-scaling fix (5 tests,
+  covers the scaling formula and the null-fallback backward-compatibility path).
+- `tests/Feature/CutoffLeaveCreditsTest.php`: covers preview+apply computing correctly-scaled net
+  points from one cutoff's own data (with deterministic overridden lookup-table rows, restored in
+  `tearDown`, following `LeaveCreditServiceTest`'s pattern), idempotent re-apply not double-crediting,
+  and preview rejecting a nonexistent `cutoff_id`.
+- Manual UI smoke check recommended before relying on this in production: generate a cutoff, view
+  its details, click "Compute Leave Credits Earned", confirm the preview numbers, Save, and check
+  `hris.leave_credits`/`credit_earned_logs` — using the designated safe test employee
+  (`reference-test-employee-apangcatan`), cleaned up afterward.
