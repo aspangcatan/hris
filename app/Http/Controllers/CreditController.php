@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\LeaveCreditService;
 use App\Services\PayrollServices;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -35,67 +34,40 @@ class CreditController extends Controller
         }
     }
 
-    public function previewCutoffLeaveCredits(Request $request)
+    public function previewMonthlyLeaveCredits(Request $request)
     {
         try {
             $validated = $request->validate([
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
+                'year' => 'required|integer|min:2000',
+                'month' => 'required|integer|between:1,12',
                 'employees' => 'nullable|array',
                 'employees.*' => 'integer',
             ]);
 
-            $table = $this->payrollServices->getCutoffSummaryTableName();
-            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
-            $query = DB::table($table . ' as cs')
-                ->leftJoin($masterTable . ' as cm', 'cm.id', '=', 'cs.cutoff_id')
-                ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
-                ->select(
-                    'cs.*',
-                    'cm.period_start',
-                    'cm.period_end',
-                    'u.fname',
-                    'u.mname',
-                    'u.lname',
-                    'u.suffix'
-                )
-                ->where('cm.period_start', $validated['start_date'])
-                ->where('cm.period_end', $validated['end_date']);
+            $year = (int) $validated['year'];
+            $month = (int) $validated['month'];
 
-            if (!empty($validated['employees'])) {
-                $query->whereIn('cs.employee_id', $validated['employees']);
-            }
+            $aggregate = $this->aggregateMonthlyEmployeeCutoffs($year, $month, $validated['employees'] ?? null);
 
-            $summaries = $query->orderBy('u.lname')->get();
-            $period = Carbon::parse($validated['start_date']);
-            $month = (int) $period->format('m');
-            $year = (int) $period->format('Y');
-            $results = [];
+            $results = $aggregate['employees']->map(function ($employee) use ($year, $month) {
+                if ($employee['status'] !== 'complete') {
+                    return $employee;
+                }
 
-            foreach ($summaries as $summary) {
-                $totalPresent = (int) ($summary->days_present ?? 0);
-                $totalLateUndertime = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
                 $computed = $this->leaveCreditService->computeEarnedCredits(
-                    $totalPresent,
-                    $totalLateUndertime,
+                    $employee['total_present'],
+                    $employee['total_late_undertime'],
+                    $employee['total_working_days'],
                     $month,
                     $year
                 );
 
-                $middleInitial = !empty($summary->mname) ? strtoupper(substr($summary->mname, 0, 1)) . '.' : '';
-                $suffix = $summary->suffix ? ' ' . $summary->suffix : '';
-                $fullName = trim($summary->lname . ', ' . $summary->fname . ' ' . $middleInitial . $suffix);
-
-                $results[] = [
-                    'employee_id' => $summary->employee_id,
-                    'name' => $fullName,
-                    'total_present' => $computed['total_present'],
-                    'total_late_undertime' => $computed['total_late_undertime'],
+                return $employee + [
                     'earned_points' => $computed['monthly_points_earned'],
                     'deducted_points' => $computed['total_deductions'],
                     'net_points' => $computed['net_points'],
                 ];
-            }
+            })->values();
 
             return response()->json(['success' => true, 'data' => $results]);
         } catch (\Exception $exception) {
@@ -103,57 +75,130 @@ class CreditController extends Controller
         }
     }
 
-    public function applyCutoffLeaveCredits(Request $request)
+    public function applyMonthlyLeaveCredits(Request $request)
     {
         try {
             $validated = $request->validate([
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
-                'employees' => 'nullable|array',
+                'year' => 'required|integer|min:2000',
+                'month' => 'required|integer|between:1,12',
+                'employees' => 'required|array|min:1',
                 'employees.*' => 'integer',
             ]);
 
-            $table = $this->payrollServices->getCutoffSummaryTableName();
-            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
-            $query = DB::table($table . ' as cs')
-                ->leftJoin($masterTable . ' as cm', 'cm.id', '=', 'cs.cutoff_id')
-                ->select('cs.*')
-                ->where('cm.period_start', $validated['start_date'])
-                ->where('cm.period_end', $validated['end_date']);
+            $year = (int) $validated['year'];
+            $month = (int) $validated['month'];
 
-            if (!empty($validated['employees'])) {
-                $query->whereIn('cs.employee_id', $validated['employees']);
-            }
+            // Re-aggregate server-side rather than trust client-sent totals -
+            // this also re-checks completeness in case anything changed
+            // between preview and save.
+            $aggregate = $this->aggregateMonthlyEmployeeCutoffs($year, $month, $validated['employees']);
 
-            $summaries = $query->get();
-            $period = Carbon::parse($validated['start_date']);
-            $month = (int) $period->format('m');
-            $year = (int) $period->format('Y');
+            $applied = [];
+            $skipped = [];
 
-            foreach ($summaries as $summary) {
-                $totalPresent = (int) ($summary->days_present ?? 0);
-                $totalLateUndertime = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
+            foreach ($aggregate['employees'] as $employee) {
+                if ($employee['status'] !== 'complete') {
+                    $skipped[] = $employee['employee_id'];
+                    continue;
+                }
+
                 $computed = $this->leaveCreditService->computeEarnedCredits(
-                    $totalPresent,
-                    $totalLateUndertime,
+                    $employee['total_present'],
+                    $employee['total_late_undertime'],
+                    $employee['total_working_days'],
                     $month,
                     $year
                 );
 
                 $this->leaveCreditService->updateEarnedCredits(
-                    $summary->employee_id,
+                    $employee['employee_id'],
                     $year,
                     $month,
-                    $totalPresent,
-                    $totalLateUndertime,
-                    $computed['monthly_points_earned'],
+                    $employee['total_present'],
+                    $employee['total_late_undertime'],
+                    $computed['net_points'],
                     $computed['total_deductions']
                 );
+
+                $applied[] = $employee['employee_id'];
             }
 
-            return response()->json(['success' => true, 'message' => 'Leave credits earned updated.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Leave credits earned updated.',
+                'applied_employee_ids' => $applied,
+                'skipped_employee_ids' => $skipped,
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
+    }
+
+    /**
+     * Resolves a calendar month to its cutoff_summaries_master rows, then
+     * aggregates each employee's cutoff_summaries rows across all of them.
+     * An employee is "complete" only if they have a row for every cutoff in
+     * that month; otherwise the missing period(s) are reported instead.
+     */
+    private function aggregateMonthlyEmployeeCutoffs(int $year, int $month, ?array $employeeIds = null): array
+    {
+        $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+        $monthMasters = DB::table($masterTable)
+            ->whereYear('period_start', $year)
+            ->whereMonth('period_start', $month)
+            ->orderBy('period_start')
+            ->get(['id', 'period_start', 'period_end', 'title']);
+
+        $cutoffIds = $monthMasters->pluck('id')->all();
+
+        if (empty($cutoffIds)) {
+            return ['masters' => $monthMasters, 'employees' => collect()];
+        }
+
+        $table = $this->payrollServices->getCutoffSummaryTableName();
+        $query = DB::table($table . ' as cs')
+            ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+            ->whereIn('cs.cutoff_id', $cutoffIds)
+            ->select('cs.*', 'u.fname', 'u.mname', 'u.lname', 'u.suffix');
+
+        if (!empty($employeeIds)) {
+            $query->whereIn('cs.employee_id', $employeeIds);
+        }
+
+        $employees = $query->orderBy('u.lname')->get()
+            ->groupBy('employee_id')
+            ->map(function ($group) use ($cutoffIds, $monthMasters) {
+                $first = $group->first();
+                $coveredCutoffIds = $group->pluck('cutoff_id')->unique()->all();
+                $missingIds = array_diff($cutoffIds, $coveredCutoffIds);
+                $isComplete = empty($missingIds);
+
+                $middleInitial = !empty($first->mname) ? strtoupper(substr($first->mname, 0, 1)) . '.' : '';
+                $suffix = $first->suffix ? ' ' . $first->suffix : '';
+                $fullName = trim($first->lname . ', ' . $first->fname . ' ' . $middleInitial . $suffix);
+
+                $result = [
+                    'employee_id' => $first->employee_id,
+                    'name' => $fullName,
+                    'status' => $isComplete ? 'complete' : 'incomplete',
+                ];
+
+                if ($isComplete) {
+                    $result['total_present'] = (int) $group->sum('days_present');
+                    $result['total_working_days'] = (int) $group->sum('total_working_days');
+                    $result['total_late_undertime'] = (int) $group->sum('late_minutes') + (int) $group->sum('undertime_minutes');
+                } else {
+                    $result['missing_periods'] = $monthMasters
+                        ->whereIn('id', $missingIds)
+                        ->map(fn($m) => ($m->title ?: 'Cutoff') . ' (' . $m->period_start . ' to ' . $m->period_end . ')')
+                        ->values()
+                        ->all();
+                }
+
+                return $result;
+            })
+            ->values();
+
+        return ['masters' => $monthMasters, 'employees' => $employees];
     }
 }

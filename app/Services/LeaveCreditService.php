@@ -14,15 +14,23 @@ class LeaveCreditService
         $this->minuteConversionService = $minuteConversionService;
     }
 
-    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $month = null, $year = null)
+    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month = null, $year = null)
     {
         try {
             // Get monthly earned points for given present days
-            $lookupPresent = $totalPresent > 30 ? 30 : $totalPresent;
-            if ((int) $month === 2 && !empty($year)) {
-                $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-                if ($totalPresent >= $daysInMonth) {
-                    $lookupPresent = 30;
+            if (!empty($totalWorkingDays)) {
+                // Scale actual attendance to a 30-day equivalent so full
+                // attendance always earns the full lookup-table maximum,
+                // regardless of how many working days the real month had.
+                $lookupPresent = (int) round(($totalPresent / $totalWorkingDays) * 30);
+                $lookupPresent = min(30, $lookupPresent);
+            } else {
+                $lookupPresent = $totalPresent > 30 ? 30 : $totalPresent;
+                if ((int) $month === 2 && !empty($year)) {
+                    $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
+                    if ($totalPresent >= $daysInMonth) {
+                        $lookupPresent = 30;
+                    }
                 }
             }
 

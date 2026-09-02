@@ -79,4 +79,30 @@ class LeaveCreditServiceTest extends TestCase
         $this->assertEquals(0.125, $result['total_deductions']);
         $this->assertEquals(1.375, $result['net_points']);
     }
+
+    /** @test */
+    public function full_attendance_earns_full_points_regardless_of_month_length()
+    {
+        // 20/20 working days present in a short month scales to the "30" lookup key.
+        $result = $this->leaveCreditService->computeEarnedCredits(20, 0, 20);
+
+        $this->assertEquals(2.0, $result['monthly_points_earned']);
+    }
+
+    /** @test */
+    public function partial_attendance_scales_to_a_30_day_equivalent_lookup_key()
+    {
+        // 16/22 present scales to round((16/22)*30) = 22, not raw present (16).
+        $result = $this->leaveCreditService->computeEarnedCredits(16, 0, 22);
+
+        $this->assertEquals(1.5, $result['monthly_points_earned']);
+    }
+
+    /** @test */
+    public function zero_working_days_falls_back_to_raw_present_lookup()
+    {
+        $result = $this->leaveCreditService->computeEarnedCredits(22, 0, 0);
+
+        $this->assertEquals(1.5, $result['monthly_points_earned']);
+    }
 }
