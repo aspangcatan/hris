@@ -31,10 +31,21 @@ A separate finding — the current `#btn_compute_leave_credits` button is perman
 nothing in the file ever removing that class, so this flow has been unreachable from the UI — is
 fixed here too by restoring a real, reachable button.
 
-Bug #4 from the original audit (no `DB::transaction()` around the balance update) is **not
-fixed**: every table involved is MyISAM (confirmed via `SHOW TABLE STATUS`), so `DB::transaction()`
-would silently no-op, and converting to InnoDB was ruled out by the user as an out-of-scope schema
-change. Accepted as-is.
+**Update 2026-09-02 (later same day):** Bug #4 is now fixed too. The user reconsidered and asked
+for the transaction to be added; since `leave_credits`/`credit_earned_logs` were MyISAM (where
+`DB::transaction()` is a silent no-op), fixing it for real required converting just those two
+tables to InnoDB (migration `2026_09_02_160000_convert_leave_credit_tables_to_innodb.php` — engine
+only, no column changes), which the user approved after re-raising the tradeoff. `LeaveCreditService
+::updateEarnedCredits()`'s per-leave-type write (balance update/insert + audit log insert) is now
+wrapped in `DB::transaction()`. Bonus: this also fixes two other pre-existing, previously-silent
+bugs on the same tables — `OvertimeServices`'s `lockForUpdate()` call and `LeaveCancellationService`
+'s own `DB::transaction()` wrap around `leave_credits` writes were both no-ops under MyISAM and now
+actually work. See `tests/Feature/LeaveCreditBalanceTransactionTest.php` for the proof (a real,
+temporary MySQL trigger forces a DB-level failure on the second write and asserts the first one
+rolled back) — note that test deliberately does **not** use `DatabaseTransactions`, because
+`CREATE TRIGGER`/`DROP TRIGGER` are DDL and MySQL implicitly commits any open transaction around
+DDL, which desyncs Laravel's transaction-depth tracking and corrupts later tests if run inside that
+trait's wrapping transaction.
 
 ## Scope
 

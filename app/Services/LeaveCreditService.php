@@ -76,40 +76,41 @@ class LeaveCreditService
                 ->exists();
 
             if (!$alreadyProcessed) {
-                $credit = DB::table('hris.leave_credits')
-                    ->where('user_id', $userid)
-                    ->where('leave_id', $leaveType->id)
-                    ->first();
+                DB::transaction(function () use ($userid, $leaveType, $earnedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $deductionPoints, $totalPresent) {
+                    $credit = DB::table('hris.leave_credits')
+                        ->where('user_id', $userid)
+                        ->where('leave_id', $leaveType->id)
+                        ->first();
 
-
-                if ($credit) {
-                    DB::table('hris.leave_credits')
-                        ->where('id', $credit->id)
-                        ->update([
-                            'based_credit' => $credit->based_credit + $earnedPoints,
+                    if ($credit) {
+                        DB::table('hris.leave_credits')
+                            ->where('id', $credit->id)
+                            ->update([
+                                'based_credit' => $credit->based_credit + $earnedPoints,
+                                'last_updated_month' => $date_updated
+                            ]);
+                    } else {
+                        DB::table('hris.leave_credits')->insert([
+                            'user_id' => $userid,
+                            'leave_id' => $leaveType->id,
+                            'based_credit' => $earnedPoints,
                             'last_updated_month' => $date_updated
                         ]);
-                } else {
-                    DB::table('hris.leave_credits')->insert([
-                        'user_id' => $userid,
-                        'leave_id' => $leaveType->id,
-                        'based_credit' => $earnedPoints,
-                        'last_updated_month' => $date_updated
-                    ]);
-                }
+                    }
 
-                DB::table('credit_earned_logs')->insert([
-                    'user_id' => $userid,
-                    'month' => $month,
-                    'year' => $year,
-                    'total_lateundertime_minutes' => $totalLateUndertimeMinutes,
-                    'leave_type_id' => $leaveType->id,
-                    'earned_points' => $earnedPoints,
-                    'deducted_points' => $deductionPoints,
-                    'total_present' => $totalPresent,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                    DB::table('credit_earned_logs')->insert([
+                        'user_id' => $userid,
+                        'month' => $month,
+                        'year' => $year,
+                        'total_lateundertime_minutes' => $totalLateUndertimeMinutes,
+                        'leave_type_id' => $leaveType->id,
+                        'earned_points' => $earnedPoints,
+                        'deducted_points' => $deductionPoints,
+                        'total_present' => $totalPresent,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                });
             }
         }
     }
