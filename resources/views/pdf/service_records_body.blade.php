@@ -21,8 +21,9 @@
             <td class="b-b b-r">{{ $data['appointment_status'] }}</td>
             <td class="b-b b-r">{{ number_format($data['monthly_salary'],2) }}</td>
             <td class="b-b b-r">{{ $data['office_assignment'] }}</td>
-            <td class="b-b b-r">{{ $data['leave_absence'] }}</td>
+            <td class="b-b b-r">{!! nl2br(e($data['leave_absence'])) !!}</td>
             <td class="b-b">{{ $data['separation'] }}</td>
         </tr>
     @endforeach
 </table>
+@include('pdf.service_records_footer')

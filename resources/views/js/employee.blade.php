@@ -160,6 +160,18 @@
         });
 
         $("#btn_add_service_record").click(function () {
+            service_id = 0;
+            $("#service_error").addClass("d-none");
+            $(".is-invalid").removeClass("is-invalid");
+            $(".error_list").empty();
+            $("#service_from").val("");
+            $("#service_to").val("");
+            $("#service_designation").val("");
+            $("#service_status").val("");
+            $("#service_salary").val("");
+            $("#service_office").val("");
+            $("#service_leave").val("");
+            $("#service_separation").val("");
             service_records_modal.toggle();
         });
 
@@ -170,6 +182,13 @@
             const lname = $("#search_lname").val().trim();
             const no_employee_no = $("#filter_no_employee_no").is(":checked") ? 1 : 0;
             getEmployee({fname: fname, lname: lname, page: page, no_employee_no: no_employee_no});
+        });
+
+        $("#search_fname, #search_lname").on("keypress", function (e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                $("#btn_search").click();
+            }
         });
 
         $("body").on("click", "#pagination_links .page-link[data-page]", function (e) {
@@ -442,6 +461,7 @@
 
         $("#btn_print_service_records").click(function () {
             $("#records_row").val("15");
+            $("#service_date_issued").val(moment().format("YYYY-MM-DD"));
             print_service_modal.toggle();
         });
 
@@ -451,8 +471,14 @@
                 return "If blank kindly set back to 15";
             }
 
+            const dateIssued = $("#service_date_issued").val();
+            if (dateIssued == "") {
+                toastr.error("Please select a date issued", "Oops");
+                return;
+            }
+
             window.open(
-                '{{ route('printServiceRecord') }}?id=' + employee_id + "&rows=" + rows,
+                '{{ route('printServiceRecord') }}?id=' + employee_id + "&rows=" + rows + "&date_issued=" + dateIssued,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });

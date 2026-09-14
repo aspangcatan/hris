@@ -86,6 +86,10 @@
             </div>
             <div class="modal-body">
                 <div class="modal-title-text">Print Service Record</div>
+                <div class="mb-3">
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">Date Issued</label>
+                    <input type="date" class="form-control premium-input" id="service_date_issued" placeholder="">
+                </div>
                 <div>
                     <label class="mb-1 block text-sm font-semibold text-slate-700">Number of Rows</label>
                     <input type="number" class="form-control premium-input" id="records_row" placeholder="">

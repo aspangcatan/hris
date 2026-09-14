@@ -68,7 +68,7 @@ class LeaveMonetizationService
                 ->where('id', $leaveTypeId)
                 ->where('monetizable', 1)
                 ->where('status', 'active')
-                ->first(['id', 'description']);
+                ->first(['id', 'description', 'min_monetize_days', 'min_retained_days']);
 
             if (!$leaveType) {
                 throw new \Exception('Selected leave type is not eligible for monetization.');
@@ -91,6 +91,20 @@ class LeaveMonetizationService
             if ($days > $availableDays) {
                 throw new \Exception(
                     "Insufficient {$leaveType->description} balance. You have {$availableDays} days available but requested {$days} days."
+                );
+            }
+
+            $minMonetizeDays = (float) ($leaveType->min_monetize_days ?? 0);
+            if ($minMonetizeDays > 0 && $days < $minMonetizeDays) {
+                throw new \Exception(
+                    "{$leaveType->description} monetization requires a minimum of {$minMonetizeDays} day(s) per request."
+                );
+            }
+
+            $minRetainedDays = (float) ($leaveType->min_retained_days ?? 0);
+            if ($minRetainedDays > 0 && ($availableDays - $days) < $minRetainedDays) {
+                throw new \Exception(
+                    "{$leaveType->description} monetization must retain at least {$minRetainedDays} day(s) after this request."
                 );
             }
 

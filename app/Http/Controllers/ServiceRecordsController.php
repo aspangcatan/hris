@@ -36,7 +36,7 @@ class ServiceRecordsController extends Controller
             $service_records->leave_absence = $request->leave_absence;
             $service_records->separation = $request->separation;
             $service_records->save();
-            return response(['code' => 200, 'message' => 'Service records updated']);
+            return response(['code' => 200, 'message' => 'Service records updated', 'id' => $service_records->id]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }

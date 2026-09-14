@@ -26,6 +26,8 @@
             $("#days_prior").val("0");
             $("#commutation").val("0");
             $("#default_credit").val("");
+            $("#min_monetize_days").val("10");
+            $("#min_retained_days").val("5");
             $("#leave_type_modal").modal("show");
         });
 
@@ -41,6 +43,8 @@
         const days_prior = $("#days_prior").val();
         const commutation = $("#commutation").val();
         const default_credit = $("#default_credit").val();
+        const min_monetize_days = $("#min_monetize_days").val();
+        const min_retained_days = $("#min_retained_days").val();
 
         const params = {
             description: description,
@@ -50,7 +54,9 @@
             monetizable: monetizable,
             days_prior: days_prior,
             commutation: commutation,
-            default_credit: default_credit || null
+            default_credit: default_credit || null,
+            min_monetize_days: min_monetize_days === "" ? null : min_monetize_days,
+            min_retained_days: min_retained_days === "" ? null : min_retained_days
         }
 
         const response = await fetch('{{ route('insertUpdateLeaveType') }}', {
@@ -85,6 +91,8 @@
         const daysPrior     = $("#leave_" + id + " td:eq(5)").data("value");
         const commutation   = $("#leave_" + id + " td:eq(6)").data("value");
         const defaultCredit = $("#leave_" + id + " td:eq(7)").data("value");
+        const minMonetizeDays = $("#leave_" + id + " td:eq(8)").data("value");
+        const minRetainedDays = $("#leave_" + id + " td:eq(9)").data("value");
 
         $("#description").val(description);
         $("#code").val(code);
@@ -94,6 +102,8 @@
         $("#days_prior").val((daysPrior !== undefined && daysPrior !== null) ? daysPrior : "0");
         $("#commutation").val((commutation !== undefined && commutation !== null) ? commutation : "0");
         $("#default_credit").val((defaultCredit !== undefined && defaultCredit !== null && defaultCredit !== "") ? defaultCredit : "");
+        $("#min_monetize_days").val((minMonetizeDays !== undefined && minMonetizeDays !== null && minMonetizeDays !== "") ? minMonetizeDays : "");
+        $("#min_retained_days").val((minRetainedDays !== undefined && minRetainedDays !== null && minRetainedDays !== "") ? minRetainedDays : "");
         $("#leave_type_modal").modal("show");
     }
 
@@ -138,7 +148,7 @@
                 const pagination = payload.pagination || null;
 
                 if (!data.length) {
-                    $("#leave_list").append("<tr><td colspan='10'>No record found</td></tr>");
+                    $("#leave_list").append("<tr><td colspan='12'>No record found</td></tr>");
                     $("#pagination_container").addClass("d-none");
                     return;
                 }
@@ -161,6 +171,8 @@
                     const commutationVal   = parseInt(it.commutation ?? 0, 10);
                     const commutationLabel = commutationVal === 1 ? "Yes" : "No";
                     const defaultCreditVal = (it.default_credit !== undefined && it.default_credit !== null) ? it.default_credit : "";
+                    const minMonetizeVal = (it.min_monetize_days !== undefined && it.min_monetize_days !== null) ? it.min_monetize_days : "";
+                    const minRetainedVal = (it.min_retained_days !== undefined && it.min_retained_days !== null) ? it.min_retained_days : "";
                     const tr = `
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
@@ -171,6 +183,8 @@
                         <td data-value="` + daysPriorVal + `">` + daysPriorVal + `</td>
                         <td data-value="` + commutationVal + `">` + commutationLabel + `</td>
                         <td data-value="` + defaultCreditVal + `">` + (defaultCreditVal === "" ? "—" : defaultCreditVal) + `</td>
+                        <td data-value="` + minMonetizeVal + `">` + (minMonetizeVal === "" ? "—" : minMonetizeVal) + `</td>
+                        <td data-value="` + minRetainedVal + `">` + (minRetainedVal === "" ? "—" : minRetainedVal) + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>

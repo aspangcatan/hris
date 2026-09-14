@@ -1,12 +1,19 @@
 <script>
     function getServiceRecords(id) {
         if (is_service_loaded) return;
+
+        const loadingRow = `<tr id="service_loading_row"><td colspan="9" class="text-center py-3">
+            <span class="spinner-border spinner-border-sm me-2"></span>Loading service records...
+        </td></tr>`;
+        $("#service_records_list").append(loadingRow);
+
         fetch('{{route('getServiceRecords')}}?id=' + id, {
             method: "GET"
         })
             .then(res => res.json())
             .then(data => {
                 console.log(data);
+                $("#service_loading_row").remove();
                 if (data.code == 500) {
                     alert(data.message);
                     return;
@@ -21,12 +28,12 @@
                 <td>` + it.appointment_status + `</td>
                 <td>` + it.monthly_salary + `</td>
                 <td>` + it.office_assignment + `</td>
-                <td>` + it.leave_absence + `</td>
+                <td style="white-space: pre-line">` + it.leave_absence + `</td>
                 <td>` + it.separation + `</td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type='button'  class="btn btn-action btn-edit" onClick="editService(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
-                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteService(` + it.id + `)"><i class="bi bi-trash"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteService(` + it.id + `, this)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;
@@ -34,10 +41,15 @@
                 });
             }).catch(err => {
             console.log(err);
+            $("#service_loading_row").remove();
         });
     }
 
     function insertUpdateServiceRecords(params) {
+        const $btn = $("#btn_save_service");
+        const originalBtnHtml = $btn.html();
+        $btn.prop("disabled", true).html('<span class="spinner-border spinner-border-sm me-2"></span>Saving...');
+
         fetch('{{ route('insertUpdateServiceRecords') }}', {
             method: "POST",
             headers: {
@@ -62,12 +74,12 @@
                 <td>` + params.appointment_status + `</td>
                 <td>` + params.monthly_salary + `</td>
                 <td>` + params.office_assignment + `</td>
-                <td>` + params.leave_absence + `</td>
+                <td style="white-space: pre-line">` + params.leave_absence + `</td>
                 <td>` + params.separation + `</td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type='button'  class="btn btn-action btn-edit" onClick="editService(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
-                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteService(` + data.id + `)"><i class="bi bi-trash"></i></button>
+                        <button type='button' class="btn btn-action btn-delete" title="Delete" onClick="deleteService(` + data.id + `, this)"><i class="bi bi-trash"></i></button>
                     </div>
                 </td>
                 </tr>`;
@@ -95,11 +107,18 @@
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);
+            toastr.error("Something went wrong", "Oops");
+        }).finally(() => {
+            $btn.prop("disabled", false).html(originalBtnHtml);
         });
     }
 
-    function deleteService(id) {
+    function deleteService(id, btn) {
         if (!confirm("Are you sure you want to delete this service record?")) return;
+
+        const $btn = $(btn);
+        const originalBtnHtml = $btn.html();
+        $btn.prop("disabled", true).html('<span class="spinner-border spinner-border-sm"></span>');
 
         fetch('{{ route('deleteServiceRecords') }}', {
             method: "DELETE",
@@ -114,6 +133,7 @@
                 if (data.code == 500) {
                     console.log(data.message);
                     toastr.error("Something went wrong", "Oops");
+                    $btn.prop("disabled", false).html(originalBtnHtml);
                     return;
                 }
 
@@ -121,6 +141,8 @@
                 toastr.success(data.message, "Success");
             }).catch(err => {
             console.log(err);
+            toastr.error("Something went wrong", "Oops");
+            $btn.prop("disabled", false).html(originalBtnHtml);
         });
     }
 </script>

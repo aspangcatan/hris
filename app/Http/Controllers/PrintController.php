@@ -264,7 +264,19 @@ class PrintController extends Controller
         return DB::connection('users')
             ->table('users')
             ->where('id', $userId)
-            ->first(['id', 'fname', 'mname', 'lname', 'suffix', 'title']);
+            ->first(['id', 'fname', 'mname', 'lname', 'suffix', 'title', 'designation']);
+    }
+
+    private function getDesignationById(?int $designationId)
+    {
+        if (empty($designationId)) {
+            return null;
+        }
+
+        return DB::connection('users')
+            ->table('designation')
+            ->where('id', $designationId)
+            ->first(['id', 'description']);
     }
 
     private function getSectionById(?int $sectionId)
@@ -288,6 +300,22 @@ class PrintController extends Controller
         return DB::connection('users')
             ->table('division')
             ->where('id', $divisionId)
+            ->first(['id', 'head']);
+    }
+
+    private function getSectionByDescription(string $description)
+    {
+        return DB::connection('users')
+            ->table('section')
+            ->where('description', $description)
+            ->first(['id', 'division', 'head', 'subsection']);
+    }
+
+    private function getDivisionByDescription(string $description)
+    {
+        return DB::connection('users')
+            ->table('division')
+            ->where('description', $description)
             ->first(['id', 'head']);
     }
 
@@ -1179,7 +1207,29 @@ class PrintController extends Controller
             }
         }
 
-        $pdf = Pdf::loadView('pdf.service_record', ['service_records' => $service_array, 'next_page_service' => $next_page_service_outer_array, 'employee' => $employee, 'user' => $user]);
+        $hrmsSection = $this->getSectionByDescription('Human Resource Management Section');
+        $certifiedByUser = $hrmsSection ? $this->getUserById((int) $hrmsSection->head) : null;
+        $certifiedByName = $this->formatOfficerName($certifiedByUser);
+        $certifiedByDesignation = optional($this->getDesignationById($certifiedByUser ? $certifiedByUser->designation : null))->description ?? '';
+
+        $mccDivision = $this->getDivisionByDescription('Medical Center Chief');
+        $approvedByUser = $mccDivision ? $this->getUserById((int) $mccDivision->head) : null;
+        $approvedByName = $this->formatOfficerName($approvedByUser);
+        $approvedByDesignation = optional($this->getDesignationById($approvedByUser ? $approvedByUser->designation : null))->description ?? '';
+
+        $dateIssued = $request->date_issued ? date('F j, Y', strtotime($request->date_issued)) : date('F j, Y');
+
+        $pdf = Pdf::loadView('pdf.service_record', [
+            'service_records' => $service_array,
+            'next_page_service' => $next_page_service_outer_array,
+            'employee' => $employee,
+            'user' => $user,
+            'certified_by_name' => $certifiedByName,
+            'certified_by_designation' => $certifiedByDesignation,
+            'approved_by_name' => $approvedByName,
+            'approved_by_designation' => $approvedByDesignation,
+            'date_issued' => $dateIssued,
+        ]);
         return $pdf->stream('service_record.pdf', array("Attachment" => false));
     }
 

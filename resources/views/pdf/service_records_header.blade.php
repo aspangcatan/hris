@@ -1,8 +1,7 @@
-<img src="img/letter_head_banner.png"/>
-<div class="text-center fw-bold title" style="margin-top:-40px">
+<div class="text-center fw-bold title" style="padding-top:122pt">
     <span class="b-b">SERVICE RECORD</span>
 </div>
-<div style="margin-left: 10px;margin-right: 10px">
+<div style="margin-left: 10px;margin-right: 10px;margin-top:20px">
     <table class="text-center">
         <tr>
             <td class="text-left" style="width: 9%">

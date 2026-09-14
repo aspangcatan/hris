@@ -166,9 +166,11 @@ class LeaveController extends Controller
                 'status'         => $request->status ?? 'active',
                 'monthly_earned' => $request->monthly_earned ?? 1,
                 'monetizable'    => $request->monetizable ?? 0,
-                'days_prior'     => $request->days_prior ?? 0,
-                'commutation'    => $request->commutation ?? 0,
-                'default_credit' => $request->default_credit,
+                'days_prior'         => $request->days_prior ?? 0,
+                'commutation'        => $request->commutation ?? 0,
+                'default_credit'     => $request->default_credit,
+                'min_monetize_days'  => $request->min_monetize_days,
+                'min_retained_days'  => $request->min_retained_days,
             ]);
             return response()->json(['message' => 'Leave type successfully stored']);
         } catch (\Exception $exception) {

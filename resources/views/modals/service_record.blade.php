@@ -42,7 +42,7 @@
                         <label>Office of Assignment</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="text" class="form-control" id="service_leave" placeholder="">
+                        <textarea class="form-control" id="service_leave" placeholder="" style="height: 100px"></textarea>
                         <label>Leave of absence w/o pay</label>
                     </div>
                     <div class="form-floating mb-3">

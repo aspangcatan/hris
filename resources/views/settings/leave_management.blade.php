@@ -79,6 +79,8 @@
                     <th>Days Prior</th>
                     <th>Commutation</th>
                     <th>Default Credit</th>
+                    <th>Min. Monetize Days</th>
+                    <th>Min. Retained Days</th>
                     <th colspan="2" style="width: 4%"></th>
                 </tr>
                 </thead>

@@ -8,7 +8,20 @@
     <title>Document</title>
     <style>
         @page {
-            size: 612pt 1008pt !important;
+            size: 612pt 792pt !important;
+            margin-top: 0 !important;
+            margin-right: 0 !important;
+            margin-bottom: 118pt !important;
+            margin-left: 0 !important;
+        }
+
+        .letterhead-bg {
+            position: fixed;
+            z-index: -2;
+            top: 0;
+            left: 0;
+            width: 612pt;
+            height: 792pt;
         }
 
         html {
@@ -91,8 +104,9 @@
     </style>
 </head>
 <body>
+<img class="letterhead-bg" src="img/service_records_letterhead.jpg"/>
 @include('pdf.service_records_header');
-<div style="padding-left: 10px;padding-right: 10px;padding-top: 5px">
+<div style="padding-left: 10px;padding-right: 10px">
     <table class="border-dark">
         <tr class="text-v-center text-center">
             <td class="b-b b-r" colspan="2" style="width: 15%">Services inclusive</br>Dates</td>
@@ -115,18 +129,18 @@
                 <td class="b-b b-r">{{ $data['appointment_status'] }}</td>
                 <td class="b-b b-r">{{ number_format($data['monthly_salary'],2) }}</td>
                 <td class="b-b b-r">{{ $data['office_assignment'] }}</td>
-                <td class="b-b b-r">{{ $data['leave_absence'] }}</td>
+                <td class="b-b b-r">{!! nl2br(e($data['leave_absence'])) !!}</td>
                 <td class="b-b">{{ $data['separation'] }}</td>
             </tr>
         @endforeach
     </table>
+    @include('pdf.service_records_footer')
     @if(count($next_page_service) > 0)
         @for($i=0; $i<count($next_page_service); $i++)
             <div style="page-break-before: always !important;"></div>
             @include('pdf.service_records_body',['service_records'=>$next_page_service[$i]])
         @endfor
     @endif
-    @include('pdf.service_records_footer')
 </div>
 </body>
 </html>

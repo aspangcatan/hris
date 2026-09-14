@@ -54,6 +54,14 @@
                         <input type="number" class="form-control" id="default_credit" min="0" step="0.001" placeholder="">
                         <label>Default Credit</label>
                     </div>
+                    <div class="form-floating mb-3">
+                        <input type="number" class="form-control" id="min_monetize_days" min="0" step="1" placeholder="">
+                        <label>Min. Days per Monetization</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="number" class="form-control" id="min_retained_days" min="0" step="1" placeholder="">
+                        <label>Min. Days Retained After Monetization</label>
+                    </div>
                 </div>
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
