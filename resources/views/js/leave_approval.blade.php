@@ -1,6 +1,8 @@
 <script>
     let page = 1, leave_id = 0, leave_approval_last_page = 1, activeFilter = 'pending';
     let current_approval_role = null;
+    let current_dates = [];
+    let current_approvals = {};
     let approverSignatureNeeded = false;
     const leaveApprovalViewButtonHtml = `<i class="bi bi-eye-fill text-success"></i>`;
 
@@ -85,6 +87,9 @@
 
     $(function () {
         $("#approveLeaveBtn, #rejectLeaveBtn").click(handleApproval);
+        $("#acknowledgeLeaveBtn").click(function () {
+            submitApproval(this, this.value, null);
+        });
         $("#undoApprovalBtn").click(handleUndoApproval);
 
         $("[data-filter]").on("click", function () {
@@ -147,6 +152,7 @@
         <tr>
             <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
             <td>${it.description} ${it.is_lwop ? '<span class="badge bg-warning text-dark ms-1">LWOP</span>' : ''}</td>
+            <td>${(it.dates_applied ? it.dates_applied.split(',') : []).map(d => moment(d).format("MM/DD/YYYY")).join(", ")}</td>
             <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
             <td><button class="btn btn-sm leave-view-btn" onclick="viewApplication(${it.id}, this)">${leaveApprovalViewButtonHtml}</button></td>
         </tr>
@@ -248,6 +254,8 @@
     }
 
     function renderLeaveModal(data) {
+        current_dates = data.dates || [];
+        current_approvals = data.approvals || {};
         $('#leave_name').text(data.name);
         $('#leave_type').text(data.type);
         $('#leave_commutation').text(data.commutation);
@@ -293,10 +301,15 @@
 
         $('#remarks_history').html(remarks);
         const canAct = activeFilter === 'pending';
-        $('#approveLeaveBtn, #rejectLeaveBtn').toggle(canAct);
+        current_approval_role = data.current_approval_role;
+
+        // A Division Head rejection is final. HR can't approve or reject it, only acknowledge it.
+        const acknowledgeOnly = canAct && current_approval_role === 'HR'
+            && getPriorRejections().some(r => r.label === 'Division Head');
+        $('#approveLeaveBtn, #rejectLeaveBtn').toggle(canAct && !acknowledgeOnly);
+        $('#acknowledgeLeaveBtn').toggleClass('d-none', !acknowledgeOnly).toggle(acknowledgeOnly);
         $('#undoApprovalBtn').toggleClass('d-none', !data.can_undo);
 
-        current_approval_role = data.current_approval_role;
         approverSignatureNeeded = canAct && (current_approval_role === 'SH' || current_approval_role === 'DH');
         $('#approver_signature_section').toggleClass('d-none', !approverSignatureNeeded);
 
@@ -315,10 +328,85 @@
     }
 
     function updateStepStatus(sel, a) {
-        $(sel).removeClass("approved rejected pending")
+        $(sel).removeClass("approved rejected pending acknowledged")
             .addClass(a?.status || "pending");
         $(sel + " .circle").attr("class", "circle " + (a?.status || "pending"));
     }
+
+    function escapeHtml(text) {
+        return String(text ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    }
+
+    // Dates the Section Head flagged for disapproval that the Division Head
+    // has left unticked, i.e. is about to approve anyway.
+    function getShFlaggedDatesBeingApproved() {
+        return current_dates.filter(d => d.sh_flagged_disapprove && !$(`#dd_${d.id}`).is(':checked'));
+    }
+
+    // Approval steps in chain order: [role, key in data.approvals, label]
+    const APPROVAL_STEPS = [
+        ['HR_COMPLIANCE', 'hr_compliance', 'HR Compliance'],
+        ['SH', 'sh', 'Section Head'],
+        ['DH', 'dh', 'Division Head'],
+        ['HR', 'hr', 'HR'],
+    ];
+
+    // Earlier approvers (before the current role) who rejected this leave.
+    function getPriorRejections() {
+        const myIndex = APPROVAL_STEPS.findIndex(s => s[0] === current_approval_role);
+        if (myIndex < 0) return [];
+        return APPROVAL_STEPS.slice(0, myIndex)
+            .map(([, key, label]) => ({label, approval: current_approvals[key]}))
+            .filter(s => String(s.approval?.status || '').toLowerCase() === 'rejected');
+    }
+
+    let confirmFlaggedApproval = null;
+
+    // Shared confirmation modal: {title, intro, itemsHtml, question, confirmLabel}
+    function showApprovalWarning({title, intro, itemsHtml, question, confirmLabel}, onConfirm) {
+        $('#leaveFlagWarningLabel').text(title);
+        $('#leave_flag_warning_intro').text(intro);
+        $('#leave_flag_warning_list').html(itemsHtml);
+        $('#leave_flag_warning_question').text(question);
+        $('#btn_confirm_flagged_approve').text(confirmLabel);
+        confirmFlaggedApproval = onConfirm;
+        $('#leave_flag_warning_modal').modal('show');
+    }
+
+    function showFlaggedApprovalWarning(dates, onConfirm) {
+        showApprovalWarning({
+            title: 'Section Head Flagged This Leave',
+            intro: 'The Section Head flagged the following date(s) for disapproval. You are about to approve them anyway.',
+            itemsHtml: dates.map(d => `
+                <li class="list-group-item">
+                    <div class="fw-semibold">${escapeHtml(d.leave_type || '')} — ${moment(d.date).format("MM/DD/YYYY")}</div>
+                    <div class="small text-muted">Reason: ${d.sh_disapproval_remark ? escapeHtml(d.sh_disapproval_remark) : 'No reason given'}</div>
+                </li>`).join(''),
+            question: 'Do you want to continue with the approval?',
+            confirmLabel: 'APPROVE ANYWAY',
+        }, onConfirm);
+    }
+
+    function showRejectedLeaveWarning(rejections, onConfirm) {
+        showApprovalWarning({
+            title: 'This Leave Was Rejected',
+            intro: 'You are trying to approve a leave that was rejected. Approving will overturn the rejection: ',
+            itemsHtml: rejections.map(r => `
+                <li class="list-group-item">
+                    <div class="fw-semibold">Rejected by ${escapeHtml(r.label)}</div>
+                    <div class="small text-muted">Remarks: ${r.approval.remarks ? escapeHtml(r.approval.remarks) : 'No remarks given'}</div>
+                </li>`).join(''),
+            question: 'Would you like to proceed?',
+            confirmLabel: 'PROCEED',
+        }, onConfirm);
+    }
+
+    $(document).on('click', '#btn_confirm_flagged_approve', function () {
+        const proceed = confirmFlaggedApproval;
+        confirmFlaggedApproval = null;
+        $('#leave_flag_warning_modal').modal('hide');
+        if (proceed) proceed();
+    });
 
     function handleApproval() {
         const status = this.value;
@@ -331,6 +419,29 @@
         }
 
         const button = this;
+
+        // Warn before approving a leave an earlier approver rejected (approving overturns the rejection)
+        if (status === 'Approved') {
+            const rejections = getPriorRejections();
+            if (rejections.length > 0) {
+                showRejectedLeaveWarning(rejections, () => submitApproval(button, status, signature, true));
+                return;
+            }
+        }
+
+        // Warn the Division Head before approving dates the Section Head flagged for disapproval
+        if (status === 'Approved' && current_approval_role === 'DH') {
+            const overridden = getShFlaggedDatesBeingApproved();
+            if (overridden.length > 0) {
+                showFlaggedApprovalWarning(overridden, () => submitApproval(button, status, signature));
+                return;
+            }
+        }
+
+        submitApproval(button, status, signature);
+    }
+
+    function submitApproval(button, status, signature, overturnRejection = false) {
         const originalHtml = button.innerHTML;
         $(button).prop("disabled", true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...');
         fetch('{{ route('updateApprovalStatus') }}', {
@@ -341,11 +452,13 @@
                 remarks: $("#leave_remarks").val().trim(),
                 status: status,
                 disapproved_dates: collectDisapprovedDates(),
-                signature: signature
+                signature: signature,
+                overturn_rejection: overturnRejection
             })
         })
             .then(r => r.json())
             .then(data => {
+                if (data.error) throw new Error(data.error);
                 toastr.success(data.message, "Info");
                 $('#viewLeaveModal').modal('hide');
                 getLeaves();

@@ -7,27 +7,41 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <style>
+        @font-face {
+            font-family: 'Corbel';
+            font-weight: normal;
+            src: url({{ storage_path("fonts/corbel.ttf") }}) format("truetype");
+        }
+
+        @font-face {
+            font-family: 'Corbel';
+            font-weight: bold;
+            src: url({{ storage_path("fonts/corbelb.ttf") }}) format("truetype");
+        }
+
         @page {
-            size: 612pt 792pt !important;
+            size: {{ $page_width }}pt {{ $page_height }}pt !important;
             margin-top: 0 !important;
             margin-right: 0 !important;
             margin-bottom: 118pt !important;
             margin-left: 0 !important;
         }
 
+        /* absolute (not fixed) so the letterhead is drawn on the first page only */
         .letterhead-bg {
-            position: fixed;
+            position: absolute;
             z-index: -2;
             top: 0;
             left: 0;
-            width: 612pt;
-            height: 792pt;
+            width: {{ $page_width }}pt;
+            height: {{ $page_height }}pt;
         }
 
         html {
             padding: 0px;
             margin: 0px;
             font-size: 11px;
+            font-family: 'Corbel', sans-serif;
         }
 
         img {
@@ -105,17 +119,17 @@
 </head>
 <body>
 <img class="letterhead-bg" src="img/service_records_letterhead.jpg"/>
-@include('pdf.service_records_header');
+@include('pdf.service_records_header')
 <div style="padding-left: 10px;padding-right: 10px">
     <table class="border-dark">
         <tr class="text-v-center text-center">
             <td class="b-b b-r" colspan="2" style="width: 15%">Services inclusive</br>Dates</td>
             <td class="b-b b-r" rowspan="2" style="width: 15%">RECORD OF <br/>APPOINTMENT<br/>DESIGNATION</td>
             <td class="b-b b-r" rowspan="2" style="width: 10%">STATUS</td>
-            <td class="b-b b-r" rowspan="2" style="width: 7%">SALARY<br/>(ANNUM)</td>
+            <td class="b-b b-r" rowspan="2" style="width: 18%">SALARY<br/>(ANNUM)</td>
             <td class="b-b b-r" rowspan="2" style="width: 18%">OFFICE OF ASSIGNMENT</td>
             <td class="b-b b-r" rowspan="2" style="width: 10%">LEAVE OF<br/>ABSENCES<br/>W/O PAY</td>
-            <td class="b-b" rowspan="2" style="width: 23%">SEPARATION</td>
+            <td class="b-b" rowspan="2" style="width: 12%">SEPARATION</td>
         </tr>
         <tr class="text-v-center text-center">
             <td class="b-b b-r">From</td>
@@ -138,7 +152,7 @@
     @if(count($next_page_service) > 0)
         @for($i=0; $i<count($next_page_service); $i++)
             <div style="page-break-before: always !important;"></div>
-            @include('pdf.service_records_body',['service_records'=>$next_page_service[$i]])
+            @include('pdf.service_records_body',['service_records'=>$next_page_service[$i], 'header_padding_top' => 30])
         @endfor
     @endif
 </div>

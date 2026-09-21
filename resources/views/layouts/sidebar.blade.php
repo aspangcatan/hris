@@ -236,6 +236,7 @@
         @endpermission
 
         {{-- PAYROLL MANAGEMENT --}}
+        @if(false)
         @if(permission_check('payroll.view') || permission_check('payroll.settings') || permission_check('payroll.manage'))
             <li class="nav-heading">Payroll Management</li>
             @permission('payroll.view')
@@ -291,6 +292,7 @@
                 </a>
             </li>
             @endpermission
+        @endif
         @endif
 
         {{-- REPORTS --}}

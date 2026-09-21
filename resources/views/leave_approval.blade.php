@@ -128,13 +128,14 @@
                         <tr>
                             <th>Employee</th>
                             <th>Leave Type</th>
+                            <th>Dates Applied</th>
                             <th>Date Created</th>
                             <th style="width: 4%"></th>
                         </tr>
                         </thead>
                         <tbody id="leave_approval_list">
                         <tr>
-                            <td colspan="4" class="text-center text-muted">No applications found.</td>
+                            <td colspan="5" class="text-center text-muted">No applications found.</td>
                         </tr>
                         </tbody>
                     </table>
@@ -212,6 +213,7 @@
     </div>
 
     @include('modals.leave')
+    @include('modals.leave_flag_warning')
     @include('modals.monetize_approve')
 @stop
 

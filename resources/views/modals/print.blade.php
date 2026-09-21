@@ -90,9 +90,30 @@
                     <label class="mb-1 block text-sm font-semibold text-slate-700">Date Issued</label>
                     <input type="date" class="form-control premium-input" id="service_date_issued" placeholder="">
                 </div>
+                <div class="mb-3">
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">Paper Size</label>
+                    <select class="form-control premium-select" id="service_paper_size">
+                        <option value="a4" selected>A4 (8.27 x 11.69 in)</option>
+                        <option value="long">Long (8.5 x 13 in)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">Rows on Page 1</label>
+                    <input type="number" min="1" class="form-control premium-input" id="records_first_rows" placeholder="">
+                </div>
+                <div class="mb-3">
+                    <label class="mb-1 block text-sm font-semibold text-slate-700">Rows on Other Pages</label>
+                    <input type="number" min="1" class="form-control premium-input" id="records_other_rows" placeholder="">
+                </div>
                 <div>
-                    <label class="mb-1 block text-sm font-semibold text-slate-700">Number of Rows</label>
-                    <input type="number" class="form-control premium-input" id="records_row" placeholder="">
+                    <div class="mb-1 flex items-center justify-between">
+                        <label class="block text-sm font-semibold text-slate-700">Custom Pages <span class="font-normal text-slate-500">(optional)</span></label>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn_add_page_override">
+                            <i class="bi bi-plus-lg me-1"></i>Add page
+                        </button>
+                    </div>
+                    <div id="page_override_list" class="space-y-2"></div>
+                    <div class="mt-1 text-xs text-slate-500">Pick a page number (2 or higher) and the rows it should hold. Other pages use "Rows on Other Pages".</div>
                 </div>
                 <div class="mt-5 flex items-center justify-end gap-2">
                     <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>

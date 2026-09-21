@@ -236,6 +236,12 @@ class PrintController extends Controller
         ];
     }
 
+    private function positiveInt($value, int $default): int
+    {
+        $value = (int) $value;
+        return $value >= 1 ? $value : $default;
+    }
+
     private function formatOfficerName($user): string
     {
         if (!$user) {
@@ -381,6 +387,7 @@ class PrintController extends Controller
                 'u.division as division_id',
                 'l.commutation',
                 'l.applicant_signature',
+                'l.status',
                 'l.id',
             ])
             ->first();
@@ -490,7 +497,52 @@ class PrintController extends Controller
             'inclusiveDates'         => self::getInclusiveDates($dates_applied),
             'sectionHeadApproval'    => $sectionHeadApproval,
             'attachments'            => $attachments,
+            'creditCertification'    => $this->getLeaveCreditCertification($leave_application),
         ]);
+    }
+
+    /**
+     * Section 7.A "Certification of Leave Credits" for Vacation Leave and Sick Leave.
+     * The application's credits are already deducted from the employee's balance, so the
+     * current balance is the result, and Total Earned is that balance before this
+     * application's deduction. A rejected application had its credits restored, so it
+     * deducts nothing. Dates that were cancelled or finally disapproved are excluded too.
+     *
+     * @return array<string, array{total_earned: float, less: float, balance: float}>
+     */
+    private function getLeaveCreditCertification(object $leaveApplication): array
+    {
+        $isRejected = strtolower((string) $leaveApplication->status) === 'rejected';
+        $typeIds    = DB::table('hris.leave_types')->whereIn('code', ['VL', 'SL'])->pluck('id', 'code');
+
+        $certification = [];
+        foreach (['VL', 'SL'] as $code) {
+            $typeId = $typeIds[$code] ?? null;
+            if (!$typeId) {
+                continue;
+            }
+
+            $credit  = DB::table('hris.leave_credits')
+                ->where('user_id', $leaveApplication->user_id)
+                ->where('leave_id', $typeId)
+                ->first(['based_credit', 'used_credit']);
+            $balance = $credit ? (float) $credit->based_credit - (float) $credit->used_credit : 0.0;
+
+            $less = $isRejected ? 0.0 : (float) DB::table('hris.leave_date_applied')
+                ->where('leave_application_id', $leaveApplication->id)
+                ->where('leave_type_id', $typeId)
+                ->where('status', '!=', 'cancelled')
+                ->where('final_disapproved', 0)
+                ->sum('credits_deducted');
+
+            $certification[$code] = [
+                'total_earned' => $balance + $less,
+                'less'         => $less,
+                'balance'      => $balance,
+            ];
+        }
+
+        return $certification;
     }
 
     public function printWorkExperience(Request $request)
@@ -1177,35 +1229,31 @@ class PrintController extends Controller
         }
 
         $service_records = ServiceRecords::where('user_id', $request->id)->get();
-        $next_page_service_outer_array = [];
-        $next_page_service_inner_array = [];
-        $outer_counter = 0;
-        $counter = 0;
 
-        $service_array = [];
-
-        if (count($service_records) < $request->rows) {
-            $service_array = $service_records;
-        } else {
-            for ($i = 0; $i < $request->rows; $i++) {
-                $service_array[$i] = $service_records[$i];
-            }
-
-            for ($i = $request->rows; $i < count($service_records); $i++) {
-                if ($counter % $request->rows == 0 && $counter > 0) {
-                    $next_page_service_outer_array[$outer_counter++] = $next_page_service_inner_array;
-                    $counter = 0;
-                    $next_page_service_inner_array = [];
-                }
-
-                $next_page_service_inner_array[$counter++] = $service_records[$i];
-
-                #CHECK IF LAST LOOP
-                if ($i == count($service_records) - 1) {
-                    $next_page_service_outer_array[$outer_counter++] = $next_page_service_inner_array;
-                }
+        // Rows per page: first page, default for the other pages, and optional per-page overrides.
+        // `rows` alone (older links) applies to every page.
+        $firstRows = $this->positiveInt($request->first_rows ?? $request->rows, 15);
+        $otherRows = $this->positiveInt($request->other_rows ?? $request->rows, 15);
+        $pageOverrides = [];
+        foreach ((array) $request->page_rows as $pageNo => $rowCount) {
+            $pageNo = (int) $pageNo;
+            if ($pageNo >= 2 && (int) $rowCount >= 1) {
+                $pageOverrides[$pageNo] = (int) $rowCount;
             }
         }
+
+        $pages = [];
+        $offset = 0;
+        $pageNo = 1;
+        do {
+            $rowsOnPage = $pageOverrides[$pageNo] ?? ($pageNo === 1 ? $firstRows : $otherRows);
+            $pages[] = $service_records->slice($offset, $rowsOnPage)->values()->all();
+            $offset += $rowsOnPage;
+            $pageNo++;
+        } while ($offset < $service_records->count());
+
+        $service_array = array_shift($pages);
+        $next_page_service_outer_array = $pages;
 
         $hrmsSection = $this->getSectionByDescription('Human Resource Management Section');
         $certifiedByUser = $hrmsSection ? $this->getUserById((int) $hrmsSection->head) : null;
@@ -1219,7 +1267,12 @@ class PrintController extends Controller
 
         $dateIssued = $request->date_issued ? date('F j, Y', strtotime($request->date_issued)) : date('F j, Y');
 
+        // Points (1in = 72pt): A4 = 595.28 x 841.89, Long (8.5 x 13 in) = 612 x 936
+        $paperSize = $request->paper_size === 'long' ? [612, 936] : [595.28, 841.89];
+
         $pdf = Pdf::loadView('pdf.service_record', [
+            'page_width' => $paperSize[0],
+            'page_height' => $paperSize[1],
             'service_records' => $service_array,
             'next_page_service' => $next_page_service_outer_array,
             'employee' => $employee,
@@ -1229,7 +1282,7 @@ class PrintController extends Controller
             'approved_by_name' => $approvedByName,
             'approved_by_designation' => $approvedByDesignation,
             'date_issued' => $dateIssued,
-        ]);
+        ])->setPaper([0, 0, $paperSize[0], $paperSize[1]]);
         return $pdf->stream('service_record.pdf', array("Attachment" => false));
     }
 

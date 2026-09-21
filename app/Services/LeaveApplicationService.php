@@ -72,6 +72,57 @@ class LeaveApplicationService
         });
     }
 
+    /**
+     * Earliest date a leave with $daysPrior advance notice can be filed for.
+     * Advance notice is counted in working days: weekends are skipped.
+     */
+    public function earliestLeaveDate(int $daysPrior, ?Carbon $from = null): Carbon
+    {
+        $date = ($from ?? Carbon::today())->copy()->startOfDay();
+
+        while ($daysPrior > 0) {
+            $date->addDay();
+            if ($date->isWeekday()) {
+                $daysPrior--;
+            }
+        }
+
+        return $date;
+    }
+
+    /**
+     * Rejects weekend dates and dates earlier than each leave type's
+     * days_prior advance notice (counted in working days).
+     *
+     * @param iterable $leaveTypes  [leave_type_id => {description, days_prior}]
+     * @param iterable $datesByType [leave_type_id => [{date_applied, ...}]]
+     */
+    public function assertValidLeaveDates($leaveTypes, $datesByType, ?Carbon $today = null): void
+    {
+        foreach ($leaveTypes as $leaveId => $type) {
+            // A negative days_prior (e.g. Sick Leave = -1) means the type can be filed
+            // for past dates, so it has no earliest date.
+            $daysPrior = (int) ($type->days_prior ?? 0);
+            $earliest  = $daysPrior > 0
+                ? $this->earliestLeaveDate($daysPrior, $today)->toDateString()
+                : null;
+
+            foreach (($datesByType[$leaveId] ?? []) as $date) {
+                $dateApplied = $date['date_applied'];
+
+                if (Carbon::parse($dateApplied)->isWeekend()) {
+                    throw new \Exception("{$type->description}: {$dateApplied} falls on a weekend. Weekends cannot be selected.");
+                }
+
+                if ($earliest !== null && $dateApplied < $earliest) {
+                    throw new \Exception(
+                        "{$type->description} requires at least {$daysPrior} working day(s) advance notice. Earliest allowed date is {$earliest}."
+                    );
+                }
+            }
+        }
+    }
+
     public function insertLeaveApplication(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -92,23 +143,7 @@ class LeaveApplicationService
                 ->get(['id', 'description', 'days_prior'])
                 ->keyBy('id');
 
-            // Validate days_prior per type
-            $today = Carbon::today();
-            foreach ($leaveIds as $leaveId) {
-                $daysPrior = (int) ($leaveTypes[$leaveId]->days_prior ?? 0);
-                if ($daysPrior <= 0) continue;
-
-                $earliest = $today->copy()->addDays($daysPrior)->format('Y-m-d');
-                $desc     = $leaveTypes[$leaveId]->description;
-
-                foreach (($datesByType[$leaveId] ?? collect()) as $date) {
-                    if ($date['date_applied'] < $earliest) {
-                        throw new \Exception(
-                            "{$desc} requires at least {$daysPrior} day(s) advance notice. Earliest allowed date is {$earliest}."
-                        );
-                    }
-                }
-            }
+            $this->assertValidLeaveDates($leaveTypes, $datesByType);
 
             // Validate credit balance per type (credits proportional to actual days per type)
             // Skipped entirely for LWOP — an LWOP filing never checks or deducts credits.
@@ -260,22 +295,7 @@ class LeaveApplicationService
                 ->get(['id', 'description', 'days_prior'])
                 ->keyBy('id');
 
-            $today = Carbon::today();
-            foreach ($leaveIds as $leaveId) {
-                $daysPrior = (int) ($leaveTypes[$leaveId]->days_prior ?? 0);
-                if ($daysPrior <= 0) continue;
-
-                $earliest = $today->copy()->addDays($daysPrior)->format('Y-m-d');
-                $desc     = $leaveTypes[$leaveId]->description;
-
-                foreach (($datesByType[$leaveId] ?? collect()) as $date) {
-                    if ($date['date_applied'] < $earliest) {
-                        throw new \Exception(
-                            "{$desc} requires at least {$daysPrior} day(s) advance notice. Earliest allowed date is {$earliest}."
-                        );
-                    }
-                }
-            }
+            $this->assertValidLeaveDates($leaveTypes, $datesByType);
 
             if (!$isLwop) {
                 foreach ($leaveIds as $leaveId) {

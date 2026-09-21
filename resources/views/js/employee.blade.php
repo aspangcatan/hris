@@ -460,15 +460,54 @@
 
 
         $("#btn_print_service_records").click(function () {
-            $("#records_row").val("15");
+            $("#records_first_rows").val("15");
+            $("#records_other_rows").val("15");
+            $("#page_override_list").empty();
             $("#service_date_issued").val(moment().format("YYYY-MM-DD"));
             print_service_modal.toggle();
         });
 
+        $("#btn_add_page_override").click(function () {
+            const nextPage = Math.max(1, ...$("#page_override_list .override-page").map(function () {
+                return parseInt($(this).val(), 10) || 1;
+            }).get()) + 1;
+
+            $("#page_override_list").append(`
+                <div class="page-override-row flex items-center gap-2">
+                    <span class="text-sm text-slate-600">Page</span>
+                    <input type="number" min="2" class="form-control premium-input override-page" style="width: 90px" value="${nextPage}">
+                    <span class="text-sm text-slate-600">rows</span>
+                    <input type="number" min="1" class="form-control premium-input override-rows" style="width: 90px" value="15">
+                    <button type="button" class="btn btn-action btn-delete btn-remove-override" title="Remove"><i class="bi bi-trash"></i></button>
+                </div>`);
+        });
+
+        $("#page_override_list").on("click", ".btn-remove-override", function () {
+            $(this).closest(".page-override-row").remove();
+        });
+
         $("#btn_confirm_print_records").click(function () {
-            const rows = $("#records_row").val();
-            if (rows == "") {
-                return "If blank kindly set back to 15";
+            const firstRows = parseInt($("#records_first_rows").val(), 10);
+            const otherRows = parseInt($("#records_other_rows").val(), 10);
+            if (!(firstRows >= 1) || !(otherRows >= 1)) {
+                toastr.error("Rows on page 1 and other pages must be at least 1", "Oops");
+                return;
+            }
+
+            let pageRowsQuery = "";
+            let invalidOverride = false;
+            $("#page_override_list .page-override-row").each(function () {
+                const pageNo = parseInt($(this).find(".override-page").val(), 10);
+                const pageRows = parseInt($(this).find(".override-rows").val(), 10);
+                if (!(pageNo >= 2) || !(pageRows >= 1)) {
+                    invalidOverride = true;
+                    return false;
+                }
+                pageRowsQuery += "&page_rows[" + pageNo + "]=" + pageRows;
+            });
+            if (invalidOverride) {
+                toastr.error("Custom pages need a page number of 2 or higher and at least 1 row", "Oops");
+                return;
             }
 
             const dateIssued = $("#service_date_issued").val();
@@ -477,8 +516,10 @@
                 return;
             }
 
+            const paperSize = $("#service_paper_size").val();
+
             window.open(
-                '{{ route('printServiceRecord') }}?id=' + employee_id + "&rows=" + rows + "&date_issued=" + dateIssued,
+                '{{ route('printServiceRecord') }}?id=' + employee_id + "&first_rows=" + firstRows + "&other_rows=" + otherRows + pageRowsQuery + "&date_issued=" + dateIssued + "&paper_size=" + paperSize,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
@@ -657,6 +698,7 @@
         is_other_loaded = false;
         is_reference_loaded = false;
         is_survey_loaded = false;
+        is_service_loaded = false;
         employee_modal.toggle();
 
         $(".tab-pane").removeClass("active");

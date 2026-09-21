@@ -895,20 +895,25 @@
                             <th>Vacation Leave</th>
                             <th>Sick Leave</th>
                         </tr>
+                        @php
+                            $creditCell = fn($code, $key) => isset($creditCertification[$code])
+                                ? number_format($creditCertification[$code][$key], 3)
+                                : '';
+                        @endphp
                         <tr>
                             <td class="italic">Total Earned</td>
-                            <td></td>
-                            <td></td>
+                            <td>{{ $creditCell('VL', 'total_earned') }}</td>
+                            <td>{{ $creditCell('SL', 'total_earned') }}</td>
                         </tr>
                         <tr>
                             <td class="italic">Less this application</td>
-                            <td></td>
-                            <td></td>
+                            <td>{{ $creditCell('VL', 'less') }}</td>
+                            <td>{{ $creditCell('SL', 'less') }}</td>
                         </tr>
                         <tr>
                             <td class="italic">Balance</td>
-                            <td></td>
-                            <td></td>
+                            <td>{{ $creditCell('VL', 'balance') }}</td>
+                            <td>{{ $creditCell('SL', 'balance') }}</td>
                         </tr>
                     </table>
 

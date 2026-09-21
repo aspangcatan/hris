@@ -40,8 +40,9 @@
                         <label>Monetizable</label>
                     </div>
                     <div class="form-floating mb-3">
-                        <input type="number" class="form-control" id="days_prior" min="0" step="1" placeholder="">
+                        <input type="number" class="form-control" id="days_prior" step="1" placeholder="">
                         <label>Days Prior</label>
+                        <div class="form-text">Working days of advance notice. Use a negative number (e.g. -1) to allow filing for past dates.</div>
                     </div>
                     <div class="form-floating mb-3">
                         <select class="form-control" id="commutation">

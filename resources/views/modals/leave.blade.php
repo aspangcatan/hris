@@ -290,6 +290,9 @@
                         <button type="button" class="btn btn-success" id="approveLeaveBtn" value="Approved">
                             <i class="bi bi-check-circle"></i> Approve
                         </button>
+                        <button type="button" class="btn btn-success d-none" id="acknowledgeLeaveBtn" value="Acknowledged">
+                            <i class="bi bi-eye-check"></i> I Acknowledge
+                        </button>
                     @endif
                     <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
                 </div>

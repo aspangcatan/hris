@@ -11,7 +11,10 @@
     const ROUTE_CREDIT_BAL     = "{{ route('getCreditBalances') }}";
     const ROUTE_CALENDAR_EVENTS = "{{ route('calendar.events') }}";
 
-    const USER_SEX = "{{ strtoupper(\App\Models\Employee::where('user_id', Auth::id())->value('sex') ?? '') }}";
+    // Credits deducted per filed hour — same minute_conversions source the server validates against
+    const CREDIT_PER_HOUR = {{ (float) app(\App\Services\MinuteConversionService::class)->computeDeduction(60) }};
+
+    const USER_SEX ="{{ strtoupper(\App\Models\Employee::where('user_id', Auth::id())->value('sex') ?? '') }}";
     const GENDER_RESTRICTED_TYPES = {
         female_only: ['maternity leave', 'gyne leave', 'vawc leave'],
         male_only: ['paternity leave'],
@@ -434,6 +437,12 @@
             toastr.error("At least one attachment is required for Maternity/Paternity Leave", "Required");
         }
 
+        // Weekends are not valid leave dates (also catches old applications loaded for editing)
+        if (date_applied_array.some(d => isWeekendIso(d.date_applied))) {
+            is_valid = false;
+            toastr.error("Weekend dates cannot be filed. Please remove or change them.", "Invalid date");
+        }
+
         // Guard: ensure hours filed per leave type do not exceed available balance.
         // Skipped entirely in LWOP mode — filing without credits is the whole point.
         const isLwop = $('#is_lwop_flag').val() === '1';
@@ -446,8 +455,8 @@
             for (const [typeId, totalHours] of Object.entries(hoursPerType)) {
                 const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
                 if (!lt) continue;
-                const availableHours = parseFloat(lt.balance) * 8 / 1.25;
-                if (totalHours > availableHours) {
+                const availableHours = parseFloat(lt.balance) / CREDIT_PER_HOUR;
+                if (Math.round(totalHours * CREDIT_PER_HOUR * 1000) > Math.round(parseFloat(lt.balance) * 1000)) {
                     is_valid = false;
                     toastr.error(
                         `Insufficient ${lt.description} credits. You have ${availableHours.toFixed(2)} hrs available but are filing ${totalHours} hrs.`,
@@ -614,25 +623,52 @@
         return ids;
     }
 
-    // Returns the ISO date string (YYYY-MM-DD) of the earliest allowed leave date
-    // based on the highest days_prior among types currently selected in date rows.
-    function getMinLeaveDate() {
-        let maxPrior = 0;
-        getSelectedLeaveTypeIds().forEach(lid => {
-            const lt = LEAVE_TYPES.find(t => t.id === lid);
-            if (lt && lt.days_prior > maxPrior) maxPrior = lt.days_prior;
-        });
+    // Advance notice (days_prior) is counted in working days — weekends are skipped.
+    // Returns the local ISO date (YYYY-MM-DD) that many working days from today.
+    function addWorkingDaysFromToday(workingDays) {
         const d = new Date();
-        d.setDate(d.getDate() + maxPrior);
-        return d.toISOString().split('T')[0];
+        while (workingDays > 0) {
+            d.setDate(d.getDate() + 1);
+            if (d.getDay() !== 0 && d.getDay() !== 6) workingDays--;
+        }
+        return toLocalIsoDate(d);
     }
 
-    // Updates the min attribute on all existing date rows; clears values that fall before the new min.
+    function isWeekendIso(iso) {
+        const day = new Date(iso + 'T00:00:00').getDay();
+        return day === 0 || day === 6;
+    }
+
+    // Weekends are not valid leave dates. Native date inputs cannot grey out
+    // weekdays in the picker, so a weekend pick is rejected and cleared here.
+    $(document).on('change', "#dates_table_body input[type='date']", function () {
+        const val = $(this).val();
+        if (val && isWeekendIso(val)) {
+            $(this).val('');
+            toastr.error("Weekends cannot be selected. Please pick a weekday.", "Invalid date");
+        }
+    });
+
+    // Earliest selectable date (YYYY-MM-DD) for a leave type, or '' for no limit.
+    // A negative days_prior (e.g. Sick Leave, filed on return) means backdating is
+    // allowed, so there is no limit; the rest need days_prior working days of notice.
+    function minDateForType(lt) {
+        if (lt && parseInt(lt.days_prior, 10) < 0) return '';
+        return addWorkingDaysFromToday(lt ? lt.days_prior : 0);
+    }
+
+    function setDateMin($input, minDate) {
+        if (minDate) $input.attr('min', minDate); else $input.removeAttr('min');
+    }
+
+    // Each date row's min follows that row's own leave type; clears values that fall before it.
     function updateDateInputMins() {
-        const minDate = getMinLeaveDate();
-        $("#dates_table_body input[type='date']").each(function () {
-            $(this).attr('min', minDate);
-            if ($(this).val() && $(this).val() < minDate) $(this).val('');
+        $("#dates_table_body tr").each(function () {
+            const lt = LEAVE_TYPES.find(t => t.id === parseInt($(this).find('.date-leave-type').val(), 10));
+            const minDate = minDateForType(lt);
+            const $date = $(this).find("input[type='date']");
+            setDateMin($date, minDate);
+            if (minDate && $date.val() && $date.val() < minDate) $date.val('');
         });
     }
 
@@ -646,7 +682,7 @@
     }
 
     function addRow(selectedLeaveTypeId) {
-        const minDate = getMinLeaveDate();
+        const minDate = minDateForType(LEAVE_TYPES.find(t => t.id === selectedLeaveTypeId));
         const opts    = buildLeaveTypeOptions(selectedLeaveTypeId || null);
         $("#dates_table_body").append(`
         <tr>
@@ -656,7 +692,7 @@
                     ${opts}
                 </select>
             </td>
-            <td><input type="date" class="form-control form-control-sm" name="leave_dates[]" min="${minDate}"></td>
+            <td><input type="date" class="form-control form-control-sm" name="leave_dates[]" ${minDate ? `min="${minDate}"` : ''}></td>
             <td>
                 <select class="form-control form-control-sm" name="leave_hours[]">
                     <option value="4">4</option>
@@ -711,20 +747,16 @@
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
-    // Minimum allowed start date for the range panel, scoped to its own
-    // selected leave type (not the whole table's rows, unlike getMinLeaveDate()).
+    // Minimum allowed start date for the range panel ('' = no limit), scoped to its own selected leave type.
     function getRangeMinDate() {
         const lid = parseInt($("#range_leave_type").val());
-        const lt = LEAVE_TYPES.find(t => t.id === lid);
-        const d = new Date();
-        d.setDate(d.getDate() + (lt ? lt.days_prior : 0));
-        return toLocalIsoDate(d);
+        return minDateForType(LEAVE_TYPES.find(t => t.id === lid));
     }
 
     $(document).on('change', '#range_leave_type', function () {
         const minDate = getRangeMinDate();
-        $("#range_start_date").attr('min', minDate);
-        if ($("#range_start_date").val() && $("#range_start_date").val() < minDate) $("#range_start_date").val('');
+        setDateMin($("#range_start_date"), minDate);
+        if (minDate && $("#range_start_date").val() && $("#range_start_date").val() < minDate) $("#range_start_date").val('');
     });
 
     $(document).on('change', '#range_start_date', function () {
@@ -1158,19 +1190,12 @@
     }
 
     function updateStepStatus(selector, approval) {
-        $(selector).removeClass("approved rejected pending");
-        $(selector + " .circle").removeClass("approved rejected pending");
+        $(selector).removeClass("approved rejected pending acknowledged");
+        $(selector + " .circle").removeClass("approved rejected pending acknowledged");
 
-        if (approval?.status === 'approved') {
-            $(selector).addClass("approved");
-            $(selector + " .circle").addClass("approved");
-        } else if (approval?.status === 'rejected') {
-            $(selector).addClass("rejected");
-            $(selector + " .circle").addClass("rejected");
-        } else {
-            $(selector).addClass("pending");
-            $(selector + " .circle").addClass("pending");
-        }
+        const status = ['approved', 'rejected', 'acknowledged'].includes(approval?.status) ? approval.status : 'pending';
+        $(selector).addClass(status);
+        $(selector + " .circle").addClass(status);
     }
 
     function initApplicantSignaturePad() {

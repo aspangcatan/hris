@@ -191,7 +191,8 @@ class LeaveApplicationController extends Controller
                 $request->remarks,
                 $request->status,
                 $validated['disapproved_dates'] ?? [],
-                $validated['signature'] ?? null
+                $validated['signature'] ?? null,
+                $request->boolean('overturn_rejection')
             );
             return response()->json(['message' => 'Update status done']);
         } catch (\Exception $exception) {

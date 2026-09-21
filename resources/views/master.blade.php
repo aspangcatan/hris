@@ -481,7 +481,7 @@
         <link href="{{ asset('assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
         <link href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
         <!-- Template Main CSS File -->
-        <link href="{{ asset('css/style.css?v=2') }}" rel="stylesheet">
+        <link href="{{ asset('css/style.css?v=3') }}" rel="stylesheet">
         <link href="{{ asset('css/toastr.min.css') }}" rel="stylesheet">
         <link href="{{ asset('css/select2.min.css') }}" rel="stylesheet">
         <link href="{{ asset('css/progress.css') }}" rel="stylesheet">

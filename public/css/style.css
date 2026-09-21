@@ -100,7 +100,8 @@
     color: white;
 }
 
-.steps .circle.approved {
+.steps .circle.approved,
+.steps .circle.acknowledged {
     background: #0d6efd;
     color: white;
 }
@@ -110,7 +111,8 @@
     color: white;
 }
 
-.steps .step.approved::after {
+.steps .step.approved::after,
+.steps .step.acknowledged::after {
     background: #0d6efd;
 }
 

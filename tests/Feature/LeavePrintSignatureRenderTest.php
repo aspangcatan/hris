@@ -55,6 +55,7 @@ class LeavePrintSignatureRenderTest extends TestCase
         DB::table('hris.leave_date_applied')->whereIn('leave_application_id', $appIds)->delete();
         DB::table('hris.leave_application_approvals')->whereIn('leave_application_id', $appIds)->delete();
         DB::table('hris.leave_applications')->whereIn('id', $appIds)->delete();
+        DB::table('hris.leave_credits')->where('user_id', $this->employeeId)->delete();
     }
 
     private function seedApplication(?string $applicantSignature, ?string $shStatus, ?string $shSignature): int
@@ -152,5 +153,83 @@ class LeavePrintSignatureRenderTest extends TestCase
         $response = $this->get('/print_leave?id=' . $appId);
         $response->assertOk();
         $response->assertDontSee($this->shSignature, false);
+    }
+
+    /** Seeds VL/SL credits and a Sick Leave application deducting $sickCredits, at $status. */
+    private function seedCreditCertification(string $status, float $sickBasedNow, float $sickCredits, float $vacationBasedNow): int
+    {
+        $sickId    = DB::table('hris.leave_types')->where('code', 'SL')->value('id');
+        $vacationId = DB::table('hris.leave_types')->where('code', 'VL')->value('id');
+
+        DB::table('hris.leave_credits')->insert([
+            ['user_id' => $this->employeeId, 'leave_id' => $sickId,     'based_credit' => $sickBasedNow,     'used_credit' => 0, 'last_updated_month' => '2027-1'],
+            ['user_id' => $this->employeeId, 'leave_id' => $vacationId, 'based_credit' => $vacationBasedNow, 'used_credit' => 0, 'last_updated_month' => '2027-1'],
+        ]);
+
+        $appId = $this->seedApplication($this->applicantSignature, null, null);
+        DB::table('hris.leave_applications')->where('id', $appId)->update(['status' => $status]);
+        DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)->update([
+            'leave_type_id' => $sickId,
+            'hours' => 24,
+            'credits_deducted' => $sickCredits,
+        ]);
+
+        return $appId;
+    }
+
+    /** @test */
+    public function certification_of_leave_credits_shows_earned_less_and_balance_for_vl_and_sl(): void
+    {
+        $this->loginAsEmployee();
+        // SL: 3.000 already deducted, 7.000 left -> earned before = 10.000. VL untouched at 5.000.
+        $appId = $this->seedCreditCertification('Approved', 7.000, 3.000, 5.000);
+
+        $response = $this->get('/print_leave?id=' . $appId);
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            'Total Earned', '<td>5.000</td>', '<td>10.000</td>',
+            'Less this application', '<td>0.000</td>', '<td>3.000</td>',
+            'Balance', '<td>5.000</td>', '<td>7.000</td>',
+        ], false);
+    }
+
+    /** @test */
+    public function certification_of_leave_credits_ignores_a_rejected_applications_restored_credits(): void
+    {
+        $this->loginAsEmployee();
+        // Rejected: the 3.000 was given back, so SL is already back at 10.000 and nothing is "less".
+        $appId = $this->seedCreditCertification('Rejected', 10.000, 3.000, 5.000);
+
+        $response = $this->get('/print_leave?id=' . $appId);
+
+        $response->assertOk();
+        $response->assertSeeInOrder([
+            'Total Earned', '<td>5.000</td>', '<td>10.000</td>',
+            'Less this application', '<td>0.000</td>', '<td>0.000</td>',
+            'Balance', '<td>5.000</td>', '<td>10.000</td>',
+        ], false);
+    }
+
+    /** @test */
+    public function certification_of_leave_credits_excludes_disapproved_and_cancelled_dates(): void
+    {
+        $this->loginAsEmployee();
+        $appId = $this->seedCreditCertification('Approved', 9.000, 1.000, 5.000);
+        $sickId = DB::table('hris.leave_types')->where('code', 'SL')->value('id');
+        DB::table('hris.leave_date_applied')->insert([
+            ['leave_application_id' => $appId, 'leave_type_id' => $sickId, 'date_applied' => '2027-04-02', 'hours' => 8, 'status' => 'active', 'credits_deducted' => 1.000, 'final_disapproved' => 1],
+            ['leave_application_id' => $appId, 'leave_type_id' => $sickId, 'date_applied' => '2027-04-05', 'hours' => 8, 'status' => 'cancelled', 'credits_deducted' => 1.000, 'final_disapproved' => 0],
+        ]);
+        DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)->where('date_applied', '2027-04-01')->update(['hours' => 8]);
+
+        $response = $this->get('/print_leave?id=' . $appId);
+
+        $response->assertOk();
+        // Only the one live 1.000 counts: earned before = 9.000 + 1.000
+        $response->assertSeeInOrder([
+            'Less this application', '<td>0.000</td>', '<td>1.000</td>',
+            'Balance', '<td>5.000</td>', '<td>9.000</td>',
+        ], false);
     }
 }

@@ -15,5 +15,9 @@
     },
     "bookman": {
         "800": "bookman_800_c633f29fac11966601632a5c43dcb6a0"
+    },
+    "corbel": {
+        "normal": "C:\\wamp64\\projects\\hris\\storage\\fonts\/corbel_normal_de57f7a3878a2df7a07ea4477fdcd027",
+        "bold": "corbel_bold_5afc661ef357644f864d9303af43d908"
     }
 }

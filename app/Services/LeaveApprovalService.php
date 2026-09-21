@@ -85,6 +85,9 @@ class LeaveApprovalService
                       FROM hris.leave_date_applied lda
                       INNER JOIN hris.leave_types lt ON lda.leave_type_id = lt.id
                       WHERE lda.leave_application_id = la.id) as description"),
+            DB::raw("(SELECT GROUP_CONCAT(DISTINCT lda2.date_applied ORDER BY lda2.date_applied SEPARATOR ',')
+                      FROM hris.leave_date_applied lda2
+                      WHERE lda2.leave_application_id = la.id) as dates_applied"),
             DB::raw("(SELECT ld2.detail FROM hris.leave_details ld2
                       WHERE ld2.leave_application_id = la.id LIMIT 1) as detail"),
             'la.status',
@@ -167,7 +170,7 @@ class LeaveApprovalService
                                 ->whereColumn('lp2.leave_application_id', 'la.id')
                                 ->whereIn('lp2.role', ['HR', 'HR_COMPLIANCE'])
                                 ->where('lp2.approver_id', 15)
-                                ->where('lp2.status', 'approved');
+                                ->whereIn('lp2.status', ['approved', 'acknowledged']);
                         });
                     }
                 });
@@ -249,17 +252,20 @@ class LeaveApprovalService
             return false;
         }
 
+        // A later stage that already acted (approved OR rejected) locks this one. Undoing
+        // an approval underneath a later rejection would leave the chain inconsistent,
+        // e.g. SH pending with DH rejected.
         return !DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $leaveId)
             ->where('order_no', '>', $myApproval->order_no)
-            ->whereRaw('LOWER(status) = ?', ['approved'])
+            ->whereRaw('LOWER(status) IN (?, ?)', ['approved', 'rejected'])
             ->exists();
     }
 
     public function undoApproval(int $leaveId): void
     {
         if (!$this->canUndoApproval($leaveId)) {
-            throw new \RuntimeException('You are not allowed to undo this approval, or a subsequent stage has already approved.');
+            throw new \RuntimeException('You are not allowed to undo this approval, or a later stage has already approved or rejected it.');
         }
 
         $myApproval = $this->findUserApprovedStep($leaveId);
@@ -270,6 +276,7 @@ class LeaveApprovalService
                 ->where('role', $myApproval->role)
                 ->update([
                     'status'      => 'pending',
+                    'remarks'     => null,   // the approval is withdrawn, so its remarks go too
                     'approved_at' => null,
                     'signature'   => null,
                     'updated_at'  => Carbon::now(),
@@ -287,7 +294,11 @@ class LeaveApprovalService
         });
     }
 
-    public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null, array $disapprovedDates = [], ?string $signature = null): void
+    /**
+     * @param bool $overturnRejection Explicit confirmation that a later approver is approving a leave
+     *                                an earlier approver rejected. Without it, that approval is refused.
+     */
+    public function updateApprovalStatus(int $leave_id, ?string $role = null, ?string $remarks = null, ?string $status = null, array $disapprovedDates = [], ?string $signature = null, bool $overturnRejection = false): void
     {
         $app = DB::table('hris.leave_applications')->where('id', $leave_id)->first(['id']);
         if (!$app) {
@@ -295,10 +306,16 @@ class LeaveApprovalService
         }
 
         $normalizedStatus = strtolower(trim($status ?? ''));
-        $allowedStatuses  = ['pending', 'approved', 'rejected'];
+        $allowedStatuses  = ['pending', 'approved', 'rejected', 'acknowledged'];
 
         if (!in_array($normalizedStatus, $allowedStatuses, true)) {
             throw new \InvalidArgumentException('Invalid approval status.');
+        }
+
+        // Blank remarks default to the action taken so the remarks history is never incomplete.
+        $remarks = trim((string) $remarks);
+        if ($remarks === '') {
+            $remarks = ['approved' => 'Approved', 'rejected' => 'Rejected', 'acknowledged' => 'Acknowledged'][$normalizedStatus] ?? null;
         }
 
         $effectiveRole = $role ?: $this->resolveCurrentApprovalRoleForLeave($leave_id);
@@ -311,7 +328,7 @@ class LeaveApprovalService
             throw new \InvalidArgumentException('A signature is required to approve this leave application.');
         }
 
-        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates, $signature, $requiresSignature) {
+        DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates, $signature, $requiresSignature, $overturnRejection) {
             // Enforce chain order generically: every earlier step (by
             // order_no) must already be approved before this role's step
             // can be acted on. Works for both the 3-step (SH/DH/HR) and
@@ -323,14 +340,49 @@ class LeaveApprovalService
                 ->where('role', $effectiveRole)
                 ->value('order_no');
 
-            $priorIncomplete = DB::table('hris.leave_application_approvals')
+            $priorByRole = DB::table('hris.leave_application_approvals')
                 ->where('leave_application_id', $leave_id)
                 ->where('order_no', '<', $myOrderNo)
-                ->whereRaw('LOWER(status) != ?', ['approved'])
-                ->exists();
+                ->pluck('status', 'role')
+                ->map(fn($s) => strtolower($s));
+            $priorStatuses = $priorByRole->values();
 
-            if ($priorIncomplete) {
+            // A prior step that is neither approved nor rejected is still pending.
+            if ($priorStatuses->contains(fn($s) => !in_array($s, ['approved', 'rejected'], true))) {
                 throw new \RuntimeException('A prior approval step must be completed first.');
+            }
+
+            $leaveIsRejected = strtolower((string) DB::table('hris.leave_applications')->where('id', $leave_id)->value('status')) === 'rejected';
+
+            // A Division Head rejection is final: nobody can overturn it. HR can only
+            // acknowledge it, which records that HR has seen it and changes nothing else.
+            // This depends on the DH's step, not the leave's status, so records left in an
+            // inconsistent state (DH rejected, leave Pending) are still covered.
+            $dhRejected = ($priorByRole['DH'] ?? null) === 'rejected';
+            if ($normalizedStatus === 'acknowledged') {
+                if ($effectiveRole !== 'HR' || !$dhRejected) {
+                    throw new \RuntimeException('Only HR can acknowledge a leave the Division Head rejected.');
+                }
+            } elseif ($dhRejected) {
+                throw new \RuntimeException('The Division Head rejected this leave. That decision is final and cannot be overturned; HR can only acknowledge it.');
+            }
+
+            // Any other prior rejection (e.g. the Section Head's): while the leave is still
+            // marked Rejected, only an explicitly confirmed approval may overturn it. Once
+            // overturned the leave is Pending again and the old rejection stays in the
+            // history without blocking the chain.
+            if ($normalizedStatus !== 'acknowledged' && $priorStatuses->contains('rejected') && $leaveIsRejected) {
+                if ($normalizedStatus !== 'approved') {
+                    throw new \RuntimeException('A prior approver already rejected this leave.');
+                }
+                if (!$overturnRejection) {
+                    throw new \RuntimeException('A prior approver rejected this leave. Confirm to overturn the rejection.');
+                }
+
+                $this->redeductCredits($leave_id);
+                DB::table('hris.leave_applications')
+                    ->where('id', $leave_id)
+                    ->update(['status' => 'Pending', 'updated_at' => Carbon::now()]);
             }
 
             $approvalUpdate = [
@@ -347,6 +399,18 @@ class LeaveApprovalService
                 ->where('leave_application_id', $leave_id)
                 ->where('role', $effectiveRole)
                 ->update($approvalUpdate);
+
+            if ($normalizedStatus === 'acknowledged') {
+                // The leave stays Rejected with its credits returned. If it was left in any other
+                // state (e.g. Pending with credits deducted), put it back to that outcome.
+                if (!$leaveIsRejected) {
+                    $this->restoreCredits($leave_id);
+                    DB::table('hris.leave_applications')
+                        ->where('id', $leave_id)
+                        ->update(['status' => 'Rejected', 'updated_at' => Carbon::now()]);
+                }
+                return;
+            }
 
             if ($normalizedStatus === 'rejected') {
                 $this->restoreCredits($leave_id);
@@ -366,6 +430,42 @@ class LeaveApprovalService
                     ->update(['status' => 'Approved', 'updated_at' => Carbon::now()]);
             }
         });
+    }
+
+    /**
+     * Reverse of restoreCredits(): deducts a rejected leave's credits again when a
+     * later approver overturns the rejection. Fails if the balance no longer covers it.
+     */
+    private function redeductCredits(int $leaveId): void
+    {
+        $app = DB::table('hris.leave_applications')->where('id', $leaveId)->first(['id', 'user_id']);
+
+        $creditsByType = DB::table('hris.leave_date_applied')
+            ->where('leave_application_id', $leaveId)
+            ->where('final_disapproved', 0)
+            ->get(['leave_type_id', 'credits_deducted'])
+            ->groupBy('leave_type_id');
+
+        foreach ($creditsByType as $typeId => $rows) {
+            $needed = (float) $rows->sum('credits_deducted');
+            if (!$typeId || $needed <= 0) continue;
+
+            $credit = DB::table('hris.leave_credits')
+                ->where('user_id', $app->user_id)
+                ->where('leave_id', $typeId)
+                ->lockForUpdate()
+                ->first(['based_credit', 'used_credit']);
+
+            if (!$credit || round($credit->based_credit - $credit->used_credit, 3) < round($needed, 3)) {
+                $description = DB::table('hris.leave_types')->where('id', $typeId)->value('description');
+                throw new \RuntimeException("Cannot overturn the rejection: the employee no longer has enough {$description} credits ({$needed} needed).");
+            }
+
+            DB::table('hris.leave_credits')
+                ->where('user_id', $app->user_id)
+                ->where('leave_id', $typeId)
+                ->decrement('based_credit', $needed);
+        }
     }
 
     private function restoreCredits(int $leaveId): void

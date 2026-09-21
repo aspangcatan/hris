@@ -12,7 +12,8 @@
         })
             .then(res => res.json())
             .then(data => {
-                console.log(data);
+                // Ignore a late response if another employee was opened in the meantime
+                if (id != employee_id) return;
                 $("#service_loading_row").remove();
                 if (data.code == 500) {
                     alert(data.message);
