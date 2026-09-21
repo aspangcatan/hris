@@ -119,7 +119,9 @@
 </head>
 <body>
 <img class="letterhead-bg" src="img/service_records_letterhead.jpg"/>
-@include('pdf.service_records_header')
+{{-- The letterhead is stretched to the page, so its header grows with the paper height;
+     the 122pt title offset was set for Letter (792pt), so scale it to keep clear of the red line. --}}
+@include('pdf.service_records_header', ['header_padding_top' => round(122 * $page_height / 792, 1)])
 <div style="padding-left: 10px;padding-right: 10px">
     <table class="border-dark">
         <tr class="text-v-center text-center">
