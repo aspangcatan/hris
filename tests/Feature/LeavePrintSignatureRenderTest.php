@@ -212,6 +212,54 @@ class LeavePrintSignatureRenderTest extends TestCase
     }
 
     /** @test */
+    public function printed_days_and_inclusive_dates_leave_out_a_disapproved_date(): void
+    {
+        $this->loginAsEmployee();
+        $sickId     = DB::table('hris.leave_types')->where('code', 'SL')->value('id');
+        $vacationId = DB::table('hris.leave_types')->where('code', 'VL')->value('id');
+
+        // Two 10-hour dates: Sick Leave (kept) and Vacation Leave (disapproved by the DH)
+        $appId = $this->seedApplication($this->applicantSignature, null, null);
+        DB::table('hris.leave_applications')->where('id', $appId)->update(['status' => 'Approved']);
+        DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)
+            ->update(['leave_type_id' => $sickId, 'date_applied' => '2027-04-01', 'hours' => 10]);
+        DB::table('hris.leave_date_applied')->insert([
+            'leave_application_id' => $appId, 'leave_type_id' => $vacationId, 'date_applied' => '2027-04-05',
+            'hours' => 10, 'status' => 'active', 'credits_deducted' => 1.250, 'final_disapproved' => 1,
+        ]);
+
+        $response = $this->get('/print_leave?id=' . $appId);
+
+        $response->assertOk();
+        $response->assertSee('1.25 day(s) (10 hrs)', false);
+        $response->assertDontSee('2.5 day(s)', false);
+        $response->assertSee('Apr. 01 2027', false);
+        $response->assertDontSee('Apr. 01, 05', false);
+    }
+
+    /** @test */
+    public function a_leave_type_whose_only_date_was_disapproved_is_not_ticked_on_the_form(): void
+    {
+        $this->loginAsEmployee();
+        $sickId     = DB::table('hris.leave_types')->where('code', 'SL')->value('id');
+        $vacationId = DB::table('hris.leave_types')->where('code', 'VL')->value('id');
+
+        $appId = $this->seedApplication($this->applicantSignature, null, null);
+        DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)
+            ->update(['leave_type_id' => $sickId, 'date_applied' => '2027-04-01', 'hours' => 8]);
+        DB::table('hris.leave_date_applied')->insert([
+            'leave_application_id' => $appId, 'leave_type_id' => $vacationId, 'date_applied' => '2027-04-05',
+            'hours' => 8, 'status' => 'active', 'credits_deducted' => 1.000, 'final_disapproved' => 1,
+        ]);
+
+        $html = $this->get('/print_leave?id=' . $appId)->getContent();
+
+        // Each leave type row prints as: <span class="check">X|</span> ... <label>Type</label>
+        $this->assertMatchesRegularExpression('/<span class="check">X<\/span>\s*<span class="option-copy">\s*Sick Leave/', $html);
+        $this->assertDoesNotMatchRegularExpression('/<span class="check">X<\/span>\s*<span class="option-copy">\s*Vacation Leave/', $html);
+    }
+
+    /** @test */
     public function certification_of_leave_credits_excludes_disapproved_and_cancelled_dates(): void
     {
         $this->loginAsEmployee();

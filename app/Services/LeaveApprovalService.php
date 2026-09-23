@@ -233,7 +233,8 @@ class LeaveApprovalService
 
         $myApproval = null;
         foreach ($approvals as $approval) {
-            if (strtolower($approval->status) !== 'approved') {
+            // HR's step is "acknowledged" rather than "approved"; both can be undone by their owner
+            if (!in_array(strtolower($approval->status), ['approved', 'acknowledged'], true)) {
                 continue;
             }
             if ($this->canApprovePendingStep($approval, $user)) {
@@ -354,14 +355,14 @@ class LeaveApprovalService
 
             $leaveIsRejected = strtolower((string) DB::table('hris.leave_applications')->where('id', $leave_id)->value('status')) === 'rejected';
 
-            // A Division Head rejection is final: nobody can overturn it. HR can only
-            // acknowledge it, which records that HR has seen it and changes nothing else.
-            // This depends on the DH's step, not the leave's status, so records left in an
+            // HR's step is an acknowledgement of whatever the Division Head decided. A Division
+            // Head rejection is final: nobody can overturn it, HR only acknowledges it. This
+            // depends on the DH's step, not the leave's status, so records left in an
             // inconsistent state (DH rejected, leave Pending) are still covered.
             $dhRejected = ($priorByRole['DH'] ?? null) === 'rejected';
             if ($normalizedStatus === 'acknowledged') {
-                if ($effectiveRole !== 'HR' || !$dhRejected) {
-                    throw new \RuntimeException('Only HR can acknowledge a leave the Division Head rejected.');
+                if ($effectiveRole !== 'HR') {
+                    throw new \RuntimeException('Only HR can acknowledge a leave.');
                 }
             } elseif ($dhRejected) {
                 throw new \RuntimeException('The Division Head rejected this leave. That decision is final and cannot be overturned; HR can only acknowledge it.');
@@ -401,9 +402,14 @@ class LeaveApprovalService
                 ->update($approvalUpdate);
 
             if ($normalizedStatus === 'acknowledged') {
-                // The leave stays Rejected with its credits returned. If it was left in any other
-                // state (e.g. Pending with credits deducted), put it back to that outcome.
-                if (!$leaveIsRejected) {
+                if (!$dhRejected) {
+                    // Acknowledging a leave the Division Head approved is HR's final step.
+                    DB::table('hris.leave_applications')
+                        ->where('id', $leave_id)
+                        ->update(['status' => 'Approved', 'updated_at' => Carbon::now()]);
+                } elseif (!$leaveIsRejected) {
+                    // DH-rejected: the leave stays Rejected with its credits returned. If it was left
+                    // in any other state (e.g. Pending with credits deducted), put it back to that.
                     $this->restoreCredits($leave_id);
                     DB::table('hris.leave_applications')
                         ->where('id', $leave_id)

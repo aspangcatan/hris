@@ -417,7 +417,21 @@ class PrintController extends Controller
             ];
         });
 
-        $selectedLeaveIds = $leaveTypeRows->pluck('leave_id')->map(fn($id) => (int) $id)->toArray();
+        // Dates the Division Head disapproved (or that were cancelled) are not part of what is
+        // being availed of, so a leave type whose every date was disapproved is not ticked and
+        // its details are not printed. Details are still paired to types above using ALL types,
+        // since that pairing is by position.
+        $activeTypeIds = DB::table('hris.leave_date_applied')
+            ->where('leave_application_id', $request->id)
+            ->where('status', '!=', 'cancelled')
+            ->where('final_disapproved', 0)
+            ->distinct()
+            ->pluck('leave_type_id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+        $leaveDetails = $leaveDetails->filter(fn($ld) => in_array((int) $ld->leave_id, $activeTypeIds, true))->values();
+
+        $selectedLeaveIds = $leaveDetails->pluck('leave_id')->map(fn($id) => (int) $id)->toArray();
 
         $sectionHeadApproval = DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $request->id)
@@ -444,6 +458,7 @@ class PrintController extends Controller
         $dates_applied = DB::table('leave_date_applied')
             ->where('leave_application_id', $leave_application->id)
             ->where('status', '!=', 'cancelled')
+            ->where('final_disapproved', 0)
             ->orderBy('date_applied', 'ASC')
             ->get(['date_applied', 'hours']);
 

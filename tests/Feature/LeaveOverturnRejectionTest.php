@@ -225,6 +225,33 @@ class LeaveOverturnRejectionTest extends TestCase
     }
 
     /** @test */
+    public function hr_acknowledging_a_dh_approved_leave_completes_it(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->employeeId);
+        Auth::shouldReceive('user')->andReturn((object) ['id' => $this->employeeId, 'section' => $this->sectionId, 'division' => $this->divisionId]);
+        Auth::shouldReceive('check')->andReturn(true);
+
+        $appId = app(LeaveApplicationService::class)->insertLeaveApplication([
+            'commutation' => 'Not Requested',
+            'dates' => [['date_applied' => '2027-03-01', 'hours' => 8, 'leave_type_id' => $this->leaveTypeId]],
+            'applicant_signature' => $this->sampleSignature,
+        ]);
+        $appId = is_array($appId) ? ($appId['id'] ?? reset($appId)) : $appId;
+
+        $service = app(LeaveApprovalService::class);
+        $service->updateApprovalStatus($appId, 'SH', null, 'approved', [], $this->sampleSignature);
+        $service->updateApprovalStatus($appId, 'DH', null, 'approved', [], $this->sampleSignature);
+        $this->assertEquals('pending', strtolower($this->appStatus($appId)));
+
+        $service->updateApprovalStatus($appId, 'HR', null, 'acknowledged');
+
+        $this->assertEquals('acknowledged', $this->stepStatus($appId, 'HR'));
+        $this->assertSame('Acknowledged', $this->stepRemarks($appId, 'HR'));
+        $this->assertEquals('Approved', $this->appStatus($appId), 'the acknowledgement completes the leave');
+        $this->assertEquals(9.0, $this->balance(), 'credits stay deducted');
+    }
+
+    /** @test */
     public function acknowledging_repairs_a_dh_rejected_leave_that_was_left_pending_with_credits_deducted(): void
     {
         // Left over from before DH rejections were final: HR overturned, then undid, leaving the

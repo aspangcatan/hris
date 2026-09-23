@@ -303,9 +303,9 @@
         const canAct = activeFilter === 'pending';
         current_approval_role = data.current_approval_role;
 
-        // A Division Head rejection is final. HR can't approve or reject it, only acknowledge it.
-        const acknowledgeOnly = canAct && current_approval_role === 'HR'
-            && getPriorRejections().some(r => r.label === 'Division Head');
+        // HR's step is an acknowledgement of the Division Head's decision, whatever it was,
+        // so HR gets "I Acknowledge" instead of Approve/Reject. (HR Compliance keeps approve/reject.)
+        const acknowledgeOnly = canAct && current_approval_role === 'HR';
         $('#approveLeaveBtn, #rejectLeaveBtn').toggle(canAct && !acknowledgeOnly);
         $('#acknowledgeLeaveBtn').toggleClass('d-none', !acknowledgeOnly).toggle(acknowledgeOnly);
         $('#undoApprovalBtn').toggleClass('d-none', !data.can_undo);

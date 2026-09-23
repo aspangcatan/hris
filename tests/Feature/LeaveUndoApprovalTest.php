@@ -102,6 +102,25 @@ class LeaveUndoApprovalTest extends TestCase
     }
 
     /** @test */
+    public function hr_can_undo_an_acknowledgement(): void
+    {
+        Auth::shouldReceive('id')->andReturn($this->shUserId);
+        Auth::shouldReceive('user')->andReturn((object) ['id' => $this->shUserId, 'section' => 0, 'division' => 0]);
+        session(['access_rights' => 'HR', 'is_section_head' => false, 'is_division_head' => false]);
+
+        $appId = $this->seedApplication('Approved', 'approved', 'approved', 'acknowledged');
+        DB::table('hris.leave_application_approvals')->where('leave_application_id', $appId)->where('role', 'HR')->update(['remarks' => 'Acknowledged']);
+
+        $service = app(LeaveApprovalService::class);
+        $this->assertTrue($service->canUndoApproval($appId));
+
+        $service->undoApproval($appId);
+
+        $this->assertEquals('pending', $this->stepStatus($appId, 'HR'));
+        $this->assertEquals('Pending', DB::table('hris.leave_applications')->where('id', $appId)->value('status'));
+    }
+
+    /** @test */
     public function an_approver_cannot_undo_after_a_later_step_approved(): void
     {
         $this->actAsSh();
