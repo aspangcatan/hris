@@ -174,7 +174,7 @@
         @endif
 
         {{-- LEAVE MANAGEMENT --}}
-        @if(true)
+        @if(false)
             @if(permission_check('leave.file') || permission_check('leave.approve'))
                 <li class="nav-heading">Leave Management</li>
                 @permission('leave.file')
