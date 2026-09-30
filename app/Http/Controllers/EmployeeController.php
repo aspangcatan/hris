@@ -56,6 +56,7 @@ class EmployeeController extends Controller
             $user->mname = $request->mname;
             $user->lname = $request->lname;
             $user->suffix = $request->suffix;
+            $user->status = $this->userStatusForEmployeeType($request->employee_type);
             $user->save();
 
             $employee = Employee::where('user_id', $target_user_id)->first();
@@ -180,10 +181,18 @@ class EmployeeController extends Controller
             $employee->date_hired = $request->date_hired;
             $employee->date_resigned = $request->date_resigned;
             $employee->save();
+            User::where('id', $employee->user_id)
+                ->update(['status' => $this->userStatusForEmployeeType($request->employee_type)]);
             return response(['code' => 200, 'message' => "Employee status updated"]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
+    }
+
+    // Resigned/Retired employees are deactivated in tdh_user.users; all others are active.
+    private function userStatusForEmployeeType($employee_type)
+    {
+        return in_array($employee_type, ['Resigned', 'Retired'], true) ? 0 : 1;
     }
 
     public function getEmployees(Request $request)
