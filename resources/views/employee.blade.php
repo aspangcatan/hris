@@ -193,13 +193,21 @@
                 <div class="col-md-3">
                     <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
                 </div>
-                <div class="col-md-3 d-flex align-items-center">
+                <div class="col-md-3 d-flex flex-column justify-content-center gap-1">
                     <div class="form-check mb-0">
                         <input class="form-check-input" type="checkbox" id="filter_no_employee_no">
                         <label class="form-check-label" for="filter_no_employee_no">
                             No Employee No.
                         </label>
                     </div>
+                    @permission('reorientation.check')
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="filter_reo_pending">
+                        <label class="form-check-label" for="filter_reo_pending">
+                            Re-Orientation for checking
+                        </label>
+                    </div>
+                    @endpermission
                 </div>
                 <div class="col-md-3">
                     <button class="btn btn-action btn-view w-100" id="btn_search">

@@ -25,6 +25,12 @@
             </a>
         </li>
         @endpermission
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('reorientation') ? '' : 'collapsed' }}" href="{{ route('reorientation') }}">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>Re-Orientation</span>
+            </a>
+        </li>
 
         {{-- DTR MANAGEMENT --}}
         <li class="nav-heading">DTR Management</li>

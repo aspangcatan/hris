@@ -11,6 +11,7 @@
 @include('js.survey')
 @include('js.service_record')
 @include('js.leave_credits')
+@include('js.employee_reorientation')
 <script>
     const CAN_MANAGE_LEAVE_CREDITS = @json(permission_check('leave.manage_credits'));
 
@@ -204,7 +205,7 @@
             getEmployee({fname: fname, lname: lname, page: page, no_employee_no: no_employee_no});
         });
 
-        $("#filter_no_employee_no").change(function () {
+        $("#filter_no_employee_no, #filter_reo_pending").change(function () {
             page = 1;
             employee_id = 0;
             const fname = $("#search_fname").val().trim();
@@ -578,6 +579,9 @@
                     break;
                 case "#payroll":
                     getPayrollSettings(employee_id);
+                    break;
+                case "#reorientation":
+                    getReorientation(employee_id);
                     break;
             }
         });
