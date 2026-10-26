@@ -85,12 +85,14 @@
                     Leave Applications
                 </button>
             </li>
+            {{-- Monetization hidden for now
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="tab-monetization-approval" data-bs-toggle="tab"
                         data-bs-target="#pane-monetization-approval" type="button" role="tab">
                     Monetization Requests
                 </button>
             </li>
+            --}}
         </ul>
 
         <div class="tab-content" id="approvalTabContent">

@@ -551,11 +551,8 @@
             const lt = LEAVE_TYPES.find(t => t.id === lid);
             return lt && ATTACHMENT_REQUIRED_KEYWORDS.some(kw => lt.description.toLowerCase().includes(kw));
         });
-        $("#attachment_section").toggle(needsAttachment);
-        if (!needsAttachment) {
-            $("#leave_attachment").val('');
-            $("#new_files_preview").empty();
-        }
+        // Section is always visible (optional for all types); only flag it as required
+        $("#attachment_required_badge").toggleClass('d-none', !needsAttachment);
     }
 
     // Live preview of newly selected files
@@ -1222,7 +1219,7 @@
         $("#new_files_preview").empty();
         $("#existing_attachments").addClass('d-none');
         $("#existing_attachments_list").empty();
-        $("#attachment_section").hide();
+        $("#attachment_required_badge").addClass('d-none');
         renderDetailGroups();
         refreshCommutationVisibility();
     }

@@ -389,6 +389,10 @@ class PrintController extends Controller
                 'l.applicant_signature',
                 'l.status',
                 'l.id',
+                'l.cert_as_of',
+                'l.approved_days_with_pay',
+                'l.approved_days_without_pay',
+                'l.approved_others',
             ])
             ->first();
 

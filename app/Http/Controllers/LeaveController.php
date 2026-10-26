@@ -165,6 +165,7 @@ class LeaveController extends Controller
                 'code'           => $request->code,
                 'status'         => $request->status ?? 'active',
                 'monthly_earned' => $request->monthly_earned ?? 1,
+                'deduct_tardiness' => $request->deduct_tardiness ?? 0,
                 'monetizable'    => $request->monetizable ?? 0,
                 'days_prior'         => $request->days_prior ?? 0,
                 'commutation'        => $request->commutation ?? 0,

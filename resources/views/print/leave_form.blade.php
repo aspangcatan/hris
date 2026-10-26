@@ -446,6 +446,7 @@
 
         .as-of-line .line-fill {
             min-width: 130px;
+            text-align: center;
         }
 
         .sign-block {
@@ -519,6 +520,7 @@
         .approved-lines .line-fill {
             min-width: 68px;
             margin-right: 4px;
+            text-align: center;
         }
 
         .disapproved-lines {
@@ -887,7 +889,7 @@
             <tr>
                 <td style="width: 50%;">
                     <div class="action-title">7.A&nbsp; CERTIFICATION OF LEAVE CREDITS</div>
-                    <div class="as-of-line">As <span class="line-fill"></span></div>
+                    <div class="as-of-line">As of <span class="line-fill">{{ $leaveApplication->cert_as_of ? \Carbon\Carbon::parse($leaveApplication->cert_as_of)->format('F j, Y') : '' }}</span></div>
 
                     <table class="mini-table">
                         <tr>
@@ -952,9 +954,13 @@
                 <td>
                     <div class="action-title">7.C&nbsp; APPROVED FOR:</div>
                     <div class="approved-lines">
-                        <div><span class="line-fill"></span>days with pay</div>
-                        <div><span class="line-fill"></span>days without pay</div>
-                        <div><span class="line-fill"></span>others (Specify)</div>
+                        @php
+                            // 0.500 -> "0.5", 3.000 -> "3"; null stays blank
+                            $dayCount = fn($v) => $v === null ? '' : rtrim(rtrim(number_format((float) $v, 3, '.', ''), '0'), '.');
+                        @endphp
+                        <div><span class="line-fill">{{ $dayCount($leaveApplication->approved_days_with_pay) }}</span>days with pay</div>
+                        <div><span class="line-fill">{{ $dayCount($leaveApplication->approved_days_without_pay) }}</span>days without pay</div>
+                        <div><span class="line-fill">{{ $leaveApplication->approved_others }}</span>others (Specify)</div>
                     </div>
                 </td>
                 <td>

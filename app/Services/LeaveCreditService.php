@@ -76,7 +76,12 @@ class LeaveCreditService
                 ->exists();
 
             if (!$alreadyProcessed) {
-                DB::transaction(function () use ($userid, $leaveType, $earnedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $deductionPoints, $totalPresent) {
+                // Late/undertime is charged only to types flagged deduct_tardiness (VL);
+                // the rest (SL) receive the full table amount.
+                $typeDeduction = (int) ($leaveType->deduct_tardiness ?? 0) === 1 ? $deductionPoints : 0;
+                $creditedPoints = round($earnedPoints - $typeDeduction, 3);
+
+                DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent) {
                     $credit = DB::table('hris.leave_credits')
                         ->where('user_id', $userid)
                         ->where('leave_id', $leaveType->id)
@@ -86,14 +91,14 @@ class LeaveCreditService
                         DB::table('hris.leave_credits')
                             ->where('id', $credit->id)
                             ->update([
-                                'based_credit' => $credit->based_credit + $earnedPoints,
+                                'based_credit' => $credit->based_credit + $creditedPoints,
                                 'last_updated_month' => $date_updated
                             ]);
                     } else {
                         DB::table('hris.leave_credits')->insert([
                             'user_id' => $userid,
                             'leave_id' => $leaveType->id,
-                            'based_credit' => $earnedPoints,
+                            'based_credit' => $creditedPoints,
                             'last_updated_month' => $date_updated
                         ]);
                     }
@@ -104,8 +109,8 @@ class LeaveCreditService
                         'year' => $year,
                         'total_lateundertime_minutes' => $totalLateUndertimeMinutes,
                         'leave_type_id' => $leaveType->id,
-                        'earned_points' => $earnedPoints,
-                        'deducted_points' => $deductionPoints,
+                        'earned_points' => $creditedPoints,
+                        'deducted_points' => $typeDeduction,
                         'total_present' => $totalPresent,
                         'created_at' => now(),
                         'updated_at' => now(),

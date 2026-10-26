@@ -38,12 +38,14 @@
                 Leave Applications
             </button>
         </li>
+        {{-- Monetization hidden for now
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-monetizations" data-bs-toggle="tab"
                     data-bs-target="#pane-monetizations" type="button" role="tab">
                 Monetizations
             </button>
         </li>
+        --}}
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-lwop" data-bs-toggle="tab"
                     data-bs-target="#pane-lwop" type="button" role="tab">

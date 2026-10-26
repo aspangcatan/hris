@@ -111,11 +111,12 @@
                         <div id="detail_groups_container"></div>
                     </div>
 
-                    <!-- Attachment — required for Maternity / Paternity Leave -->
-                    <div id="attachment_section" style="display:none;">
+                    <!-- Attachment — optional for all leave types, required for Maternity / Paternity Leave -->
+                    <div id="attachment_section">
                         <hr/>
                         <div class="fw-bold mt-4">Attachments
-                            <small class="text-muted fw-normal">(Required for Maternity/Paternity Leave — PDF, JPG, or PNG, max 5 MB each)</small>
+                            <span id="attachment_required_badge" class="badge bg-danger ms-1 d-none">Required</span>
+                            <small class="text-muted fw-normal">(Optional; required for Maternity/Paternity Leave — PDF, JPG, or PNG, max 5 MB each)</small>
                         </div>
                         {{-- Existing attachments shown when editing --}}
                         <div id="existing_attachments" class="mt-2 d-none">
@@ -255,6 +256,37 @@
                                   class="form-control"
                                   rows="3"
                                   placeholder="Enter your remarks here..."></textarea>
+
+                        {{-- HR only: CSC Form 6 section 7.A / 7.C, printed on the leave form --}}
+                        <div id="hr_action_section" class="mt-3 d-none">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label for="cert_as_of" class="form-label mb-1"><strong>7.A Certification of Leave Credits — As of:</strong></label>
+                                    <input type="date" class="form-control" id="cert_as_of">
+                                </div>
+                            </div>
+                            <label class="form-label mt-3 mb-1"><strong>7.C Approved for:</strong></label>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="approved_days_with_pay" min="0" step="0.5" placeholder="">
+                                        <label>Days with pay</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="approved_days_without_pay" min="0" step="0.5" placeholder="">
+                                        <label>Days without pay</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="approved_others" maxlength="255" placeholder="">
+                                        <label>Others (Specify)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div id="approver_signature_section" class="mt-3 d-none">
                             <div class="d-flex align-items-center justify-content-between">
