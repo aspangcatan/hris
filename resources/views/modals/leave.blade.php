@@ -209,6 +209,22 @@
 
                 <!-- Leave Info -->
                 <div class="mt-5">
+                    <!-- Leave Credit Balance — only the leave types filed in this application -->
+                    <div id="leave_credit_balance_section" class="mb-4 d-none">
+                        <p class="mb-2"><strong>Leave Credit Balance:</strong></p>
+                        <table class="table table-bordered mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th style="width: 34%;">Type</th>
+                                <th class="text-end" style="width: 22%;">Total Earned</th>
+                                <th class="text-end" style="width: 22%;">Less this application</th>
+                                <th class="text-end" style="width: 22%;">Balance</th>
+                            </tr>
+                            </thead>
+                            <tbody id="leave_credit_balance_body"></tbody>
+                        </table>
+                    </div>
+
                     <p><strong>Name:</strong> <span id="leave_name"></span></p>
                     <p><strong>Type:</strong> <span id="leave_type"></span> <span id="lwop_badge" class="badge bg-warning text-dark d-none">LWOP</span></p>
                     <p><strong>Details:</strong></p>
@@ -300,3 +316,14 @@
         </div>
     </div>
 </div>
+
+<script>
+    function renderLeaveCreditBalances(rows) {
+        rows = rows || [];
+        const fmt = v => Number(v || 0).toFixed(3);
+        $('#leave_credit_balance_body').html(rows.map(r =>
+            `<tr><td>${r.type}</td><td class="text-end">${fmt(r.total_earned)}</td><td class="text-end">${fmt(r.less)}</td><td class="text-end fw-bold">${fmt(r.balance)}</td></tr>`
+        ).join(''));
+        $('#leave_credit_balance_section').toggleClass('d-none', rows.length === 0);
+    }
+</script>

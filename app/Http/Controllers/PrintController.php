@@ -527,34 +527,20 @@ class PrintController extends Controller
      */
     private function getLeaveCreditCertification(object $leaveApplication): array
     {
-        $isRejected = strtolower((string) $leaveApplication->status) === 'rejected';
-        $typeIds    = DB::table('hris.leave_types')->whereIn('code', ['VL', 'SL'])->pluck('id', 'code');
+        $typeIds = DB::table('hris.leave_types')->whereIn('code', ['VL', 'SL'])->pluck('id', 'code');
+        $rows    = app(\App\Services\LeaveApplicationService::class)
+            ->getCreditCertification($leaveApplication, $typeIds->values()->all(), true);
 
         $certification = [];
         foreach (['VL', 'SL'] as $code) {
             $typeId = $typeIds[$code] ?? null;
-            if (!$typeId) {
-                continue;
+            if ($typeId && isset($rows[$typeId])) {
+                $certification[$code] = [
+                    'total_earned' => $rows[$typeId]['total_earned'],
+                    'less'         => $rows[$typeId]['less'],
+                    'balance'      => $rows[$typeId]['balance'],
+                ];
             }
-
-            $credit  = DB::table('hris.leave_credits')
-                ->where('user_id', $leaveApplication->user_id)
-                ->where('leave_id', $typeId)
-                ->first(['based_credit', 'used_credit']);
-            $balance = $credit ? (float) $credit->based_credit - (float) $credit->used_credit : 0.0;
-
-            $less = $isRejected ? 0.0 : (float) DB::table('hris.leave_date_applied')
-                ->where('leave_application_id', $leaveApplication->id)
-                ->where('leave_type_id', $typeId)
-                ->where('status', '!=', 'cancelled')
-                ->where('final_disapproved', 0)
-                ->sum('credits_deducted');
-
-            $certification[$code] = [
-                'total_earned' => $balance + $less,
-                'less'         => $less,
-                'balance'      => $balance,
-            ];
         }
 
         return $certification;

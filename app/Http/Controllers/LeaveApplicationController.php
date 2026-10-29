@@ -356,6 +356,10 @@ class LeaveApplicationController extends Controller
             'commutation'     => $leave->commutation,
             'is_lwop'         => (bool) $leave->is_lwop,
             'created_at'      => $leave->created_at,
+            'credit_balances' => array_values($this->leaveApplicationService->getCreditCertification(
+                $leave,
+                collect($leave->dates ?? [])->pluck('leave_type_id')->filter()->unique()->values()->all()
+            )),
             'leave_ids'       => $detailsCollection->pluck('leave_id')->values(),
             'leave_types_map' => $detailsCollection->keyBy('leave_id')->map(fn($d) => $d->leave_type)->toArray(),
             'details_per_type' => $detailsCollection->map(fn($d) => [

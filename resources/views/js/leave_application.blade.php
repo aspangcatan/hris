@@ -1117,6 +1117,7 @@
                 headers: { 'Accept': 'application/json' }
             });
 
+            renderLeaveCreditBalances(data.credit_balances);
             $('#leave_name').text(data.name);
             $('#leave_type').text(data.type);
             $('#leave_commutation').text(data.commutation);

@@ -256,6 +256,7 @@
     function renderLeaveModal(data) {
         current_dates = data.dates || [];
         current_approvals = data.approvals || {};
+        renderLeaveCreditBalances(data.credit_balances);
         $('#leave_name').text(data.name);
         $('#leave_type').text(data.type);
         $('#leave_commutation').text(data.commutation);

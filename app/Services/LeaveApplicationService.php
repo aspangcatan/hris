@@ -369,12 +369,58 @@ class LeaveApplicationService
         });
     }
 
+    /**
+     * Leave credit certification (Total Earned / Less this application / Balance) per leave type.
+     * The application's credits are already deducted from the employee's balance, so the
+     * current balance is the result, and Total Earned is that balance before this
+     * application's deduction. A rejected application had its credits restored, so it
+     * deducts nothing. Dates that were cancelled or finally disapproved are excluded too.
+     * Types the employee has no leave_credits row for are skipped unless $includeMissing.
+     *
+     * @param  int[] $typeIds
+     * @return array<int, array{leave_id: int, type: string, total_earned: float, less: float, balance: float}>
+     */
+    public function getCreditCertification(object $leaveApplication, array $typeIds, bool $includeMissing = false): array
+    {
+        $isRejected = strtolower((string) $leaveApplication->status) === 'rejected';
+        $typeNames  = DB::table('hris.leave_types')->whereIn('id', $typeIds)->pluck('description', 'id');
+
+        $certification = [];
+        foreach ($typeIds as $typeId) {
+            $credit = DB::table('hris.leave_credits')
+                ->where('user_id', $leaveApplication->user_id)
+                ->where('leave_id', $typeId)
+                ->first(['based_credit', 'used_credit']);
+            if (!$credit && !$includeMissing) {
+                continue;
+            }
+            $balance = $credit ? (float) $credit->based_credit - (float) $credit->used_credit : 0.0;
+
+            $less = $isRejected ? 0.0 : (float) DB::table('hris.leave_date_applied')
+                ->where('leave_application_id', $leaveApplication->id)
+                ->where('leave_type_id', $typeId)
+                ->where('status', '!=', 'cancelled')
+                ->where('final_disapproved', 0)
+                ->sum('credits_deducted');
+
+            $certification[$typeId] = [
+                'leave_id'     => (int) $typeId,
+                'type'         => $typeNames[$typeId] ?? '',
+                'total_earned' => $balance + $less,
+                'less'         => $less,
+                'balance'      => $balance,
+            ];
+        }
+
+        return $certification;
+    }
+
     public function findById(int $id)
     {
         $application = DB::table('hris.leave_applications as la')
             ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
             ->where('la.id', $id)
-            ->select('la.id', 'u.fname', 'u.lname', 'u.mname', 'la.commutation', 'la.attachment', 'la.created_at', 'la.is_lwop')
+            ->select('la.id', 'la.user_id', 'la.status', 'u.fname', 'u.lname', 'u.mname', 'la.commutation', 'la.attachment', 'la.created_at', 'la.is_lwop')
             ->first();
 
         if (!$application) {
