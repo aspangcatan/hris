@@ -118,6 +118,7 @@
 
     function getEmployee(params) {
         const no_employee_no = (typeof params.no_employee_no !== "undefined") ? params.no_employee_no : 0;
+        const reo_pending = $("#filter_reo_pending").is(":checked") ? 1 : 0;
         $("#employee_list").empty();
         $("#employee_list").append("<tr><td colspan='8'>Loading data, please wait...</td></tr>");
         $("#pagination_links").empty();
@@ -125,7 +126,8 @@
         fetch('{{ route('getEmployee') }}?fname=' + params.fname +
             "&lname=" + params.lname +
             "&page=" + params.page +
-            "&no_employee_no=" + no_employee_no, {
+            "&no_employee_no=" + no_employee_no +
+            "&reo_pending=" + reo_pending, {
                 method: "GET"
             }
         )
@@ -186,6 +188,7 @@
                         <td>
                             <div class="d-flex justify-content-center gap-2 flex-wrap">
                                 <button type='button' class="btn btn-action btn-edit" onClick="editEmployee(` + it.user_id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
+                                ` + (it.reo_pending ? `<span class="badge bg-warning text-dark align-self-center" title="Re-Orientation post tests waiting to be checked">` + it.reo_pending + ` for checking</span>` : "") + `
                             </div>
                         </td>
                     <tr>`;

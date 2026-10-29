@@ -36,6 +36,8 @@ class PermissionSeeder extends Seeder
             ['module' => 'hospital_order', 'code' => 'hospital_order.approve',  'description' => 'Approve/manage hospital orders'],
             ['module' => 'hospital_order', 'code' => 'hospital_order.file_on_behalf', 'description' => 'File hospital orders on behalf of managed employees'],
             ['module' => 'reports',        'code' => 'reports.quarterly_leave', 'description' => 'Access quarterly leave balance reports'],
+            ['module' => 'reorientation',  'code' => 'reorientation.check',     'description' => 'Check employee re-orientation post tests'],
+            ['module' => 'reorientation',  'code' => 'reorientation.manage',    'description' => 'Manage re-orientation post test questions'],
         ];
 
         foreach ($catalog as $p) {
@@ -60,6 +62,7 @@ class PermissionSeeder extends Seeder
                 'saln.view_own','saln.admin',
                 'hospital_order.file','hospital_order.approve',
                 'reports.quarterly_leave',
+                'reorientation.check','reorientation.manage',
             ],
             'hrh' => [
                 'dtr.view_own','dtr.view_others','dtr.print',
@@ -72,6 +75,7 @@ class PermissionSeeder extends Seeder
                 'saln.view_own','saln.admin',
                 'hospital_order.file','hospital_order.approve',
                 'reports.quarterly_leave',
+                'reorientation.check','reorientation.manage',
             ],
             'dh' => [
                 'dtr.view_own','dtr.view_others','dtr.print',

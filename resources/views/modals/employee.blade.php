@@ -156,6 +156,13 @@
                                                 Payroll
                                             </button>
                                         </li>
+                                        @permission('reorientation.check')
+                                        <li class="nav-item">
+                                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#reorientation">
+                                                Reorientation
+                                            </button>
+                                        </li>
+                                        @endpermission
                                     </ul>
                                     <div class="tab-content pt-2">
                                         <div class="tab-pane fade pt-3" id="personal_information">
@@ -226,6 +233,13 @@
                                         <div class="tab-pane fade pt-3" id="payroll">
                                             @include('forms.payroll')
                                         </div>
+                                        @permission('reorientation.check')
+                                        <div class="tab-pane fade pt-3" id="reorientation">
+                                            <div class="payroll-tab-board">
+                                                @include('forms.reorientation')
+                                            </div>
+                                        </div>
+                                        @endpermission
                                     </div><!-- End Bordered Tabs -->
                                 </div>
                             </div>

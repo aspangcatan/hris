@@ -33,6 +33,14 @@
                         <label>Monthly Earned</label>
                     </div>
                     <div class="form-floating mb-3">
+                        <select class="form-control" id="deduct_tardiness">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                        <label>Deduct Late/Undertime from Earned Credits</label>
+                        <div class="form-text">Yes for Vacation Leave only (CSC). No = always earns the full monthly amount.</div>
+                    </div>
+                    <div class="form-floating mb-3">
                         <select class="form-control" id="monetizable">
                             <option value="0">No</option>
                             <option value="1">Yes</option>

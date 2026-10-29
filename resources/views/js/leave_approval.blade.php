@@ -311,10 +311,39 @@
         $('#acknowledgeLeaveBtn').toggleClass('d-none', !acknowledgeOnly).toggle(acknowledgeOnly);
         $('#undoApprovalBtn').toggleClass('d-none', !data.can_undo);
 
+        $('#hr_action_section').toggleClass('d-none', !acknowledgeOnly);
+        if (acknowledgeOnly) prefillHrActionFields(data);
+
         approverSignatureNeeded = canAct && (current_approval_role === 'SH' || current_approval_role === 'DH');
         $('#approver_signature_section').toggleClass('d-none', !approverSignatureNeeded);
 
         $('#viewLeaveModal').modal('show');
+    }
+
+    // 7.A defaults to today; 7.C defaults to the days the Division Head left approved
+    // (all with pay, or all without pay for an LWOP application). HR may edit before acknowledging.
+    function prefillHrActionFields(data) {
+        const saved = data.hr_action || {};
+        const approvedDays = (data.dates || [])
+            .filter(d => !d.is_cancelled && !d.final_disapproved)
+            .reduce((sum, d) => sum + (parseFloat(d.duration) || 0), 0) / 8;
+        const pick = (value, fallback) => (value !== null && value !== undefined) ? parseFloat(value) : fallback;
+
+        $('#cert_as_of').val(saved.cert_as_of || moment().format('YYYY-MM-DD'));
+        $('#approved_days_with_pay').val(pick(saved.approved_days_with_pay, data.is_lwop ? 0 : approvedDays));
+        $('#approved_days_without_pay').val(pick(saved.approved_days_without_pay, data.is_lwop ? approvedDays : 0));
+        $('#approved_others').val(saved.approved_others || '');
+    }
+
+    function collectHrActionFields() {
+        if (current_approval_role !== 'HR') return {};
+        const num = sel => $(sel).val() === '' ? null : $(sel).val();
+        return {
+            cert_as_of: $('#cert_as_of').val() || null,
+            approved_days_with_pay: num('#approved_days_with_pay'),
+            approved_days_without_pay: num('#approved_days_without_pay'),
+            approved_others: $('#approved_others').val().trim() || null,
+        };
     }
 
     function renderLeaveDetailsHtml(data) {
@@ -454,7 +483,8 @@
                 status: status,
                 disapproved_dates: collectDisapprovedDates(),
                 signature: signature,
-                overturn_rejection: overturnRejection
+                overturn_rejection: overturnRejection,
+                ...collectHrActionFields()
             })
         })
             .then(r => r.json())

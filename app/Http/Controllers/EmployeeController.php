@@ -147,10 +147,23 @@ class EmployeeController extends Controller
                 $employees->whereRaw("TRIM(COALESCE(e.employee_no, '')) = ''");
             }
 
+            $columns = ['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section'];
+
+            // Employees with at least one re-orientation post test waiting to be checked
+            if ($request->boolean('reo_pending') && permission_check('reorientation.check')) {
+                $pending = DB::table('hris.reorientation_submissions')
+                    ->where('status', 'submitted')
+                    ->groupBy('user_id')
+                    ->select('user_id', DB::raw('COUNT(*) as reo_pending'));
+
+                $employees->joinSub($pending, 'rp', 'rp.user_id', '=', 'e.user_id');
+                $columns[] = 'rp.reo_pending';
+            }
+
             $paginator = $employees
                 ->orderBy('u.fname', 'ASC')
                 ->orderBy('u.lname', 'ASC')
-                ->paginate(10, ['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation', 's.description as section']);
+                ->paginate(10, $columns);
 
             return response([
                 'code' => 200,

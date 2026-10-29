@@ -570,6 +570,28 @@ Route::group(['middleware' => 'auth'], function () {
         ->name('admin.permission_levels.data');
     Route::post('/admin/permission-levels/update', [\App\Http\Controllers\Admin\PermissionLevelController::class, 'update'])
         ->name('admin.permission_levels.update');
+
+    // Re-Orientation
+    Route::get('/reorientation', [\App\Http\Controllers\ReorientationController::class, 'index'])->name('reorientation');
+    Route::get('/reorientation/my-modules', [\App\Http\Controllers\ReorientationController::class, 'getMyModules'])->name('reorientation.my_modules');
+    Route::get('/reorientation/my-post-test', [\App\Http\Controllers\ReorientationController::class, 'getMyPostTest'])->name('reorientation.my_post_test');
+    Route::post('/reorientation/submit', [\App\Http\Controllers\ReorientationController::class, 'submitPostTest'])->name('reorientation.submit');
+
+    Route::get('/reorientation/questions', [\App\Http\Controllers\ReorientationController::class, 'getQuestions'])
+        ->name('reorientation.questions')->middleware('permission:reorientation.manage');
+    Route::post('/reorientation/questions', [\App\Http\Controllers\ReorientationController::class, 'saveQuestion'])
+        ->name('reorientation.questions.save')->middleware('permission:reorientation.manage');
+    Route::delete('/reorientation/questions/{id}', [\App\Http\Controllers\ReorientationController::class, 'deleteQuestion'])
+        ->name('reorientation.questions.delete')->middleware('permission:reorientation.manage');
+    Route::post('/reorientation/questions/{id}/move', [\App\Http\Controllers\ReorientationController::class, 'moveQuestion'])
+        ->name('reorientation.questions.move')->middleware('permission:reorientation.manage');
+
+    Route::get('/reorientation/employee-modules', [\App\Http\Controllers\ReorientationController::class, 'getEmployeeModules'])
+        ->name('reorientation.employee_modules')->middleware('permission:reorientation.check');
+    Route::get('/reorientation/employee-submission', [\App\Http\Controllers\ReorientationController::class, 'getEmployeeSubmission'])
+        ->name('reorientation.employee_submission')->middleware('permission:reorientation.check');
+    Route::post('/reorientation/check', [\App\Http\Controllers\ReorientationController::class, 'checkSubmission'])
+        ->name('reorientation.check')->middleware('permission:reorientation.check');
 });
 
     // SALN List View Example

@@ -25,6 +25,12 @@
             </a>
         </li>
         @endpermission
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('reorientation') ? '' : 'collapsed' }}" href="{{ route('reorientation') }}">
+                <i class="bi bi-journal-bookmark"></i>
+                <span>Re-Orientation</span>
+            </a>
+        </li>
 
         {{-- DTR MANAGEMENT --}}
         <li class="nav-heading">DTR Management</li>
@@ -92,8 +98,8 @@
             @endpermission
         @endif
 
-        {{-- OVERTIME MANAGEMENT --}}
-        @if(permission_check('overtime.file') || permission_check('overtime.approve'))
+        {{-- OVERTIME MANAGEMENT (hidden for now) --}}
+        @if(false && (permission_check('overtime.file') || permission_check('overtime.approve')))
             <li class="nav-heading">Overtime Management</li>
             @permission('overtime.file')
             <li class="nav-item">
@@ -295,7 +301,8 @@
         @endif
         @endif
 
-        {{-- REPORTS --}}
+        {{-- REPORTS (hidden for now) --}}
+        @if(false)
         @permission('reports.quarterly_leave')
         <li class="nav-heading">Reports</li>
         <li class="nav-item">
@@ -306,9 +313,11 @@
             </a>
         </li>
         @endpermission
+        @endif
 
         {{-- SETTINGS --}}
-        @if(in_array(session('access_rights'), ['admin', 'calendar']) || permission_check('leave.manage_types') || permission_check('leave.manage_credits'))
+        {{-- Leave settings hidden for now; restore "|| permission_check('leave.manage_types') || permission_check('leave.manage_credits')" when re-enabled --}}
+        @if(in_array(session('access_rights'), ['admin', 'calendar']))
             <li class="nav-heading">Settings</li>
             @if(in_array(session('access_rights'), ['admin', 'calendar']))
                 <li class="nav-item">
@@ -343,6 +352,7 @@
                     @endif
                 @endif
             @endif
+            @if(false)
             @permission('leave.manage_types')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_management') ? '' : 'collapsed' }}"
@@ -361,6 +371,7 @@
                 </a>
             </li>
             @endpermission
+            @endif
         @endif
 
         {{-- MOBILE DTR --}}

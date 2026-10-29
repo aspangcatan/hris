@@ -78,7 +78,7 @@ class CreditController extends Controller
                     $computed['month'],
                     $employee['total_present'],
                     $employee['total_late_undertime'],
-                    $employee['net_points'],
+                    $employee['earned_points'],
                     $employee['deducted_points']
                 );
             }

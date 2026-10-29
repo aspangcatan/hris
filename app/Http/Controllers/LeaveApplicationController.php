@@ -183,7 +183,14 @@ class LeaveApplicationController extends Controller
                 'disapproved_dates.*.date_applied_id' => 'required|integer',
                 'disapproved_dates.*.remark'          => 'nullable|string|max:255',
                 'signature'                            => 'nullable|string',
+                'cert_as_of'                           => 'nullable|date',
+                'approved_days_with_pay'               => 'nullable|numeric|min:0',
+                'approved_days_without_pay'            => 'nullable|numeric|min:0',
+                'approved_others'                      => 'nullable|string|max:255',
             ]);
+
+            // Resolve before acting - once acknowledged there is no current step left
+            $isHrStep = $this->leaveApprovalService->resolveCurrentApprovalRoleForLeave((int) $request->id) === 'HR';
 
             $this->leaveApprovalService->updateApprovalStatus(
                 $request->id,
@@ -194,6 +201,18 @@ class LeaveApplicationController extends Controller
                 $validated['signature'] ?? null,
                 $request->boolean('overturn_rejection')
             );
+
+            // Section 7.A / 7.C of the leave form are HR's to fill in
+            if ($isHrStep) {
+                DB::table('leave_applications')->where('id', $request->id)->update([
+                    'cert_as_of'                => $validated['cert_as_of'] ?? null,
+                    'approved_days_with_pay'    => $validated['approved_days_with_pay'] ?? null,
+                    'approved_days_without_pay' => $validated['approved_days_without_pay'] ?? null,
+                    'approved_others'           => $validated['approved_others'] ?? null,
+                    'updated_at'                => now(),
+                ]);
+            }
+
             return response()->json(['message' => 'Update status done']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
@@ -355,6 +374,8 @@ class LeaveApplicationController extends Controller
             'extra'           => $leave->extra,
             'commutation'     => $leave->commutation,
             'is_lwop'         => (bool) $leave->is_lwop,
+            'hr_action'       => DB::table('leave_applications')->where('id', $id)
+                ->first(['cert_as_of', 'approved_days_with_pay', 'approved_days_without_pay', 'approved_others']),
             'created_at'      => $leave->created_at,
             'credit_balances' => array_values($this->leaveApplicationService->getCreditCertification(
                 $leave,

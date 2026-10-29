@@ -22,6 +22,7 @@
             $("#code").val("");
             $("#leave_status").val("active");
             $("#monthly_earned").val("1");
+            $("#deduct_tardiness").val("0");
             $("#monetizable").val("0");
             $("#days_prior").val("0");
             $("#commutation").val("0");
@@ -39,6 +40,7 @@
         const code = $("#code").val();
         const status = $("#leave_status").val();
         const monthly_earned = $("#monthly_earned").val();
+        const deduct_tardiness = $("#deduct_tardiness").val();
         const monetizable = $("#monetizable").val();
         const days_prior = $("#days_prior").val();
         const commutation = $("#commutation").val();
@@ -51,6 +53,7 @@
             code: code,
             status: status,
             monthly_earned: monthly_earned,
+            deduct_tardiness: deduct_tardiness,
             monetizable: monetizable,
             days_prior: days_prior,
             commutation: commutation,
@@ -93,11 +96,13 @@
         const defaultCredit = $("#leave_" + id + " td:eq(7)").data("value");
         const minMonetizeDays = $("#leave_" + id + " td:eq(8)").data("value");
         const minRetainedDays = $("#leave_" + id + " td:eq(9)").data("value");
+        const deductTardiness = $("#leave_" + id + " td:eq(10)").data("value");
 
         $("#description").val(description);
         $("#code").val(code);
         $("#leave_status").val(status || "active");
         $("#monthly_earned").val((monthlyEarned !== undefined && monthlyEarned !== null) ? monthlyEarned : "1");
+        $("#deduct_tardiness").val((deductTardiness !== undefined && deductTardiness !== null) ? deductTardiness : "0");
         $("#monetizable").val((monetizable !== undefined && monetizable !== null) ? monetizable : "0");
         $("#days_prior").val((daysPrior !== undefined && daysPrior !== null) ? daysPrior : "0");
         $("#commutation").val((commutation !== undefined && commutation !== null) ? commutation : "0");
@@ -148,7 +153,7 @@
                 const pagination = payload.pagination || null;
 
                 if (!data.length) {
-                    $("#leave_list").append("<tr><td colspan='12'>No record found</td></tr>");
+                    $("#leave_list").append("<tr><td colspan='13'>No record found</td></tr>");
                     $("#pagination_container").addClass("d-none");
                     return;
                 }
@@ -173,6 +178,8 @@
                     const defaultCreditVal = (it.default_credit !== undefined && it.default_credit !== null) ? it.default_credit : "";
                     const minMonetizeVal = (it.min_monetize_days !== undefined && it.min_monetize_days !== null) ? it.min_monetize_days : "";
                     const minRetainedVal = (it.min_retained_days !== undefined && it.min_retained_days !== null) ? it.min_retained_days : "";
+                    const deductTardinessVal   = parseInt(it.deduct_tardiness ?? 0, 10);
+                    const deductTardinessLabel = deductTardinessVal === 1 ? "Yes" : "No";
                     const tr = `
                     <tr id="leave_` + it.id + `">
                         <td>` + it.description + `</td>
@@ -185,6 +192,7 @@
                         <td data-value="` + defaultCreditVal + `">` + (defaultCreditVal === "" ? "—" : defaultCreditVal) + `</td>
                         <td data-value="` + minMonetizeVal + `">` + (minMonetizeVal === "" ? "—" : minMonetizeVal) + `</td>
                         <td data-value="` + minRetainedVal + `">` + (minRetainedVal === "" ? "—" : minRetainedVal) + `</td>
+                        <td data-value="` + deductTardinessVal + `">` + deductTardinessLabel + `</td>
                         <td>
                             <button class="btn btn-sm btn-transparent" onClick='editLeave(` + it.id + `)'>
                                 <i class="bi bi-pencil-fill text-success"></i>
