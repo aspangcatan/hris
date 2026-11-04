@@ -36,7 +36,40 @@ class ReorientationController extends Controller
             return response()->json(['error' => 'Invalid module.'], 422);
         }
 
+        if (!$this->service->isModuleUnlocked(Auth::id(), $moduleNo)) {
+            return response()->json(['error' => 'Please submit the previous module\'s post test first.'], 403);
+        }
+
         return response()->json($this->service->getPostTest(Auth::id(), $moduleNo));
+    }
+
+    // View-only reader page, opened in a new tab from the Re-Orientation page
+    public function readModule(int $moduleNo)
+    {
+        if (!$this->service->isValidModule($moduleNo) || !$this->service->isModuleUnlocked(Auth::id(), $moduleNo)) {
+            abort(403);
+        }
+
+        return view('reorientation_reader', [
+            'moduleNo' => $moduleNo,
+            'module'   => $this->service->modules()[$moduleNo],
+        ]);
+    }
+
+    // Streams the module PDF to the reader page only. The file is outside
+    // public/ so it has no direct URL, and it is never sent as an attachment.
+    public function modulePdf(int $moduleNo)
+    {
+        if (!$this->service->isValidModule($moduleNo) || !$this->service->isModuleUnlocked(Auth::id(), $moduleNo)) {
+            abort(403);
+        }
+
+        return response()->file($this->service->pdfPath($moduleNo), [
+            'Content-Type'           => 'application/pdf',
+            'Content-Disposition'    => 'inline',
+            'Cache-Control'          => 'no-store, no-cache, must-revalidate, private',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function submitPostTest(Request $request)

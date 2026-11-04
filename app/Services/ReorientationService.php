@@ -17,6 +17,31 @@ class ReorientationService
         return array_key_exists($moduleNo, $this->modules());
     }
 
+    public function pdfPath(int $moduleNo): string
+    {
+        return resource_path($this->modules()[$moduleNo]['pdf']);
+    }
+
+    // Modules are taken in order: a module opens once the one before it has been
+    // submitted at least once (any status other than not started).
+    public function isModuleUnlocked(int $userId, int $moduleNo): bool
+    {
+        $previous = $this->previousModule($moduleNo);
+        return $previous === null || (bool) $this->getSubmission($userId, $previous);
+    }
+
+    private function previousModule(int $moduleNo): ?int
+    {
+        $previous = null;
+        foreach (array_keys($this->modules()) as $no) {
+            if ($no === $moduleNo) {
+                return $previous;
+            }
+            $previous = $no;
+        }
+        return null;
+    }
+
     // -----------------------------------------------------------------------
     // Questions
     // -----------------------------------------------------------------------
@@ -130,6 +155,7 @@ class ReorientationService
             ->keyBy('id');
 
         $result = [];
+        $previousSubmitted = true;
         foreach ($this->modules() as $no => $module) {
             $sub = $submissions->get($no);
             $checker = $sub && $sub->checked_by ? $checkers->get($sub->checked_by) : null;
@@ -137,7 +163,8 @@ class ReorientationService
             $result[] = [
                 'module_no'     => $no,
                 'title'         => $module['title'],
-                'pdf_url'       => asset($module['pdf']),
+                'read_url'      => route('reorientation.read', $no),
+                'locked'        => !$previousSubmitted,
                 'status'        => $sub->status ?? 'not_started',
                 'attempt_no'    => $sub->attempt_no ?? 0,
                 'remarks'       => $sub->remarks ?? null,
@@ -146,6 +173,7 @@ class ReorientationService
                 'checked_by'    => $checker ? trim($checker->fname . ' ' . $checker->lname) : null,
                 'submission_id' => $sub->id ?? null,
             ];
+            $previousSubmitted = (bool) $sub;
         }
 
         return $result;
@@ -185,6 +213,10 @@ class ReorientationService
 
     public function submitPostTest(int $userId, int $moduleNo, array $answers): void
     {
+        if (!$this->isModuleUnlocked($userId, $moduleNo)) {
+            throw new \Exception('Please submit the previous module\'s post test first.');
+        }
+
         $submission = $this->getSubmission($userId, $moduleNo);
 
         if ($submission && in_array($submission->status, ['submitted', 'passed'], true)) {

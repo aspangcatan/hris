@@ -575,7 +575,11 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/reorientation', [\App\Http\Controllers\ReorientationController::class, 'index'])->name('reorientation');
     Route::get('/reorientation/my-modules', [\App\Http\Controllers\ReorientationController::class, 'getMyModules'])->name('reorientation.my_modules');
     Route::get('/reorientation/my-post-test', [\App\Http\Controllers\ReorientationController::class, 'getMyPostTest'])->name('reorientation.my_post_test');
-    Route::post('/reorientation/submit', [\App\Http\Controllers\ReorientationController::class, 'submitPostTest'])->name('reorientation.submit');
+    Route::get('/reorientation/module/{moduleNo}', [\App\Http\Controllers\ReorientationController::class, 'readModule'])
+        ->name('reorientation.read')->whereNumber('moduleNo');
+    Route::get('/reorientation/module-pdf/{moduleNo}',[\App\Http\Controllers\ReorientationController::class, 'modulePdf'])
+        ->name('reorientation.module_pdf')->whereNumber('moduleNo');
+    Route::post('/reorientation/submit',[\App\Http\Controllers\ReorientationController::class, 'submitPostTest'])->name('reorientation.submit');
 
     Route::get('/reorientation/questions', [\App\Http\Controllers\ReorientationController::class, 'getQuestions'])
         ->name('reorientation.questions')->middleware('permission:reorientation.manage');

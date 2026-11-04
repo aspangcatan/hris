@@ -11,15 +11,19 @@
     @endif
 
     const REO_STATUS = {
-        not_started: {label: 'Not started',        cls: 'bg-secondary'},
-        submitted:   {label: 'Pending checking',   cls: 'bg-warning text-dark'},
-        passed:      {label: 'Passed',             cls: 'bg-success'},
-        failed:      {label: 'Failed — resubmit',  cls: 'bg-danger'},
+        not_started: {label: 'Not started',        cls: 'bg-secondary',         icon: null},
+        submitted:   {label: 'Pending checking',   cls: 'bg-warning text-dark', icon: 'hourglass-split'},
+        passed:      {label: 'Passed',             cls: 'bg-success',           icon: 'check-lg'},
+        failed:      {label: 'Failed — resubmit',  cls: 'bg-danger',            icon: 'arrow-counterclockwise'},
     };
 
     let reoModules = [];
     let reoCurrentModule = 1;
     let mqEditingId = null;
+
+    function reoAllSubmitted() {
+        return reoModules.length > 0 && reoModules.every(m => m.status !== 'not_started');
+    }
 
     function reoEscape(value) {
         return $('<div>').text(value == null ? '' : String(value)).html();
@@ -35,12 +39,22 @@
     }
 
     $(function () {
-        loadModules().then(() => selectModule(reoCurrentModule));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('reoIntroModal')).show();
 
-        $('#reo_module_tabs').on('click', '.nav-link', function () {
-            $('#reo_module_tabs .nav-link').removeClass('active');
-            $(this).addClass('active');
-            selectModule(parseInt($(this).data('module')));
+        loadModules().then(() => {
+            // Open on the first module still waiting for a submission
+            const next = reoModules.find(m => !m.locked && m.status === 'not_started');
+            selectModule(next ? next.module_no : reoCurrentModule);
+        });
+
+        $('#reo_module_tabs').on('click', '.reo-step', function () {
+            const moduleNo = parseInt($(this).data('module'));
+            const module = reoModules.find(m => m.module_no === moduleNo);
+            if (module && module.locked) {
+                toastr.warning('Please submit the post test of the previous module first.');
+                return;
+            }
+            selectModule(moduleNo);
         });
 
         $('#btn_submit_post_test').on('click', submitPostTest);
@@ -76,10 +90,24 @@
             reoModules = await (await fetch(ROUTE_REO_MY_MODULES)).json();
             reoModules.forEach(m => {
                 const s = REO_STATUS[m.status] || REO_STATUS.not_started;
-                $(`.reo-tab-badge[data-module="${m.module_no}"]`)
-                    .attr('class', `badge reo-tab-badge ${s.cls}`)
-                    .text(s.label);
+                const icon = m.locked ? 'lock-fill' : s.icon;
+                const $step = $(`.reo-step[data-module="${m.module_no}"]`)
+                    .removeClass('is-passed is-submitted is-failed is-locked is-done')
+                    .toggleClass('is-locked', m.locked)
+                    .toggleClass('is-done', m.status !== 'not_started')
+                    .addClass(m.status !== 'not_started' ? `is-${m.status}` : '');
+                $step.find('.reo-step-dot').html(icon ? `<i class="bi bi-${icon}"></i>` : m.module_no);
+                $step.find('.reo-step-status').html(m.locked
+                    ? '<i class="bi bi-lock-fill"></i> Locked'
+                    : (s.icon ? `<i class="bi bi-${s.icon}"></i> ` : '') + s.label);
             });
+
+            const submitted = reoModules.filter(m => m.status !== 'not_started').length;
+            const passed    = reoModules.filter(m => m.status === 'passed').length;
+            const pct       = Math.round(submitted / reoModules.length * 100);
+            $('#reo_progress_text').text(`${submitted} of ${reoModules.length} submitted · ${passed} passed`);
+            $('#reo_progress_pct').text(pct + '%');
+            $('#reo_progress_fill').css('width', pct + '%');
         } catch (e) {
             toastr.error('Could not load modules, please refresh the page.');
         }
@@ -87,13 +115,13 @@
 
     function selectModule(moduleNo) {
         reoCurrentModule = moduleNo;
+        $('#reo_module_tabs .reo-step').removeClass('is-active')
+            .filter(`[data-module="${moduleNo}"]`).addClass('is-active');
         const module = reoModules.find(m => m.module_no === moduleNo);
         if (module) {
-            $('#reo_module_title').text(`Module ${module.module_no}: ${module.title}`);
-            if ($('#reo_pdf').attr('src') !== module.pdf_url) {
-                $('#reo_pdf').attr('src', module.pdf_url);
-            }
-            $('#reo_pdf_link').attr('href', module.pdf_url);
+            $('#reo_module_no').text(`Module ${module.module_no}`);
+            $('#reo_module_title').text(module.title);
+            $('#reo_read_link').attr('href', module.read_url);
         }
         loadPostTest(moduleNo);
     }
@@ -170,6 +198,7 @@
         if (!confirm('Submit your post test? You cannot edit your answers while HR is checking them.')) return;
 
         const $btn = $('#btn_submit_post_test').prop('disabled', true);
+        const wasComplete = reoAllSubmitted();
         try {
             const res = await fetch(ROUTE_REO_SUBMIT, {
                 method: 'POST',
@@ -181,9 +210,13 @@
                 toastr.error(data.error || 'Something went wrong, please try again');
                 return;
             }
-            toastr.success(data.message);
             await loadModules();
             loadPostTest(reoCurrentModule);
+            if (!wasComplete && reoAllSubmitted()) {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('reoCompleteModal')).show();
+            } else {
+                toastr.success(data.message);
+            }
         } catch (e) {
             toastr.error('Something went wrong, please try again');
         } finally {

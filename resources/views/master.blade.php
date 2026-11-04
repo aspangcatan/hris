@@ -200,6 +200,23 @@
             font-weight: 600;
         }
 
+        /* Large header close buttons: draw the X with Bootstrap Icons instead of
+           Bootstrap's SVG background image, which does not render on the deployed server. */
+        .btn-close.fs-1 {
+            background-image: none;
+            width: auto;
+            height: auto;
+            font-size: 1.25rem !important;
+            line-height: 1;
+            color: #0f172a;
+        }
+
+        .btn-close.fs-1::before {
+            content: "\f659";
+            font-family: bootstrap-icons !important;
+            -webkit-font-smoothing: antialiased;
+        }
+
         .btn:not(.btn-action):not(.btn-link):not(.btn-close):not(.page-link) {
             padding: 0.55rem 1rem;
             display: inline-flex;
