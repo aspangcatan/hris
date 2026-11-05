@@ -27,17 +27,28 @@
     </div>
 </div>
 
-<div class="modal fade premium-modal" id="file_leave_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+{{--
+    File / edit a leave (regular or LWOP). Same look as the view dialog (lv-modal).
+    js/leave_application fills/reads these ids: file_leave_modal_title, is_lwop_flag, leave_form,
+    date_range_panel + range_*, dates_table(_body), detail_groups_container, attachment_required_badge,
+    existing_attachments(_list), leave_attachment, new_files_preview, commutation_*,
+    applicant_signature_*, btn_save_leave.
+--}}
+<div class="modal fade premium-modal lv-modal lf-modal" id="file_leave_modal" tabindex="-1" aria-labelledby="file_leave_modal_title" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header lv-header">
                 <div class="modal-hero">
                     <i class="bi bi-calendar-plus text-white" style="font-size:2.2rem"></i>
                 </div>
+                <div class="lv-header-text">
+                    <h5 class="lv-title" id="file_leave_modal_title">Leave Application</h5>
+                    <div class="lv-subtitle">Add your dates, fill in the details, then sign to submit.</div>
+                </div>
             </div>
-            <div class="modal-body">
-                <div class="modal-title-text" id="file_leave_modal_title">Leave Application</div>
+
+            <div class="modal-body lv-body">
                 <input type="hidden" id="is_lwop_flag" value="0">
 
                 <div class="text-white bg-danger rounded p-2 error_container d-none">
@@ -48,128 +59,136 @@
                     <ul class="error_list mb-0"></ul>
                 </div>
 
-                <div class="mt-4" id="leave_form">
-                    <!-- Date Applied for Leave -->
-                    <div class="d-flex align-items-center justify-content-between mt-4">
-                        <div class="fw-bold">Date applied for leave</div>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="toggleDateRangePanel()">Add Date Range</button>
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRow()">Add Date</button>
+                <div id="leave_form" class="lf-form">
+                    {{-- Dates --}}
+                    <section class="lv-card">
+                        <div class="lf-card-top">
+                            <h6 class="lv-card-title mb-0"><i class="bi bi-calendar3"></i> Dates Applied for Leave</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleDateRangePanel()">
+                                    <i class="bi bi-calendar-range me-1"></i>Add Date Range
+                                </button>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="addRow()">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Date
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="date_range_panel" class="lf-range d-none">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label" for="range_leave_type">Leave type</label>
+                                    <select class="form-select" id="range_leave_type"></select>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label" for="range_start_date">Start date</label>
+                                    <input type="date" class="form-control" id="range_start_date">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label" for="range_end_date">End date</label>
+                                    <input type="date" class="form-control" id="range_end_date">
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label" for="range_hours">Hours / day</label>
+                                    <select class="form-select" id="range_hours">
+                                        <option value="4">4</option>
+                                        <option value="8" selected>8</option>
+                                        <option value="10">10</option>
+                                        <option value="12">12</option>
+                                        <option value="16">16</option>
+                                        <option value="24">24</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-1">
+                                    <button type="button" class="btn btn-primary w-100" onclick="generateDateRange()">Add</button>
+                                </div>
+                            </div>
+                            <div class="form-text mt-2"><i class="bi bi-info-circle"></i> Weekends and declared holidays are skipped automatically.</div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table lv-table lf-dates mb-0" id="dates_table">
+                                <thead>
+                                <tr>
+                                    <th style="width: 38%;">Leave type</th>
+                                    <th style="width: 28%;">Date</th>
+                                    <th style="width: 20%;">Duration (hrs)</th>
+                                    <th style="width: 14%;" class="text-end">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody id="dates_table_body"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    {{-- Details of leave (groups built by JS from LEAVE_DETAIL_CONFIG; only the ones for the
+                         chosen leave types are shown) --}}
+                    <section class="lv-card" id="details_leave">
+                        <h6 class="lv-card-title"><i class="bi bi-card-text"></i> Details of Leave</h6>
+                        <div id="detail_groups_container" class="lf-details"></div>
+                    </section>
+
+                    <div class="row g-3">
+                        {{-- Attachments: optional, required for Maternity / Paternity Leave --}}
+                        <div class="col-lg-7">
+                            <section class="lv-card h-100" id="attachment_section">
+                                <h6 class="lv-card-title">
+                                    <i class="bi bi-paperclip"></i> Attachments
+                                    <span id="attachment_required_badge" class="lv-pill lv-pill-rejected d-none">Required</span>
+                                </h6>
+                                <div class="form-text mt-0 mb-2">Optional; required for Maternity/Paternity Leave. PDF, JPG or PNG, max 5 MB each.</div>
+                                {{-- Existing attachments shown when editing --}}
+                                <div id="existing_attachments" class="mb-2 d-none">
+                                    <div class="lv-tile-label">Current files</div>
+                                    <div id="existing_attachments_list" class="d-flex flex-wrap gap-2"></div>
+                                </div>
+                                <input type="file" class="form-control" id="leave_attachment" accept=".pdf,.jpg,.jpeg,.png" multiple>
+                                {{-- Preview of newly selected files --}}
+                                <div id="new_files_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
+                            </section>
+                        </div>
+
+                        {{-- Commutation: set from the leave type, read-only --}}
+                        <div class="col-lg-5">
+                            <section class="lv-card h-100">
+                                <h6 class="lv-card-title"><i class="bi bi-arrow-left-right"></i> Commutation</h6>
+                                <div class="choice-group lf-choices">
+                                    <div class="choice">
+                                        <input type="radio" name="commutation" id="commutation_not_requested" disabled>
+                                        <label for="commutation_not_requested">Not Requested</label>
+                                    </div>
+                                    <div class="choice">
+                                        <input type="radio" name="commutation" id="commutation_requested" disabled>
+                                        <label for="commutation_requested">Requested</label>
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">Set automatically from the leave type.</div>
+                            </section>
                         </div>
                     </div>
 
-                    <div id="date_range_panel" class="border rounded p-3 mt-2 bg-light d-none">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Leave Type</label>
-                                <select class="form-control form-control-sm" id="range_leave_type"></select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Start Date</label>
-                                <input type="date" class="form-control form-control-sm" id="range_start_date">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">End Date</label>
-                                <input type="date" class="form-control form-control-sm" id="range_end_date">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small mb-1">Hours/Day</label>
-                                <select class="form-control form-control-sm" id="range_hours">
-                                    <option value="4">4</option>
-                                    <option value="8" selected>8</option>
-                                    <option value="10">10</option>
-                                    <option value="12">12</option>
-                                    <option value="16">16</option>
-                                    <option value="24">24</option>
-                                </select>
-                            </div>
-                            <div class="col-md-1">
-                                <button type="button" class="btn btn-sm btn-primary w-100" onclick="generateDateRange()">Add</button>
-                            </div>
+                    {{-- Signature --}}
+                    <section class="lv-card">
+                        <div class="lf-card-top">
+                            <h6 class="lv-card-title mb-0"><i class="bi bi-pen"></i> Applicant Signature <span class="text-danger">*</span></h6>
+                            <button type="button" class="btn btn-sm btn-link p-0" onclick="clearSignaturePad('applicant')">Clear</button>
                         </div>
-                        <div class="small text-muted mt-2">Weekends and declared holidays are skipped automatically.</div>
-                    </div>
-
-                    <table class="table table-bordered table-sm mt-2" id="dates_table">
-                        <thead>
-                        <tr>
-                            <th>Leave Type</th>
-                            <th>Date</th>
-                            <th>Duration (hrs)</th>
-                            <th style="width: 5%">Action</th>
-                        </tr>
-                        </thead>
-                        <tbody id="dates_table_body">
-                        </tbody>
-                    </table>
-
-                    <hr/>
-
-                    <!-- Details of Leave (groups rendered dynamically by JS from LEAVE_DETAIL_CONFIG) -->
-                    <div id="details_leave">
-                        <div class="fw-bold mt-4">Details of leave</div>
-                        <div id="detail_groups_container"></div>
-                    </div>
-
-                    <!-- Attachment — optional for all leave types, required for Maternity / Paternity Leave -->
-                    <div id="attachment_section">
-                        <hr/>
-                        <div class="fw-bold mt-4">Attachments
-                            <span id="attachment_required_badge" class="badge bg-danger ms-1 d-none">Required</span>
-                            <small class="text-muted fw-normal">(Optional; required for Maternity/Paternity Leave — PDF, JPG, or PNG, max 5 MB each)</small>
+                        <div class="form-text mt-0 mb-2">Required to submit. Filing or editing this application signs it as an acknowledgment of its current contents.</div>
+                        <div class="lv-signature">
+                            <canvas id="applicant_signature_canvas" style="display:block; width:100%; height:150px;"></canvas>
+                            <div id="applicant_signature_placeholder" class="lv-signature-hint">Draw your signature here, or upload an image below</div>
                         </div>
-                        {{-- Existing attachments shown when editing --}}
-                        <div id="existing_attachments" class="mt-2 d-none">
-                            <div class="small text-muted mb-1 fw-semibold">Current Files:</div>
-                            <div id="existing_attachments_list" class="d-flex flex-wrap gap-2 mb-2"></div>
-                        </div>
-                        {{-- New file picker (multiple) --}}
                         <div class="mt-2">
-                            <input type="file" class="form-control" id="leave_attachment"
-                                   accept=".pdf,.jpg,.jpeg,.png" multiple>
+                            <label class="btn btn-sm btn-outline-secondary mb-0" for="applicant_signature_upload"><i class="bi bi-upload me-1"></i>Upload signature</label>
+                            <input type="file" id="applicant_signature_upload" accept="image/*" class="d-none" onchange="handleSignatureUpload('applicant', event)">
                         </div>
-                        {{-- Client-side preview of newly selected files --}}
-                        <div id="new_files_preview" class="d-flex flex-wrap gap-2 mt-2"></div>
-                    </div>
-
-                    <hr/>
-                    <!-- Commutation — auto-set from leave type; read-only -->
-                    <div class="fw-bold mt-4">Commutation</div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="commutation" id="commutation_not_requested" disabled>
-                                <label class="form-check-label" for="commutation_not_requested">Not Requested</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="commutation" id="commutation_requested" disabled>
-                                <label class="form-check-label" for="commutation_requested">Requested</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr/>
-                    <div class="d-flex align-items-center justify-content-between mt-4">
-                        <div class="fw-bold">Applicant Signature</div>
-                        <button type="button" class="btn btn-sm btn-link p-0" onclick="clearSignaturePad('applicant')">Clear</button>
-                    </div>
-                    <div class="small text-muted mb-2">Draw your signature below, or upload an image. Required to submit — filing or editing this application signs it as an acknowledgment of its current contents.</div>
-                    <div style="border: 1.5px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; position: relative;">
-                        <canvas id="applicant_signature_canvas" style="display:block; width:100%; height:150px;"></canvas>
-                        <div id="applicant_signature_placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px; color:#94a3b8; font-size:12px; pointer-events:none;">Draw your signature here, or upload an image below</div>
-                    </div>
-                    <div class="mt-2">
-                        <label class="btn btn-sm btn-outline-secondary mb-0" for="applicant_signature_upload">Upload Signature</label>
-                        <input type="file" id="applicant_signature_upload" accept="image/*" class="d-none" onchange="handleSignatureUpload('applicant', event)">
-                    </div>
+                    </section>
                 </div>
+            </div>
 
-                <div class="d-flex justify-content-end gap-2 mt-4">
-                    <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">CLOSE</button>
-                    <button class="btn btn-success btn-modal-save" id="btn_save_leave">SUBMIT</button>
-                </div>
+            <div class="modal-footer lv-footer">
+                <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success btn-modal-save" id="btn_save_leave">Submit</button>
             </div>
         </div>
     </div>

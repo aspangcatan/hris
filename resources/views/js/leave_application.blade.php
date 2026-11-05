@@ -1206,7 +1206,7 @@
             }
 
             editing_leave_id = id;
-            $("#btn_save_leave").text("UPDATE");
+            $("#btn_save_leave").text("Update");
 
             // Populate existing attachments — include legacy single attachment if new table is empty
             let existingAttachments = data.attachments || [];
@@ -1306,7 +1306,7 @@
     function clearForm() {
         editing_leave_id = null;
         setLwopMode(false);
-        $("#btn_save_leave").text("SUBMIT");
+        $("#btn_save_leave").text("Submit");
         $("#leave_form input").not("[type='radio'], [type='checkbox']").val("");
         $("#leave_form input[type='radio']").prop("checked", false);
         $("#dates_table_body").empty();
