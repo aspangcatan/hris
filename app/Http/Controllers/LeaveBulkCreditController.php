@@ -171,6 +171,23 @@ class LeaveBulkCreditController extends Controller
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
+        // Double-submit guard. Every click creates a new batch, so there is no existing row to
+        // lock: instead the same person cannot apply the very same batch (same employees, same
+        // types and amounts) twice within a minute. A different batch is never blocked.
+        $userIdsKey = collect($request->user_ids)->map(fn($id) => (int) $id)->unique()->sort()->values()->all();
+        $creditsKey = collect($request->credits)
+            ->map(fn($c) => [(int) $c['leave_type_id'], round((float) $c['value'], 3)])
+            ->sortBy(fn($c) => $c[0])->values()->all();
+        $guard = \Illuminate\Support\Facades\Cache::lock(
+            'bulk-leave-credits:' . Auth::id() . ':' . sha1(json_encode([$userIdsKey, $creditsKey])),
+            60
+        );
+        if (!$guard->get()) {
+            return response()->json([
+                'message' => 'This exact batch was just applied. If you really mean to add it again, wait a minute and try again.',
+            ], 409);
+        }
+
         try {
             DB::transaction(function () use ($request) {
                 $userIds    = $request->user_ids;
@@ -279,6 +296,7 @@ class LeaveBulkCreditController extends Controller
                 'print_url' => route('bulk-leave-credits.print', $batchId),
             ]);
         } catch (\Exception $e) {
+            $guard->release(); // nothing was saved, so let HR retry straight away
             return response()->json(['message' => $e->getMessage()], 500);
         }
     }

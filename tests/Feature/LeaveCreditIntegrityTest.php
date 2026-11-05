@@ -91,6 +91,11 @@ class LeaveCreditIntegrityTest extends TestCase
         DB::table('hris.leave_cancellation_approvals')->whereIn('leave_cancellation_id', $cIds)->delete();
         DB::table('hris.leave_cancellations')->whereIn('id', $cIds)->delete();
 
+        $mIds = DB::table('hris.leave_monetizations')->whereIn('user_id', $users)->pluck('id');
+        DB::table('hris.leave_monetization_approvals')->whereIn('leave_monetization_id', $mIds)->delete();
+        DB::table('hris.leave_monetizations')->whereIn('id', $mIds)->delete();
+        DB::table('hris.credit_earned_logs')->whereIn('user_id', $users)->delete();
+
         DB::table('hris.leave_application_attachments')->whereIn('leave_application_id', $appIds)->delete();
         DB::table('hris.leave_credits')->whereIn('user_id', $users)->delete();
         DB::table('hris.employees')->whereIn('user_id', $users)->delete();
@@ -1015,5 +1020,115 @@ class LeaveCreditIntegrityTest extends TestCase
         $this->assertEquals('pending', DB::table('hris.leave_cancellation_approvals')->where('leave_cancellation_id', $cId)->where('role', 'HR')->value('status'));
         $this->assertEquals('active', DB::table('hris.leave_date_applied')->where('id', $d1)->value('status'));
         $this->assertEquals(9.0, $this->balance());
+    }
+
+    // ------------------------------------------------- double submit / overturn
+
+    /** @test */
+    public function a_step_acted_on_twice_gives_the_credits_back_only_once(): void
+    {
+        $appId = $this->file(['2027-03-01']);
+        $this->assertEquals(9.0, $this->balance());
+
+        $this->act($appId, 'SH', 'rejected');
+        $this->assertEquals(10.0, $this->balance());
+
+        // A second request that resolved the SH step before the first one committed
+        // (double-click / two tabs) arrives with the role already decided.
+        $this->actAs('SH');
+        try {
+            app(LeaveApprovalService::class)->updateApprovalStatus($appId, 'SH', null, 'rejected');
+            $this->fail('Expected the second action on the same step to be refused');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('already been acted on', $e->getMessage());
+        }
+        $this->assertEquals(10.0, $this->balance(), 'credits returned once, not twice');
+    }
+
+    /** @test */
+    public function a_rejection_cannot_be_overturned_once_its_dates_are_on_another_leave(): void
+    {
+        $rejected = $this->file(['2027-03-01']);
+        $this->act($rejected, 'SH', 'rejected');
+        $this->actAs('EMP');
+        $this->file(['2027-03-01']);             // the employee re-files the freed day
+        $this->assertEquals(9.0, $this->balance());
+
+        $this->actAs('DH');
+        try {
+            app(LeaveApprovalService::class)->updateApprovalStatus($rejected, null, null, 'approved', [], $this->sig, true);
+            $this->fail('Expected the overturn to be refused');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('2027-03-01', $e->getMessage());
+        }
+        $this->assertEquals(9.0, $this->balance(), 'nothing re-deducted');
+        $this->assertEquals('rejected', strtolower(DB::table('hris.leave_applications')->where('id', $rejected)->value('status')));
+    }
+
+    /** @test */
+    public function a_rejection_can_still_be_overturned_when_its_dates_are_free(): void
+    {
+        $appId = $this->file(['2027-03-01']);
+        $this->act($appId, 'SH', 'rejected');
+        $this->assertEquals(10.0, $this->balance());
+
+        $this->actAs('DH');
+        app(LeaveApprovalService::class)->updateApprovalStatus($appId, null, null, 'approved', [], $this->sig, true);
+
+        $this->assertEquals(9.0, $this->balance());
+        $this->assertEquals('pending', strtolower(DB::table('hris.leave_applications')->where('id', $appId)->value('status')));
+    }
+
+    // ------------------------------------------------ monetization / cutoff earning
+
+    /** Monetization approvals still check the session head flags. */
+    private function actAsMonetizationApprover(string $who): void
+    {
+        $this->actAs($who);
+        session(['is_section_head' => $who === 'SH', 'is_division_head' => $who === 'DH']);
+    }
+
+    /** @test */
+    public function a_rejected_monetization_cannot_be_acted_on_again_or_refunded_twice(): void
+    {
+        DB::table('hris.leave_types')->where('id', $this->leaveTypeId)
+            ->update(['monetizable' => 1, 'min_monetize_days' => 0, 'min_retained_days' => 0]);
+
+        $id = app(\App\Services\LeaveMonetizationService::class)->store(['leave_type_id' => $this->leaveTypeId, 'days_requested' => 2]);
+        $this->assertEquals(7.5, $this->balance()); // 2 days x 1.25
+
+        $this->actAsMonetizationApprover('SH');
+        app(\App\Services\LeaveMonetizationService::class)->updateApprovalStatus($id, null, 'rejected');
+        $this->assertEquals(10.0, $this->balance());
+
+        // The Division Head's step was left pending, but the request is finished.
+        $this->actAsMonetizationApprover('DH');
+        foreach (['rejected', 'approved'] as $status) {
+            try {
+                app(\App\Services\LeaveMonetizationService::class)->updateApprovalStatus($id, null, $status);
+                $this->fail("Expected '{$status}' on a rejected monetization to be refused");
+            } catch (\RuntimeException $e) {
+                $this->assertStringContainsString('already rejected', $e->getMessage());
+            }
+        }
+        $this->assertEquals(10.0, $this->balance(), 'credits returned once, not twice');
+        $this->assertCount(0, app(\App\Services\LeaveMonetizationService::class)->getForApproval(null, 'pending')
+            ->where('id', $id), 'a rejected request is not in the next approver\'s pending list');
+    }
+
+    /** @test */
+    public function the_monthly_cutoff_credits_a_month_once_and_keeps_deductions_made_in_between(): void
+    {
+        DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->update(['monthly_earned' => 1]);
+        $service = app(\App\Services\LeaveCreditService::class);
+
+        $this->file(['2027-03-01']);                 // 1.0 deducted: balance 9
+        $service->updateEarnedCredits($this->employeeId, 2027, 2, 22, 0, 1.25, 0);
+        $this->assertEquals(10.25, $this->balance(), 'earned credits added on top of the deduction');
+
+        $service->updateEarnedCredits($this->employeeId, 2027, 2, 22, 0, 1.25, 0); // second click
+        $this->assertEquals(10.25, $this->balance(), 'the same month is not credited twice');
+        $this->assertEquals(1, DB::table('hris.credit_earned_logs')
+            ->where('user_id', $this->employeeId)->where('leave_type_id', $this->leaveTypeId)->count());
     }
 }
