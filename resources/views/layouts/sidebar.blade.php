@@ -42,7 +42,7 @@
             </a>
         </li>
         @endpermission
-        @if(in_array(strtolower((string) session('access_rights')), ['admin', 'schedule', 'dh'], true) || session('is_section_head') || session('is_division_head'))
+        @permission('dtr.view_others')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('employee_dtr') ? '' : 'collapsed' }}"
                     href="{{ route('employee_dtr') }}">
@@ -50,7 +50,7 @@
                     <span>Employee DTR</span>
                 </a>
             </li>
-        @endif
+        @endpermission
 
         {{-- PASS SLIP MANAGEMENT --}}
         @if(permission_check('passslip.file') || permission_check('passslip.approve'))
@@ -122,7 +122,7 @@
         @endif
 
         {{-- SCHEDULE MANAGEMENT --}}
-        @if(permission_check('schedule.manage') || permission_check('schedule.view') || in_array(session('access_rights'), ['admin']))
+        @if(permission_check('schedule.manage') || permission_check('schedule.view'))
             <li class="nav-heading">Schedule Management</li>
             @permission('schedule.manage')
             <li class="nav-item">
@@ -140,7 +140,7 @@
                     </a>
                 </li>
             @endif
-            @if(in_array(session('access_rights'), ['admin']))
+            @permission('schedule.manage')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_master_list') ? '' : 'collapsed' }}"
                         href="{{ route('schedule_master_list') }}">
@@ -148,6 +148,9 @@
                         <span>Schedule Master List</span>
                     </a>
                 </li>
+            @endpermission
+            {{-- Schedule Access has no permission code yet (and no route guard) - admin only for now. --}}
+            @if(strtolower((string) session('access_rights')) === 'admin')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_access') ? '' : 'collapsed' }}"
                         href="{{ route('schedule_access') }}">
@@ -181,7 +184,7 @@
 
         {{-- LEAVE MANAGEMENT --}}
         @if(true)
-            @if(permission_check('leave.file') || permission_check('leave.approve'))
+            @if(permission_check('leave.file') || permission_check('leave.approve') || permission_check('leave.approve_hr'))
                 <li class="nav-heading">Leave Management</li>
                 @permission('leave.file')
                 <li class="nav-item">
@@ -219,7 +222,7 @@
                     </a>
                 </li>
                 @endpermission
-                @if(in_array(session('access_rights'), ['admin', 'HRH', 'hr']))
+                @permission('leave.approve_hr')
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('admin_cancellations') ? '' : 'collapsed' }}"
                             href="{{ route('admin_cancellations') }}">
@@ -227,7 +230,7 @@
                             <span>All Cancellations</span>
                         </a>
                     </li>
-                @endif
+                @endpermission
             @endif
         @endif
         {{-- HR MANAGEMENT --}}

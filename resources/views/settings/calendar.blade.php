@@ -43,7 +43,10 @@
                                     <textarea rows="3" class="form-control" id="description" name="description" required></textarea>
                                 </div>
                                 <div class="d-flex justify-content-end gap-2 mt-3">
-                                    <button type="button" class="btn btn-action btn-delete" id="deleteBtn" title="Delete" style="display:none"><i class="bi bi-trash"></i></button>
+                                    {{-- Destructive action sits on the left, away from Cancel / Update. --}}
+                                    <button type="button" class="btn btn-danger me-auto" id="deleteBtn" style="display:none">
+                                        <i class="bi bi-trash me-1"></i>Delete
+                                    </button>
                                     <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Cancel</button>
                                     <button type="button" class="btn btn-success btn-modal-save" id="updateBtn" style="display:none">Update</button>
                                     <button type="submit" class="btn btn-success btn-modal-save" id="saveBtn">Save</button>
@@ -144,6 +147,16 @@
 
             // Delete holiday
             $('#deleteBtn').click(async function () {
+                const ok = await Swal.fire({
+                    icon: 'warning',
+                    title: 'Delete this holiday?',
+                    text: ($('#description').val() || 'This holiday') + ' will be removed from the calendar.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Delete',
+                    cancelButtonText: 'Cancel',
+                });
+                if (!ok.isConfirmed) return;
+
                 var formData = new FormData($('#holidayForm')[0]);
 
                 var response = await fetch('{{ route('calendar.delete') }}', {  // Use route helper for deleting holiday

@@ -97,8 +97,7 @@ class PermissionSeeder extends Seeder
                 'dtr.view_own','dtr.view_others','dtr.edit','dtr.print',
             ],
             'standard' => [
-                'dtr.view_own','dtr.print',
-                'employee.view',
+                'dtr.view_own',
                 'leave.file',
                 'overtime.file',
                 'passslip.file',
