@@ -343,6 +343,22 @@
             }
         });
 
+        // Last line of defence against duplicate dates (the date picker already refuses them).
+        const seenDates = new Set();
+        const duplicateDates = new Set();
+        date_applied_array.forEach(d => {
+            if (seenDates.has(d.date_applied)) duplicateDates.add(d.date_applied);
+            seenDates.add(d.date_applied);
+        });
+        if (duplicateDates.size > 0) {
+            $("#dates_table_body input[type='date']").each(function () {
+                if (duplicateDates.has($(this).val())) flashInvalid($(this));
+            });
+            const list = [...duplicateDates].sort().map(d => moment(d).format("MM/DD/YYYY")).join(", ");
+            toastr.error(`Each date can only be filed once. Remove the duplicate: ${list}`, "Duplicate date");
+            return;
+        }
+
         // Unique leave type IDs from the date rows
         const leave_ids = [...new Set(date_applied_array.map(d => d.leave_type_id).filter(Boolean))];
 
@@ -677,13 +693,63 @@
 
     // Weekends are not valid leave dates. Native date inputs cannot grey out
     // weekdays in the picker, so a weekend pick is rejected and cleared here.
+    //
+    // When the date is typed with the keyboard, the browser reports a "complete" date after every
+    // digit of the year (0002, 0020, 0202, 2026), so a year below 1900 means the user is still
+    // typing: the checks wait until the year is complete, or until the user leaves the field.
     $(document).on('change', "#dates_table_body input[type='date']", function () {
-        const val = $(this).val();
-        if (val && isWeekendIso(val)) {
-            $(this).val('');
-            toastr.error("Weekends cannot be selected. Please pick a weekday.", "Invalid date");
-        }
+        if (!isStillTypingYear($(this).val())) validateDateRow(this);
     });
+
+    $(document).on('blur', "#dates_table_body input[type='date']", function () {
+        const val = $(this).val();
+        if (val && isStillTypingYear(val)) {
+            $(this).val('');
+            toastr.error("Please enter a complete date (MM/DD/YYYY).", "Invalid date");
+            return;
+        }
+        validateDateRow(this);
+    });
+
+    function isStillTypingYear(iso) {
+        return !!iso && parseInt(iso.slice(0, 4), 10) < 1900;
+    }
+
+    // Weekend and duplicate checks for one date input. Clears the value when it is not allowed.
+    function validateDateRow(input) {
+        const val = $(input).val();
+        if (!val) return;
+
+        if (isWeekendIso(val)) {
+            $(input).val('');
+            toastr.error("Weekends cannot be selected. Please pick a weekday.", "Invalid date");
+            return;
+        }
+
+        // A date can only be listed once (no splitting a day into two rows, even across types).
+        const $twin = findDateInput(val, input);
+        if ($twin) {
+            $(input).val('');
+            flashInvalid($twin);
+            toastr.error(`${moment(val).format("MM/DD/YYYY")} is already in the list. A date can only be filed once.`, "Duplicate date");
+        }
+    }
+
+    // The other date input already holding $iso (ignoring $except), or null.
+    function findDateInput(iso, except) {
+        if (!iso) return null;
+        let found = null;
+        $("#dates_table_body input[type='date']").each(function () {
+            if (this !== except && $(this).val() === iso) { found = $(this); return false; }
+        });
+        return found;
+    }
+
+    // Briefly outline a field red so the user sees which row it clashes with.
+    function flashInvalid($input) {
+        $input.addClass('is-invalid');
+        setTimeout(() => $input.removeClass('is-invalid'), 2500);
+    }
 
     // Earliest selectable date (YYYY-MM-DD) for a leave type, or '' for no limit.
     // A negative days_prior (e.g. Sick Leave, filed on return) means backdating is
@@ -812,6 +878,7 @@
         const holidays = await loadHolidayDates();
 
         let added = 0;
+        const alreadyListed = [];
         const cursor = new Date(startVal + 'T00:00:00');
         const end = new Date(endVal + 'T00:00:00');
 
@@ -821,7 +888,9 @@
             const isWeekend = day === 0 || day === 6;
             const isHoliday = holidays.includes(iso);
 
-            if (!isWeekend && !isHoliday) {
+            if (!isWeekend && !isHoliday && findDateInput(iso, null)) {
+                alreadyListed.push(moment(iso).format("MM/DD/YYYY"));   // never add a date twice
+            } else if (!isWeekend && !isHoliday) {
                 addRow(leaveTypeId);
                 const $row = $("#dates_table_body tr:last");
                 $row.find("input[type='date']").val(iso);
@@ -832,8 +901,14 @@
             cursor.setDate(cursor.getDate() + 1);
         }
 
+        if (alreadyListed.length > 0) {
+            toastr.warning(`Skipped ${alreadyListed.length} date(s) already in the list: ${alreadyListed.join(", ")}`, "Duplicate dates");
+        }
+
         if (added === 0) {
-            toastr.error("No working days in that range (all weekends/holidays)", "Nothing to add");
+            if (alreadyListed.length === 0) {
+                toastr.error("No working days in that range (all weekends/holidays)", "Nothing to add");
+            }
             return;
         }
 
@@ -944,6 +1019,10 @@
                 const deleteItem = it.is_deletable
                     ? `<li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelApplication(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>`
                     : '';
+                // A rejected application is not printed, so it gets no Print option.
+                const printItem = String(it.status || '').toLowerCase() === 'rejected'
+                    ? ''
+                    : `<li><a class="dropdown-item" href="javascript:void(0)" onclick="printApplication(${it.id})"><i class="bi bi-printer text-primary me-2"></i> Print</a></li>`;
 
                 $("#leave_history_list").append(`
                 <tr id="leave_id_${it.id}">
@@ -962,11 +1041,7 @@
                                         <i class="bi bi-eye-fill text-success me-2"></i> View
                                     </a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item" href="javascript:void(0)" onclick="printApplication(${it.id})">
-                                        <i class="bi bi-printer text-primary me-2"></i> Print
-                                    </a>
-                                </li>
+                                ${printItem}
                                 ${deleteItem}
                             </ul>
                         </div>
@@ -1160,28 +1235,17 @@
             $('#lwop_badge').toggleClass('d-none', !data.is_lwop);
 
             // Show all attachments (new multi-attachment array + legacy single)
-            const allAttachments = (data.attachments && data.attachments.length > 0)
-                ? data.attachments
-                : (data.attachment_url ? [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }] : []);
-            if (allAttachments.length > 0) {
-                const links = allAttachments.map(a =>
-                    `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${escapeHtml(a.original_name)}</a>`
-                ).join('');
-                $('#view_attachment_row').html(`<p><strong>Attachments:</strong> ${links}</p>`).show();
-            } else {
-                $('#view_attachment_row').hide();
-            }
+            renderLeaveAttachments(data);
             $('#leave_details_container').html(renderLeaveDetailsHtml(data));
 
             $('#dates_applied_body').html(
                 data.dates.map(d => {
-                    const cancelledBadge = d.is_cancelled
-                        ? ` <span class="badge bg-danger" style="font-size:.7rem">Cancelled</span>`
-                        : '';
-                    const disapprovedBadge = d.final_disapproved
-                        ? `<span class="badge bg-danger">Disapproved</span>`
-                        : '';
-                    return `<tr><td>${d.leave_type || ''}${cancelledBadge}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td><td>${disapprovedBadge}</td></tr>`;
+                    const state = d.is_cancelled
+                        ? `<span class="lv-pill lv-pill-rejected">Cancelled</span>`
+                        : d.final_disapproved
+                            ? `<span class="lv-pill lv-pill-rejected">Disapproved</span>`
+                            : `<span class="lv-pill lv-pill-muted">Included</span>`;
+                    return `<tr><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hrs</td><td>${state}</td></tr>`;
                 }).join("")
             );
 
@@ -1193,21 +1257,7 @@
             updateStepStatus('#step2', data.approvals.dh);
             updateStepStatus('#step3', data.approvals.hr);
 
-            let remarksHtml = "";
-            ["hr_compliance", "sh", "dh", "hr"].forEach(role => {
-                if (data.approvals[role]?.remarks) {
-                    const label = role === "hr_compliance" ? "HR (Compliance Check)"
-                        : role === "sh" ? "Supervisor"
-                        : role === "dh" ? "Division Head" : "Human Resource";
-                    remarksHtml += `
-                        <div class="mb-2">
-                            <strong>${label}:</strong>
-                            <p class="mb-0">${escapeHtml(data.approvals[role].remarks)}</p>
-                        </div><hr>
-                    `;
-                }
-            });
-            $('#remarks_history').html(remarksHtml || `<p class="text-muted mb-0">No remarks yet.</p>`);
+            renderLeaveRemarks(data.approvals);
 
             $('#viewLeaveModal').modal('show');
         } catch {
@@ -1584,6 +1634,10 @@
                 const deleteItem = it.is_deletable
                     ? `<li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="cancelApplication(${it.id})"><i class="bi bi-trash-fill me-2"></i> Delete</a></li>`
                     : '';
+                // A rejected application is not printed, so it gets no Print option.
+                const printItem = String(it.status || '').toLowerCase() === 'rejected'
+                    ? ''
+                    : `<li><a class="dropdown-item" href="javascript:void(0)" onclick="printApplication(${it.id})"><i class="bi bi-printer text-primary me-2"></i> Print</a></li>`;
 
                 $("#lwop_history_list").append(`
                 <tr id="lwop_id_${it.id}">
@@ -1602,11 +1656,7 @@
                                         <i class="bi bi-eye-fill text-success me-2"></i> View
                                     </a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item" href="javascript:void(0)" onclick="printApplication(${it.id})">
-                                        <i class="bi bi-printer text-primary me-2"></i> Print
-                                    </a>
-                                </li>
+                                ${printItem}
                                 ${deleteItem}
                             </ul>
                         </div>

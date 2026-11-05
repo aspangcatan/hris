@@ -70,29 +70,37 @@ class PrintController extends Controller
         }
     }
 
+    /**
+     * "Nov. 16, 17, 18 2026" - the month is written when it changes, the year after the last
+     * date of each year: "Nov. 30, Dec. 01, 02 2026", "Dec. 31 2026, Jan. 04 2027".
+     * Expects the dates in ascending order.
+     */
     public function getInclusiveDates($date_applied)
     {
-        $month = "";
-        $title = "";
-        $year = "";
-        for ($i = 0; $i < count($date_applied); $i++) {
-            $split = explode("-", $date_applied[$i]->date_applied);
-            $year = $split[0];
-            if ($title == "") {
-                $title = self::getMonthName($split[1]) . $split[2];
-                $month = $split[0];
-                continue;
+        $parts      = [];
+        $prevMonth  = null;   // "YYYY-MM"
+        $prevYear   = null;
+
+        foreach ($date_applied as $row) {
+            [$y, $m, $d] = explode('-', substr((string) $row->date_applied, 0, 10));
+
+            if ($prevYear !== null && $y !== $prevYear) {
+                $parts[count($parts) - 1] .= ' ' . $prevYear;   // close the previous year
             }
 
-            if ($month == $split[0]) {
-                $title = $title . ", " . $split[2];
-            } else {
-                $title = $title . ", " . $split[1] . " " . self::getMonthName($split[1]) . $split[2];
-            }
-            $month = $split[1];
+            $day     = $d;   // two digits, as the form has always printed them
+            $parts[] = ("{$y}-{$m}" === $prevMonth) ? $day : self::getMonthName($m) . $day;
+
+            $prevMonth = "{$y}-{$m}";
+            $prevYear  = $y;
         }
-        $title = $title . " " . $year;
-        return $title;
+
+        if (empty($parts)) {
+            return '';
+        }
+
+        $parts[count($parts) - 1] .= ' ' . $prevYear;
+        return implode(', ', $parts);
     }
 
     public function getTypeXY($type)
@@ -367,6 +375,12 @@ class PrintController extends Controller
         // Form shows salary and signatures: owner, ADMIN, HR, or a head in its approval chain only.
         if (!app(\App\Services\LeaveApprovalService::class)->canViewLeave((int) $request->id)) {
             abort(404);
+        }
+
+        // A rejected application is not printed.
+        $status = DB::table('hris.leave_applications')->where('id', (int) $request->id)->value('status');
+        if (strtolower((string) $status) === 'rejected') {
+            abort(403, 'A rejected leave application cannot be printed.');
         }
 
         $leave_application = DB::table('hris.leave_applications as l')

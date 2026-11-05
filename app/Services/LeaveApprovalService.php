@@ -409,7 +409,12 @@ class LeaveApprovalService
             // marked Rejected, only an explicitly confirmed approval may overturn it. Once
             // overturned the leave is Pending again and the old rejection stays in the
             // history without blocking the chain.
-            if ($normalizedStatus !== 'acknowledged' && $priorStatuses->contains('rejected') && $leaveIsRejected) {
+            // The Division Head has the final say on an earlier rejection either way: approving
+            // overturns it (below), rejecting concurs with it. Concurring changes no credits - the
+            // leave is already Rejected with its credits returned - and lets HR acknowledge and close it.
+            $dhConcursWithRejection = $normalizedStatus === 'rejected' && $effectiveRole === 'DH';
+
+            if ($normalizedStatus !== 'acknowledged' && $priorStatuses->contains('rejected') && $leaveIsRejected && !$dhConcursWithRejection) {
                 if ($normalizedStatus !== 'approved') {
                     throw new \RuntimeException('A prior approver already rejected this leave.');
                 }

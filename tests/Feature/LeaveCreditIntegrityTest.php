@@ -1131,4 +1131,51 @@ class LeaveCreditIntegrityTest extends TestCase
         $this->assertEquals(1, DB::table('hris.credit_earned_logs')
             ->where('user_id', $this->employeeId)->where('leave_type_id', $this->leaveTypeId)->count());
     }
+
+    // ------------------------------------------- DH concurs with an SH rejection
+
+    /** @test */
+    public function the_division_head_can_agree_with_a_section_head_rejection_and_hr_closes_it(): void
+    {
+        $appId = $this->file(['2027-03-01', '2027-03-02']);
+        $this->assertEquals(8.0, $this->balance());
+
+        $this->act($appId, 'SH', 'rejected');
+        $this->assertEquals(10.0, $this->balance());
+        $this->assertFalse(app(LeaveApplicationService::class)->canDelete($appId), 'still open: the DH has not decided');
+
+        $this->act($appId, 'DH', 'rejected');           // agrees - no extra refund
+        $this->assertEquals(10.0, $this->balance(), 'credits returned once, not again on the DH rejection');
+        $this->assertEquals('rejected', strtolower(DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->where('role', 'DH')->value('status')));
+
+        // HR can only acknowledge a DH rejection; that closes the leave.
+        $this->act($appId, 'HR', 'acknowledged');
+        $this->assertEquals(10.0, $this->balance());
+        $this->assertEquals('rejected', strtolower(DB::table('hris.leave_applications')->where('id', $appId)->value('status')));
+        $this->assertFalse(DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)->whereRaw('LOWER(status) = ?', ['pending'])->exists(), 'nothing left pending');
+
+        $this->actAs('EMP');
+        $this->assertTrue(app(LeaveApplicationService::class)->canDelete($appId), 'the employee can now delete it');
+    }
+
+    /** @test */
+    public function only_the_division_head_can_agree_with_an_earlier_rejection(): void
+    {
+        $appId = $this->file(['2027-03-01']);
+        $this->act($appId, 'SH', 'rejected');
+
+        // HR's turn has not come (the DH step is still open), so HR cannot reject or close it.
+        $this->actAs('HR');
+        foreach (['rejected', 'acknowledged'] as $status) {
+            try {
+                app(LeaveApprovalService::class)->updateApprovalStatus($appId, null, null, $status);
+                $this->fail("Expected HR '{$status}' to be refused before the DH decides");
+            } catch (\RuntimeException $e) {
+                $this->assertStringContainsString('not allowed', $e->getMessage());
+            }
+        }
+        $this->assertEquals(10.0, $this->balance());
+    }
 }

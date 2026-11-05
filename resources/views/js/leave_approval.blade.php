@@ -263,20 +263,10 @@
         $('#lwop_badge').toggleClass('d-none', !data.is_lwop);
         $('#leave_details_container').html(renderLeaveDetailsHtml(data));
 
-        const allAttachments = (data.attachments && data.attachments.length > 0)
-            ? data.attachments
-            : (data.attachment_url ? [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }] : []);
-        if (allAttachments.length > 0) {
-            const links = allAttachments.map(a =>
-                `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${escapeHtml(a.original_name)}</a>`
-            ).join('');
-            $('#view_attachment_row').html(`<p><strong>Attachments:</strong> ${links}</p>`).show();
-        } else {
-            $('#view_attachment_row').hide();
-        }
+        renderLeaveAttachments(data);
 
         $('#dates_applied_body').html(data.dates.map(d =>
-            `<tr><td>${d.leave_type || ''}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hours</td><td>${renderDateDisapproveCell(d, data.current_approval_role)}</td></tr>`
+            `<tr><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hrs</td><td>${renderDateDisapproveCell(d, data.current_approval_role)}</td></tr>`
         ).join(""));
 
         $('#step0').toggleClass('d-none', !data.approvals.hr_compliance);
@@ -287,20 +277,7 @@
         updateStepStatus('#step2', data.approvals.dh);
         updateStepStatus('#step3', data.approvals.hr);
 
-        let remarks = ["hr_compliance", "sh", "dh", "hr"].map(role => {
-            let a = data.approvals[role];
-            if (!a?.remarks) return "";
-            const label = role === "hr_compliance" ? "HR COMPLIANCE" : role.toUpperCase();
-            return `
-            <div class="mb-2">
-                <strong>${label}:</strong>
-                <p class="mb-0">${escapeHtml(a.remarks)}</p>
-                <small class="text-muted">Status: ${a.status}</small>
-            </div>
-        `;
-        }).join("") || `<p class="text-muted">No remarks yet.</p>`;
-
-        $('#remarks_history').html(remarks);
+        renderLeaveRemarks(data.approvals);
         const canAct = activeFilter === 'pending';
         current_approval_role = data.current_approval_role;
 
@@ -470,6 +447,26 @@
             const rejections = getPriorRejections();
             if (rejections.length > 0) {
                 showRejectedLeaveWarning(rejections, () => submitApproval(button, status, signature, true));
+                return;
+            }
+        }
+
+        // Division Head rejecting a leave an earlier approver already rejected = agreeing with it.
+        // The rejection becomes final (credits were already returned) and HR can close the leave.
+        if (status === 'Rejected' && current_approval_role === 'DH') {
+            const rejections = getPriorRejections();
+            if (rejections.length > 0) {
+                showApprovalWarning({
+                    title: 'Agree With the Rejection?',
+                    intro: 'This leave was already rejected by:',
+                    itemsHtml: rejections.map(r => `
+                        <li class="list-group-item">
+                            <div class="fw-semibold">${escapeHtml(r.label)}</div>
+                            <div class="small text-muted">Remarks: ${r.approval?.remarks ? escapeHtml(r.approval.remarks) : 'None'}</div>
+                        </li>`).join(''),
+                    question: 'Rejecting it too makes the rejection final. HR will then acknowledge and close the leave. Continue?',
+                    confirmLabel: 'REJECT (FINAL)',
+                }, () => submitApproval(button, status, signature));
                 return;
             }
         }

@@ -201,14 +201,22 @@ class LeavePrintSignatureRenderTest extends TestCase
         // Rejected: the 3.000 was given back, so SL is already back at 10.000 and nothing is "less".
         $appId = $this->seedCreditCertification('Rejected', 10.000, 3.000, 5.000);
 
-        $response = $this->get('/print_leave?id=' . $appId);
+        // The certification (still shown when viewing the leave) deducts nothing.
+        $app  = DB::table('hris.leave_applications')->where('id', $appId)->first(['id', 'user_id', 'status']);
+        $slId = (int) DB::table('hris.leave_types')->where('code', 'SL')->value('id');
+        $cert = app(\App\Services\LeaveApplicationService::class)->getCreditCertification($app, [$slId], true)[$slId];
+        $this->assertEquals(0.0, $cert['less']);
+        $this->assertEquals(10.0, $cert['balance']);
+        $this->assertEquals(10.0, $cert['total_earned']);
+    }
 
-        $response->assertOk();
-        $response->assertSeeInOrder([
-            'Total Earned', '<td>5.000</td>', '<td>10.000</td>',
-            'Less this application', '<td>0.000</td>', '<td>0.000</td>',
-            'Balance', '<td>5.000</td>', '<td>10.000</td>',
-        ], false);
+    /** @test */
+    public function a_rejected_leave_application_cannot_be_printed(): void
+    {
+        $this->loginAsEmployee();
+        $appId = $this->seedCreditCertification('Rejected', 10.000, 3.000, 5.000);
+
+        $this->get('/print_leave?id=' . $appId)->assertStatus(403);
     }
 
     /** @test */

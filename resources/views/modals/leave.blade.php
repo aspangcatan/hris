@@ -175,176 +175,186 @@
     </div>
 </div>
 
-<div class="modal fade premium-modal" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true"
+{{--
+    Leave Application view - shared by the employee's "View" (leave_application) and the
+    approvers' review (leave_approval). The scripts fill these ids: leave_name, lwop_badge,
+    leave_type, leave_commutation, view_attachment_row, leave_details_container,
+    leave_credit_balance_section/_body, dates_applied_body, remarks_history, step0-step3
+    (.circle), and on the approval page leave_remarks, hr_action_section, the HR fields,
+    approver_signature_section and the action buttons.
+--}}
+@php($isLeaveApproval = request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
+<div class="modal fade premium-modal lv-modal" id="viewLeaveModal" tabindex="-1" aria-labelledby="viewLeaveModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header lv-header">
                 <div class="modal-hero">
                     <i class="bi bi-calendar-check text-white" style="font-size:2.2rem"></i>
                 </div>
+                <div class="lv-header-text">
+                    <h5 class="lv-title" id="viewLeaveModalLabel">Leave Application</h5>
+                    <div class="lv-subtitle">
+                        <i class="bi bi-person"></i>
+                        <span id="leave_name"></span>
+                        <span id="lwop_badge" class="lv-pill lv-pill-warn d-none">LWOP</span>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body p-4">
-                <div class="modal-title-text">Leave Application</div>
-                <!-- Steps -->
-                <div class="mb-5">
-                    <div class="steps d-flex justify-content-between position-relative">
-                        <div class="step text-center d-none" id="step0">
-                            <div class="circle">1</div>
-                            <div class="label">HR Compliance</div>
-                        </div>
-                        <div class="step text-center" id="step1">
-                            <div class="circle">1</div>
-                            <div class="label">Supervisor</div>
-                        </div>
-                        <div class="step text-center" id="step2">
-                            <div class="circle">2</div>
-                            <div class="label">Division Head</div>
-                        </div>
-                        <div class="step text-center" id="step3">
-                            <div class="circle">3</div>
-                            <div class="label">Human Resource</div>
-                        </div>
+
+            <div class="modal-body lv-body">
+                {{-- Approval progress: numbered by visible step; done steps show a tick / cross --}}
+                <div class="lv-steps">
+                    <div class="lv-step d-none" id="step0">
+                        <div class="circle"></div>
+                        <div class="lv-step-label">HR Compliance</div>
+                        <div class="lv-step-status"></div>
+                    </div>
+                    <div class="lv-step" id="step1">
+                        <div class="circle"></div>
+                        <div class="lv-step-label">Supervisor</div>
+                        <div class="lv-step-status"></div>
+                    </div>
+                    <div class="lv-step" id="step2">
+                        <div class="circle"></div>
+                        <div class="lv-step-label">Division Head</div>
+                        <div class="lv-step-status"></div>
+                    </div>
+                    <div class="lv-step" id="step3">
+                        <div class="circle"></div>
+                        <div class="lv-step-label">Human Resource</div>
+                        <div class="lv-step-status"></div>
                     </div>
                 </div>
 
-                <!-- Leave Info -->
-                <div class="mt-5">
-                    <!-- Leave Credit Balance — only the leave types filed in this application -->
-                    <div id="leave_credit_balance_section" class="mb-4 d-none">
-                        <p class="mb-2"><strong>Leave Credit Balance:</strong></p>
-                        <table class="table table-bordered mb-0">
-                            <thead class="table-light">
+                {{-- At a glance --}}
+                <div class="lv-summary">
+                    <div class="lv-tile">
+                        <div class="lv-tile-label">Leave type</div>
+                        <div class="lv-tile-value" id="leave_type"></div>
+                    </div>
+                    <div class="lv-tile">
+                        <div class="lv-tile-label">Commutation</div>
+                        <div class="lv-tile-value" id="leave_commutation"></div>
+                    </div>
+                    <div class="lv-tile" id="view_attachment_row" style="display:none;"></div>
+                </div>
+
+                {{-- Leave credit balance - only the leave types filed in this application --}}
+                <section class="lv-card d-none" id="leave_credit_balance_section">
+                    <h6 class="lv-card-title"><i class="bi bi-wallet2"></i> Leave Credit Balance</h6>
+                    <div class="table-responsive">
+                        <table class="table lv-table mb-0">
+                            <thead>
                             <tr>
-                                <th style="width: 34%;">Type</th>
-                                <th class="text-end" style="width: 22%;">Total Earned</th>
-                                <th class="text-end" style="width: 22%;">Less this application</th>
-                                <th class="text-end" style="width: 22%;">Balance</th>
+                                <th>Type</th>
+                                <th class="text-end">Total earned</th>
+                                <th class="text-end">Less this application</th>
+                                <th class="text-end">Balance</th>
                             </tr>
                             </thead>
                             <tbody id="leave_credit_balance_body"></tbody>
                         </table>
                     </div>
+                </section>
 
-                    <p><strong>Name:</strong> <span id="leave_name"></span></p>
-                    <p><strong>Type:</strong> <span id="leave_type"></span> <span id="lwop_badge" class="badge bg-warning text-dark d-none">LWOP</span></p>
-                    <p><strong>Details:</strong></p>
-                    <div id="leave_details_container" class="border rounded p-3 bg-light"></div>
-                    <p class="mt-3"><strong>Commutation:</strong> <span id="leave_commutation"></span></p>
-                </div>
+                <section class="lv-card">
+                    <h6 class="lv-card-title"><i class="bi bi-card-text"></i> Details of Leave</h6>
+                    <div class="lv-details" id="leave_details_container"></div>
+                </section>
 
-                <!-- Attachment -->
-                <div id="view_attachment_row" class="mt-3" style="display:none;">
-                    <p><strong>Attachment:</strong>
-                        <a id="view_attachment_link" href="#" target="_blank" class="ms-1">
-                            <i class="bi bi-paperclip"></i> View File
-                        </a>
-                    </p>
-                </div>
-
-                <!-- Dates Applied -->
-                <div class="mt-3">
-                    <p><strong>Dates Applied:</strong></p>
-                    <table class="table table-bordered mb-0">
-                        <thead class="table-light">
-                        <tr>
-                            <th style="width: 26%;">Leave Type</th>
-                            <th style="width: 18%;">Date</th>
-                            <th style="width: 14%;">Duration</th>
-                            <th style="width: 42%;">Disapprove</th>
-                        </tr>
-                        </thead>
-                        <tbody id="dates_applied_body">
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Remarks Section -->
-                <div class="mt-4">
-                    <label class="form-label"><strong>Remarks History:</strong></label>
-                    <div id="remarks_history" class="border rounded p-3 mb-3 bg-light"
-                         style="max-height: 200px; overflow-y: auto;">
+                <section class="lv-card">
+                    <h6 class="lv-card-title"><i class="bi bi-calendar3"></i> Dates Applied</h6>
+                    <div class="table-responsive">
+                        <table class="table lv-table mb-0">
+                            <thead>
+                            <tr>
+                                <th style="width: 30%;">Leave type</th>
+                                <th style="width: 20%;">Date</th>
+                                <th style="width: 15%;">Duration</th>
+                                <th style="width: 35%;">{{ $isLeaveApproval ? 'Disapprove' : 'Status' }}</th>
+                            </tr>
+                            </thead>
+                            <tbody id="dates_applied_body"></tbody>
+                        </table>
                     </div>
+                </section>
 
-                    @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
-                        <label for="leave_remarks" class="form-label"><strong>Add Your Remark:</strong></label>
-                        <textarea id="leave_remarks"
-                                  class="form-control"
-                                  rows="3"
-                                  placeholder="Enter your remarks here..."></textarea>
+                <section class="lv-card">
+                    <h6 class="lv-card-title"><i class="bi bi-chat-left-text"></i> Remarks History</h6>
+                    <div class="lv-remarks" id="remarks_history"></div>
+                </section>
+
+                @if ($isLeaveApproval)
+                    <section class="lv-card lv-card-action">
+                        <h6 class="lv-card-title"><i class="bi bi-pencil-square"></i> Your Decision</h6>
+
+                        <label for="leave_remarks" class="form-label">Remarks</label>
+                        <textarea id="leave_remarks" class="form-control" rows="3"
+                                  placeholder="Add a remark for the employee and the next approver (optional)"></textarea>
 
                         {{-- HR only: CSC Form 6 section 7.A / 7.C, printed on the leave form --}}
-                        <div id="hr_action_section" class="mt-3 d-none">
-                            <div class="row g-2">
+                        <div id="hr_action_section" class="lv-subsection d-none">
+                            <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="cert_as_of" class="form-label mb-1"><strong>7.A Certification of Leave Credits — As of:</strong></label>
+                                    <label for="cert_as_of" class="form-label">7.A Certification of leave credits &mdash; as of</label>
                                     <input type="date" class="form-control" id="cert_as_of">
                                 </div>
                             </div>
-                            <label class="form-label mt-3 mb-1"><strong>7.C Approved for:</strong></label>
-                            <div class="row g-2">
-                                <div class="col-md-3">
-                                    <div class="form-floating">
-                                        <input type="number" class="form-control" id="approved_days_with_pay" min="0" step="any" placeholder="">
-                                        <label>Days with pay</label>
-                                    </div>
+                            <div class="form-label mt-3">7.C Approved for</div>
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-md-3">
+                                    <label for="approved_days_with_pay" class="form-label lv-sublabel">Days with pay</label>
+                                    <input type="number" class="form-control" id="approved_days_with_pay" min="0" step="any">
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="form-floating">
-                                        <input type="number" class="form-control" id="approved_days_without_pay" min="0" step="any" placeholder="">
-                                        <label>Days without pay</label>
-                                    </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <label for="approved_days_without_pay" class="form-label lv-sublabel">Days without pay</label>
+                                    <input type="number" class="form-control" id="approved_days_without_pay" min="0" step="any">
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" id="approved_others" maxlength="255" placeholder="">
-                                        <label>Others (Specify)</label>
-                                    </div>
+                                    <label for="approved_others" class="form-label lv-sublabel">Others (specify)</label>
+                                    <input type="text" class="form-control" id="approved_others" maxlength="255">
                                 </div>
                             </div>
-                            <div id="hr_action_guide" class="form-text mt-1"></div>
+                            <div id="hr_action_guide" class="form-text mt-2"></div>
                         </div>
 
-                        <div id="approver_signature_section" class="mt-3 d-none">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <label class="form-label mb-0"><strong>Your Signature (required to Approve):</strong></label>
+                        <div id="approver_signature_section" class="lv-subsection d-none">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label mb-0">Your signature <span class="text-danger">*</span> <span class="lv-sublabel">(required to approve)</span></label>
                                 <button type="button" class="btn btn-sm btn-link p-0" onclick="clearSignaturePad('approver')">Clear</button>
                             </div>
-                            <div style="border: 1.5px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; position: relative;">
+                            <div class="lv-signature">
                                 <canvas id="approver_signature_canvas" style="display:block; width:100%; height:130px;"></canvas>
-                                <div id="approver_signature_placeholder" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:10px; color:#94a3b8; font-size:12px; pointer-events:none;">Draw your signature here, or upload an image below</div>
+                                <div id="approver_signature_placeholder" class="lv-signature-hint">Draw your signature here, or upload an image below</div>
                             </div>
                             <div class="mt-2">
-                                <label class="btn btn-sm btn-outline-secondary mb-0" for="approver_signature_upload">Upload Signature</label>
+                                <label class="btn btn-sm btn-outline-secondary mb-0" for="approver_signature_upload"><i class="bi bi-upload me-1"></i>Upload signature</label>
                                 <input type="file" id="approver_signature_upload" accept="image/*" class="d-none" onchange="handleSignatureUpload('approver', event)">
                             </div>
                         </div>
-                    @endif
-                </div>
+                    </section>
+                @endif
             </div>
 
-            <div class="px-4 pb-3 @if(request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval')) d-flex justify-content-between @else d-flex justify-content-end @endif align-items-center">
-                <div>
-                    @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
-                        <button type="button" class="btn btn-warning d-none" id="undoApprovalBtn">
-                            <i class="bi bi-arrow-counterclockwise"></i> Undo Approval
-                        </button>
-                    @endif
-                </div>
-                <div class="d-flex gap-2">
-                    @if (request()->routeIs('leave_approval.*') || request()->routeIs('leave_approval'))
-                        <button type="button" class="btn btn-danger" id="rejectLeaveBtn" value="Rejected">
-                            <i class="bi bi-x-circle"></i> Reject
-                        </button>
-                        <button type="button" class="btn btn-success" id="approveLeaveBtn" value="Approved">
-                            <i class="bi bi-check-circle"></i> Approve
-                        </button>
-                        <button type="button" class="btn btn-success d-none" id="acknowledgeLeaveBtn" value="Acknowledged">
-                            <i class="bi bi-eye-check"></i> I Acknowledge
-                        </button>
-                    @endif
-                    <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
-                </div>
+            <div class="modal-footer lv-footer">
+                @if ($isLeaveApproval)
+                    <button type="button" class="btn btn-outline-warning me-auto d-none" id="undoApprovalBtn">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Undo Approval
+                    </button>
+                @endif
+                <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
+                @if ($isLeaveApproval)
+                    <button type="button" class="btn btn-danger" id="rejectLeaveBtn" value="Rejected">
+                        <i class="bi bi-x-circle me-1"></i>Reject
+                    </button>
+                    <button type="button" class="btn btn-success" id="approveLeaveBtn" value="Approved">
+                        <i class="bi bi-check-circle me-1"></i>Approve
+                    </button>
+                    <button type="button" class="btn btn-success d-none" id="acknowledgeLeaveBtn" value="Acknowledged">
+                        <i class="bi bi-check2-all me-1"></i>I Acknowledge
+                    </button>
+                @endif
             </div>
         </div>
     </div>
@@ -358,5 +368,50 @@
             `<tr><td>${r.type}</td><td class="text-end">${fmt(r.total_earned)}</td><td class="text-end">${fmt(r.less)}</td><td class="text-end fw-bold">${fmt(r.balance)}</td></tr>`
         ).join(''));
         $('#leave_credit_balance_section').toggleClass('d-none', rows.length === 0);
+    }
+
+    function lvEscape(text) {
+        return String(text ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    }
+
+    // Attachments tile of the leave view (multi-attachment list, or the legacy single file).
+    function renderLeaveAttachments(data) {
+        const files = (data.attachments && data.attachments.length > 0)
+            ? data.attachments
+            : (data.attachment_url ? [{ url: data.attachment_url, original_name: 'View attachment' }] : []);
+        if (files.length === 0) {
+            $('#view_attachment_row').hide().empty();
+            return;
+        }
+        const links = files.map(a =>
+            `<a href="${a.url}" target="_blank" rel="noopener" class="lv-file"><i class="bi bi-paperclip"></i><span>${lvEscape(a.original_name)}</span></a>`
+        ).join('');
+        $('#view_attachment_row')
+            .html(`<div class="lv-tile-label">Attachments</div><div class="lv-files">${links}</div>`)
+            .show();
+    }
+
+    // Remarks history as a short timeline: approver, decision, remark.
+    function renderLeaveRemarks(approvals) {
+        const steps = [
+            ['hr_compliance', 'HR Compliance'],
+            ['sh', 'Supervisor'],
+            ['dh', 'Division Head'],
+            ['hr', 'Human Resource'],
+        ];
+        const html = steps.map(([key, label]) => {
+            const a = (approvals || {})[key];
+            if (!a || !a.remarks) return '';
+            const status = String(a.status || 'pending').toLowerCase();
+            return `
+                <div class="lv-remark ${lvEscape(status)}">
+                    <div class="lv-remark-top">
+                        <span class="lv-remark-role">${label}</span>
+                        <span class="lv-pill lv-pill-${lvEscape(status)}">${lvEscape(status)}</span>
+                    </div>
+                    <p class="lv-remark-text">${lvEscape(a.remarks)}</p>
+                </div>`;
+        }).join('');
+        $('#remarks_history').html(html || '<p class="lv-empty">No remarks yet.</p>');
     }
 </script>

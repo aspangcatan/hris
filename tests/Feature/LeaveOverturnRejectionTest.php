@@ -320,12 +320,16 @@ class LeaveOverturnRejectionTest extends TestCase
     }
 
     /** @test */
-    public function dh_cannot_reject_a_leave_the_sh_already_rejected(): void
+    public function dh_can_agree_with_a_leave_the_sh_already_rejected_without_a_second_refund(): void
     {
         $appId = $this->fileAndRejectBySh();
 
-        $this->expectException(\RuntimeException::class);
+        // The DH has the final say either way; rejecting concurs with the SH.
         app(LeaveApprovalService::class)->updateApprovalStatus($appId, 'DH', 'Also no', 'rejected');
+
+        $this->assertEquals('rejected', $this->stepStatus($appId, 'DH'));
+        $this->assertEquals('Rejected', $this->appStatus($appId));
+        $this->assertEquals(10.0, $this->balance(), 'credits were returned by the SH rejection, not again');
     }
 
     /** @test */
