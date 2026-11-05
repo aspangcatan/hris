@@ -1240,11 +1240,18 @@
 
             $('#dates_applied_body').html(
                 data.dates.map(d => {
+                    // A date's own outcome (cancelled / disapproved by the DH), otherwise the
+                    // outcome of the whole application.
+                    const leaveStatus = String(data.status || 'pending').toLowerCase();
                     const state = d.is_cancelled
                         ? `<span class="lv-pill lv-pill-rejected">Cancelled</span>`
                         : d.final_disapproved
                             ? `<span class="lv-pill lv-pill-rejected">Disapproved</span>`
-                            : `<span class="lv-pill lv-pill-muted">Included</span>`;
+                            : leaveStatus === 'approved'
+                                ? `<span class="lv-pill lv-pill-approved">Approved</span>`
+                                : leaveStatus === 'rejected'
+                                    ? `<span class="lv-pill lv-pill-rejected">Rejected</span>`
+                                    : `<span class="lv-pill lv-pill-muted">Pending</span>`;
                     return `<tr><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hrs</td><td>${state}</td></tr>`;
                 }).join("")
             );

@@ -426,6 +426,7 @@ class LeaveApplicationController extends Controller
             'extra'           => $leave->extra,
             'commutation'     => $leave->commutation,
             'is_lwop'         => (bool) $leave->is_lwop,
+            'status'          => $leave->status,
             'hr_action'       => DB::table('leave_applications')->where('id', $id)
                 ->first(['cert_as_of', 'approved_days_with_pay', 'approved_days_without_pay', 'approved_others']),
             'created_at'      => $leave->created_at,
