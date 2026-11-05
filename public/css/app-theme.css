@@ -1,0 +1,1224 @@
+/*
+ * HRIS app theme (v2), layered on NiceAdmin + Bootstrap 5.
+ * Ported from the E-AMSP (paperless_prescription) theme so both systems look alike.
+ * master.blade.php puts .theme-v2 on <body> for the pages that have been moved to it
+ * (see $themeV2Routes there); every other page keeps the older look until it is moved.
+ */
+.theme-v2 {
+    --primary: #00236f;
+    --primary-container: #1e3a8a;
+    --primary-fixed: #dce1ff;
+    --primary-soft: #eef0ff;
+    --secondary: #006a61;
+    --secondary-container: #86f2e4;
+    --on-secondary-container: #00504a;
+    --danger: #ba1a1a;
+    --danger-container: #ffdad6;
+    --on-danger-container: #93000a;
+    --warning-container: #ffdcbe;
+    --on-warning-container: #7a4100;
+    --background: #f5f6fc;
+    --surface: #ffffff;
+    --surface-low: #f2f3ff;
+    --on-surface: #131b2e;
+    --on-surface-variant: #444651;
+    --outline: #757682;
+    --outline-variant: #d5d6e2;
+    --line: #e6e8f2;
+    --radius: 0.875rem;
+    --sidebar-width: 264px;
+    --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-head: 'Plus Jakarta Sans', var(--font-body);
+
+    --bs-primary: var(--primary);
+    --bs-primary-rgb: 0, 35, 111;
+    --bs-body-font-family: var(--font-body);
+
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--on-surface);
+    background: var(--background) !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+.theme-v2 h1, .theme-v2 h2, .theme-v2 h3,
+.theme-v2 h4, .theme-v2 h5, .theme-v2 h6 { font-family: var(--font-head); color: var(--on-surface); }
+
+.theme-v2 a { color: var(--primary); }
+
+/* ---------- Header ---------- */
+.theme-v2 .header {
+    height: 64px;
+    padding-left: 1rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    box-shadow: none;
+    border-bottom: 1px solid var(--line);
+}
+
+.theme-v2 .logo { gap: 0.625rem; }
+
+@media (min-width: 1200px) {
+    .theme-v2 .logo { width: calc(var(--sidebar-width) - 1rem); }
+}
+
+.theme-v2 .logo img { max-height: 36px; margin-right: 0; }
+
+.theme-v2 .logo .brand-text { line-height: 1.1; }
+
+.theme-v2 .logo .brand-name {
+    font: 700 1.125rem/1.2 var(--font-head);
+    color: var(--primary);
+    letter-spacing: -0.01em;
+}
+
+.theme-v2 .logo .brand-sub {
+    font-size: 0.6875rem !important;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary);
+}
+
+.theme-v2 .header .toggle-sidebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    font-size: 1.375rem;
+    color: var(--on-surface-variant);
+    background: transparent;
+    border-radius: 0.5rem;
+}
+
+.theme-v2 .header .toggle-sidebar-btn:hover { background: var(--surface-low); color: var(--primary); }
+
+.theme-v2 .header-nav .nav-profile {
+    padding: 0.25rem 0.75rem 0.25rem 0.25rem !important;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+}
+
+.theme-v2 .header-nav .nav-profile:hover { background: var(--surface-low); }
+
+.theme-v2 .header-nav .nav-profile img {
+    width: 2rem;
+    height: 2rem;
+    max-height: none;
+    object-fit: cover;
+    background: var(--surface);
+    border: 0;
+    box-shadow: none;
+}
+
+.theme-v2 .header-nav .nav-profile span { font-size: 0.875rem; font-weight: 600; color: var(--on-surface); }
+
+.theme-v2 .dropdown-menu {
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    box-shadow: 0 16px 32px -12px rgba(19, 27, 46, 0.2);
+    padding: 0.375rem;
+}
+
+.theme-v2 .dropdown-menu-arrow::before { display: none; }
+
+.theme-v2 .header-nav .profile { min-width: 15rem; }
+
+.theme-v2 .header-nav .profile .dropdown-header { text-align: left; padding: 0.625rem 0.75rem; }
+
+.theme-v2 .header-nav .profile .dropdown-header h6 { font-size: 0.9375rem; font-weight: 700; color: var(--on-surface); }
+
+.theme-v2 .header-nav .profile .dropdown-header .role-pill {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.0625rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    background: var(--primary-fixed);
+    color: var(--primary);
+}
+
+.theme-v2 .dropdown-menu .dropdown-item {
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--on-surface);
+}
+
+.theme-v2 .dropdown-menu .dropdown-item i { color: var(--outline); }
+
+.theme-v2 .dropdown-menu .dropdown-item:hover { background: var(--surface-low); }
+
+.theme-v2 .dropdown-menu .dropdown-divider { margin: 0.25rem 0; border-color: var(--line); }
+
+/* ---------- Sidebar ---------- */
+.theme-v2 .sidebar {
+    top: 64px;
+    width: var(--sidebar-width);
+    padding: 1.25rem 0.875rem;
+    box-shadow: none;
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+}
+
+@media (max-width: 1199px) {
+    .theme-v2 .sidebar { left: calc(-1 * var(--sidebar-width)); box-shadow: 0 0 32px rgba(19, 27, 46, 0.18); }
+    .theme-v2.toggle-sidebar .sidebar { left: 0; }
+}
+
+@media (min-width: 1200px) {
+    .theme-v2 #main, .theme-v2 #footer { margin-left: var(--sidebar-width); }
+    .theme-v2.toggle-sidebar #main, .theme-v2.toggle-sidebar #footer { margin-left: 0; }
+    .theme-v2.toggle-sidebar .sidebar { left: calc(-1 * var(--sidebar-width)); }
+}
+
+.theme-v2 .sidebar-nav .nav-heading {
+    margin: 1rem 0 0.375rem 0.75rem;
+    font-family: var(--font-body);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--outline);
+}
+
+.theme-v2 .sidebar-nav .nav-heading:first-child { margin-top: 0; }
+
+.theme-v2 .sidebar-nav .nav-item { margin-bottom: 0.125rem; }
+
+.theme-v2 .sidebar-nav .nav-link,
+.theme-v2 .sidebar-nav .nav-link.collapsed {
+    position: relative;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.625rem;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--on-surface-variant);
+    background: transparent;
+}
+
+.theme-v2 .sidebar-nav .nav-link i,
+.theme-v2 .sidebar-nav .nav-link.collapsed i { margin: 0; font-size: 1.0625rem; color: var(--outline); }
+
+.theme-v2 .sidebar-nav .nav-link:hover { background: var(--surface-low); color: var(--primary); }
+
+.theme-v2 .sidebar-nav .nav-link:hover i { color: var(--primary); }
+
+.theme-v2 .sidebar-nav .nav-link:not(.collapsed) {
+    background: var(--primary-fixed);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.theme-v2 .sidebar-nav .nav-link:not(.collapsed) i { color: var(--primary); }
+
+.theme-v2 .sidebar-nav .nav-link:not(.collapsed)::before {
+    content: '';
+    position: absolute;
+    left: -0.875rem;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--primary);
+}
+
+/* ---------- Main + footer ---------- */
+.theme-v2 #main { margin-top: 64px; padding: 1.75rem 2rem 2rem !important; background: transparent; }
+
+@media (max-width: 1199px) {
+    .theme-v2 #main { padding: 1.25rem 1rem 1.5rem !important; }
+}
+
+.theme-v2 .footer { border-top: 1px solid var(--line); padding: 1rem 0; font-size: 0.75rem; background: transparent; }
+
+.theme-v2 .footer .copyright,
+.theme-v2 .footer .credits { color: var(--outline); font-size: 0.75rem; }
+
+.theme-v2 .footer .credits a { color: var(--outline); }
+
+.theme-v2 .back-to-top { background: var(--primary); border-radius: 0.625rem; }
+
+/* ---------- Page header ---------- */
+.theme-v2 .page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.theme-v2 .eyebrow {
+    margin: 0 0 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--secondary);
+}
+
+.theme-v2 .page-head h1 {
+    margin: 0;
+    font: 700 1.75rem/2.125rem var(--font-head);
+    letter-spacing: -0.02em;
+    color: var(--primary);
+}
+
+.theme-v2 .page-sub { margin: 0.25rem 0 0; color: var(--outline); }
+
+.theme-v2 .page-actions { display: flex; gap: 0.5rem; }
+
+/* ---------- Buttons ---------- */
+.theme-v2 .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5625rem 1rem;
+    border-radius: 0.625rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    box-shadow: none;
+    filter: none;
+}
+
+.theme-v2 .btn-sm { padding: 0.375rem 0.625rem; font-size: 0.8125rem; border-radius: 0.5rem; }
+
+.theme-v2 .btn-primary,
+.theme-v2 .btn-success {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: var(--primary);
+    --bs-btn-border-color: var(--primary);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--primary-container);
+    --bs-btn-hover-border-color: var(--primary-container);
+    --bs-btn-active-bg: var(--primary-container);
+    --bs-btn-active-border-color: var(--primary-container);
+    --bs-btn-disabled-bg: var(--primary);
+    --bs-btn-disabled-border-color: var(--primary);
+    --bs-btn-focus-shadow-rgb: 0, 35, 111;
+    /* The older theme paints these with a gradient; use the flat colour. */
+    background: var(--bs-btn-bg);
+    border: 1px solid var(--bs-btn-border-color);
+}
+
+.theme-v2 .btn-primary:hover,
+.theme-v2 .btn-success:hover { background: var(--bs-btn-hover-bg); border-color: var(--bs-btn-hover-border-color); }
+
+.theme-v2 .btn-outline-primary {
+    --bs-btn-color: var(--primary);
+    --bs-btn-border-color: var(--outline-variant);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-hover-bg: var(--primary-soft);
+    --bs-btn-hover-color: var(--primary);
+    --bs-btn-hover-border-color: var(--primary-fixed);
+    --bs-btn-active-bg: var(--primary-fixed);
+    --bs-btn-active-color: var(--primary);
+    --bs-btn-active-border-color: var(--primary-fixed);
+}
+
+.theme-v2 .btn-light,
+.theme-v2 .btn-secondary {
+    --bs-btn-color: var(--on-surface);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-border-color: var(--outline-variant);
+    --bs-btn-hover-color: var(--primary);
+    --bs-btn-hover-bg: var(--surface-low);
+    --bs-btn-hover-border-color: var(--outline-variant);
+    --bs-btn-active-bg: var(--primary-fixed);
+    --bs-btn-active-border-color: var(--primary-fixed);
+    background: var(--bs-btn-bg);
+    border: 1px solid var(--bs-btn-border-color);
+    color: var(--bs-btn-color);
+}
+
+.theme-v2 .btn-light:hover,
+.theme-v2 .btn-secondary:hover { background: var(--bs-btn-hover-bg); color: var(--bs-btn-hover-color); }
+
+.theme-v2 .btn-danger {
+    --bs-btn-bg: var(--danger);
+    --bs-btn-border-color: var(--danger);
+    --bs-btn-hover-bg: #93000a;
+    --bs-btn-hover-border-color: #93000a;
+}
+
+.theme-v2 .btn-outline-danger {
+    --bs-btn-color: var(--danger);
+    --bs-btn-border-color: var(--danger-container);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-hover-bg: var(--danger-container);
+    --bs-btn-hover-color: var(--on-danger-container);
+    --bs-btn-hover-border-color: var(--danger-container);
+}
+
+/* Square icon buttons used in table rows (edit / delete / view). */
+.theme-v2 .btn-action {
+    min-width: 2.125rem;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    height: 2.125rem;
+    padding: 0 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--outline-variant);
+    background: var(--surface);
+    color: var(--on-surface-variant);
+}
+
+.theme-v2 .btn-action.btn-edit:hover,
+.theme-v2 .btn-action.btn-view:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.theme-v2 .btn-action.btn-delete { color: var(--danger); border-color: var(--danger-container); }
+
+.theme-v2 .btn-action.btn-delete:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+/* Large header close buttons: draw the X with Bootstrap Icons (the SVG background does not
+   render on the deployed server). */
+.theme-v2 .btn-close.fs-1 {
+    background-image: none;
+    width: auto;
+    height: auto;
+    font-size: 1.25rem !important;
+    line-height: 1;
+    color: var(--on-surface-variant);
+}
+
+.theme-v2 .btn-close.fs-1::before {
+    content: "\f659";
+    font-family: bootstrap-icons !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Forms ---------- */
+.theme-v2 .form-label,
+.theme-v2 label.form-label,
+.theme-v2 .col-form-label {
+    margin-bottom: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+}
+
+.theme-v2 .form-control,
+.theme-v2 .form-select {
+    min-height: 2.5rem;
+    border: 1px solid var(--outline-variant) !important;
+    border-radius: 0.625rem !important;
+    background-color: var(--surface);
+    color: var(--on-surface);
+    font-size: 0.875rem;
+    box-shadow: none !important;
+}
+
+.theme-v2 .form-control-sm { min-height: 2rem; border-radius: 0.5rem !important; }
+
+.theme-v2 textarea.form-control { min-height: 0; }
+
+.theme-v2 .form-control::placeholder { color: #9a9ba6; }
+
+.theme-v2 .form-control:focus,
+.theme-v2 .form-select:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-fixed) !important;
+}
+
+.theme-v2 .form-control:disabled,
+.theme-v2 .form-control[readonly] { background-color: var(--surface-low); }
+
+.theme-v2 .form-control.is-invalid,
+.theme-v2 .form-select.is-invalid { border-color: var(--danger) !important; box-shadow: 0 0 0 3px var(--danger-container) !important; }
+
+.theme-v2 .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+
+.theme-v2 input[type="radio"],
+.theme-v2 input[type="checkbox"] { accent-color: var(--primary); }
+
+.theme-v2 .input-icon { position: relative; }
+
+.theme-v2 .input-icon > i {
+    position: absolute;
+    top: 50%;
+    left: 0.875rem;
+    transform: translateY(-50%);
+    color: var(--outline);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.theme-v2 .input-icon .form-control,
+.theme-v2 .input-icon .form-select { padding-left: 2.5rem; }
+
+/* ---------- Cards + tables ---------- */
+.theme-v2 .card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(19, 27, 46, 0.04);
+    margin-bottom: 1.25rem;
+}
+
+.theme-v2 .list-card { overflow: hidden; }
+
+.theme-v2 .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--line);
+}
+
+.theme-v2 .data-table { --bs-table-bg: transparent; --bs-table-hover-bg: var(--primary-soft); margin: 0; }
+
+.theme-v2 .data-table > thead th {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-low);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--outline);
+    white-space: nowrap;
+}
+
+.theme-v2 .data-table > tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+    color: var(--on-surface);
+}
+
+.theme-v2 .data-table > tbody tr:last-child td { border-bottom: 0; }
+
+/* Empty / loading rows: a single cell spanning the table. */
+.theme-v2 .data-table > tbody td[colspan]:only-child,
+.theme-v2 .empty-record-row td { padding: 2rem 1rem; text-align: center; color: var(--outline); font-style: normal; background: transparent; }
+
+.theme-v2 .card-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+}
+
+/* Soft status pills. */
+.theme-v2 .badge {
+    padding: 0.3125rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.theme-v2 .badge.bg-success,
+.theme-v2 .badge.bg-secondary { background: var(--secondary-container) !important; color: var(--on-secondary-container) !important; }
+
+.theme-v2 .badge.bg-danger { background: var(--danger-container) !important; color: var(--on-danger-container) !important; }
+
+.theme-v2 .badge.bg-info,
+.theme-v2 .badge.bg-primary { background: var(--primary-fixed) !important; color: var(--primary) !important; }
+
+.theme-v2 .badge.bg-warning { background: var(--warning-container) !important; color: var(--on-warning-container) !important; }
+
+/* ---------- Modals ---------- */
+.theme-v2 .modal-backdrop.show { opacity: 0.55; background: #131b2e; }
+
+.theme-v2 .modal-content {
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 32px 64px -16px rgba(19, 27, 46, 0.35);
+    overflow: hidden;
+}
+
+.theme-v2 .modal-header {
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.theme-v2 .modal-heading { display: flex; align-items: center; gap: 0.875rem; min-width: 0; }
+
+.theme-v2 .modal-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: var(--primary-fixed);
+    color: var(--primary);
+    font-size: 1.125rem;
+}
+
+.theme-v2 .modal-title { margin: 0; font: 700 1.125rem/1.5rem var(--font-head); color: var(--on-surface); }
+
+.theme-v2 .modal-sub { margin: 0.125rem 0 0; font-size: 0.8125rem; color: var(--outline); }
+
+.theme-v2 .modal-body { padding: 1.25rem; background: var(--background); }
+
+.theme-v2 .modal-footer {
+    gap: 0.5rem;
+    padding: 0.875rem 1.25rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.theme-v2 .modal-footer > * { margin: 0; }
+
+.theme-v2 .modal-footer .btn { min-width: 6.5rem; }
+
+.theme-v2 .btn-close:focus { box-shadow: 0 0 0 3px var(--primary-fixed); }
+
+/* The older "premium" dialogs (icon banner + title in the body) drawn in the v2 style:
+   the banner becomes a small icon tile and the title sits beside it. */
+.theme-v2 .premium-modal .modal-content { position: relative; border-radius: 1rem; box-shadow: 0 32px 64px -16px rgba(19, 27, 46, 0.35); }
+
+/* The icon banner sits beside the title (which lives in the body), as in the v2 dialogs. */
+.theme-v2 .premium-modal .modal-header {
+    position: absolute;
+    top: 1rem;
+    left: 1.25rem;
+    z-index: 1;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.theme-v2 .premium-modal .modal-body { display: flex; flex-direction: column; }
+
+/* Title first, so a validation summary appears below it and never under the icon. */
+.theme-v2 .premium-modal .modal-title-text {
+    order: -1;
+    display: flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding-left: 3.375rem;
+}
+
+/* Buttons the older dialogs mark "border-0" (Bootstrap makes that !important). */
+.theme-v2 .premium-modal .btn-secondary.border-0,
+.theme-v2 .premium-modal .btn-light.border-0 { border: 1px solid var(--outline-variant) !important; }
+
+.theme-v2 .premium-modal .modal-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    border-radius: 0.75rem;
+    background: var(--primary-fixed);
+}
+
+.theme-v2 .premium-modal .modal-hero i { font-size: 1.125rem !important; line-height: 1; color: var(--primary) !important; }
+
+.theme-v2 .premium-modal .modal-body { padding: 1rem 1.25rem 1.25rem; background: var(--surface); }
+
+.theme-v2 .premium-modal .modal-title-text {
+    margin: 0 0 1.25rem;
+    font: 700 1.125rem/1.5rem var(--font-head);
+    text-align: left;
+    color: var(--on-surface);
+}
+
+.theme-v2 .premium-modal label { font-size: 0.8125rem; font-weight: 600; color: var(--on-surface-variant) !important; }
+
+.theme-v2 .premium-modal .premium-input,
+.theme-v2 .premium-modal .premium-select { padding: 0.5rem 0.75rem; }
+
+.theme-v2 .modal-action-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--line);
+}
+
+.theme-v2 .btn-modal-close,
+.theme-v2 .btn-modal-save {
+    min-width: 6.5rem;
+    padding: 0.5625rem 1rem;
+    border-radius: 0.625rem;
+    font-weight: 600;
+    box-shadow: none;
+    transform: none;
+    filter: none;
+}
+
+.theme-v2 .btn-modal-close { border: 1px solid var(--outline-variant); background: var(--surface); color: var(--on-surface); }
+
+.theme-v2 .btn-modal-close:hover { background: var(--surface-low); color: var(--primary); border-color: var(--outline-variant); }
+
+.theme-v2 .btn-modal-save { border: 1px solid var(--primary); background: var(--primary); color: #fff; }
+
+.theme-v2 .btn-modal-save:hover { background: var(--primary-container); border-color: var(--primary-container); color: #fff; box-shadow: none; transform: none; }
+
+/* ---------- Sections inside long forms ---------- */
+.theme-v2 .form-section {
+    padding: 1.125rem 1.25rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.theme-v2 .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.875rem;
+    font: 700 0.9375rem/1.375rem var(--font-head);
+    color: var(--primary);
+}
+
+.theme-v2 .section-title > i { color: var(--secondary); font-size: 1rem; }
+
+/* Radio and checkbox choices drawn as selectable pills. The native input stays focusable
+   and stays right before its label (scripts read the choice with .next().text()). */
+.theme-v2 .choice-group { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.theme-v2 .choice { position: relative; display: flex; align-items: center; gap: 0.5rem; }
+
+.theme-v2 .choice > input[type="radio"],
+.theme-v2 .choice > input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+}
+
+.theme-v2 .choice > label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 0.4375rem 0.875rem;
+    border: 1px solid var(--outline-variant);
+    border-radius: 999px;
+    background: var(--surface);
+    font-weight: 500;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.theme-v2 .choice > label:hover { border-color: var(--primary); color: var(--primary); }
+
+.theme-v2 .choice > input:checked + label { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+.theme-v2 .choice > input:checked + label::before { content: '\2713'; font-weight: 700; }
+
+.theme-v2 .choice > input:focus-visible + label { box-shadow: 0 0 0 3px var(--primary-fixed); }
+
+/* Read-only info tiles. */
+.theme-v2 .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.theme-v2 .info-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.625rem;
+    background: var(--surface-low);
+}
+
+.theme-v2 .info-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--outline);
+}
+
+.theme-v2 .info-value {
+    font-weight: 600;
+    color: var(--on-surface);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Validation summary: the forms render it as ".bg-danger" boxes with an *_error id. */
+.theme-v2 .alert-error,
+.theme-v2 [id$="_error"].bg-danger {
+    margin-bottom: 1rem;
+    padding: 0.875rem 1rem !important;
+    border-radius: 0.75rem !important;
+    border-left: 4px solid var(--danger);
+    background: var(--danger-container) !important;
+    color: var(--on-danger-container) !important;
+}
+
+.theme-v2 .alert-error ul,
+.theme-v2 [id$="_error"].bg-danger ul { margin: 0.375rem 0 0; padding-left: 1.75rem; }
+
+/* Loading overlay. */
+.theme-v2 .fullscreen-modal { position: fixed; background: rgba(19, 27, 46, 0.55) !important; backdrop-filter: blur(2px); }
+
+/* =====================================================================
+ * Shared page building blocks
+ * Every module page repeats the same pieces under its own prefix (ho-, ot-, ps-, leave-,
+ * saln-, schedule-, payroll-, ...): a *-board card holding a *-head (with *-head-title h4 + span),
+ * a *-panel / *-filter for filters, a *-table-shell around the table, *-empty and
+ * *-pagination. Their local <style> blocks use one class, so these two-part selectors win
+ * and the pages need no changes.
+ * ===================================================================== */
+.theme-v2 :is([class$="-board"], [class*="-board "]) {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 2px rgba(19, 27, 46, 0.04);
+}
+
+.theme-v2 :is([class$="-head"], [class*="-head "]):not(.page-head):not(.name-head):not(.modal-head):not(th):not(thead) {
+    margin-bottom: 1.25rem;
+}
+
+.theme-v2 :is([class$="-head-title"], [class*="-head-title "], [class$="-header-title"], [class*="-header-title "]) :is(h1, h2, h3, h4, h5),
+.theme-v2 :is([class$="-head"], [class*="-head "]):not(.page-head):not(.modal-head):not(th):not(thead) > :is(h3, h4):first-child,
+.theme-v2 :is([class$="-head"], [class*="-head "]):not(.page-head):not(.modal-head):not(th):not(thead) > div:not([class]):first-child > :is(h3, h4):first-child {
+    margin: 0;
+    font: 700 1.375rem/1.75rem var(--font-head);
+    letter-spacing: -0.015em;
+    color: var(--primary);
+}
+
+.theme-v2 :is([class$="-head-title"], [class*="-head-title "], [class$="-header-title"], [class*="-header-title "]) > :is(span, p, small),
+.theme-v2 :is([class$="-head"], [class*="-head "]):not(.page-head):not(.modal-head):not(th):not(thead) > :is(h3, h4):first-child + :is(span, p, small),
+.theme-v2 :is([class$="-head"], [class*="-head "]):not(.page-head):not(.modal-head):not(th):not(thead) > div:not([class]):first-child > :is(h3, h4):first-child + :is(span, p, small) {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--outline);
+}
+
+/* Filter / search strips. */
+.theme-v2 :is([class$="-panel"], [class*="-panel "], [class$="-filter"], [class*="-filter "], [class$="-filter-lite"]):not(.premium-panel):not(.tab-pane):not([class*="info-panel"]):not(.glass-panel) {
+    background: var(--surface-low);
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    box-shadow: none;
+}
+
+.theme-v2 :is([class$="-panel"], [class$="-filter"], [class$="-filter-lite"]) :is(.form-control, .form-select) { background-color: var(--surface); }
+
+/* Content panels (credit balances, legends): white cards rather than grey filter strips. */
+.theme-v2 :is([class*="info-panel"], .glass-panel) {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 2px rgba(19, 27, 46, 0.04);
+}
+
+/* Small uppercase field labels used inside those strips (ho-label, ot-label, ...). */
+.theme-v2 :is(.ho-label, .ot-label, .panel-label, .section-label, .blk-step-label) {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--outline);
+}
+
+/* Table frames. */
+.theme-v2 :is([class$="-table-shell"], [class*="-table-shell "]) {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: none;
+}
+
+.theme-v2 :is([class$="-empty"], [class*="-empty "]) { color: var(--outline); }
+
+.theme-v2 :is([class$="-chip"], [class*="-chip "]):not(.attach-chip) {
+    border-radius: 999px;
+    background: var(--primary-fixed);
+    color: var(--primary);
+    border-color: transparent;
+}
+
+/* ---------- Tables (every table, not only .data-table) ---------- */
+.theme-v2 .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(242, 243, 255, 0.6);
+    --bs-table-hover-bg: var(--primary-soft);
+    --bs-table-border-color: var(--line);
+    border-color: var(--line);
+    color: var(--on-surface);
+}
+
+.theme-v2 .table > thead th {
+    padding: 0.75rem 0.875rem;
+    border-color: var(--line);
+    background: var(--surface-low);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--outline);
+    vertical-align: middle;
+}
+
+.theme-v2 .table > tbody td { padding: 0.75rem 0.875rem; border-color: var(--line); color: var(--on-surface); vertical-align: middle; }
+
+.theme-v2 .table-bordered > :not(caption) > * > * { border-color: var(--line); }
+
+/* ---------- Tabs ---------- */
+.theme-v2 .nav-tabs,
+.theme-v2 .nav-tabs-bordered { gap: 0.25rem; border-bottom: 1px solid var(--line); }
+
+.theme-v2 .nav-tabs .nav-link,
+.theme-v2 .nav-tabs-bordered .nav-link {
+    margin: 0 0 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border: 0;
+    border-radius: 0.625rem;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--on-surface-variant);
+}
+
+.theme-v2 .nav-tabs .nav-link:hover,
+.theme-v2 .nav-tabs-bordered .nav-link:hover { background: var(--surface-low); color: var(--primary); }
+
+.theme-v2 .nav-tabs .nav-link.active,
+.theme-v2 .nav-tabs-bordered .nav-link.active {
+    background: var(--primary-fixed);
+    color: var(--primary);
+    font-weight: 600;
+    border: 0;
+}
+
+.theme-v2 .nav-pills .nav-link.active { background: var(--primary); }
+
+/* ---------- Pagination ---------- */
+.theme-v2 .pagination { gap: 0.25rem; }
+
+.theme-v2 .pagination .page-link {
+    min-width: 2.25rem;
+    margin: 0;
+    border: 1px solid var(--outline-variant);
+    border-radius: 0.5rem !important;
+    background: var(--surface);
+    color: var(--on-surface);
+    font-weight: 500;
+    text-align: center;
+}
+
+.theme-v2 .pagination .page-link:hover { background: var(--surface-low); color: var(--primary); }
+
+.theme-v2 .pagination .active > .page-link,
+.theme-v2 .pagination .page-item.active .page-link { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.theme-v2 .pagination .disabled > .page-link { background: var(--surface); color: var(--outline-variant); }
+
+/* ---------- Select2 ---------- */
+.theme-v2 .select2-container--default .select2-selection--single,
+.theme-v2 .select2-container--default .select2-selection--multiple {
+    min-height: 2.5rem;
+    border: 1px solid var(--outline-variant) !important;
+    border-radius: 0.625rem !important;
+    background: var(--surface);
+    box-shadow: none !important;
+}
+
+.theme-v2 .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 2.375rem; padding-left: 0.75rem; color: var(--on-surface); }
+
+.theme-v2 .select2-container--default .select2-selection--single .select2-selection__arrow { height: 2.375rem; }
+
+.theme-v2 .select2-container--default.select2-container--focus .select2-selection--single,
+.theme-v2 .select2-container--default.select2-container--focus .select2-selection--multiple,
+.theme-v2 .select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-fixed) !important;
+}
+
+.theme-v2 .select2-dropdown { border: 1px solid var(--line); border-radius: 0.625rem; overflow: hidden; }
+
+.theme-v2 .select2-container--default .select2-results__option--highlighted[aria-selected],
+.theme-v2 .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable { background: var(--primary); }
+
+/* ---------- Colour semantics ---------- */
+/* "Success" reads as the theme's teal; outline-success buttons as the primary outline. */
+.theme-v2 .text-success { color: var(--secondary) !important; }
+
+.theme-v2 .bg-success:not(.badge) { background-color: var(--secondary) !important; }
+
+.theme-v2 .text-primary { color: var(--primary) !important; }
+
+.theme-v2 .btn-outline-success {
+    --bs-btn-color: var(--primary);
+    --bs-btn-border-color: var(--outline-variant);
+    --bs-btn-bg: var(--surface);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--primary);
+    --bs-btn-hover-border-color: var(--primary);
+    --bs-btn-active-bg: var(--primary-container);
+    --bs-btn-active-border-color: var(--primary-container);
+}
+
+.theme-v2 .spinner-border.text-success,
+.theme-v2 .spinner-border.text-primary { color: var(--primary) !important; }
+
+/* NiceAdmin headings. */
+.theme-v2 .card-title { font-family: var(--font-head); font-weight: 700; color: var(--primary); }
+
+.theme-v2 .pagetitle h1 { font: 700 1.5rem/2rem var(--font-head); color: var(--primary); }
+
+.theme-v2 .form-floating > label { color: var(--outline); }
+
+/* select2 inside a floating-label field: push the value below the floated label. */
+.theme-v2 .form-floating > .select2-container .select2-selection--single {
+    height: calc(3.5rem + 2px);
+    padding-top: 1.35rem;
+}
+.theme-v2 .form-floating > .select2-container .select2-selection__arrow { height: calc(3.5rem + 2px); }
+.theme-v2 .form-floating > .select2-container ~ label {
+    z-index: 3;
+    opacity: 0.75;
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+    pointer-events: none;
+}
+
+.theme-v2 .form-text { color: var(--outline); }
+
+/* SweetAlert2 dialogs. */
+.theme-v2 .swal2-popup { border-radius: 1rem; font-family: var(--font-body); }
+
+.theme-v2 .swal2-title { font-family: var(--font-head); color: var(--on-surface); }
+
+.theme-v2 .swal2-styled.swal2-confirm { background: var(--primary) !important; border-radius: 0.625rem; box-shadow: none !important; }
+
+.theme-v2 .swal2-styled.swal2-cancel { background: var(--surface) !important; color: var(--on-surface) !important; border: 1px solid var(--outline-variant) !important; border-radius: 0.625rem; }
+
+.theme-v2 .swal2-styled.swal2-deny { background: var(--danger) !important; border-radius: 0.625rem; }
+
+/* =====================================================================
+ * Profile (Personal Data Sheet)
+ * ===================================================================== */
+.theme-v2 .profile-summary { display: flex; flex-direction: row; align-items: flex-start; gap: 1.25rem; padding: 1.25rem; }
+
+.theme-v2 .profile-summary .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.theme-v2 .profile-summary .info-tile:last-child { grid-column: 1 / -1; }
+
+/* Section / division names are long: let them wrap instead of cutting them off. */
+.theme-v2 .profile-summary .info-value { white-space: normal; overflow: visible; line-height: 1.35; }
+
+.theme-v2 .profile-avatar {
+    flex-shrink: 0;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 999px;
+    object-fit: cover;
+    background: var(--surface-low);
+    box-shadow: 0 0 0 4px var(--primary-fixed);
+}
+
+.theme-v2 .profile-ident { min-width: 0; flex: 1; }
+
+.theme-v2 .profile-name { margin: 0; font: 700 1.25rem/1.75rem var(--font-head); color: var(--primary); }
+
+.theme-v2 .profile-role { margin: 0.125rem 0 0.75rem; color: var(--on-surface-variant); }
+
+.theme-v2 .about-card { padding: 1.125rem 1.25rem; }
+
+/* Cards side by side in a grid row: equal height, the row gutter does the spacing. */
+.theme-v2 .row > [class*="col"] > .card { height: 100%; margin-bottom: 0; }
+
+.theme-v2 .about-card p { margin: 0; line-height: 1.6; color: var(--on-surface-variant); }
+
+.theme-v2 .value-pills { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.75rem; }
+
+.theme-v2 .value-pill {
+    padding: 0.1875rem 0.625rem;
+    border-radius: 999px;
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* PDS tabs: a scrollable row of pills in the card header. */
+.theme-v2 .pds-card { overflow: hidden; }
+
+.theme-v2 .pds-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0.625rem;
+    list-style: none;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    scrollbar-width: thin;
+}
+
+.theme-v2 .pds-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    border-radius: 0.625rem;
+    background: transparent;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--on-surface-variant);
+    white-space: nowrap;
+}
+
+.theme-v2 .pds-tabs .nav-link i { color: var(--outline); font-size: 0.9375rem; }
+
+.theme-v2 .pds-tabs .nav-link:hover { background: var(--surface-low); color: var(--primary); }
+
+.theme-v2 .pds-tabs .nav-link.active { background: var(--primary-fixed); color: var(--primary); font-weight: 600; }
+
+.theme-v2 .pds-tabs .nav-link.active i,
+.theme-v2 .pds-tabs .nav-link:hover i { color: var(--primary); }
+
+/* Soft background so the white form sections and tables stand out. */
+.theme-v2 .pds-body { padding: 1.25rem 1.5rem 1.5rem; background: var(--background); }
+
+.theme-v2 .pds-body .form-section { margin-bottom: 1rem; }
+
+.theme-v2 .pds-body .row > [class*="col"] > .form-section { margin-bottom: 0; }
+
+.theme-v2 .pds-body .table-responsive { background: var(--surface); }
+
+/* Each tab's Save row becomes a bar along the bottom of the card. */
+.theme-v2 .pds-body .modal-action-row {
+    margin: 1.5rem -1.5rem -1.5rem;
+    padding: 0.875rem 1.5rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface);
+}
+
+/* The PDS form partials (resources/views/forms/*) are shared with other pages, so they are
+   styled here rather than changed: their headings, label/field rows and tables. */
+.theme-v2 .pds-body .card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem;
+    padding: 0 0 0.625rem;
+    border-bottom: 1px solid var(--line);
+    font: 700 0.9375rem/1.375rem var(--font-head) !important;
+    color: var(--primary) !important;
+}
+
+.theme-v2 .pds-body .card-title::before {
+    content: '';
+    width: 0.25rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: var(--secondary);
+}
+
+/* The older label-beside-field rows in the other PDS tabs. */
+.theme-v2 .pds-body .row.mb-3:has(> .col-form-label) { align-items: center; margin-bottom: 0.75rem !important; }
+
+.theme-v2 .pds-body .col-form-label { padding-top: 0; padding-bottom: 0; margin-bottom: 0; }
+
+@media (min-width: 768px) {
+    .theme-v2 .pds-body .col-form-label { text-align: right; padding-right: 1.25rem; }
+}
+
+.theme-v2 .pds-body .table-responsive {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: auto;
+}
+
+.theme-v2 .pds-body .table { --bs-table-bg: transparent; --bs-table-hover-bg: var(--primary-soft); margin: 0; }
+
+.theme-v2 .pds-body .table > thead th {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-low);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--outline);
+    vertical-align: middle;
+}
+
+.theme-v2 .pds-body .table > tbody td {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--on-surface);
+}
+
+.theme-v2 .pds-body .table > tbody tr:last-child td { border-bottom: 0; }
+
+/* Survey questions. */
+.theme-v2 .pds-body .questions {
+    border: 1px solid var(--line);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.625rem;
+    background: var(--surface);
+    color: var(--on-surface);
+}
+
+.theme-v2 .pds-body .questions .form-check { display: inline-flex; align-items: center; gap: 0.375rem; margin: 0.375rem 1.25rem 0 0; padding-left: 0; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 991px) {
+    .theme-v2 .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767px) {
+    .theme-v2 .page-head { align-items: stretch; }
+    .theme-v2 .page-actions { width: 100%; }
+    .theme-v2 .page-actions .btn { flex: 1; }
+    .theme-v2 .modal-footer .btn { min-width: 0; flex: 1; }
+    .theme-v2 .modal-sub { display: none; }
+    .theme-v2 .profile-summary { flex-direction: column; align-items: center; text-align: center; }
+    .theme-v2 .info-grid,
+    .theme-v2 .profile-summary .info-grid { grid-template-columns: 1fr; text-align: left; }
+    /* One scrollable row of tabs on phones instead of several wrapped rows. */
+    .theme-v2 .pds-tabs { flex-wrap: nowrap; }
+    .theme-v2 .pds-body { padding: 1rem; }
+}
+
+/* A btn-action used as a form's submit (OT / hospital order "File", "Create") is the main
+   action, not a table row button: give it the solid primary look and match the field height. */
+.theme-v2 button[type="submit"].btn-action {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    min-height: calc(1.5em + 1.25rem + 2px);
+    font-weight: 600;
+}
+.theme-v2 button[type="submit"].btn-action:hover { background: var(--primary-container); border-color: var(--primary-container); color: #fff; }
+
+/* Employee DTR (Bulk Print): own class names. Navy title; settings as plain label-over-field
+   instead of a card around every single field. */
+.theme-v2 .dtr-title { font: 700 1.375rem/1.75rem var(--font-head); letter-spacing: -0.015em; color: var(--primary); }
+.theme-v2 .dtr-sub { color: var(--outline); font-size: 0.875rem; }
+.theme-v2 .dtr-field { background: transparent; border: 0; border-radius: 0; padding: 0; }
+.theme-v2 .dtr-field label { letter-spacing: 0.06em; color: var(--on-surface-variant); margin-bottom: 0.35rem; }

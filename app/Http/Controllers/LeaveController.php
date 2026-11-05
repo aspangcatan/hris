@@ -112,6 +112,19 @@ class LeaveController extends Controller
             // Get the user ID from request or use the authenticated user
             $userid = $request->has('id') ? $request->id : Auth::id();
 
+            // Someone else's balances: HR / credit managers / ADMIN, or that employee's own head.
+            // (employee.view is not enough - every standard user has it.)
+            if ((int) $userid !== (int) Auth::id()) {
+                $permissions = app(\App\Services\PermissionService::class);
+                $allowed = strtoupper((string) session('access_rights')) === 'ADMIN'
+                    || $permissions->can(Auth::id(), 'leave.manage_credits')
+                    || $permissions->can(Auth::id(), 'leave.approve_hr')
+                    || in_array((int) $userid, app(\App\Services\OrgHierarchyService::class)->getManagedEmployeeIds((int) Auth::id()), true);
+                if (!$allowed) {
+                    return response()->json(['error' => 'Unauthorized'], 403);
+                }
+            }
+
             // Fetch all active leave types
             $leave_types = DB::table('leave_types')->where('status', 'active')->get(['id', 'description', 'code', 'days_prior', 'commutation']);
 

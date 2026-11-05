@@ -12,6 +12,7 @@ use Tests\TestCase;
 class LeaveHrComplianceStepTest extends TestCase
 {
     use DatabaseTransactions;
+    use \Tests\Concerns\SwitchesAuthUser;
 
     private int $employeeId = 9171;
     private int $shUserId   = 9172;
@@ -75,31 +76,25 @@ class LeaveHrComplianceStepTest extends TestCase
 
     private function actAsEmployee(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->employeeId);
-        Auth::shouldReceive('user')->andReturn((object) [
+        $this->actAsUser((object) [
             'id' => $this->employeeId, 'section' => $this->sectionId, 'division' => $this->divisionId,
         ]);
-        Auth::shouldReceive('check')->andReturn(true);
         session(['access_rights' => 'employee', 'is_section_head' => false, 'is_division_head' => false]);
     }
 
     private function actAsSh(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->shUserId);
-        Auth::shouldReceive('user')->andReturn((object) [
+        $this->actAsUser((object) [
             'id' => $this->shUserId, 'section' => $this->sectionId, 'division' => $this->divisionId,
         ]);
-        Auth::shouldReceive('check')->andReturn(true);
         session(['access_rights' => 'employee', 'is_section_head' => true, 'is_division_head' => false]);
     }
 
     private function actAsHr(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->hrUserId);
-        Auth::shouldReceive('user')->andReturn((object) [
+        $this->actAsUser((object) [
             'id' => $this->hrUserId, 'section' => 0, 'division' => 0,
         ]);
-        Auth::shouldReceive('check')->andReturn(true);
         session(['access_rights' => 'hr', 'is_section_head' => false, 'is_division_head' => false]);
     }
 

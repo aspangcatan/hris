@@ -60,6 +60,10 @@ class LeaveCancellationController extends Controller
 
     public function show(int $id)
     {
+        if (!$this->service->canViewCancellation($id)) {
+            return response()->json(['error' => 'Not found.'], 404);
+        }
+
         $data = $this->service->getCancellationById($id);
 
         if (!$data) {

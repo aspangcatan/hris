@@ -16,11 +16,20 @@
 
     const USER_SEX ="{{ strtoupper(\App\Models\Employee::where('user_id', Auth::id())->value('sex') ?? '') }}";
     const GENDER_RESTRICTED_TYPES = {
-        female_only: ['maternity leave', 'gyne leave', 'vawc leave'],
+        // Keep in sync with LeaveApplicationService::FEMALE_ONLY_KEYWORDS (the server enforces it)
+        female_only: ['maternity leave', 'gyne leave', 'vawc leave', 'special leave benefits for women'],
         male_only: ['paternity leave'],
     };
 
     const ATTACHMENT_REQUIRED_KEYWORDS = ['maternity leave', 'paternity leave'];
+
+    // Holidays by date (YYYY-MM-DD => description). Filing on one is allowed after confirming.
+    const HOLIDAYS = @json(\Illuminate\Support\Facades\DB::table('hris.calendar_holidays')->pluck('description', 'date'));
+
+    // Escapes text typed by users (details, remarks, file names) before it goes into HTML.
+    function escapeHtml(text) {
+        return String(text ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    }
 
     let page = 1;
     let leave_application_last_page = 1;
@@ -468,6 +477,36 @@
 
         if (!is_valid) return;
 
+        // LWOP is the employee's choice, but tell them first if they still have credits that
+        // could cover these dates as an ordinary (with pay) leave.
+        if (isLwop) {
+            const hoursByType = {};
+            date_applied_array.forEach(d => {
+                if (d.leave_type_id) hoursByType[d.leave_type_id] = (hoursByType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
+            });
+            const withBalance = Object.entries(hoursByType).map(([typeId, hours]) => {
+                const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
+                const balance = lt ? parseFloat(lt.balance) || 0 : 0;
+                return { lt, balance, needed: hours * CREDIT_PER_HOUR };
+            }).filter(x => x.lt && x.balance > 0);
+
+            if (withBalance.length > 0) {
+                const list = withBalance.map(x =>
+                    `${x.lt.description}: ${x.balance.toFixed(3)} day(s) available` +
+                    (x.balance + 1e-9 >= x.needed ? ` - enough for this filing (${x.needed.toFixed(3)})` : ` - this filing needs ${x.needed.toFixed(3)}`)
+                ).join("\n");
+                if (!confirm(`You still have available leave credits:\n\n${list}\n\nYou can file this as an ordinary leave (with pay) instead.\nDo you still wish to file it as Leave Without Pay?`)) return;
+            }
+        }
+
+        // Holidays may be filed (credits are still charged), but only after the employee confirms.
+        const holidayDates = [...new Set(date_applied_array.map(d => d.date_applied))].filter(d => HOLIDAYS[d]).sort();
+        if (holidayDates.length > 0) {
+            const list = holidayDates.map(d => `${moment(d).format("MM/DD/YYYY")} - ${HOLIDAYS[d]}`).join("\n");
+            const which = holidayDates.length === 1 ? "That day is a Holiday" : "These days are Holidays";
+            if (!confirm(`${which}:\n\n${list}\n\nDo you wish to proceed?`)) return;
+        }
+
         const params = {
             details_map,
             commutation,
@@ -562,7 +601,7 @@
             $preview.append(`
             <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1 py-2 px-2">
                 <i class="bi bi-paperclip"></i>
-                <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+                <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(f.name)}</span>
             </span>`);
         });
     });
@@ -601,7 +640,7 @@
             <span class="attach-chip badge bg-light text-dark border d-inline-flex align-items-center gap-1 py-2 px-2">
                 <a href="${a.url}" target="_blank" class="text-dark text-decoration-none d-inline-flex align-items-center gap-1">
                     <i class="bi bi-paperclip"></i>
-                    <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.original_name}</span>
+                    <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(a.original_name)}</span>
                 </a>
                 ${deleteBtn}
             </span>`);
@@ -1126,7 +1165,7 @@
                 : (data.attachment_url ? [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }] : []);
             if (allAttachments.length > 0) {
                 const links = allAttachments.map(a =>
-                    `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${a.original_name}</a>`
+                    `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${escapeHtml(a.original_name)}</a>`
                 ).join('');
                 $('#view_attachment_row').html(`<p><strong>Attachments:</strong> ${links}</p>`).show();
             } else {
@@ -1163,7 +1202,7 @@
                     remarksHtml += `
                         <div class="mb-2">
                             <strong>${label}:</strong>
-                            <p class="mb-0">${data.approvals[role].remarks}</p>
+                            <p class="mb-0">${escapeHtml(data.approvals[role].remarks)}</p>
                         </div><hr>
                     `;
                 }
@@ -1183,7 +1222,7 @@
             const typeName = (data.leave_types_map && data.leave_types_map[d.leave_id]) || '';
             const parts = [d.detail, d.extra].filter(Boolean);
             const text = parts.join(' — ');
-            return `<div class="mb-1"><strong>${typeName}:</strong>${text ? ' ' + text : ' <span class="text-muted">—</span>'}</div>`;
+            return `<div class="mb-1"><strong>${escapeHtml(typeName)}:</strong>${text ? ' ' + escapeHtml(text) : ' <span class="text-muted">—</span>'}</div>`;
         }).join('') || '<span class="text-muted">No details provided.</span>';
     }
 

@@ -123,6 +123,249 @@ class LeaveApplicationService
         }
     }
 
+    /**
+     * Removes a leave's attachment records (table rows and the legacy `attachment` column) and
+     * returns the stored file paths. Call inside the caller's transaction, then pass the result
+     * to deleteAttachmentFiles() once it has committed, so a rollback never loses a file.
+     *
+     * @return string[] paths on the public disk
+     */
+    public function detachAttachments(int $appId): array
+    {
+        $paths = DB::table('hris.leave_application_attachments')
+            ->where('leave_application_id', $appId)
+            ->pluck('file_path')
+            ->all();
+
+        $legacy = DB::table('hris.leave_applications')->where('id', $appId)->value('attachment');
+        if ($legacy) {
+            $paths[] = $legacy;
+        }
+
+        DB::table('hris.leave_application_attachments')->where('leave_application_id', $appId)->delete();
+        DB::table('hris.leave_applications')->where('id', $appId)->update(['attachment' => null]);
+
+        return array_values(array_unique(array_filter($paths)));
+    }
+
+    /** Deletes stored attachment files (paths from detachAttachments). Missing files are ignored. */
+    public function deleteAttachmentFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            $path = ltrim(preg_replace('#^public/#', '', str_replace('\\', '/', (string) $path)), '/');
+            if ($path !== '' && strpos($path, '..') === false) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+            }
+        }
+    }
+
+    /**
+     * An application can be deleted by its owner only when it is not under way:
+     *  - still Pending and no approver (HR compliance, SH, DH, HR) has acted yet, or
+     *  - completely rejected (Rejected with no step left pending).
+     * Anything in between - including an SH rejection the Division Head can still overturn -
+     * stays, and an Approved leave is withdrawn through the leave cancellation form instead.
+     */
+    public function canDelete(int $appId): bool
+    {
+        $status = strtolower((string) DB::table('hris.leave_applications')->where('id', $appId)->value('status'));
+
+        $steps = DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $appId)
+            ->pluck('status')
+            ->map(fn($s) => strtolower((string) $s));
+
+        if ($status === 'pending') {
+            return $steps->every(fn($s) => $s === 'pending');
+        }
+        if ($status === 'rejected') {
+            return !$steps->contains('pending');
+        }
+        return false;
+    }
+
+    /**
+     * A leave is completely rejected when it is Rejected and no approval step is still pending
+     * (HR acknowledged a Division Head rejection, or HR rejected it). An SH rejection does not
+     * count - the Division Head can still overturn it. Its attachments are then deleted.
+     */
+    public function purgeAttachmentsIfCompletelyRejected(int $appId): void
+    {
+        $paths = DB::transaction(function () use ($appId) {
+            $status = DB::table('hris.leave_applications')->where('id', $appId)->lockForUpdate()->value('status');
+            if (strtolower((string) $status) !== 'rejected') {
+                return [];
+            }
+            $stillPending = DB::table('hris.leave_application_approvals')
+                ->where('leave_application_id', $appId)
+                ->whereRaw('LOWER(status) = ?', ['pending'])
+                ->exists();
+            return $stillPending ? [] : $this->detachAttachments($appId);
+        });
+
+        $this->deleteAttachmentFiles($paths);
+    }
+
+    /**
+     * Section 6.B details, mirroring LEAVE_DETAIL_CONFIG in resources/views/js/leave_application.blade.php
+     * (keep the two in sync). Leave types matching none of these need no details.
+     *  keywords       : matched against the leave type description (lowercase)
+     *  options        : allowed detail labels => whether the option needs the extra text
+     *  classification : allowed classifications that must appear in the extra text, if any
+     */
+    public const DETAIL_RULES = [
+        [
+            'keywords' => ['vacation leave', 'special privilege'],
+            'options'  => ['Within the Philippines' => true, 'Abroad (Specify)' => true],
+        ],
+        [
+            'keywords'       => ['sick leave'],
+            'options'        => ['In Hospital (Specify Illness)' => true, 'Out Patient (Specify Illness)' => true],
+            'classification' => ['Work-Related', 'Non-Work Related'],
+        ],
+        [
+            'keywords' => ['special leave benefits for women'],
+            'options'  => ['(Specify Illness)' => true],
+        ],
+        [
+            'keywords' => ['study leave'],
+            'options'  => ["Completion of Master's Degree" => false, 'BAR/Board Examination Review' => false],
+        ],
+    ];
+
+    /** Every leave type that has 6.B details must come with a valid one (LWOP included). */
+    private function assertValidDetails(array $leaveIds, $leaveTypes, array $detailsMap): void
+    {
+        foreach ($leaveIds as $leaveId) {
+            $desc = (string) $leaveTypes[$leaveId]->description;
+            $rule = null;
+            foreach (self::DETAIL_RULES as $r) {
+                if ($this->descriptionMatches($desc, $r['keywords'])) { $rule = $r; break; }
+            }
+            if ($rule === null) {
+                continue;
+            }
+
+            $given  = $detailsMap[(string) $leaveId] ?? [];
+            $detail = trim((string) ($given['detail'] ?? ''));
+            $extra  = trim((string) ($given['extra'] ?? ''));
+
+            if (!array_key_exists($detail, $rule['options'])) {
+                throw new \Exception("Please provide the details for {$desc}.");
+            }
+
+            // Text typed into the option's box (the classification is appended as "(...)").
+            $typed = trim(preg_replace('/\s*\((Work-Related|Non-Work Related)\)\s*$/', '', $extra));
+            if ($rule['options'][$detail] && $typed === '') {
+                throw new \Exception("Please fill in the required detail text for {$desc} ({$detail}).");
+            }
+
+            if (!empty($rule['classification'])) {
+                $hasClass = false;
+                foreach ($rule['classification'] as $c) {
+                    if (substr($extra, -strlen("({$c})")) === "({$c})") { $hasClass = true; break; }
+                }
+                if (!$hasClass) {
+                    throw new \Exception("Please specify the classification (Work-Related/Non-Work Related) for {$desc}.");
+                }
+            }
+        }
+    }
+
+    /** Leave types that require a supporting document (matched on description, like the form). */
+    public const ATTACHMENT_REQUIRED_KEYWORDS = ['maternity leave', 'paternity leave'];
+
+    /** Leave types limited to one sex (matched on description, like the form). */
+    public const FEMALE_ONLY_KEYWORDS = ['maternity leave', 'gyne leave', 'vawc leave', 'special leave benefits for women'];
+    public const MALE_ONLY_KEYWORDS   = ['paternity leave'];
+
+    private function descriptionMatches(string $description, array $keywords): bool
+    {
+        $d = strtolower($description);
+        foreach ($keywords as $kw) {
+            if (strpos($d, $kw) !== false) return true;
+        }
+        return false;
+    }
+
+    /** True when any of the given leave types needs an attachment. */
+    public function requiresAttachment(array $leaveTypeIds): bool
+    {
+        foreach (DB::table('hris.leave_types')->whereIn('id', $leaveTypeIds)->pluck('description') as $desc) {
+            if ($this->descriptionMatches((string) $desc, self::ATTACHMENT_REQUIRED_KEYWORDS)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks that apply to both filing and editing. Runs inside the transaction, before
+     * anything is written:
+     *  - locks this employee's credit rows, so two submissions at once are handled one after
+     *    the other (the second sees the first's deduction and dates)
+     *  - every leave type exists and is active
+     *  - the same date is not filed twice for the same type in one application
+     *  - no date is already on another pending/approved leave of this employee
+     *  - sex-restricted types match the employee's sex (unknown sex is not blocked)
+     */
+    private function assertValidFiling(array $leaveIds, $leaveTypes, array $dates, ?int $ignoreAppId): void
+    {
+        $userId = (int) Auth::id();
+
+        DB::table('leave_credits')->where('user_id', $userId)->lockForUpdate()->get(['id']);
+
+        foreach ($leaveIds as $leaveId) {
+            $type = $leaveTypes[$leaveId] ?? null;
+            if (!$type || strtolower((string) $type->status) !== 'active') {
+                throw new \Exception('One of the selected leave types does not exist or is no longer available.');
+            }
+        }
+
+        // One row per date: no splitting a day into several half-day rows, even across types.
+        $seen = [];
+        foreach ($dates as $d) {
+            if (isset($seen[$d['date_applied']])) {
+                throw new \Exception("{$d['date_applied']} is listed more than once. A date can only be filed once.");
+            }
+            $seen[$d['date_applied']] = true;
+        }
+
+        $taken = DB::table('hris.leave_date_applied as lda')
+            ->join('hris.leave_applications as la', 'la.id', '=', 'lda.leave_application_id')
+            ->where('la.user_id', $userId)
+            ->when($ignoreAppId, fn($q) => $q->where('la.id', '!=', $ignoreAppId))
+            ->whereRaw('LOWER(la.status) IN (?, ?)', ['pending', 'approved'])
+            ->where('lda.status', 'active')
+            ->where('lda.final_disapproved', 0)
+            ->whereIn('lda.date_applied', collect($dates)->pluck('date_applied')->unique()->values()->all())
+            ->orderBy('lda.date_applied')
+            ->distinct()
+            ->pluck('lda.date_applied')
+            ->all();
+        if (!empty($taken)) {
+            throw new \Exception('You already have a pending or approved leave on: ' . implode(', ', $taken) . '.');
+        }
+
+        // Sex-restricted types need a recorded sex that matches; an unrecorded sex is refused.
+        $sex = strtoupper(trim((string) \App\Models\Employee::where('user_id', $userId)->value('sex')));
+        foreach ($leaveIds as $leaveId) {
+            $desc       = (string) $leaveTypes[$leaveId]->description;
+            $femaleOnly = $this->descriptionMatches($desc, self::FEMALE_ONLY_KEYWORDS);
+            $maleOnly   = $this->descriptionMatches($desc, self::MALE_ONLY_KEYWORDS);
+            if (!$femaleOnly && !$maleOnly) {
+                continue;
+            }
+            if (!in_array($sex, ['MALE', 'FEMALE'], true)) {
+                throw new \Exception("{$desc} requires your sex to be recorded in your employee profile. Please ask HR to update it.");
+            }
+            if ($femaleOnly && $sex !== 'FEMALE') {
+                throw new \Exception("{$desc} can only be filed by female employees.");
+            }
+            if ($maleOnly && $sex !== 'MALE') {
+                throw new \Exception("{$desc} can only be filed by male employees.");
+            }
+        }
+    }
+
     public function insertLeaveApplication(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -140,9 +383,11 @@ class LeaveApplicationService
 
             $leaveTypes = DB::table('leave_types')
                 ->whereIn('id', $leaveIds)
-                ->get(['id', 'description', 'days_prior'])
+                ->get(['id', 'description', 'days_prior', 'status'])
                 ->keyBy('id');
 
+            $this->assertValidFiling($leaveIds, $leaveTypes, $dates, $appId ?? null);
+            $this->assertValidDetails($leaveIds, $leaveTypes, $data['details_map'] ?? []);
             $this->assertValidLeaveDates($leaveTypes, $datesByType);
 
             // Validate credit balance per type (credits proportional to actual days per type)
@@ -156,7 +401,7 @@ class LeaveApplicationService
                         ->where('user_id', Auth::id())
                         ->where('leave_id', $leaveId)
                         ->first(['based_credit', 'used_credit']);
-                    $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
+                    $available = $credit ? round($credit->based_credit - $credit->used_credit, 3) : null;
 
                     $desc = $leaveTypes[$leaveId]->description;
 
@@ -164,7 +409,7 @@ class LeaveApplicationService
                         throw new \Exception("No leave credits found for {$desc}.");
                     }
 
-                    if ($available < $typeCredits) {
+                    if ($available < round($typeCredits, 3)) {
                         throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
                     }
                 }
@@ -190,6 +435,7 @@ class LeaveApplicationService
 
                 DB::table('leave_details')->insert([
                     'leave_application_id' => $appId,
+                    'leave_type_id'        => (int) $leaveId,
                     'detail'               => $typeDetail['detail'],
                     'extra'                => $typeDetail['extra'] ?? null,
                     'created_at'           => now(),
@@ -225,12 +471,10 @@ class LeaveApplicationService
                 ])->toArray()
             );
 
-            // Approval chain
-            DB::table('leave_application_approvals')->insert([
-                ['leave_application_id' => $appId, 'approver_id' => Auth::user()->section,  'role' => 'SH', 'order_no' => 1, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()],
-                ['leave_application_id' => $appId, 'approver_id' => Auth::user()->division, 'role' => 'DH', 'order_no' => 2, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()],
-                ['leave_application_id' => $appId, 'approver_id' => 15,                     'role' => 'HR', 'order_no' => 3, 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()],
-            ]);
+            // Approval chain - a head's own step goes to the head above (see OrgHierarchyService)
+            DB::table('leave_application_approvals')->insert(
+                app(OrgHierarchyService::class)->approvalRowsFor(Auth::user(), 'leave_application_id', $appId)
+            );
 
             return ['app_id' => $appId];
         });
@@ -239,47 +483,46 @@ class LeaveApplicationService
     public function updateLeaveApplication(int $appId, array $data): void
     {
         DB::transaction(function () use ($appId, $data) {
-            $isLwop = (bool) ($data['is_lwop'] ?? false);
-
             $app = DB::table('leave_applications')
                 ->where('id', $appId)
                 ->where('user_id', Auth::id())
-                ->first(['id', 'status']);
+                ->lockForUpdate()
+                ->first(['id', 'status', 'is_lwop']);
 
             if (!$app) {
                 throw new \Exception('Leave application not found.');
             }
 
-            $shApproved = DB::table('leave_application_approvals')
+            // LWOP and regular leaves are filed from separate tabs, so an edit never switches
+            // between them: the application keeps what it was filed as, whatever the request says.
+            $isLwop = (bool) $app->is_lwop;
+
+            // Editable only while Pending and before any approver (HR compliance, SH, DH, HR)
+            // has acted. A rejected leave already had its credits returned, so it is never
+            // edited - the employee files a new one instead.
+            if (strtolower((string) $app->status) !== 'pending') {
+                throw new \Exception('Cannot edit: only pending leave applications can be edited. File a new application instead.');
+            }
+
+            $anyStepActed = DB::table('leave_application_approvals')
                 ->where('leave_application_id', $appId)
-                ->where('role', 'SH')
-                ->whereRaw('LOWER(status) = ?', ['approved'])
+                ->whereRaw('LOWER(status) <> ?', ['pending'])
                 ->exists();
 
-            if ($shApproved) {
-                throw new \Exception('Cannot edit: this application has already been forwarded for approval.');
+            if ($anyStepActed) {
+                throw new \Exception('Cannot edit: this application has already been acted on by an approver.');
             }
 
-            // Restore credits from existing dates (grouped by leave_type_id).
-            // For an LWOP application every existing credits_deducted is already 0,
-            // so this naturally restores nothing.
-            $oldDates = DB::table('hris.leave_date_applied')
+            // Credits this application currently holds, per leave type. They are given back
+            // before the new dates are deducted. For LWOP every credits_deducted is 0.
+            $oldCreditsByType = DB::table('hris.leave_date_applied')
                 ->where('leave_application_id', $appId)
-                ->get(['leave_type_id', 'credits_deducted']);
+                ->get(['leave_type_id', 'credits_deducted'])
+                ->groupBy('leave_type_id')
+                ->map(fn($rows) => (float) $rows->sum('credits_deducted'));
 
-            $oldCreditsByType = $oldDates->groupBy('leave_type_id');
-            foreach ($oldCreditsByType as $typeId => $rows) {
-                if (!$typeId) continue;
-                DB::table('leave_credits')
-                    ->where('user_id', Auth::id())
-                    ->where('leave_id', $typeId)
-                    ->increment('based_credit', $rows->sum('credits_deducted'));
-            }
-
-            DB::table('leave_details')->where('leave_application_id', $appId)->delete();
-            DB::table('leave_date_applied')->where('leave_application_id', $appId)->delete();
-
-            // Recalculate with new data
+            // Validate everything BEFORE writing anything, so a rejected edit leaves the
+            // application and its credits exactly as they were (even on a non-transactional engine).
             $dates    = $data['dates'];
             $leaveIds = collect($dates)->pluck('leave_type_id')->unique()->filter()->values()->toArray();
             $n        = count($leaveIds);
@@ -292,9 +535,11 @@ class LeaveApplicationService
 
             $leaveTypes = DB::table('leave_types')
                 ->whereIn('id', $leaveIds)
-                ->get(['id', 'description', 'days_prior'])
+                ->get(['id', 'description', 'days_prior', 'status'])
                 ->keyBy('id');
 
+            $this->assertValidFiling($leaveIds, $leaveTypes, $dates, $appId ?? null);
+            $this->assertValidDetails($leaveIds, $leaveTypes, $data['details_map'] ?? []);
             $this->assertValidLeaveDates($leaveTypes, $datesByType);
 
             if (!$isLwop) {
@@ -305,8 +550,12 @@ class LeaveApplicationService
                     $credit    = DB::table('leave_credits')
                         ->where('user_id', Auth::id())
                         ->where('leave_id', $leaveId)
+                        ->lockForUpdate()
                         ->first(['based_credit', 'used_credit']);
-                    $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
+                    // Balance once this application's current deduction is given back
+                    $available = $credit
+                        ? round($credit->based_credit - $credit->used_credit + ($oldCreditsByType[$leaveId] ?? 0), 3)
+                        : null;
 
                     $desc = $leaveTypes[$leaveId]->description;
 
@@ -314,13 +563,25 @@ class LeaveApplicationService
                         throw new \Exception("No leave credits found for {$desc}.");
                     }
 
-                    if ($available < $typeCredits) {
+                    if ($available < round($typeCredits, 3)) {
                         throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
                     }
                 }
             }
 
-            // Insert new leave_details (without leave_id)
+            // All checks passed - now give back the old deduction and replace the dates.
+            foreach ($oldCreditsByType as $typeId => $amount) {
+                if (!$typeId || $amount <= 0) continue;
+                DB::table('leave_credits')
+                    ->where('user_id', Auth::id())
+                    ->where('leave_id', $typeId)
+                    ->increment('based_credit', $amount);
+            }
+
+            DB::table('leave_details')->where('leave_application_id', $appId)->delete();
+            DB::table('leave_date_applied')->where('leave_application_id', $appId)->delete();
+
+            // Insert new leave_details, one per leave type that has 6.B details
             $detailsMap = $data['details_map'] ?? [];
             foreach ($leaveIds as $leaveId) {
                 $typeDetail = $detailsMap[(string) $leaveId] ?? [];
@@ -328,6 +589,7 @@ class LeaveApplicationService
 
                 DB::table('leave_details')->insert([
                     'leave_application_id' => $appId,
+                    'leave_type_id'        => (int) $leaveId,
                     'detail'               => $typeDetail['detail'],
                     'extra'                => $typeDetail['extra'] ?? null,
                     'created_at'           => now(),
@@ -450,19 +712,20 @@ class LeaveApplicationService
         $uniqueTypeIds = $dateRows->pluck('leave_type_id')->unique()->filter()->values();
         $application->leave_type = $dateRows->pluck('leave_type_name')->unique()->filter()->implode(', ');
 
-        // Raw leave_details rows (no leave_id anymore)
-        $rawDetails = DB::table('hris.leave_details')
+        // Each detail row carries its own leave type
+        $detailsByType = DB::table('hris.leave_details')
             ->where('leave_application_id', $id)
-            ->get(['detail', 'extra']);
+            ->whereNotNull('leave_type_id')
+            ->get(['leave_type_id', 'detail', 'extra'])
+            ->keyBy('leave_type_id');
 
         // Full leave type map for descriptions
         $leaveTypesMap = $uniqueTypeIds->isNotEmpty()
             ? DB::table('hris.leave_types')->whereIn('id', $uniqueTypeIds)->pluck('description', 'id')
             : collect();
 
-        // Reconstruct details_per_type: pair each unique type with a detail row by index
-        $details = $uniqueTypeIds->map(function ($typeId, $index) use ($rawDetails, $leaveTypesMap) {
-            $detail = $rawDetails->get($index);
+        $details = $uniqueTypeIds->map(function ($typeId) use ($detailsByType, $leaveTypesMap) {
+            $detail = $detailsByType->get($typeId);
             return (object) [
                 'leave_id'   => $typeId,
                 'leave_type' => $leaveTypesMap[$typeId] ?? '',

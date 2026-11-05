@@ -12,25 +12,51 @@ class LeaveCancellationService
     // Helpers
     // -----------------------------------------------------------------------
 
-    private function canActAsHr(): bool
+    private OrgHierarchyService $org;
+    private PermissionService $permissions;
+    private array $headed = [];
+
+    public function __construct(OrgHierarchyService $org, PermissionService $permissions)
     {
-        return in_array(strtoupper((string) session('access_rights')), ['HR', 'HRH'], true);
+        $this->org         = $org;
+        $this->permissions = $permissions;
     }
 
+    /** Same HR rule as leave approval: HR/HRH access level or the leave.approve_hr permission. */
+    private function canActAsHr(): bool
+    {
+        if (in_array(strtoupper((string) session('access_rights')), ['HR', 'HRH'], true)) {
+            return true;
+        }
+        $userId = Auth::id();
+        return $userId && $this->permissions->can($userId, 'leave.approve_hr');
+    }
+
+    /** Sections/divisions the current user actually heads. */
+    private function headed(): array
+    {
+        $id = (int) Auth::id();
+        if (!isset($this->headed[$id])) {
+            $this->headed[$id] = [
+                'sections'  => $id ? $this->org->headedSectionIds($id) : [],
+                'divisions' => $id ? $this->org->headedDivisionIds($id) : [],
+            ];
+        }
+        return $this->headed[$id];
+    }
+
+    /** SH/DH steps match the sections/divisions the user actually heads. */
     private function canActOnStep(object $step, $user): bool
     {
         $access = strtoupper((string) session('access_rights'));
+        $headed = $this->headed();
 
         if ($step->role === 'SH') {
             return $access === 'ADMIN'
-                || ((bool) session('is_section_head')
-                    && !empty($user->section)
-                    && (int) $step->approver_id === (int) $user->section);
+                || in_array((int) $step->approver_id, $headed['sections'], true);
         }
         if ($step->role === 'DH') {
-            return (bool) session('is_division_head')
-                && !empty($user->division)
-                && (int) $step->approver_id === (int) $user->division;
+            return in_array((int) $step->approver_id, $headed['divisions'], true);
         }
         if ($step->role === 'HR') {
             return $this->canActAsHr();
@@ -39,8 +65,38 @@ class LeaveCancellationService
         return false;
     }
 
+    /** Owner, ADMIN, HR, or a head named in this cancellation's approval chain. */
+    public function canViewCancellation(int $id): bool
+    {
+        $ownerId = DB::table('hris.leave_cancellations')->where('id', $id)->value('user_id');
+        if ($ownerId === null) {
+            return false;
+        }
+        if ((int) $ownerId === (int) Auth::id()
+            || strtoupper((string) session('access_rights')) === 'ADMIN'
+            || $this->canActAsHr()) {
+            return true;
+        }
+
+        $headed = $this->headed();
+        return DB::table('hris.leave_cancellation_approvals')
+            ->where('leave_cancellation_id', $id)
+            ->where(function ($q) use ($headed) {
+                $q->where(fn($s) => $s->where('role', 'SH')->whereIn('approver_id', $headed['sections'] ?: [0]))
+                  ->orWhere(fn($d) => $d->where('role', 'DH')->whereIn('approver_id', $headed['divisions'] ?: [0]));
+            })
+            ->exists();
+    }
+
     private function resolveCurrentRole(int $cancellationId): ?string
     {
+        // A rejected (or already approved) cancellation is closed: nobody acts on it again.
+        $row = DB::table('hris.leave_cancellations')->where('id', $cancellationId)->first(['status', 'user_id']);
+        if (!$row || strtolower((string) $row->status) !== 'pending') return null;
+
+        // Nobody acts on their own cancellation at any step.
+        if ((int) $row->user_id === (int) Auth::id()) return null;
+
         $user    = Auth::user();
         $pending = DB::table('hris.leave_cancellation_approvals')
             ->where('leave_cancellation_id', $cancellationId)
@@ -57,21 +113,31 @@ class LeaveCancellationService
     // Employee: get approved dates for the dropdown
     // -----------------------------------------------------------------------
 
-    public function getApprovedDatesForUser(): \Illuminate\Support\Collection
+    /**
+     * Dates the user may still cancel: on one of their Approved leaves, still active,
+     * not disapproved by the Division Head (its credit was already given back), and not
+     * already in a Pending or Approved cancellation.
+     */
+    private function cancellableDatesQuery(int $userId): \Illuminate\Database\Query\Builder
     {
         return DB::table('hris.leave_date_applied as lda')
             ->join('hris.leave_applications as la', 'lda.leave_application_id', '=', 'la.id')
-            ->join('hris.leave_types as lt', 'lt.id', '=', 'lda.leave_type_id')
-            ->where('la.user_id', Auth::id())
+            ->where('la.user_id', $userId)
             ->where('la.status', 'Approved')
             ->where('lda.status', 'active')
+            ->where('lda.final_disapproved', 0)
             ->whereNotExists(function ($sub) {
-                // Exclude dates already pending/approved in an existing cancellation
                 $sub->from('hris.leave_cancellation_dates as lcd')
                     ->join('hris.leave_cancellations as lc', 'lc.id', '=', 'lcd.leave_cancellation_id')
                     ->whereColumn('lcd.leave_date_applied_id', 'lda.id')
                     ->whereIn('lc.status', ['Pending', 'Approved']);
-            })
+            });
+    }
+
+    public function getApprovedDatesForUser(): \Illuminate\Support\Collection
+    {
+        return $this->cancellableDatesQuery((int) Auth::id())
+            ->join('hris.leave_types as lt', 'lt.id', '=', 'lda.leave_type_id')
             ->select(
                 'lda.id',
                 'lda.leave_application_id',
@@ -93,17 +159,25 @@ class LeaveCancellationService
         return DB::transaction(function () use ($data) {
             $user = Auth::user();
 
-            // Verify all selected date IDs belong to approved leaves of this user
-            $validIds = DB::table('hris.leave_date_applied as lda')
+            $dateIds = array_values(array_unique(array_map('intval', $data['date_ids'])));
+
+            // Lock this user's leave date rows so two submissions cannot both pass the check
+            DB::table('hris.leave_date_applied as lda')
                 ->join('hris.leave_applications as la', 'lda.leave_application_id', '=', 'la.id')
                 ->where('la.user_id', $user->id)
-                ->where('la.status', 'Approved')
-                ->whereIn('lda.id', $data['date_ids'])
+                ->whereIn('lda.id', $dateIds)
+                ->lockForUpdate()
                 ->pluck('lda.id');
 
-            if ($validIds->count() !== count($data['date_ids'])) {
-                throw new \RuntimeException('One or more selected dates are invalid.');
+            // Every selected date must still be cancellable (same rule as the dropdown)
+            $validIds = $this->cancellableDatesQuery((int) $user->id)
+                ->whereIn('lda.id', $dateIds)
+                ->pluck('lda.id');
+
+            if ($validIds->count() !== count($dateIds)) {
+                throw new \RuntimeException('One or more selected dates can no longer be cancelled (already cancelled, disapproved, or in another cancellation request).');
             }
+            $data['date_ids'] = $dateIds;
 
             $id = DB::table('hris.leave_cancellations')->insertGetId([
                 'user_id'    => $user->id,
@@ -129,12 +203,10 @@ class LeaveCancellationService
                 ]);
             }
 
-            // 3-stage approval chain
-            DB::table('hris.leave_cancellation_approvals')->insert([
-                ['leave_cancellation_id' => $id, 'approver_id' => $user->section,  'role' => 'SH', 'order_no' => 1, 'status' => 'pending', 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
-                ['leave_cancellation_id' => $id, 'approver_id' => $user->division, 'role' => 'DH', 'order_no' => 2, 'status' => 'pending', 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
-                ['leave_cancellation_id' => $id, 'approver_id' => 15,              'role' => 'HR', 'order_no' => 3, 'status' => 'pending', 'created_at' => Carbon::now(), 'updated_at' => Carbon::now()],
-            ]);
+            // Approval chain - a head's own step goes to the head above (see OrgHierarchyService)
+            DB::table('hris.leave_cancellation_approvals')->insert(
+                $this->org->approvalRowsFor($user, 'leave_cancellation_id', $id)
+            );
 
             return $id;
         });
@@ -188,8 +260,9 @@ class LeaveCancellationService
             ->keyBy('role');
 
         $row->approvals = [
-            'sh' => $approvals['SH'] ?? (object)['status' => 'pending', 'remarks' => null],
-            'dh' => $approvals['DH'] ?? (object)['status' => 'pending', 'remarks' => null],
+            // A head's own cancellation has no SH (or, for the Medical Center Chief, no DH) step
+            'sh' => $approvals['SH'] ?? (object)['status' => 'skipped', 'remarks' => null],
+            'dh' => $approvals['DH'] ?? (object)['status' => 'skipped', 'remarks' => null],
             'hr' => $approvals['HR'] ?? (object)['status' => 'pending', 'remarks' => null],
         ];
 
@@ -204,14 +277,43 @@ class LeaveCancellationService
 
     public function getCancellationsForApproval(?string $search = null, string $filter = 'pending'): \Illuminate\Support\Collection
     {
-        $user           = Auth::user();
-        $isAdmin        = strtoupper((string) session('access_rights')) === 'ADMIN';
-        $isSectionHead  = (bool) session('is_section_head');
-        $isDivisionHead = (bool) session('is_division_head');
-        $canActAsHr     = $this->canActAsHr();
+        $isAdmin    = strtoupper((string) session('access_rights')) === 'ADMIN';
+        $canActAsHr = $this->canActAsHr();
+        $headed     = $this->headed();
+        $sections   = $headed['sections'];
+        $divisions  = $headed['divisions'];
+
+        // Restricts $q (approval alias $a) to this user's steps; always-false when the user
+        // has no approving role, so an empty group never widens the query to everything.
+        $mySteps = function ($q, string $a, bool $adminAllSh) use ($isAdmin, $canActAsHr, $sections, $divisions) {
+            $any = false;
+            $q->where(function ($w) use ($a, $adminAllSh, $isAdmin, $canActAsHr, $sections, $divisions, &$any) {
+                if (($isAdmin && $adminAllSh) || !empty($sections)) {
+                    $any = true;
+                    $w->orWhere(function ($s) use ($a, $adminAllSh, $isAdmin, $sections) {
+                        $s->where("$a.role", 'SH');
+                        if (!($isAdmin && $adminAllSh)) {
+                            $s->whereIn("$a.approver_id", $sections);
+                        }
+                    });
+                }
+                if (!empty($divisions)) {
+                    $any = true;
+                    $w->orWhere(fn($d) => $d->where("$a.role", 'DH')->whereIn("$a.approver_id", $divisions));
+                }
+                if ($canActAsHr) {
+                    $any = true;
+                    $w->orWhere(fn($h) => $h->where("$a.role", 'HR')->where("$a.approver_id", 15));
+                }
+            });
+            if (!$any) {
+                $q->whereRaw('1 = 0');
+            }
+        };
 
         $base = DB::table('hris.leave_cancellations as lc')
             ->join('tdh_user.users as u', 'lc.user_id', '=', 'u.id')
+            ->where('lc.user_id', '!=', (int) Auth::id())
             ->select(
                 'lc.id', 'lc.reason', 'lc.status', 'lc.created_at',
                 'u.fname', 'u.mname', 'u.lname'
@@ -219,69 +321,24 @@ class LeaveCancellationService
 
         if ($filter === 'pending') {
             $base->join('hris.leave_cancellation_approvals as lca', 'lc.id', '=', 'lca.leave_cancellation_id')
+                 ->where('lc.status', 'Pending')
                  ->where('lca.status', 'pending')
-                 ->whereRaw('lca.order_no = (SELECT MIN(p.order_no) FROM hris.leave_cancellation_approvals p WHERE p.leave_cancellation_id = lc.id AND p.status = ?)', ['pending'])
-                 ->where(function ($q) use ($isAdmin, $isSectionHead, $isDivisionHead, $canActAsHr, $user) {
-                     if ($isAdmin || ($isSectionHead && !empty($user->section))) {
-                         $q->orWhere(function ($sq) use ($isAdmin, $isSectionHead, $user) {
-                             $sq->where('lca.role', 'SH');
-                             if (!$isAdmin) $sq->where('lca.approver_id', $user->section);
-                         });
-                     }
-                     if ($isDivisionHead && !empty($user->division)) {
-                         $q->orWhere(function ($sq) use ($user) {
-                             $sq->where('lca.role', 'DH')->where('lca.approver_id', $user->division);
-                         });
-                     }
-                     if ($canActAsHr) {
-                         $q->orWhere(function ($sq) {
-                             $sq->where('lca.role', 'HR')->where('lca.approver_id', 15);
-                         });
-                     }
-                 });
+                 ->whereRaw('lca.order_no = (SELECT MIN(p.order_no) FROM hris.leave_cancellation_approvals p WHERE p.leave_cancellation_id = lc.id AND p.status = ?)', ['pending']);
+            $mySteps($base, 'lca', true);
         } elseif ($filter === 'approved_by_stage') {
-            if ($isAdmin) {
-                $base->whereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                    ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                    ->where('lca2.role', 'SH')->where('lca2.status', 'approved'));
-            } else {
-                $base->where(function ($q) use ($isSectionHead, $isDivisionHead, $canActAsHr, $user) {
-                    if ($isSectionHead && !empty($user->section)) {
-                        $q->orWhereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                            ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                            ->where('lca2.role', 'SH')->where('lca2.approver_id', $user->section)->where('lca2.status', 'approved'));
-                    }
-                    if ($isDivisionHead && !empty($user->division)) {
-                        $q->orWhereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                            ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                            ->where('lca2.role', 'DH')->where('lca2.approver_id', $user->division)->where('lca2.status', 'approved'));
-                    }
-                    if ($canActAsHr) {
-                        $q->orWhereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                            ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                            ->where('lca2.role', 'HR')->where('lca2.approver_id', 15)->where('lca2.status', 'approved'));
-                    }
-                });
-            }
+            $base->whereExists(function ($sq) use ($mySteps) {
+                $sq->from('hris.leave_cancellation_approvals as lca2')
+                   ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
+                   ->where('lca2.status', 'approved');
+                $mySteps($sq, 'lca2', true);
+            });
         } else { // approved_all
             $base->where('lc.status', 'Approved');
             if (!$isAdmin) {
-                $base->where(function ($q) use ($isSectionHead, $isDivisionHead, $canActAsHr, $user) {
-                    if ($isSectionHead && !empty($user->section)) {
-                        $q->orWhereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                            ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                            ->where('lca2.role', 'SH')->where('lca2.approver_id', $user->section));
-                    }
-                    if ($isDivisionHead && !empty($user->division)) {
-                        $q->orWhereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                            ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                            ->where('lca2.role', 'DH')->where('lca2.approver_id', $user->division));
-                    }
-                    if ($canActAsHr) {
-                        $q->orWhereExists(fn($sq) => $sq->from('hris.leave_cancellation_approvals as lca2')
-                            ->whereColumn('lca2.leave_cancellation_id', 'lc.id')
-                            ->where('lca2.role', 'HR')->where('lca2.approver_id', 15));
-                    }
+                $base->whereExists(function ($sq) use ($mySteps) {
+                    $sq->from('hris.leave_cancellation_approvals as lca2')
+                       ->whereColumn('lca2.leave_cancellation_id', 'lc.id');
+                    $mySteps($sq, 'lca2', false);
                 });
             }
         }
@@ -319,6 +376,26 @@ class LeaveCancellationService
         }
 
         DB::transaction(function () use ($id, $role, $normalizedStatus, $remarks) {
+            // Re-check under lock: the cancellation must still be Pending
+            $current = DB::table('hris.leave_cancellations')->where('id', $id)->lockForUpdate()->value('status');
+            if (strtolower((string) $current) !== 'pending') {
+                throw new \RuntimeException('This cancellation is already ' . strtolower((string) $current) . ' and can no longer be acted on.');
+            }
+
+            // HR's final approval: the leave must still be Approved (HR may have undone its
+            // approval since the cancellation was filed). Checked before anything is written.
+            if ($role === 'HR' && $normalizedStatus === 'approved') {
+                $notApproved = DB::table('hris.leave_cancellation_dates as lcd')
+                    ->join('hris.leave_date_applied as lda', 'lda.id', '=', 'lcd.leave_date_applied_id')
+                    ->join('hris.leave_applications as la', 'la.id', '=', 'lda.leave_application_id')
+                    ->where('lcd.leave_cancellation_id', $id)
+                    ->where('la.status', '!=', 'Approved')
+                    ->exists();
+                if ($notApproved) {
+                    throw new \RuntimeException('The leave for these dates is no longer approved. Re-approve the leave first, or reject this cancellation.');
+                }
+            }
+
             DB::table('hris.leave_cancellation_approvals')
                 ->where('leave_cancellation_id', $id)
                 ->where('role', $role)
@@ -347,6 +424,15 @@ class LeaveCancellationService
                 $dateIds = DB::table('hris.leave_cancellation_dates')
                     ->where('leave_cancellation_id', $id)
                     ->pluck('leave_date_applied_id');
+
+                // Only dates still active and not DH-disapproved hold a deduction; anything
+                // else already had its credit given back and must not be refunded again.
+                $dateIds = DB::table('hris.leave_date_applied')
+                    ->whereIn('id', $dateIds)
+                    ->where('status', 'active')
+                    ->where('final_disapproved', 0)
+                    ->lockForUpdate()
+                    ->pluck('id');
 
                 // Restore leave credits per leave type
                 $cancelledDates = DB::table('hris.leave_date_applied')

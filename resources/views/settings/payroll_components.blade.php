@@ -28,10 +28,10 @@
             background: #f8fafc;
         }
     </style>
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+    <div class="page-head">
         <div>
-            <h4 class="fw-bold mb-1">Earnings &amp; Deductions</h4>
-            <div class="text-muted small">Manage all payroll components. Mark a component Global to apply it to every employee by default; leave it non-global to assign it per-employee instead.</div>
+            <h1>Earnings &amp; Deductions</h1>
+            <p class="page-sub">Manage all payroll components. Mark a component Global to apply it to every employee by default; leave it non-global to assign it per-employee instead.</p>
         </div>
         <button class="btn btn-success btn-edit" id="btn_add_component">
             <i class="bi bi-plus-circle me-1"></i>

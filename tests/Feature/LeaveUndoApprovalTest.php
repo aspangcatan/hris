@@ -9,6 +9,8 @@ use Tests\TestCase;
 
 class LeaveUndoApprovalTest extends TestCase
 {
+    use \Tests\Concerns\SwitchesAuthUser;
+
     private int $employeeId = 9191;
     private int $shUserId   = 9192;
     private int $dhUserId   = 9193;
@@ -19,6 +21,10 @@ class LeaveUndoApprovalTest extends TestCase
     {
         parent::setUp();
         $this->cleanup();
+
+        // Approvers are matched by who actually heads the section/division
+        DB::table('tdh_user.division')->insert(['id' => $this->divisionId, 'description' => 'Undo Test Division', 'head' => $this->dhUserId, 'code' => 'UNDODIV']);
+        DB::table('tdh_user.section')->insert(['id' => $this->sectionId, 'description' => 'Undo Test Section', 'head' => $this->shUserId, 'division' => $this->divisionId, 'code' => 'UNDOSEC']);
     }
 
     protected function tearDown(): void
@@ -33,6 +39,8 @@ class LeaveUndoApprovalTest extends TestCase
         DB::table('hris.leave_date_applied')->whereIn('leave_application_id', $appIds)->delete();
         DB::table('hris.leave_application_approvals')->whereIn('leave_application_id', $appIds)->delete();
         DB::table('hris.leave_applications')->whereIn('id', $appIds)->delete();
+        DB::table('tdh_user.section')->where('id', $this->sectionId)->delete();
+        DB::table('tdh_user.division')->where('id', $this->divisionId)->delete();
     }
 
     /** Seeds an application whose SH/DH/HR steps have the given statuses. */
@@ -59,15 +67,13 @@ class LeaveUndoApprovalTest extends TestCase
 
     private function actAsSh(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->shUserId);
-        Auth::shouldReceive('user')->andReturn((object) ['id' => $this->shUserId, 'section' => $this->sectionId, 'division' => $this->divisionId]);
+        $this->actAsUser((object) ['id' => $this->shUserId, 'section' => $this->sectionId, 'division' => $this->divisionId]);
         session(['access_rights' => 'employee', 'is_section_head' => true, 'is_division_head' => false]);
     }
 
     private function actAsDh(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->dhUserId);
-        Auth::shouldReceive('user')->andReturn((object) ['id' => $this->dhUserId, 'section' => $this->sectionId, 'division' => $this->divisionId]);
+        $this->actAsUser((object) ['id' => $this->dhUserId, 'section' => $this->sectionId, 'division' => $this->divisionId]);
         session(['access_rights' => 'employee', 'is_section_head' => false, 'is_division_head' => true]);
     }
 
@@ -104,8 +110,7 @@ class LeaveUndoApprovalTest extends TestCase
     /** @test */
     public function hr_can_undo_an_acknowledgement(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->shUserId);
-        Auth::shouldReceive('user')->andReturn((object) ['id' => $this->shUserId, 'section' => 0, 'division' => 0]);
+        $this->actAsUser((object) ['id' => $this->shUserId, 'section' => 0, 'division' => 0]);
         session(['access_rights' => 'HR', 'is_section_head' => false, 'is_division_head' => false]);
 
         $appId = $this->seedApplication('Approved', 'approved', 'approved', 'acknowledged');

@@ -23,8 +23,6 @@
     {{-- Step 1: Filters --}}
     <div class="blk-filter">
         <div class="blk-step-label">Step 1 — Filter Employees</div>
-        <div class="row g-2 align-items-end">
-                <div class="fw-semibold mb-2">Step 1 — Filter Employees</div>
                 <div class="row g-2 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label small fw-semibold">Division</label>

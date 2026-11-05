@@ -22,7 +22,7 @@ class CheckPermission
         if (!$this->permissions->can(Auth::id(), $code)) {
             return $request->expectsJson()
                 ? response()->json(['error' => 'Unauthorized'], 403)
-                : redirect()->route('dashboard')->with('error', 'You do not have permission to access that page.');
+                : redirect()->route('profile')->with('error', 'You do not have permission to access that page.');
         }
 
         return $next($request);

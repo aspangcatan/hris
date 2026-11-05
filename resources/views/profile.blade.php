@@ -1,151 +1,112 @@
 @extends('master')
 @section('content')
-    <style>
-        .profile-shell {
-            background:
-                radial-gradient(circle at 15% 20%, rgba(14, 116, 144, 0.16), transparent 42%),
-                radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.14), transparent 38%),
-                #f8fafc;
-        }
+    @php
+        $me       = \Illuminate\Support\Facades\Auth::user();
+        $section  = \Illuminate\Support\Facades\DB::table('tdh_user.section')->where('id', $me->section)->value('description');
+        $division = \Illuminate\Support\Facades\DB::table('tdh_user.division')->where('id', $me->division)->value('description');
+        $employeeNo = \Illuminate\Support\Facades\DB::table('hris.employees')->where('user_id', $me->id)->value('employee_no');
+        $avatar   = $me->picture ? 'https://dohcsmc.com/id/storage/crop/' . $me->picture : asset('images/ic_user.png');
+        $pdsTabs  = [
+            'personal_information'   => ['bi-person-vcard', 'Personal Information'],
+            'address'                => ['bi-geo-alt', 'Address'],
+            'family_background'      => ['bi-people', 'Family Background'],
+            'educational_background' => ['bi-mortarboard', 'Educational Background'],
+            'civil_service'          => ['bi-award', 'Civil Service Eligibility'],
+            'work_experience'        => ['bi-briefcase', 'Work Experience'],
+            'voluntary_work'         => ['bi-heart', 'Voluntary Work'],
+            'learning_development'   => ['bi-journal-bookmark', 'Learning & Development'],
+            'other_information'      => ['bi-info-circle', 'Other Information'],
+            'reference'              => ['bi-person-lines-fill', 'References'],
+            'survey'                 => ['bi-ui-checks', 'Survey'],
+        ];
+    @endphp
 
-        .profile-tab {
-            border: 1px solid #dbe2eb;
-            border-radius: 9999px;
-            color: #334155;
-            font-weight: 600;
-            font-size: 13px;
-            letter-spacing: .02em;
-            padding: .5rem .9rem;
-            background: #fff;
-            transition: all .2s ease;
-        }
-
-        .profile-tab:hover {
-            border-color: #0f766e;
-            color: #0f766e;
-        }
-
-        .profile-tab.active {
-            border-color: #0f766e;
-            background: linear-gradient(120deg, #0f766e, #0ea5a4);
-            color: #fff;
-        }
-    </style>
-
-    <section class="px-4 pb-6 pt-5 sm:px-6 lg:px-8">
-        <div class="mb-6 flex flex-col gap-4 lg:flex-row">
-            <div class="rounded-3xl border-0 bg-slate-900/95 p-5 text-white shadow-2xl lg:w-4/12">
-                <div class="flex flex-col items-center text-center">
-                    <img
-                        src="{{ (Auth::user()->picture) ? "https://dohcsmc.com/id/storage/crop/".Auth::user()->picture : "images/ic_user.png"}}"
-                        alt="Profile"
-                        class="h-24 w-24 rounded-full border-4 border-white/30 object-cover shadow-lg">
-                    <p class="mt-4 text-2xl font-semibold tracking-tight">
-                        {{ \Illuminate\Support\Facades\Auth::user()->fname." ".\Illuminate\Support\Facades\Auth::user()->lname }}
-                    </p>
-                    <p class="mt-1 text-sm text-slate-300">{{ session('designation') }}</p>
-                    <button class="mt-4 inline-flex items-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-300"
-                            id="btn_print_pds">
-                        Print PDS
-                    </button>
-                </div>
-            </div>
-            <div class="grid gap-4 lg:w-8/12 lg:grid-cols-2">
-                <article class="rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
-                    <h5 class="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">Vision</h5>
-                    <p class="mt-3 text-sm leading-7 text-slate-600">
-                        Cebu South Medical Center is a premiere academic medical institution centered on excellence
-                        in Physical and Rehabilitation Medicine, Trauma, and Orthopedics in the Visayas by 2028.
-                    </p>
-                </article>
-                <article class="rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
-                    <h5 class="text-xs font-semibold uppercase tracking-[0.22em] text-teal-700">Mission</h5>
-                    <p class="mt-3 text-sm leading-7 text-slate-600">
-                        We shall provide the highest standards of care for Physical and Rehabilitation Medicine,
-                        Trauma, and Orthopedics is driven by a culture of learning, continuous quality improvement,
-                        and state-of-the-art technology for all. Core Values Love for God | Client-centered Care |
-                        Integrity | Excellence
-                    </p>
-                </article>
-            </div>
+    <div class="page-head">
+        <div>
+            <p class="eyebrow">Personal Data Sheet</p>
+            <h1>My Profile</h1>
+            <p class="page-sub">Keep your PDS up to date. HR uses it for your records and official documents.</p>
         </div>
+        <div class="page-actions">
+            <button type="button" class="btn btn-primary" id="btn_print_pds">
+                <i class="bi bi-printer"></i> Print PDS
+            </button>
+        </div>
+    </div>
 
-        <div class="rounded-3xl bg-white p-4 shadow-xl ring-1 ring-slate-200 sm:p-5">
-            <ul class="nav flex flex-wrap gap-2 overflow-x-auto pb-1" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link profile-tab active" data-bs-toggle="tab"
-                            data-bs-target="#personal_information">Personal Information
-                    </button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#address">Address</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#family_background">Family Background</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#educational_background">Educational Background</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#civil_service">Civil Service Eligibility</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#work_experience">Work Experience</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#voluntary_work">Voluntary Work</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#learning_development">Learning & Development</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#other_information">Other Information</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#reference">References</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link profile-tab" data-bs-toggle="tab" data-bs-target="#survey">Survey</button>
-                </li>
-            </ul>
-
-            <div class="tab-content mt-5">
-                <div class="tab-pane fade pt-1" id="personal_information">
-                    @include('forms.personal_information')
-                </div>
-                <div class="tab-pane fade pt-1" id="address">
-                    @include('forms.address')
-                </div>
-                <div class="tab-pane fade pt-1" id="family_background">
-                    @include('forms.family_background')
-                </div>
-                <div class="tab-pane fade pt-1" id="educational_background">
-                    @include('forms.educational_background')
-                </div>
-                <div class="tab-pane fade pt-1" id="civil_service">
-                    @include('forms.civil_service')
-                </div>
-                <div class="tab-pane fade pt-1" id="work_experience">
-                    @include('forms.work_experience')
-                </div>
-                <div class="tab-pane fade pt-1" id="voluntary_work">
-                    @include('forms.voluntary_work')
-                </div>
-                <div class="tab-pane fade pt-1" id="learning_development">
-                    @include('forms.learning_development')
-                </div>
-                <div class="tab-pane fade pt-1" id="other_information">
-                    @include('forms.other_information')
-                </div>
-                <div class="tab-pane fade pt-1" id="reference">
-                    @include('forms.reference')
-                </div>
-                <div class="tab-pane fade pt-1" id="survey">
-                    @include('forms.survey')
+    <div class="row g-3 mb-3">
+        <div class="col-xl-6">
+            <div class="card profile-summary">
+                <img src="{{ $avatar }}" onerror="this.onerror=null; this.src='{{ asset('images/ic_user.png') }}';"
+                     alt="Profile photo" class="profile-avatar">
+                <div class="profile-ident">
+                    <h2 class="profile-name">{{ $me->fname }} {{ $me->lname }}</h2>
+                    <p class="profile-role">{{ session('designation') ?: 'No designation on file' }}</p>
+                    <div class="info-grid">
+                        <div class="info-tile">
+                            <span class="info-label">Section</span>
+                            <span class="info-value" title="{{ $section }}">{{ $section ?: '—' }}</span>
+                        </div>
+                        <div class="info-tile">
+                            <span class="info-label">Division</span>
+                            <span class="info-value" title="{{ $division }}">{{ $division ?: '—' }}</span>
+                        </div>
+                        <div class="info-tile">
+                            <span class="info-label">Employee No.</span>
+                            <span class="info-value">{{ $employeeNo ?: '—' }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </section>
+        <div class="col-md-6 col-xl-3">
+            <article class="card about-card">
+                <h3 class="section-title"><i class="bi bi-eye"></i> Vision</h3>
+                <p>
+                    Cebu South Medical Center is a premiere academic medical institution centered on excellence
+                    in Physical and Rehabilitation Medicine, Trauma, and Orthopedics in the Visayas by 2028.
+                </p>
+            </article>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <article class="card about-card">
+                <h3 class="section-title"><i class="bi bi-flag"></i> Mission</h3>
+                <p>
+                    We shall provide the highest standards of care for Physical and Rehabilitation Medicine,
+                    Trauma, and Orthopedics is driven by a culture of learning, continuous quality improvement,
+                    and state-of-the-art technology for all.
+                </p>
+                <div class="value-pills" aria-label="Core values">
+                    <span class="value-pill">Love for God</span>
+                    <span class="value-pill">Client-centered Care</span>
+                    <span class="value-pill">Integrity</span>
+                    <span class="value-pill">Excellence</span>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div class="card pds-card">
+        <ul class="nav pds-tabs" role="tablist">
+            @foreach($pdsTabs as $pane => [$icon, $label])
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link {{ $loop->first ? 'active' : '' }}" data-bs-toggle="tab"
+                            data-bs-target="#{{ $pane }}" role="tab">
+                        <i class="bi {{ $icon }}"></i> {{ $label }}
+                    </button>
+                </li>
+            @endforeach
+        </ul>
+
+        <div class="tab-content pds-body">
+            @foreach(array_keys($pdsTabs) as $pane)
+                <div class="tab-pane fade" id="{{ $pane }}" role="tabpanel">
+                    @include('forms.' . $pane)
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     @include('modals.children')
     @include('modals.education')
     @include('modals.civil_service')

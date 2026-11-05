@@ -139,9 +139,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/print_work_experience', [\App\Http\Controllers\PrintController::class, 'printWorkExperience'])->name('printWorkExperience');
 
     #NAVIGATION
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    // No dashboard page: old /dashboard links land on the profile.
+    Route::redirect('/dashboard', '/profile');
 
     Route::get('/profile', function () {
         return view('profile');
@@ -236,19 +235,19 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/leave_management', function () {
         return view('settings.leave_management');
-    })->name('leave_management');
+    })->name('leave_management')->middleware('permission:leave.manage_types');
 
     Route::get('/bulk-leave-credits', function () {
         return view('settings.bulk_leave_credits');
-    })->name('bulk-leave-credits.index');
-    Route::get('/bulk-leave-credits/batches',      [\App\Http\Controllers\LeaveBulkCreditController::class, 'getBatches'])->name('bulk-leave-credits.batches');
-    Route::get('/bulk-leave-credits/divisions',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getDivisions'])->name('bulk-leave-credits.divisions');
-    Route::get('/bulk-leave-credits/sections',     [\App\Http\Controllers\LeaveBulkCreditController::class, 'getSections'])->name('bulk-leave-credits.sections');
-    Route::get('/bulk-leave-credits/employees',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getEmployees'])->name('bulk-leave-credits.employees');
-    Route::get('/bulk-leave-credits/employee-types', [\App\Http\Controllers\LeaveBulkCreditController::class, 'getEmployeeTypes'])->name('bulk-leave-credits.employee-types');
-    Route::get('/bulk-leave-credits/leave-types',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getAllLeaveTypes'])->name('bulk-leave-credits.leave-types');
-    Route::post('/bulk-leave-credits',             [\App\Http\Controllers\LeaveBulkCreditController::class, 'store'])->name('bulk-leave-credits.store');
-    Route::get('/bulk-leave-credits/{id}/print',   [\App\Http\Controllers\LeaveBulkCreditController::class, 'printBatch'])->name('bulk-leave-credits.print');
+    })->name('bulk-leave-credits.index')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/batches',      [\App\Http\Controllers\LeaveBulkCreditController::class, 'getBatches'])->name('bulk-leave-credits.batches')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/divisions',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getDivisions'])->name('bulk-leave-credits.divisions')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/sections',     [\App\Http\Controllers\LeaveBulkCreditController::class, 'getSections'])->name('bulk-leave-credits.sections')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/employees',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getEmployees'])->name('bulk-leave-credits.employees')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/employee-types', [\App\Http\Controllers\LeaveBulkCreditController::class, 'getEmployeeTypes'])->name('bulk-leave-credits.employee-types')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/leave-types',    [\App\Http\Controllers\LeaveBulkCreditController::class, 'getAllLeaveTypes'])->name('bulk-leave-credits.leave-types')->middleware('permission:leave.manage_credits');
+    Route::post('/bulk-leave-credits',             [\App\Http\Controllers\LeaveBulkCreditController::class, 'store'])->name('bulk-leave-credits.store')->middleware('permission:leave.manage_credits');
+    Route::get('/bulk-leave-credits/{id}/print',   [\App\Http\Controllers\LeaveBulkCreditController::class, 'printBatch'])->name('bulk-leave-credits.print')->middleware('permission:leave.manage_credits');
 
     Route::get('/payroll', function () {
         return view('payroll');
@@ -267,11 +266,11 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/get_credit_balance', [\App\Http\Controllers\LeaveController::class, 'getCreditBalances'])->name('getCreditBalances');
     Route::put('/update_base_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateBaseCredit'])->name('insertUpdateBaseCredit')->middleware('permission:leave.manage_credits');
-    Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit');
+    Route::put('/update_used_credit', [\App\Http\Controllers\LeaveController::class, 'insertUpdateUsedCredit'])->name('insertUpdateUsedCredit')->middleware('permission:leave.manage_credits');
 
     Route::get('/get/leave_types', [\App\Http\Controllers\LeaveController::class, 'getLeaveTypes'])->name('getLeaveTypes');
-    Route::put('/update_leave_type', [\App\Http\Controllers\LeaveController::class, 'insertUpdateLeaveType'])->name('insertUpdateLeaveType');
-    Route::delete('/delete/leave_type', [\App\Http\Controllers\LeaveController::class, 'deleteLeaveType'])->name('deleteLeaveType');
+    Route::put('/update_leave_type', [\App\Http\Controllers\LeaveController::class, 'insertUpdateLeaveType'])->name('insertUpdateLeaveType')->middleware('permission:leave.manage_types');
+    Route::delete('/delete/leave_type', [\App\Http\Controllers\LeaveController::class, 'deleteLeaveType'])->name('deleteLeaveType')->middleware('permission:leave.manage_types');
 
     //PAYROLL SETTINGS
     Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings');
@@ -297,8 +296,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/cutoff-periods', [\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
     Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview');
     Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
-    Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits');
-    Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits');
+    Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
+    Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
 
     //PAYROLL
     Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');
@@ -420,10 +419,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
     Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied');
 #LEAVE CREDITS MANAGEMENT
-    Route::post('/insert_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'insertUpdateCredits'])->name('insertUpdateCredits');
-    Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits');
-    Route::get('/get_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'getEmployeeCredits'])->name('getEmployeeCredits');
-    Route::get('/get_all_balances', [\App\Http\Controllers\LeaveCreditsController::class, 'getAllBalances'])->name('getAllBalances');
+    Route::post('/insert_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'insertUpdateCredits'])->name('insertUpdateCredits')->middleware('permission:leave.manage_credits');
+    Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits')->middleware('permission:leave.manage_credits');
+    Route::get('/get_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'getEmployeeCredits'])->name('getEmployeeCredits')->middleware('permission:leave.manage_credits');
+    Route::get('/get_all_balances', [\App\Http\Controllers\LeaveCreditsController::class, 'getAllBalances'])->name('getAllBalances')->middleware('permission:leave.manage_credits');
 #LEAVE APPLICATION
     Route::get('/get_leaves', [\App\Http\Controllers\LeaveController::class, 'getLeaves'])->name('getLeaves');
     Route::get('/get_leave_status', [\App\Http\Controllers\LeaveController::class, 'getLeaveStatus'])->name('getLeaveStatus');
@@ -458,7 +457,7 @@ Route::group(['middleware' => 'auth'], function () {
 #LEAVE CANCELLATION (Pages)
     Route::get('/leave_cancellation', function () { return view('leave_cancellation'); })->name('leave_cancellation');
     Route::get('/cancellation_approval', function () { return view('cancellation_approval'); })->name('cancellation_approval');
-    Route::get('/admin_cancellations', function () { return view('admin_cancellations'); })->name('admin_cancellations');
+    Route::get('/admin_cancellations', function () { return view('admin_cancellations'); })->name('admin_cancellations')->middleware('permission:leave.approve_hr');
 
 #LEAVE CANCELLATION (API)
     Route::get('/get_approved_dates', [\App\Http\Controllers\LeaveCancellationController::class, 'getApprovedDates'])->name('getApprovedDates');
@@ -467,7 +466,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/leave-cancellations/{id}', [\App\Http\Controllers\LeaveCancellationController::class, 'show'])->name('leave-cancellations.show');
     Route::get('/get_cancellation_for_approval', [\App\Http\Controllers\LeaveCancellationController::class, 'getForApproval'])->name('getCancellationForApproval');
     Route::post('/update_cancellation_approval_status', [\App\Http\Controllers\LeaveCancellationController::class, 'updateApprovalStatus'])->name('updateCancellationApprovalStatus');
-    Route::get('/get_all_cancellations_admin', [\App\Http\Controllers\LeaveCancellationController::class, 'getAllForAdmin'])->name('getAllCancellationsAdmin');
+    Route::get('/get_all_cancellations_admin', [\App\Http\Controllers\LeaveCancellationController::class, 'getAllForAdmin'])->name('getAllCancellationsAdmin')->middleware('permission:leave.approve_hr');
 
 #DTR LOGS
     Route::get('/print_dtr', [\App\Http\Controllers\DTRController::class, 'printDTR'])->name('printDTR')->middleware('permission:dtr.print');

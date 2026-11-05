@@ -285,13 +285,13 @@
                             <div class="row g-2">
                                 <div class="col-md-3">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="approved_days_with_pay" min="0" step="0.5" placeholder="">
+                                        <input type="number" class="form-control" id="approved_days_with_pay" min="0" step="any" placeholder="">
                                         <label>Days with pay</label>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-floating">
-                                        <input type="number" class="form-control" id="approved_days_without_pay" min="0" step="0.5" placeholder="">
+                                        <input type="number" class="form-control" id="approved_days_without_pay" min="0" step="any" placeholder="">
                                         <label>Days without pay</label>
                                     </div>
                                 </div>
@@ -302,6 +302,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <div id="hr_action_guide" class="form-text mt-1"></div>
                         </div>
 
                         <div id="approver_signature_section" class="mt-3 d-none">

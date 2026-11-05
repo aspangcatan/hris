@@ -150,8 +150,8 @@
 
         data.forEach(it => $("#leave_approval_list").append(`
         <tr>
-            <td>${it.lname}, ${it.fname} ${it.mname ?? ""}</td>
-            <td>${it.description} ${it.is_lwop ? '<span class="badge bg-warning text-dark ms-1">LWOP</span>' : ''}</td>
+            <td>${escapeHtml(it.lname)}, ${escapeHtml(it.fname)} ${escapeHtml(it.mname)}</td>
+            <td>${escapeHtml(it.description)} ${it.is_lwop ? '<span class="badge bg-warning text-dark ms-1">LWOP</span>' : ''}</td>
             <td>${(it.dates_applied ? it.dates_applied.split(',') : []).map(d => moment(d).format("MM/DD/YYYY")).join(", ")}</td>
             <td>${moment(it.created_at).format("MM/DD/YYYY hh:mm:ss")}</td>
             <td><button class="btn btn-sm leave-view-btn" onclick="viewApplication(${it.id}, this)">${leaveApprovalViewButtonHtml}</button></td>
@@ -233,7 +233,7 @@
                     <input type="checkbox" class="form-check-input date-disapprove-cb" data-date-id="${d.id}" id="dd_${d.id}" ${checked ? 'checked' : ''}>
                     <label class="form-check-label small" for="dd_${d.id}">${label}</label>
                 </div>
-                <input type="text" class="form-control form-control-sm mt-1 date-disapprove-remark" data-date-id="${d.id}" placeholder="Reason (optional)" value="${String(remark).replace(/"/g, '&quot;')}" style="${checked ? '' : 'display:none;'}">
+                <input type="text" class="form-control form-control-sm mt-1 date-disapprove-remark" data-date-id="${d.id}" placeholder="Reason (optional)" value="${escapeHtml(remark)}" style="${checked ? '' : 'display:none;'}">
             `;
         }
 
@@ -268,7 +268,7 @@
             : (data.attachment_url ? [{ id: null, url: data.attachment_url, original_name: 'View Attachment' }] : []);
         if (allAttachments.length > 0) {
             const links = allAttachments.map(a =>
-                `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${a.original_name}</a>`
+                `<a href="${a.url}" target="_blank" class="me-2"><i class="bi bi-paperclip"></i> ${escapeHtml(a.original_name)}</a>`
             ).join('');
             $('#view_attachment_row').html(`<p><strong>Attachments:</strong> ${links}</p>`).show();
         } else {
@@ -294,7 +294,7 @@
             return `
             <div class="mb-2">
                 <strong>${label}:</strong>
-                <p class="mb-0">${a.remarks}</p>
+                <p class="mb-0">${escapeHtml(a.remarks)}</p>
                 <small class="text-muted">Status: ${a.status}</small>
             </div>
         `;
@@ -322,17 +322,32 @@
 
     // 7.A defaults to today; 7.C defaults to the days the Division Head left approved
     // (all with pay, or all without pay for an LWOP application). HR may edit before acknowledging.
+    // A Division Head rejection means nothing was approved, so 7.C defaults to 0 / 0.
     function prefillHrActionFields(data) {
         const saved = data.hr_action || {};
-        const approvedDays = (data.dates || [])
-            .filter(d => !d.is_cancelled && !d.final_disapproved)
-            .reduce((sum, d) => sum + (parseFloat(d.duration) || 0), 0) / 8;
+        const days = rows => rows.reduce((sum, d) => sum + (parseFloat(d.duration) || 0), 0) / 8;
+        const live          = (data.dates || []).filter(d => !d.is_cancelled);
+        const filedDays     = days(live);
+        const disapproved   = days(live.filter(d => d.final_disapproved));
+        const dhRejected    = String(data.approvals?.dh?.status || '').toLowerCase() === 'rejected';
+        const approvedDays  = dhRejected ? 0 : filedDays - disapproved;
         const pick = (value, fallback) => (value !== null && value !== undefined) ? parseFloat(value) : fallback;
+        const fmt  = n => Number(n.toFixed(3)).toString();
 
         $('#cert_as_of').val(saved.cert_as_of || moment().format('YYYY-MM-DD'));
         $('#approved_days_with_pay').val(pick(saved.approved_days_with_pay, data.is_lwop ? 0 : approvedDays));
         $('#approved_days_without_pay').val(pick(saved.approved_days_without_pay, data.is_lwop ? approvedDays : 0));
         $('#approved_others').val(saved.approved_others || '');
+
+        // Guide for HR: what was filed and what the Division Head decided
+        let guide = `Filed: ${fmt(filedDays)} day(s) ${data.is_lwop ? '<strong>without pay (LWOP)</strong>' : 'with pay'}`;
+        if (dhRejected) {
+            guide += ` &middot; <span class="text-danger">rejected by the Division Head - nothing approved</span>`;
+        } else {
+            guide += ` &middot; approved by the Division Head: ${fmt(approvedDays)} day(s)`;
+            if (disapproved > 0) guide += ` &middot; <span class="text-danger">disapproved: ${fmt(disapproved)} day(s)</span>`;
+        }
+        $('#hr_action_guide').html(guide + '. Pre-filled from the filing - adjust if needed.');
     }
 
     function collectHrActionFields() {
@@ -353,7 +368,7 @@
             const typeName = (data.leave_types_map && data.leave_types_map[d.leave_id]) || '';
             const parts = [d.detail, d.extra].filter(Boolean);
             const text = parts.join(' — ');
-            return `<div class="mb-1"><strong>${typeName}:</strong>${text ? ' ' + text : ' <span class="text-muted">—</span>'}</div>`;
+            return `<div class="mb-1"><strong>${escapeHtml(typeName)}:</strong>${text ? ' ' + escapeHtml(text) : ' <span class="text-muted">—</span>'}</div>`;
         }).join('') || '<span class="text-muted">No details provided.</span>';
     }
 

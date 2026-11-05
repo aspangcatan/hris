@@ -1,8 +1,11 @@
 <header id="header" class="header fixed-top d-flex align-items-center">
     <div class="d-flex align-items-center justify-content-between">
         <a href="{{ url('/') }}" class="logo d-flex align-items-center">
-            <img src="assets/img/logo.png" alt="">
-            <span class="d-none d-lg-block">HRIS</span>
+            <img src="{{ asset('assets/img/logo.png') }}" alt="Cebu South Medical Center logo">
+            <span class="d-none d-lg-flex flex-column brand-text">
+                <span class="brand-name">HRIS</span>
+                <small class="brand-sub">Human Resources</small>
+            </span>
         </a>
         <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
@@ -19,7 +22,8 @@
 
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
                     <img
-                        src="{{ (Auth::user()->picture) ? "https://dohcsmc.com/id/storage/crop/".Auth::user()->picture : "images/ic_user.png"}}?v={{ date('Ymdhis') }}"
+                        src="{{ (Auth::user()->picture) ? "https://dohcsmc.com/id/storage/crop/".Auth::user()->picture : asset('images/ic_user.png') }}?v={{ date('Ymdhis') }}"
+                        onerror="this.onerror=null; this.src='{{ asset('images/ic_user.png') }}';"
                         alt="Profile"
                         class="rounded-circle">
                     <span class="d-none d-md-block dropdown-toggle ps-2">{{ \Illuminate\Support\Facades\Auth::user()->lname[0].'. '.\Illuminate\Support\Facades\Auth::user()->fname }}</span>

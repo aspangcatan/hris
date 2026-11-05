@@ -9,10 +9,57 @@ use Illuminate\Support\Facades\DB;
 class LeaveApprovalService
 {
     private PermissionService $permissions;
+    private OrgHierarchyService $org;
 
-    public function __construct(PermissionService $permissions)
+    public function __construct(PermissionService $permissions, OrgHierarchyService $org)
     {
         $this->permissions = $permissions;
+        $this->org         = $org;
+    }
+
+    /** Sections/divisions the current user actually heads, cached for the request. */
+    private array $headed = [];
+
+    private function headed(): array
+    {
+        $id = (int) Auth::id();
+        if (!isset($this->headed[$id])) {
+            $this->headed[$id] = [
+                'sections'  => $id ? $this->org->headedSectionIds($id) : [],
+                'divisions' => $id ? $this->org->headedDivisionIds($id) : [],
+            ];
+        }
+        return $this->headed[$id];
+    }
+
+    private function isOwnLeave(int $leaveId): bool
+    {
+        return (int) DB::table('hris.leave_applications')->where('id', $leaveId)->value('user_id') === (int) Auth::id();
+    }
+
+    /**
+     * Owner, ADMIN, HR, or a head named in this leave's approval chain.
+     */
+    public function canViewLeave(int $leaveId): bool
+    {
+        $app = DB::table('hris.leave_applications')->where('id', $leaveId)->first(['user_id']);
+        if (!$app) {
+            return false;
+        }
+        if ((int) $app->user_id === (int) Auth::id()
+            || strtoupper((string) session('access_rights')) === 'ADMIN'
+            || $this->canActAsHr()) {
+            return true;
+        }
+
+        $headed = $this->headed();
+        return DB::table('hris.leave_application_approvals')
+            ->where('leave_application_id', $leaveId)
+            ->where(function ($q) use ($headed) {
+                $q->where(fn($s) => $s->where('role', 'SH')->whereIn('approver_id', $headed['sections'] ?: [0]))
+                  ->orWhere(fn($d) => $d->where('role', 'DH')->whereIn('approver_id', $headed['divisions'] ?: [0]));
+            })
+            ->exists();
     }
 
     private function canActAsHr(): bool
@@ -26,23 +73,23 @@ class LeaveApprovalService
         return $userId && $this->permissions->can($userId, 'leave.approve_hr');
     }
 
+    /**
+     * SH/DH steps are matched against the sections/divisions the user actually heads
+     * (tdh_user.section.head / division.head), not the user's own section/division
+     * fields, which for many heads point somewhere else.
+     */
     private function canApprovePendingStep(object $pendingApproval, $user): bool
     {
         $accessRight = strtoupper((string) session('access_rights'));
+        $headed      = $this->headed();
 
         if ($pendingApproval->role === 'SH') {
             return $accessRight === 'ADMIN'
-                || (
-                    (bool) session('is_section_head')
-                    && !empty($user->section)
-                    && (int) $pendingApproval->approver_id === (int) $user->section
-                );
+                || in_array((int) $pendingApproval->approver_id, $headed['sections'], true);
         }
 
         if ($pendingApproval->role === 'DH') {
-            return (bool) session('is_division_head')
-                && !empty($user->division)
-                && (int) $pendingApproval->approver_id === (int) $user->division;
+            return in_array((int) $pendingApproval->approver_id, $headed['divisions'], true);
         }
 
         if ($pendingApproval->role === 'HR' || $pendingApproval->role === 'HR_COMPLIANCE') {
@@ -55,6 +102,11 @@ class LeaveApprovalService
     public function resolveCurrentApprovalRoleForLeave(int $leaveId): ?string
     {
         $user = Auth::user();
+
+        // Nobody acts on their own leave at any step.
+        if ($this->isOwnLeave($leaveId)) {
+            return null;
+        }
 
         $pendingApproval = DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $leaveId)
@@ -73,11 +125,11 @@ class LeaveApprovalService
 
     public function getLeavesForApproval(?string $search_employee = null, string $filter = 'pending')
     {
-        $user           = Auth::user();
-        $isAdmin        = strtoupper((string) session('access_rights')) === 'ADMIN';
-        $isSectionHead  = (bool) session('is_section_head');
-        $isDivisionHead = (bool) session('is_division_head');
-        $canActAsHr     = $this->canActAsHr();
+        $isAdmin    = strtoupper((string) session('access_rights')) === 'ADMIN';
+        $canActAsHr = $this->canActAsHr();
+        $headed     = $this->headed();
+        $sections   = $headed['sections'];
+        $divisions  = $headed['divisions'];
 
         $baseSelect = [
             'la.id',
@@ -98,116 +150,68 @@ class LeaveApprovalService
             'u.lname',
         ];
 
+        /**
+         * Restricts $q (on approval alias $a) to the steps this user may act on / has acted on.
+         * Adds an always-false condition when the user has no approving role at all, so an
+         * empty group can never widen the query to every leave.
+         */
+        $mySteps = function ($q, string $a, bool $adminAllSh) use ($isAdmin, $canActAsHr, $sections, $divisions) {
+            $any = false;
+            $q->where(function ($w) use ($a, $adminAllSh, $isAdmin, $canActAsHr, $sections, $divisions, &$any) {
+                if (($isAdmin && $adminAllSh) || !empty($sections)) {
+                    $any = true;
+                    $w->orWhere(function ($s) use ($a, $adminAllSh, $isAdmin, $sections) {
+                        $s->where("$a.role", 'SH');
+                        if (!($isAdmin && $adminAllSh)) {
+                            $s->whereIn("$a.approver_id", $sections);
+                        }
+                    });
+                }
+                if (!empty($divisions)) {
+                    $any = true;
+                    $w->orWhere(fn($d) => $d->where("$a.role", 'DH')->whereIn("$a.approver_id", $divisions));
+                }
+                if ($canActAsHr) {
+                    $any = true;
+                    $w->orWhere(fn($h) => $h->whereIn("$a.role", ['HR', 'HR_COMPLIANCE'])->where("$a.approver_id", 15));
+                }
+            });
+            if (!$any) {
+                $q->whereRaw('1 = 0');
+            }
+        };
+
+        $query = DB::table('hris.leave_applications as la')
+            ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
+            // Nobody sees their own leave in an approval list
+            ->where('la.user_id', '!=', (int) Auth::id());
+
         if ($filter === 'pending') {
-            $query = DB::table('hris.leave_applications as la')
-                ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
-                ->join('hris.leave_application_approvals as lp', 'la.id', '=', 'lp.leave_application_id')
+            $query->join('hris.leave_application_approvals as lp', 'la.id', '=', 'lp.leave_application_id')
                 ->select(array_merge($baseSelect, ['lp.role', 'lp.approver_id']))
                 ->where('lp.status', 'pending')
                 ->whereRaw(
                     'lp.order_no = (SELECT MIN(p.order_no) FROM hris.leave_application_approvals as p
                                      WHERE p.leave_application_id = la.id AND p.status = ?)',
                     ['pending']
-                )
-                ->where(function ($approvalQuery) use ($isAdmin, $isSectionHead, $isDivisionHead, $canActAsHr, $user) {
-                    if ($isAdmin || ($isSectionHead && !empty($user->section))) {
-                        $approvalQuery->orWhere(function ($q) use ($isAdmin, $isSectionHead, $user) {
-                            $q->where('lp.role', 'SH');
-                            if (!$isAdmin && $isSectionHead) {
-                                $q->where('lp.approver_id', $user->section);
-                            }
-                        });
-                    }
-
-                    if ($isDivisionHead && !empty($user->division)) {
-                        $approvalQuery->orWhere(function ($q) use ($user) {
-                            $q->where('lp.role', 'DH')->where('lp.approver_id', $user->division);
-                        });
-                    }
-
-                    if ($canActAsHr) {
-                        $approvalQuery->orWhere(function ($q) {
-                            $q->whereIn('lp.role', ['HR', 'HR_COMPLIANCE'])->where('lp.approver_id', 15);
-                        });
-                    }
-                });
+                );
+            $mySteps($query, 'lp', true);
 
         } elseif ($filter === 'approved_by_stage') {
-            $query = DB::table('hris.leave_applications as la')
-                ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
-                ->select($baseSelect);
-
-            if ($isAdmin) {
-                $query->whereExists(function ($sub) {
-                    $sub->from('hris.leave_application_approvals as lp2')
-                        ->whereColumn('lp2.leave_application_id', 'la.id')
-                        ->where('lp2.role', 'SH')
-                        ->where('lp2.status', 'approved');
-                });
-            } else {
-                $query->where(function ($q) use ($isSectionHead, $isDivisionHead, $canActAsHr, $user) {
-                    if ($isSectionHead && !empty($user->section)) {
-                        $q->orWhereExists(function ($sub) use ($user) {
-                            $sub->from('hris.leave_application_approvals as lp2')
-                                ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->where('lp2.role', 'SH')
-                                ->where('lp2.approver_id', $user->section)
-                                ->where('lp2.status', 'approved');
-                        });
-                    }
-                    if ($isDivisionHead && !empty($user->division)) {
-                        $q->orWhereExists(function ($sub) use ($user) {
-                            $sub->from('hris.leave_application_approvals as lp2')
-                                ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->where('lp2.role', 'DH')
-                                ->where('lp2.approver_id', $user->division)
-                                ->where('lp2.status', 'approved');
-                        });
-                    }
-                    if ($canActAsHr) {
-                        $q->orWhereExists(function ($sub) {
-                            $sub->from('hris.leave_application_approvals as lp2')
-                                ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->whereIn('lp2.role', ['HR', 'HR_COMPLIANCE'])
-                                ->where('lp2.approver_id', 15)
-                                ->whereIn('lp2.status', ['approved', 'acknowledged']);
-                        });
-                    }
-                });
-            }
+            $query->select($baseSelect)->whereExists(function ($sub) use ($mySteps) {
+                $sub->from('hris.leave_application_approvals as lp2')
+                    ->whereColumn('lp2.leave_application_id', 'la.id')
+                    ->whereIn('lp2.status', ['approved', 'acknowledged']);
+                $mySteps($sub, 'lp2', true);
+            });
 
         } else { // approved_all
-            $query = DB::table('hris.leave_applications as la')
-                ->join('tdh_user.users as u', 'la.user_id', '=', 'u.id')
-                ->select($baseSelect)
-                ->where('la.status', 'Approved');
-
+            $query->select($baseSelect)->where('la.status', 'Approved');
             if (!$isAdmin) {
-                $query->where(function ($q) use ($isSectionHead, $isDivisionHead, $canActAsHr, $user) {
-                    if ($isSectionHead && !empty($user->section)) {
-                        $q->orWhereExists(function ($sub) use ($user) {
-                            $sub->from('hris.leave_application_approvals as lp2')
-                                ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->where('lp2.role', 'SH')
-                                ->where('lp2.approver_id', $user->section);
-                        });
-                    }
-                    if ($isDivisionHead && !empty($user->division)) {
-                        $q->orWhereExists(function ($sub) use ($user) {
-                            $sub->from('hris.leave_application_approvals as lp2')
-                                ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->where('lp2.role', 'DH')
-                                ->where('lp2.approver_id', $user->division);
-                        });
-                    }
-                    if ($canActAsHr) {
-                        $q->orWhereExists(function ($sub) {
-                            $sub->from('hris.leave_application_approvals as lp2')
-                                ->whereColumn('lp2.leave_application_id', 'la.id')
-                                ->whereIn('lp2.role', ['HR', 'HR_COMPLIANCE'])
-                                ->where('lp2.approver_id', 15);
-                        });
-                    }
+                $query->whereExists(function ($sub) use ($mySteps) {
+                    $sub->from('hris.leave_application_approvals as lp2')
+                        ->whereColumn('lp2.leave_application_id', 'la.id');
+                    $mySteps($sub, 'lp2', false);
                 });
             }
         }
@@ -225,6 +229,10 @@ class LeaveApprovalService
     private function findUserApprovedStep(int $leaveId): ?object
     {
         $user = Auth::user();
+
+        if ($this->isOwnLeave($leaveId)) {
+            return null;
+        }
 
         $approvals = DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $leaveId)
@@ -253,13 +261,13 @@ class LeaveApprovalService
             return false;
         }
 
-        // A later stage that already acted (approved OR rejected) locks this one. Undoing
-        // an approval underneath a later rejection would leave the chain inconsistent,
-        // e.g. SH pending with DH rejected.
+        // A later stage that already acted (approved, acknowledged OR rejected) locks this one.
+        // Undoing an approval underneath a later decision would leave the chain inconsistent,
+        // e.g. SH pending with DH rejected, or a DH undo reopening a leave HR already finalized.
         return !DB::table('hris.leave_application_approvals')
             ->where('leave_application_id', $leaveId)
             ->where('order_no', '>', $myApproval->order_no)
-            ->whereRaw('LOWER(status) IN (?, ?)', ['approved', 'rejected'])
+            ->whereRaw('LOWER(status) IN (?, ?, ?)', ['approved', 'acknowledged', 'rejected'])
             ->exists();
     }
 
@@ -353,6 +361,17 @@ class LeaveApprovalService
                 throw new \RuntimeException('A prior approval step must be completed first.');
             }
 
+            // Maternity/Paternity cannot be approved without its supporting document. Checked here
+            // (not only at filing) because an edit uploads new files after saving the dates.
+            if ($normalizedStatus === 'approved') {
+                $typeIds = DB::table('hris.leave_date_applied')->where('leave_application_id', $leave_id)->distinct()->pluck('leave_type_id')->filter()->all();
+                $hasAttachment = DB::table('hris.leave_application_attachments')->where('leave_application_id', $leave_id)->exists()
+                    || DB::table('hris.leave_applications')->where('id', $leave_id)->whereNotNull('attachment')->exists();
+                if (!$hasAttachment && app(LeaveApplicationService::class)->requiresAttachment($typeIds)) {
+                    throw new \RuntimeException('This leave requires a supporting attachment (Maternity/Paternity Leave) before it can be approved.');
+                }
+            }
+
             $leaveIsRejected = strtolower((string) DB::table('hris.leave_applications')->where('id', $leave_id)->value('status')) === 'rejected';
 
             // HR's step is an acknowledgement of whatever the Division Head decided. A Division
@@ -436,6 +455,9 @@ class LeaveApprovalService
                     ->update(['status' => 'Approved', 'updated_at' => Carbon::now()]);
             }
         });
+
+        // A completely rejected leave no longer keeps its attachments.
+        app(LeaveApplicationService::class)->purgeAttachmentsIfCompletelyRejected($leave_id);
     }
 
     /**
@@ -449,6 +471,7 @@ class LeaveApprovalService
         $creditsByType = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $leaveId)
             ->where('final_disapproved', 0)
+            ->where('status', '!=', 'cancelled')
             ->get(['leave_type_id', 'credits_deducted'])
             ->groupBy('leave_type_id');
 
@@ -481,9 +504,11 @@ class LeaveApprovalService
             return;
         }
 
+        // DH-disapproved and cancelled dates already had their credits given back.
         $dates = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $leaveId)
             ->where('final_disapproved', 0)
+            ->where('status', '!=', 'cancelled')
             ->get(['leave_type_id', 'credits_deducted']);
 
         $creditsByType = $dates->groupBy('leave_type_id');

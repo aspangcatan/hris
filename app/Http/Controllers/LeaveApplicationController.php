@@ -65,10 +65,10 @@ class LeaveApplicationController extends Controller
 
                 $appRow = $query->firstWhere('id', $appId);
 
-                $shApproved = DB::table('leave_application_approvals')
+                // Same rule as LeaveApplicationService::updateLeaveApplication
+                $anyStepActed = DB::table('leave_application_approvals')
                     ->where('leave_application_id', $appId)
-                    ->where('role', 'SH')
-                    ->whereRaw('LOWER(status) = ?', ['approved'])
+                    ->whereRaw('LOWER(status) <> ?', ['pending'])
                     ->exists();
 
                 $rows[] = (object) [
@@ -78,8 +78,8 @@ class LeaveApplicationController extends Controller
                     'extra'       => $detailRow ? (string) ($detailRow->extra ?? '') : '',
                     'status'      => $appRow->status,
                     'dates_applied' => $dateRows,
-                    'is_editable'  => !$shApproved && strtolower($appRow->status) === 'pending',
-                    'is_deletable' => strtolower($appRow->status) !== 'approved',
+                    'is_editable'  => !$anyStepActed &&strtolower($appRow->status) === 'pending',
+                    'is_deletable' => $this->leaveApplicationService->canDelete($appId),
                 ];
             }
 
@@ -124,11 +124,21 @@ class LeaveApplicationController extends Controller
                 return response()->json(['code' => 422, 'message' => 'Cannot delete an approved application. Use the leave cancellation form instead.'], 422);
             }
 
-            DB::transaction(function () use ($model) {
+            $filePaths = DB::transaction(function () use ($model) {
+                // Re-check under lock: only before any approver acts, or once completely rejected.
+                DB::table('leave_applications')->where('id', $model->id)->lockForUpdate()->value('id');
+                if (!$this->leaveApplicationService->canDelete((int) $model->id)) {
+                    throw new \DomainException('This leave application is being processed by an approver and can only be deleted once it has been fully rejected.');
+                }
+                $model->refresh();
+
                 // Restore credits only if not already restored (rejection restores them at rejection time)
+                // DH-disapproved and cancelled dates already had their credits given back.
                 if (strtolower($model->status) !== 'rejected') {
                     $dates = DB::table('leave_date_applied')
                         ->where('leave_application_id', $model->id)
+                        ->where('final_disapproved', 0)
+                        ->where('status', '!=', 'cancelled')
                         ->get(['leave_type_id', 'credits_deducted']);
 
                     $creditsByType = $dates->groupBy('leave_type_id');
@@ -141,10 +151,23 @@ class LeaveApplicationController extends Controller
                     }
                 }
 
+                // Remove everything that belongs to the application, not just its row.
+                $filePaths = $this->leaveApplicationService->detachAttachments($model->id);
+                DB::table('leave_details')->where('leave_application_id', $model->id)->delete();
+                DB::table('leave_date_applied')->where('leave_application_id', $model->id)->delete();
+                DB::table('leave_application_approvals')->where('leave_application_id', $model->id)->delete();
+
                 $model->forceDelete();
+
+                return $filePaths;
             });
 
+            // Files go only after the database delete has committed.
+            $this->leaveApplicationService->deleteAttachmentFiles($filePaths);
+
             return response()->json(['code' => 200, 'message' => 'Leave application successfully deleted.']);
+        } catch (\DomainException $exception) {
+            return response()->json(['code' => 422, 'message' => $exception->getMessage()], 422);
         } catch (\Exception $exception) {
             return response()->json(['message' => $exception->getMessage()], 500);
         }
@@ -250,29 +273,54 @@ class LeaveApplicationController extends Controller
                 return response()->json(['success' => false, 'error' => $validator->errors()->first()], 422);
             }
 
-            $result = $this->leaveApplicationService->insertLeaveApplication($params);
-            $appId  = $result['app_id'];
-
-            if ($request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('leave_attachments', 'public');
-                    DB::table('leave_application_attachments')->insert([
-                        'leave_application_id' => $appId,
-                        'file_path'            => $path,
-                        'original_name'        => $file->getClientOriginalName(),
-                        'created_at'           => now(),
-                        'updated_at'           => now(),
-                    ]);
-                }
+            // Maternity/Paternity: the supporting document is part of the filing itself.
+            $typeIds = collect($params['dates'])->pluck('leave_type_id')->filter()->unique()->values()->all();
+            if ($this->leaveApplicationService->requiresAttachment($typeIds) && !$request->hasFile('attachments')) {
+                return response()->json(['success' => false, 'error' => 'At least one attachment is required for Maternity/Paternity Leave.'], 422);
             }
 
-            $this->leaveApplicationService->syncComplianceStep($appId);
+            // The filing, its attachments and the compliance step are saved together: if any
+            // part fails, nothing is kept - no half-filed leave, no stray files.
+            $storedFiles = [];
+            try {
+                $appId = DB::transaction(function () use ($params, $request, &$storedFiles) {
+                    $appId = $this->leaveApplicationService->insertLeaveApplication($params)['app_id'];
+
+                    foreach ($request->file('attachments') ?? [] as $file) {
+                        $path = $file->store('leave_attachments', 'public');
+                        if (!$path) {
+                            throw new \RuntimeException('An attachment could not be saved. Please try again.');
+                        }
+                        $storedFiles[] = $path;
+                        DB::table('leave_application_attachments')->insert([
+                            'leave_application_id' => $appId,
+                            'file_path'            => $path,
+                            'original_name'        => $file->getClientOriginalName(),
+                            'created_at'           => now(),
+                            'updated_at'           => now(),
+                        ]);
+                    }
+
+                    $this->leaveApplicationService->syncComplianceStep($appId);
+
+                    return $appId;
+                });
+            } catch (\Throwable $e) {
+                $this->leaveApplicationService->deleteAttachmentFiles($storedFiles);
+                throw $e;
+            }
 
             return response()->json([
                 'success'              => true,
                 'message'              => 'Leave application submitted successfully.',
                 'leave_application_id' => $appId,
             ]);
+        } catch (\Illuminate\Database\QueryException $exception) {
+            report($exception);
+            return response()->json([
+                'success' => false,
+                'error'   => 'Your leave application could not be saved. Nothing was filed - please try again.',
+            ], 422);
         } catch (\Exception $exception) {
             return response()->json([
                 'success' => false,
@@ -298,14 +346,14 @@ class LeaveApplicationController extends Controller
                 return response()->json(['error' => 'Leave application not found.'], 404);
             }
 
-            $shApproved = DB::table('leave_application_approvals')
+            // Chains for heads may have no SH step, so lock on any approver having acted.
+            $anyStepActed = DB::table('leave_application_approvals')
                 ->where('leave_application_id', $id)
-                ->where('role', 'SH')
-                ->whereRaw('LOWER(status) = ?', ['approved'])
+                ->whereRaw('LOWER(status) <> ?', ['pending'])
                 ->exists();
 
-            if ($shApproved) {
-                return response()->json(['error' => 'Cannot modify attachments after supervisor approval.'], 422);
+            if ($anyStepActed) {
+                return response()->json(['error' => 'Cannot modify attachments after an approver has acted.'], 422);
             }
 
             $stored = [];
@@ -359,6 +407,10 @@ class LeaveApplicationController extends Controller
 
     public function getLeaveApplication(int $id)
     {
+        if (!$this->leaveApprovalService->canViewLeave($id)) {
+            return response()->json(['error' => 'Leave application not found'], 404);
+        }
+
         $leave = $this->leaveApplicationService->findById($id);
 
         if (!$leave) {
@@ -390,8 +442,9 @@ class LeaveApplicationController extends Controller
             ])->values(),
             'approvals'       => array_filter([
                 'hr_compliance' => $leave->approvals['HR_COMPLIANCE'] ?? null,
-                'sh'            => $leave->approvals['SH'] ?? ['status' => 'pending', 'remarks' => ''],
-                'dh'            => $leave->approvals['DH'] ?? ['status' => 'pending', 'remarks' => ''],
+                // A head's own leave has no SH (or, for the Medical Center Chief, no DH) step
+                'sh'            => $leave->approvals['SH'] ?? ['status' => 'skipped', 'remarks' => ''],
+                'dh'            => $leave->approvals['DH'] ?? ['status' => 'skipped', 'remarks' => ''],
                 'hr'            => $leave->approvals['HR'] ?? ['status' => 'pending', 'remarks' => ''],
             ]),
             'attachment_url'  => $leave->attachment ? route('leave-attachments.serve', ['filename' => basename($leave->attachment)]) : null,
@@ -422,8 +475,19 @@ class LeaveApplicationController extends Controller
 
     public function serveAttachment(string $filename)
     {
-        $path = storage_path('app/public/leave_attachments/' . $filename);
+        // Only a plain file name; a backslash/".." could otherwise climb out of the folder on Windows.
+        $filename = basename(str_replace('\\', '/', $filename));
+        $stored   = 'leave_attachments/' . $filename;
 
+        // The file must belong to a leave application the viewer is allowed to see.
+        $appId = DB::table('leave_application_attachments')->where('file_path', $stored)->value('leave_application_id')
+            ?? DB::table('leave_applications')->whereIn('attachment', [$stored, $filename, 'public/' . $stored])->value('id');
+
+        if (!$appId || !$this->leaveApprovalService->canViewLeave((int) $appId)) {
+            abort(404);
+        }
+
+        $path = storage_path('app/public/' . $stored);
         if (!file_exists($path)) {
             abort(404);
         }

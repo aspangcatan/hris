@@ -364,6 +364,11 @@ class PrintController extends Controller
 
     public function printLeaveForm(Request $request)
     {
+        // Form shows salary and signatures: owner, ADMIN, HR, or a head in its approval chain only.
+        if (!app(\App\Services\LeaveApprovalService::class)->canViewLeave((int) $request->id)) {
+            abort(404);
+        }
+
         $leave_application = DB::table('hris.leave_applications as l')
             ->leftJoin('hris.payroll_settings as p', 'p.userid', '=', 'l.user_id')
             ->join('tdh_user.users as u', 'l.user_id', '=', 'u.id')
@@ -406,13 +411,15 @@ class PrintController extends Controller
             ->orderBy('lda.leave_type_id')
             ->get();
 
+        // Each detail row carries its own leave type
         $detailRows = DB::table('hris.leave_details')
             ->where('leave_application_id', $request->id)
-            ->get(['detail', 'extra']);
+            ->whereNotNull('leave_type_id')
+            ->get(['leave_type_id', 'detail', 'extra'])
+            ->keyBy('leave_type_id');
 
-        // Index-match: i-th leave_details row ↔ i-th unique leave type (same insertion order)
-        $leaveDetails = $leaveTypeRows->map(function ($lt, $index) use ($detailRows) {
-            $dr = $detailRows->get($index);
+        $leaveDetails = $leaveTypeRows->map(function ($lt) use ($detailRows) {
+            $dr = $detailRows->get($lt->leave_id);
             return (object) [
                 'leave_id'        => $lt->leave_id,
                 'leave_type_name' => $lt->leave_type_name,
@@ -423,8 +430,7 @@ class PrintController extends Controller
 
         // Dates the Division Head disapproved (or that were cancelled) are not part of what is
         // being availed of, so a leave type whose every date was disapproved is not ticked and
-        // its details are not printed. Details are still paired to types above using ALL types,
-        // since that pairing is by position.
+        // its details are not printed.
         $activeTypeIds = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $request->id)
             ->where('status', '!=', 'cancelled')

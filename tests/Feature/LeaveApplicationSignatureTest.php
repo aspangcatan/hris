@@ -10,6 +10,7 @@ use Tests\TestCase;
 class LeaveApplicationSignatureTest extends TestCase
 {
     use DatabaseTransactions;
+    use \Tests\Concerns\SwitchesAuthUser;
 
     private int $employeeId = 9161;
     private int $shUserId   = 9162;
@@ -69,31 +70,25 @@ class LeaveApplicationSignatureTest extends TestCase
 
     private function actAsEmployee(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->employeeId);
-        Auth::shouldReceive('user')->andReturn((object) [
+        $this->actAsUser((object) [
             'id' => $this->employeeId, 'section' => $this->sectionId, 'division' => $this->divisionId,
         ]);
-        Auth::shouldReceive('check')->andReturn(true);
         session(['access_rights' => 'employee', 'is_section_head' => false, 'is_division_head' => false]);
     }
 
     private function actAsSh(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->shUserId);
-        Auth::shouldReceive('user')->andReturn((object) [
+        $this->actAsUser((object) [
             'id' => $this->shUserId, 'section' => $this->sectionId, 'division' => $this->divisionId,
         ]);
-        Auth::shouldReceive('check')->andReturn(true);
         session(['access_rights' => 'employee', 'is_section_head' => true, 'is_division_head' => false]);
     }
 
     private function actAsDh(): void
     {
-        Auth::shouldReceive('id')->andReturn($this->dhUserId);
-        Auth::shouldReceive('user')->andReturn((object) [
+        $this->actAsUser((object) [
             'id' => $this->dhUserId, 'section' => $this->sectionId, 'division' => $this->divisionId,
         ]);
-        Auth::shouldReceive('check')->andReturn(true);
         session(['access_rights' => 'employee', 'is_section_head' => false, 'is_division_head' => true]);
     }
 
@@ -234,9 +229,7 @@ class LeaveApplicationSignatureTest extends TestCase
             'id' => $appId, 'status' => 'Approved', 'remarks' => 'ok', 'signature' => 'data:image/png;base64,DH==',
         ])->assertOk();
 
-        Auth::shouldReceive('id')->andReturn(9999);
-        Auth::shouldReceive('user')->andReturn((object) ['id' => 9999, 'section' => 0, 'division' => 0]);
-        Auth::shouldReceive('check')->andReturn(true);
+        $this->actAsUser((object) ['id' => 9999, 'section' => 0, 'division' => 0]);
         session(['access_rights' => 'hr']);
 
         $response = $this->withoutMiddleware()->postJson('/update/approval_status', [
