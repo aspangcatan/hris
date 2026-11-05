@@ -28,6 +28,54 @@
         };
     </script>
 
+    <script>
+        /*
+         * Double-click guard for every page. While a POST/PUT/PATCH/DELETE is still on its way,
+         * an identical one (same method, URL and body) is not sent again - every caller gets a
+         * copy of the first request's response instead. GET requests are untouched. The server
+         * has its own checks too; this just stops the duplicate before it leaves the browser.
+         */
+        (function () {
+            if (!window.fetch) return;
+            const realFetch = window.fetch.bind(window);
+            const inFlight = new Map();
+
+            function bodyKey(body) {
+                if (body == null) return '';
+                if (typeof body === 'string') return body;
+                if (body instanceof URLSearchParams) return body.toString();
+                if (body instanceof FormData) {
+                    const parts = [];
+                    for (const [k, v] of body.entries()) {
+                        parts.push(k + '=' + (v instanceof File ? `[file ${v.name} ${v.size} ${v.lastModified}]` : v));
+                    }
+                    return parts.join('&');
+                }
+                return null; // Blob, ArrayBuffer, ...: not compared, sent as usual
+            }
+
+            window.fetch = function (input, init) {
+                const method = String((init && init.method) || 'GET').toUpperCase();
+                if (typeof input !== 'string' || method === 'GET' || method === 'HEAD') {
+                    return realFetch(input, init);
+                }
+                const body = bodyKey(init && init.body);
+                if (body === null) return realFetch(input, init);
+
+                const key = method + ' ' + input + '\n' + body;
+                let pending = inFlight.get(key);
+                if (!pending) {
+                    pending = realFetch(input, init);
+                    inFlight.set(key, pending);
+                    const done = () => inFlight.delete(key);
+                    pending.then(done, done);
+                }
+                // Each caller reads its own copy, so a duplicate click never consumes the original.
+                return pending.then(r => r.clone());
+            };
+        })();
+    </script>
+
     <!-- SweetAlert2 JS -->
 
 

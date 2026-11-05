@@ -68,55 +68,54 @@ class LeaveCreditService
         $date_updated = $year . '-' . $month;
 
         foreach ($leaveTypes as $leaveType) {
+            // Late/undertime is charged only to types flagged deduct_tardiness (VL);
+            // the rest (SL) receive the full table amount.
+            $typeDeduction = (int) ($leaveType->deduct_tardiness ?? 0) === 1 ? $deductionPoints : 0;
+            $creditedPoints = round($earnedPoints - $typeDeduction, 3);
 
-            $alreadyProcessed = DB::table('hris.leave_credits')
-                ->where('user_id', $userid)
-                ->where('leave_id', $leaveType->id)
-                ->where('last_updated_month', $date_updated)
-                ->exists();
+            DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent) {
+                // Lock the employee's credit rows (the same rows a leave filing locks), then check
+                // "already processed this month?" under that lock - so a double-clicked Apply
+                // cannot credit the month twice.
+                DB::table('hris.leave_credits')->where('user_id', $userid)->lockForUpdate()->get(['id']);
 
-            if (!$alreadyProcessed) {
-                // Late/undertime is charged only to types flagged deduct_tardiness (VL);
-                // the rest (SL) receive the full table amount.
-                $typeDeduction = (int) ($leaveType->deduct_tardiness ?? 0) === 1 ? $deductionPoints : 0;
-                $creditedPoints = round($earnedPoints - $typeDeduction, 3);
+                $credit = DB::table('hris.leave_credits')
+                    ->where('user_id', $userid)
+                    ->where('leave_id', $leaveType->id)
+                    ->first(['id', 'last_updated_month']);
 
-                DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent) {
-                    $credit = DB::table('hris.leave_credits')
-                        ->where('user_id', $userid)
-                        ->where('leave_id', $leaveType->id)
-                        ->first();
+                if ($credit && $credit->last_updated_month === $date_updated) {
+                    return; // already credited for this month
+                }
 
-                    if ($credit) {
-                        DB::table('hris.leave_credits')
-                            ->where('id', $credit->id)
-                            ->update([
-                                'based_credit' => $credit->based_credit + $creditedPoints,
-                                'last_updated_month' => $date_updated
-                            ]);
-                    } else {
-                        DB::table('hris.leave_credits')->insert([
-                            'user_id' => $userid,
-                            'leave_id' => $leaveType->id,
-                            'based_credit' => $creditedPoints,
-                            'last_updated_month' => $date_updated
-                        ]);
-                    }
-
-                    DB::table('credit_earned_logs')->insert([
+                if ($credit) {
+                    // increment, not "old balance + points": a balance read earlier would
+                    // wipe out any leave deduction made in between.
+                    DB::table('hris.leave_credits')
+                        ->where('id', $credit->id)
+                        ->increment('based_credit', $creditedPoints, ['last_updated_month' => $date_updated]);
+                } else {
+                    DB::table('hris.leave_credits')->insert([
                         'user_id' => $userid,
-                        'month' => $month,
-                        'year' => $year,
-                        'total_lateundertime_minutes' => $totalLateUndertimeMinutes,
-                        'leave_type_id' => $leaveType->id,
-                        'earned_points' => $creditedPoints,
-                        'deducted_points' => $typeDeduction,
-                        'total_present' => $totalPresent,
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                        'leave_id' => $leaveType->id,
+                        'based_credit' => $creditedPoints,
+                        'last_updated_month' => $date_updated
                     ]);
-                });
-            }
+                }
+
+                DB::table('credit_earned_logs')->insert([
+                    'user_id' => $userid,
+                    'month' => $month,
+                    'year' => $year,
+                    'total_lateundertime_minutes' => $totalLateUndertimeMinutes,
+                    'leave_type_id' => $leaveType->id,
+                    'earned_points' => $creditedPoints,
+                    'deducted_points' => $typeDeduction,
+                    'total_present' => $totalPresent,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            });
         }
     }
 }

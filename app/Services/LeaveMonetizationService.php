@@ -74,12 +74,14 @@ class LeaveMonetizationService
                 throw new \Exception('Selected leave type is not eligible for monetization.');
             }
 
-            // Validate sufficient balance
+            // Validate sufficient balance. The row is locked so two submissions at once (double-click)
+            // are handled one after the other - the second sees the first one's deduction.
             $credit    = DB::table('leave_credits')
                 ->where('user_id', $userId)
                 ->where('leave_id', $leaveTypeId)
+                ->lockForUpdate()
                 ->first(['based_credit', 'used_credit']);
-            $available = $credit ? ($credit->based_credit - $credit->used_credit) : null;
+            $available = $credit ? round($credit->based_credit - $credit->used_credit, 3) : null;
 
             if ($available === null) {
                 throw new \Exception("No leave credits found for {$leaveType->description}.");
@@ -140,9 +142,11 @@ class LeaveMonetizationService
     public function delete(int $id): void
     {
         DB::transaction(function () use ($id) {
+            // Locked: a double-clicked delete must not give the credits back twice.
             $record = DB::table('leave_monetizations')
                 ->where('id', $id)
                 ->where('user_id', Auth::id())
+                ->lockForUpdate()
                 ->first();
 
             if (!$record) {
@@ -227,7 +231,9 @@ class LeaveMonetizationService
             });
 
         if ($filter === 'pending') {
-            $query->where('lma.status', 'pending')
+            // A rejected request is finished - later steps are not asked to act on it.
+            $query->where('lm.status', 'pending')
+                ->where('lma.status', 'pending')
                 ->whereRaw('lma.order_no = (
                     SELECT MIN(order_no) FROM leave_monetization_approvals
                     WHERE leave_monetization_id = lm.id AND status = ?
@@ -334,6 +340,21 @@ class LeaveMonetizationService
         }
 
         DB::transaction(function () use ($monetizationId, $pendingApproval, $normalizedStatus, $remarks, $record) {
+            // Lock and re-check. Only a request that is still pending can be acted on: once
+            // rejected, its credits are already back, so a later step (or a double-click)
+            // must not refund them again or approve it.
+            $current = DB::table('leave_monetizations')->where('id', $monetizationId)->lockForUpdate()->value('status');
+            if (strtolower((string) $current) !== 'pending') {
+                throw new \RuntimeException('This monetization request is already ' . strtolower((string) $current) . ' and can no longer be acted on.');
+            }
+            $stepStatus = DB::table('leave_monetization_approvals')
+                ->where('leave_monetization_id', $monetizationId)
+                ->where('role', $pendingApproval->role)
+                ->value('status');
+            if (strtolower((string) $stepStatus) !== 'pending') {
+                throw new \RuntimeException('This step has already been acted on. Please refresh the page.');
+            }
+
             DB::table('leave_monetization_approvals')
                 ->where('leave_monetization_id', $monetizationId)
                 ->where('role', $pendingApproval->role)

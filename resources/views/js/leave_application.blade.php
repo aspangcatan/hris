@@ -947,7 +947,7 @@
 
                 $("#leave_history_list").append(`
                 <tr id="leave_id_${it.id}">
-                    <td>${it.description}</td>
+                    <td>${escapeHtml(it.description)}</td>
                     <td>${dates.join(", ")}</td>
                     <td>${status}</td>
                     <td>
@@ -1587,7 +1587,7 @@
 
                 $("#lwop_history_list").append(`
                 <tr id="lwop_id_${it.id}">
-                    <td>${it.description}</td>
+                    <td>${escapeHtml(it.description)}</td>
                     <td>${dates.join(", ")}</td>
                     <td>${status}</td>
                     <td>

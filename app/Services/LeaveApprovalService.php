@@ -277,9 +277,15 @@ class LeaveApprovalService
             throw new \RuntimeException('You are not allowed to undo this approval, or a later stage has already approved or rejected it.');
         }
 
-        $myApproval = $this->findUserApprovedStep($leaveId);
+        DB::transaction(function () use ($leaveId) {
+            // Lock the leave and re-check: a double-clicked undo must not run twice (a DH undo
+            // re-deducts the dates the DH disapproved, so a second run would deduct them again).
+            DB::table('hris.leave_applications')->where('id', $leaveId)->lockForUpdate()->value('id');
+            if (!$this->canUndoApproval($leaveId)) {
+                throw new \RuntimeException('This approval has already been undone or can no longer be undone. Please refresh the page.');
+            }
+            $myApproval = $this->findUserApprovedStep($leaveId);
 
-        DB::transaction(function () use ($leaveId, $myApproval) {
             DB::table('hris.leave_application_approvals')
                 ->where('leave_application_id', $leaveId)
                 ->where('role', $myApproval->role)
@@ -338,6 +344,18 @@ class LeaveApprovalService
         }
 
         DB::transaction(function () use ($leave_id, $effectiveRole, $remarks, $normalizedStatus, $disapprovedDates, $signature, $requiresSignature, $overturnRejection) {
+            // Lock the leave, then make sure this step is still waiting. The role was resolved
+            // before the transaction, so a double-click (or two tabs) would otherwise act twice -
+            // e.g. two rejections each giving the credits back.
+            DB::table('hris.leave_applications')->where('id', $leave_id)->lockForUpdate()->value('id');
+            $myStatus = DB::table('hris.leave_application_approvals')
+                ->where('leave_application_id', $leave_id)
+                ->where('role', $effectiveRole)
+                ->value('status');
+            if (strtolower((string) $myStatus) !== 'pending') {
+                throw new \RuntimeException('This step has already been acted on. Please refresh the page.');
+            }
+
             // Enforce chain order generically: every earlier step (by
             // order_no) must already be approved before this role's step
             // can be acted on. Works for both the 3-step (SH/DH/HR) and
@@ -399,6 +417,7 @@ class LeaveApprovalService
                     throw new \RuntimeException('A prior approver rejected this leave. Confirm to overturn the rejection.');
                 }
 
+                $this->assertDatesStillFree($leave_id);
                 $this->redeductCredits($leave_id);
                 DB::table('hris.leave_applications')
                     ->where('id', $leave_id)
@@ -458,6 +477,42 @@ class LeaveApprovalService
 
         // A completely rejected leave no longer keeps its attachments.
         app(LeaveApplicationService::class)->purgeAttachmentsIfCompletelyRejected($leave_id);
+    }
+
+    /**
+     * While a leave sat rejected its dates were free, so the employee may have filed another
+     * leave on them. Overturning the rejection must not put the same day on two live leaves.
+     */
+    private function assertDatesStillFree(int $leaveId): void
+    {
+        $userId = DB::table('hris.leave_applications')->where('id', $leaveId)->value('user_id');
+
+        $dates = DB::table('hris.leave_date_applied')
+            ->where('leave_application_id', $leaveId)
+            ->where('status', 'active')
+            ->where('final_disapproved', 0)
+            ->pluck('date_applied')
+            ->all();
+        if (empty($dates)) {
+            return;
+        }
+
+        $taken = DB::table('hris.leave_date_applied as lda')
+            ->join('hris.leave_applications as la', 'la.id', '=', 'lda.leave_application_id')
+            ->where('la.user_id', $userId)
+            ->where('la.id', '!=', $leaveId)
+            ->whereRaw('LOWER(la.status) IN (?, ?)', ['pending', 'approved'])
+            ->where('lda.status', 'active')
+            ->where('lda.final_disapproved', 0)
+            ->whereIn('lda.date_applied', $dates)
+            ->orderBy('lda.date_applied')
+            ->distinct()
+            ->pluck('lda.date_applied')
+            ->all();
+
+        if (!empty($taken)) {
+            throw new \RuntimeException('Cannot overturn the rejection: the employee has since filed another leave on ' . implode(', ', $taken) . '.');
+        }
     }
 
     /**
