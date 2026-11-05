@@ -35,7 +35,6 @@ Route::get('/logout', function () {
 
 
 Route::post('/authenticate', [\App\Http\Controllers\UserController::class, 'authenticate'])->name('authenticate');
-Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
 
 //MOBILE API
 Route::post('/mobile/login', [\App\Http\Controllers\DTRController::class, 'login'])->name('mobileLogin');
@@ -180,7 +179,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/promotion_applied', function () {
         return view('promotion_work_applied');
-    })->name('promotion_applied');
+    })->name('promotion_applied')->middleware('permission:promotion.manage');
 
     Route::get('/credit_management', function () {
         return view('credit_management');
@@ -194,7 +193,7 @@ Route::group(['middleware' => 'auth'], function () {
     })->name('schedule_master_list')->middleware('permission:schedule.manage');
     Route::get('/schedule_access', function () {
         return view('schedule_access');
-    })->name('schedule_access');
+    })->name('schedule_access')->middleware('permission:schedule.access');
 
     Route::get('/review_leave', function () {
         return view('review_leave');
@@ -203,17 +202,14 @@ Route::group(['middleware' => 'auth'], function () {
     #SETTINGS VIEW
     Route::get('/calendar', function () {
         return view('settings.calendar');
-    })->name('calendar');
+    })->name('calendar')->middleware('permission:calendar.manage');
 
     Route::get('/hospital_order', function () {
         return view('hospital_order');
     })->name('hospital_order');
     Route::get('/hospital_order/create', function () {
-        if (!in_array(session('access_rights'), ['admin'])) {
-            abort(403);
-        }
         return view('hospital_order_create');
-    })->name('hospital_order_create');
+    })->name('hospital_order_create')->middleware('permission:hospital_order.create');
     Route::get('/hospital_order/file', function () {
         return view('hospital_order_file');
     })->name('hospital_order_file')->middleware('permission:hospital_order.file');
@@ -413,11 +409,11 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/delete_spouse_liabilities', [\App\Http\Controllers\SalnController::class, 'deleteSpouseLiabilities'])->name('deleteSpouseLiabilities');
     Route::delete('/delete_spouse_business_interest', [\App\Http\Controllers\SalnController::class, 'deleteSpouseBusinessInterest'])->name('deleteSpouseBusinessInterest');
 #PROMOTION WORK EXPERIENCE
-    Route::post('/insert_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'store'])->name('insertPositionApplied');
-    Route::post('/insert_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'insertRelatedWork'])->name('insertRelatedWork');
-    Route::get('/get_promotion_work', [\App\Http\Controllers\PromotionWorkController::class, 'show'])->name('getPromotionWork');
-    Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
-    Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied');
+    Route::post('/insert_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'store'])->name('insertPositionApplied')->middleware('permission:promotion.manage');
+    Route::post('/insert_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'insertRelatedWork'])->name('insertRelatedWork')->middleware('permission:promotion.manage');
+    Route::get('/get_promotion_work', [\App\Http\Controllers\PromotionWorkController::class, 'show'])->name('getPromotionWork')->middleware('permission:promotion.manage');
+    Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork')->middleware('permission:promotion.manage');
+    Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied')->middleware('permission:promotion.manage');
 #LEAVE CREDITS MANAGEMENT
     Route::post('/insert_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'insertUpdateCredits'])->name('insertUpdateCredits')->middleware('permission:leave.manage_credits');
     Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits')->middleware('permission:leave.manage_credits');
@@ -486,21 +482,21 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/insert_schedule', [\App\Http\Controllers\ScheduleController::class, 'setEmployeeSchedule'])->name('setEmployeeSchedule');
     Route::post('/save-advance-schedule', [\App\Http\Controllers\ScheduleController::class, 'saveAdvanceSchedule'])->name('saveAdvanceSchedule');
     Route::get('/schedule/managed-sections', [\App\Http\Controllers\ScheduleController::class, 'getManagedSections'])->name('getManagedSections');
-    Route::get('/schedule/manager-assignments', [\App\Http\Controllers\ScheduleController::class, 'getScheduleManagerAssignments'])->name('getScheduleManagerAssignments');
-    Route::post('/schedule/manager-assignments', [\App\Http\Controllers\ScheduleController::class, 'saveScheduleManagerSections'])->name('saveScheduleManagerSections');
+    Route::get('/schedule/manager-assignments', [\App\Http\Controllers\ScheduleController::class, 'getScheduleManagerAssignments'])->name('getScheduleManagerAssignments')->middleware('permission:schedule.access');
+    Route::post('/schedule/manager-assignments', [\App\Http\Controllers\ScheduleController::class, 'saveScheduleManagerSections'])->name('saveScheduleManagerSections')->middleware('permission:schedule.access');
 
 #CREDIT EARNED POINTS
     Route::get('/get_credit_earned_logs', [\App\Http\Controllers\CreditController::class, 'getCreditEarned'])->name('getCreditEarned');
     #SETTINGS
     Route::get('/calendar-events', [CalendarController::class, 'getHolidays'])->name('calendar.events');
-    Route::post('/add-holiday', [CalendarController::class, 'store'])->name('calendar.store');
-    Route::post('/update-holiday', [CalendarController::class, 'update'])->name('calendar.update');
-    Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete');
+    Route::post('/add-holiday', [CalendarController::class, 'store'])->name('calendar.store')->middleware('permission:calendar.manage');
+    Route::post('/update-holiday', [CalendarController::class, 'update'])->name('calendar.update')->middleware('permission:calendar.manage');
+    Route::post('/delete-holiday', [CalendarController::class, 'destroy'])->name('calendar.delete')->middleware('permission:calendar.manage');
 
     Route::get('/managed-employees', [\App\Http\Controllers\ManagedEmployeeController::class, 'index'])->name('managed-employees.index');
 #HOSPITAL ORDERS
     Route::get('/get_hospital_orders', [HospitalOrderController::class, 'getHospitalOrders'])->name('hospital-orders.get');
-    Route::post('/hospital-orders', [HospitalOrderController::class, 'createHospitalOrder'])->name('hospital-orders.store');
+    Route::post('/hospital-orders', [HospitalOrderController::class, 'createHospitalOrder'])->name('hospital-orders.store')->middleware('permission:hospital_order.create');
     Route::post('/hospital-orders/file', [HospitalOrderController::class, 'fileForSelf'])->name('hospital-orders.file');
     Route::get('/hospital-orders/my-filings', [HospitalOrderController::class, 'getMyFilings'])->name('hospital-orders.my-filings');
     Route::get('/hospital-orders/filings-for-review', [HospitalOrderController::class, 'getFilingsForReview'])->name('hospital-orders.filings-for-review');

@@ -27,7 +27,7 @@ class HospitalOrderController extends Controller
     public function createHospitalOrder(Request $request)
     {
         try {
-            if (!$this->permissions->can(Auth::id(), 'hospital_order.approve')) {
+            if (!$this->permissions->can(Auth::id(), 'hospital_order.create')) {
                 return response()->json(['error' => 'Only authorized users can create hospital orders.'], 403);
             }
 

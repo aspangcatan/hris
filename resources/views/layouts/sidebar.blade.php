@@ -140,7 +140,8 @@
                     </a>
                 </li>
             @endif
-            @permission('schedule.manage')
+            {{-- Saving/deleting master list templates is admin-only (ScheduleController), so the link is too. --}}
+            @if(strtolower((string) session('access_rights')) === 'admin')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_master_list') ? '' : 'collapsed' }}"
                         href="{{ route('schedule_master_list') }}">
@@ -148,9 +149,9 @@
                         <span>Schedule Master List</span>
                     </a>
                 </li>
-            @endpermission
-            {{-- Schedule Access has no permission code yet (and no route guard) - admin only for now. --}}
-            @if(strtolower((string) session('access_rights')) === 'admin')
+            @endif
+            {{-- Schedule Access: who manages which sections. --}}
+            @permission('schedule.access')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('schedule_access') ? '' : 'collapsed' }}"
                         href="{{ route('schedule_access') }}">
@@ -158,16 +159,7 @@
                         <span>Schedule Access</span>
                     </a>
                 </li>
-            @endif
-        @endif
-
-        @if(in_array(session('access_rights'), ['admin']))
-            <li class="nav-item d-none">
-                <a class="nav-link collapsed" href="{{ route('promotion_applied') }}">
-                    <i class="bi bi-award"></i>
-                    <span>Position Applied</span>
-                </a>
-            </li>
+            @endpermission
         @endif
 
         {{-- CREDITS MANAGEMENT --}}
@@ -234,8 +226,9 @@
             @endif
         @endif
         {{-- HR MANAGEMENT --}}
-        @permission('employee.view')
+        @if(permission_check('employee.view') || permission_check('promotion.manage'))
         <li class="nav-heading">HR Management</li>
+        @permission('employee.view')
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('employee') ? '' : 'collapsed' }}" href="{{ route('employee') }}">
                 <i class="bi bi-person-badge"></i>
@@ -243,6 +236,15 @@
             </a>
         </li>
         @endpermission
+        @permission('promotion.manage')
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('promotion_applied') ? '' : 'collapsed' }}" href="{{ route('promotion_applied') }}">
+                <i class="bi bi-award"></i>
+                <span>Position Applied</span>
+            </a>
+        </li>
+        @endpermission
+        @endif
 
         {{-- PAYROLL MANAGEMENT --}}
         @if(false)
@@ -320,40 +322,42 @@
 
         {{-- SETTINGS --}}
         {{-- Leave settings hidden for now; restore "|| permission_check('leave.manage_types') || permission_check('leave.manage_credits')" when re-enabled --}}
-        @if(in_array(session('access_rights'), ['admin', 'calendar']))
+        @php($isAdmin = strtolower((string) session('access_rights')) === 'admin')
+        @if(permission_check('calendar.manage') || permission_check('hospital_order.create') || $isAdmin)
             <li class="nav-heading">Settings</li>
-            @if(in_array(session('access_rights'), ['admin', 'calendar']))
+            @permission('calendar.manage')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs('calendar') ? '' : 'collapsed' }}" href="{{ route('calendar') }}">
                         <i class="bi bi-calendar"></i>
                         <span>Calendar</span>
                     </a>
                 </li>
-                @if(in_array(session('access_rights'), ['admin']))
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('hospital_order_create') ? '' : 'collapsed' }}"
-                            href="{{ route('hospital_order_create') }}">
-                            <i class="bi bi-hospital"></i>
-                            <span>Hospital Order Create</span>
-                        </a>
-                    </li>
-                    @if(strtolower((string) session('access_rights')) === 'admin')
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.permissions') ? '' : 'collapsed' }}"
-                                href="{{ route('admin.permissions') }}">
-                                <i class="bi bi-shield-lock"></i>
-                                <span>Access Rights</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.permission_levels') ? '' : 'collapsed' }}"
-                                href="{{ route('admin.permission_levels') }}">
-                                <i class="bi bi-diagram-3"></i>
-                                <span>Permission Levels</span>
-                            </a>
-                        </li>
-                    @endif
-                @endif
+            @endpermission
+            @permission('hospital_order.create')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('hospital_order_create') ? '' : 'collapsed' }}"
+                        href="{{ route('hospital_order_create') }}">
+                        <i class="bi bi-hospital"></i>
+                        <span>Hospital Order Create</span>
+                    </a>
+                </li>
+            @endpermission
+            {{-- Access Rights / Permission Levels stay admin-only (their controllers check the admin role too). --}}
+            @if($isAdmin)
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.permissions') ? '' : 'collapsed' }}"
+                        href="{{ route('admin.permissions') }}">
+                        <i class="bi bi-shield-lock"></i>
+                        <span>Access Rights</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('admin.permission_levels') ? '' : 'collapsed' }}"
+                        href="{{ route('admin.permission_levels') }}">
+                        <i class="bi bi-diagram-3"></i>
+                        <span>Permission Levels</span>
+                    </a>
+                </li>
             @endif
             @if(false)
             @permission('leave.manage_types')

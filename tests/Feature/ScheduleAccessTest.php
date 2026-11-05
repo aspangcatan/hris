@@ -87,6 +87,14 @@ class ScheduleAccessTest extends TestCase
             ['level' => 'schedule', 'permission_id' => $this->schedulePermissionId],
             ['created_at' => now(), 'updated_at' => now()]
         );
+
+        // The Schedule Access endpoints are gated on schedule.access (admin by default), not on
+        // the session role. The tests act as the manager user, so grant it that permission.
+        $accessPermissionId = DB::table('hris.permissions')->where('code', 'schedule.access')->value('id');
+        DB::table('hris.user_permissions')->insert([
+            'user_id' => $this->managerUserId, 'permission_id' => $accessPermissionId, 'type' => 'grant',
+            'created_at' => now(), 'updated_at' => now(),
+        ]);
     }
 
     protected function tearDown(): void

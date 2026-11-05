@@ -815,7 +815,7 @@ class ScheduleController extends Controller
     public function getScheduleManagerAssignments()
     {
         try {
-            if ($this->getCurrentAccessRights() !== 'admin') {
+            if (!app(PermissionService::class)->can((int) Auth::id(), 'schedule.access')) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
@@ -875,7 +875,7 @@ class ScheduleController extends Controller
     public function saveScheduleManagerSections(Request $request)
     {
         try {
-            if ($this->getCurrentAccessRights() !== 'admin') {
+            if (!app(PermissionService::class)->can((int) Auth::id(), 'schedule.access')) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 

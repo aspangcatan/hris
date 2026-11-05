@@ -1,0 +1,16 @@
+{
+    // Blade templates mix PHP, HTML and JS. HTML/JS formatters (e.g. Prettier) split
+    // {{ route('...') }} calls inside JS strings across lines, which breaks the route name.
+    "[php]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false
+    },
+    "[blade]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false
+    },
+    "[html]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnPaste": false
+    }
+}

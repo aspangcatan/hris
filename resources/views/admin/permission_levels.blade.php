@@ -55,6 +55,9 @@ const MODULE_INFO = {
     saln:           { label: 'SALN',           icon: 'bi-file-earmark-text' },
     hospital_order: { label: 'Hospital Order', icon: 'bi-hospital' },
     reports:        { label: 'Reports',        icon: 'bi-bar-chart-line' },
+    calendar:       { label: 'Calendar',       icon: 'bi-calendar' },
+    promotion:      { label: 'Promotion',      icon: 'bi-award' },
+    reorientation:  { label: 'Re-Orientation', icon: 'bi-journal-check' },
 };
 
 const LEVEL_LABELS = {
