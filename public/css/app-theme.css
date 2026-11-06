@@ -1481,3 +1481,54 @@
     .theme-v2 .lf-modal .lf-dates tbody td:last-child .btn { width: 100%; }
     .theme-v2 .lf-modal .lf-range .col-md-1 { flex: 0 0 100%; max-width: 100%; }
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Service record Excel upload review (#service_upload_modal). One editable card per row.
+ * ------------------------------------------------------------------------------------- */
+.theme-v2 .sru-modal .sru-dot { color: var(--outline); }
+.theme-v2 .sru-modal .sru-list { display: flex; flex-direction: column; gap: 0.875rem; }
+.theme-v2 .sru-modal .sru-warning,
+.theme-v2 .sru-modal .sru-error {
+    display: flex; gap: 0.625rem; align-items: flex-start;
+    padding: 0.75rem 1rem; border-radius: var(--radius); font-size: 0.875rem;
+}
+.theme-v2 .sru-modal .sru-warning { background: var(--warning-container); color: #4a2800; border: 1px solid #f0b37e; }
+.theme-v2 .sru-modal .sru-warning .bi { color: #b25e00; margin-top: 0.125rem; }
+.theme-v2 .sru-modal .sru-error { background: #ffdad6; color: #93000a; border: 1px solid #ba1a1a; }
+.theme-v2 .sru-modal .sru-warning.d-none,
+.theme-v2 .sru-modal .sru-error.d-none { display: none; }
+
+.theme-v2 .sru-modal .sru-card {
+    padding: 1rem 1.125rem; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius);
+}
+.theme-v2 .sru-modal .sru-card.has-error { border-color: #ba1a1a; box-shadow: inset 3px 0 0 #ba1a1a; }
+.theme-v2 .sru-modal .sru-card-top { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 0.75rem; }
+.theme-v2 .sru-modal .sru-row-badge {
+    flex: none; padding: 0.125rem 0.5rem; border-radius: 999px;
+    background: var(--primary-fixed); color: var(--primary); font-size: 0.75rem; font-weight: 700;
+}
+.theme-v2 .sru-modal .sru-card-title {
+    flex: 1; min-width: 0; font-weight: 600; color: var(--on-surface);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.theme-v2 .sru-modal .sru-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.625rem 0.75rem; }
+.theme-v2 .sru-modal .sru-field.sru-wide { grid-column: span 2; }
+.theme-v2 .sru-modal .sru-label {
+    display: block; margin-bottom: 0.25rem; font-size: 0.6875rem; font-weight: 700;
+    letter-spacing: 0.05em; text-transform: uppercase; color: var(--outline);
+}
+.theme-v2 .sru-modal .sru-field.is-invalid .form-control { border-color: #ba1a1a; }
+.theme-v2 .sru-modal .sru-field-error { min-height: 0; margin-top: 0.125rem; font-size: 0.75rem; color: #ba1a1a; }
+.theme-v2 .sru-modal .sru-field-error:empty { display: none; }
+.theme-v2 .sru-modal .sru-present { margin: 0.375rem 0 0 0.125rem; font-size: 0.8125rem; }
+.theme-v2 .sru-modal .sru-footer { justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.theme-v2 .sru-modal .sru-footer-note { font-size: 0.8125rem; color: var(--on-surface-variant); }
+
+@media (max-width: 991.98px) {
+    .theme-v2 .sru-modal .sru-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px) {
+    .theme-v2 .sru-modal .sru-grid { grid-template-columns: 1fr; }
+    .theme-v2 .sru-modal .sru-field.sru-wide { grid-column: auto; }
+}

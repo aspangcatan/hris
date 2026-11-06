@@ -247,6 +247,7 @@
     </div>
     @include('modals.employee')
     @include('modals.service_record')
+    @include('modals.service_record_upload')
     @include('modals.print')
 @stop
 @section('js')

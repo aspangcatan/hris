@@ -10,6 +10,7 @@
 @include('js.other_information')
 @include('js.survey')
 @include('js.service_record')
+@include('js.service_record_upload')
 @include('js.leave_credits')
 @include('js.employee_reorientation')
 <script>

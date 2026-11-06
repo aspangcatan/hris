@@ -2,6 +2,7 @@
     @if(Route::currentRouteName() == "employee")
         <div class="d-flex justify-content-end align-items-center">
             <button class="btn btn-sm btn-danger me-1" id="btn_print_service_records">Print<i class="ms-1 bi bi-printer"></i></button>
+            <button class="btn btn-sm btn-success mx-1" id="btn_upload_service_records" title="Upload a service record Excel file">Upload<i class="ms-1 bi bi-upload"></i></button>
             <button class="btn btn-sm btn-primary ms-1" id="btn_add_service_record">New</button>
         </div>
     @endif

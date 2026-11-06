@@ -361,6 +361,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/service_records/get', [\App\Http\Controllers\ServiceRecordsController::class, 'getServiceRecords'])->name('getServiceRecords');
     Route::post('/service_records/update', [\App\Http\Controllers\ServiceRecordsController::class, 'insertUpdateServiceRecords'])->name('insertUpdateServiceRecords');
     Route::delete('/service_records/delete', [\App\Http\Controllers\ServiceRecordsController::class, 'deleteServiceRecords'])->name('deleteServiceRecords');
+    Route::post('/service_records/parse', [\App\Http\Controllers\ServiceRecordsController::class, 'parseUpload'])->name('parseServiceRecordUpload');
+    Route::post('/service_records/bulk_store', [\App\Http\Controllers\ServiceRecordsController::class, 'bulkStore'])->name('bulkStoreServiceRecords');
 #REPORTS
     Route::get('/reports/leave_bal', [\App\Http\Controllers\ReportController::class, 'leaveBalance'])->name('leaveBalance');
     Route::get('/reports/quarterly-leave-balance', [\App\Http\Controllers\ReportController::class, 'quarterlyLeaveBalance'])->name('report.quarterly_leave_balance')->middleware('permission:reports.quarterly_leave');
