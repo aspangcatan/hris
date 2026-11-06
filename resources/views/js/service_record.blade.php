@@ -3,6 +3,10 @@
         return record.current_work == 1 ? "Present" : moment(record.date_to).format("MM/DD/YYYY");
     }
 
+    function serviceText(value) {
+        return (value === null || value === undefined || value === "null") ? "" : value;
+    }
+
     function getServiceRecords(id) {
         if (is_service_loaded) return;
 
@@ -29,12 +33,12 @@
                 <tr id='service_` + it.id + `'>
                 <td>` + moment(it.date_from).format("MM/DD/YYYY") + `</td>
                 <td>` + serviceDateToText(it) + `</td>
-                <td>` + it.designation + `</td>
-                <td>` + it.appointment_status + `</td>
-                <td>` + it.monthly_salary + `</td>
-                <td>` + it.office_assignment + `</td>
-                <td style="white-space: pre-line">` + it.leave_absence + `</td>
-                <td>` + it.separation + `</td>
+                <td>` + serviceText(it.designation) + `</td>
+                <td>` + serviceText(it.appointment_status) + `</td>
+                <td>` + serviceText(it.monthly_salary) + `</td>
+                <td>` + serviceText(it.office_assignment) + `</td>
+                <td style="white-space: pre-line">` + serviceText(it.leave_absence) + `</td>
+                <td>` + serviceText(it.separation) + `</td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type='button'  class="btn btn-action btn-edit" onClick="editService(` + it.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
@@ -75,12 +79,12 @@
                 <tr id='service_` + data.id + `'>
                 <td>` + moment(params.date_from).format("MM/DD/YYYY") + `</td>
                 <td>` + serviceDateToText(params) + `</td>
-                <td>` + params.designation + `</td>
-                <td>` + params.appointment_status + `</td>
-                <td>` + params.monthly_salary + `</td>
-                <td>` + params.office_assignment + `</td>
-                <td style="white-space: pre-line">` + params.leave_absence + `</td>
-                <td>` + params.separation + `</td>
+                <td>` + serviceText(params.designation) + `</td>
+                <td>` + serviceText(params.appointment_status) + `</td>
+                <td>` + serviceText(params.monthly_salary) + `</td>
+                <td>` + serviceText(params.office_assignment) + `</td>
+                <td style="white-space: pre-line">` + serviceText(params.leave_absence) + `</td>
+                <td>` + serviceText(params.separation) + `</td>
                 <td>
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type='button'  class="btn btn-action btn-edit" onClick="editService(` + data.id + `)" title="Edit"><i class="bi bi-pencil"></i></button>
@@ -92,12 +96,12 @@
                 } else {
                     $("#service_" + params.id + " td:eq(0)").text(moment(params.date_from).format("MM/DD/YYYY"));
                     $("#service_" + params.id + " td:eq(1)").text(serviceDateToText(params));
-                    $("#service_" + params.id + " td:eq(2)").text(params.designation);
-                    $("#service_" + params.id + " td:eq(3)").text(params.appointment_status);
-                    $("#service_" + params.id + " td:eq(4)").text(params.monthly_salary);
-                    $("#service_" + params.id + " td:eq(5)").text(params.office_assignment);
-                    $("#service_" + params.id + " td:eq(6)").text(params.leave_absence);
-                    $("#service_" + params.id + " td:eq(7)").text(params.separation);
+                    $("#service_" + params.id + " td:eq(2)").text(serviceText(params.designation));
+                    $("#service_" + params.id + " td:eq(3)").text(serviceText(params.appointment_status));
+                    $("#service_" + params.id + " td:eq(4)").text(serviceText(params.monthly_salary));
+                    $("#service_" + params.id + " td:eq(5)").text(serviceText(params.office_assignment));
+                    $("#service_" + params.id + " td:eq(6)").text(serviceText(params.leave_absence));
+                    $("#service_" + params.id + " td:eq(7)").text(serviceText(params.separation));
                 }
 
                 service_id = 0;
