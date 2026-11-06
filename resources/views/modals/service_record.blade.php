@@ -21,9 +21,13 @@
                         <input type="date" class="form-control" id="service_from" placeholder="">
                         <label>Date from</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    <div class="form-floating mb-1">
                         <input type="date" class="form-control" id="service_to" placeholder="">
                         <label>Date to</label>
+                    </div>
+                    <div class="form-check form-switch mb-3 ms-1">
+                        <input class="form-check-input" type="checkbox" role="switch" id="service_present">
+                        <label class="form-check-label" for="service_present">Present (current job)</label>
                     </div>
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="service_designation" placeholder="">

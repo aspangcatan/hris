@@ -46,6 +46,26 @@
         return $("#as_of_year").val();
     }
 
+    const SALN_COMPLIANCE_HINTS = {
+        'Assumption of office': 'Filed within 30 days after you start in government service.',
+        'Annual Filing': 'Filed every year, on or before April 30.',
+        'Exit': 'Filed within 30 days after you leave government service.'
+    };
+    const SALN_FILING_HINTS = {
+        'Joint Filing': 'You and your spouse are both in government and file one SALN together.',
+        'Separate Filing': 'You and your spouse are both in government and each files their own SALN.',
+        'Not Applicable': 'You are not married, or your spouse is not in government service.'
+    };
+
+    function updateFooterStatusDisplay() {
+        const type = $('input[name="compliance_for"]:checked').val() || 'Annual Filing';
+        const filing = $('input[name="filing_type"]:checked').val() || 'Not Applicable';
+        const asOf = $("#as_of_month").val() + ' ' + $("#as_of_day").val() + ', ' + $("#as_of_year").val();
+        $("#footer_filing_mode_display").text(`${type} · ${filing} · as of ${asOf}`);
+        $("#sf_compliance_hint").text(SALN_COMPLIANCE_HINTS[type] || '');
+        $("#sf_filing_hint").text(SALN_FILING_HINTS[filing] || '');
+    }
+
 
     $(document).ready(function () {
 
@@ -66,7 +86,7 @@
         // Open Create New SALN modal
         $("#btn_open_create_saln").click(function () {
             currentEditingYear = null;
-            $("#salnFormModalLabel").html('<i class="bi bi-file-earmark-text me-2"></i>SALN — Create New Statement');
+            $("#salnFormModalLabel").text('Create new SALN');
             // Reset form fields for new entry
             $("input[name='compliance_for'][value='Annual Filing']").prop('checked', true);
             $("input[name='filing_type'][value='Not Applicable']").prop('checked', true);
@@ -148,6 +168,12 @@
             saln_modal.toggle();
         });
 
+        $("#btn_reset_saln_rows").click(function () {
+            $(".saln-row-setting").each(function () {
+                $(this).val($(this).data("default")).removeClass("is-invalid");
+            });
+        });
+
         $("#btn_confirm_print").click(function () {
             const filing_type = $("input[name='filing_type']:checked").val();
             const compliance_type = $("input[name='compliance_for']:checked").val();
@@ -179,6 +205,21 @@
                 return;
             }
 
+            // Rows per table on the main form (N/A fills the empty ones)
+            let rowParams = '';
+            let rowsValid = true;
+            $(".saln-row-setting").each(function () {
+                const n = parseInt($(this).val(), 10);
+                const ok = Number.isInteger(n) && n >= 1 && n <= 30;
+                $(this).toggleClass("is-invalid", !ok);
+                if (!ok) rowsValid = false;
+                rowParams += '&' + this.id + '=' + n;
+            });
+            if (!rowsValid) {
+                alert("Rows per table must be a whole number from 1 to 30");
+                return;
+            }
+
             const before_me = moment(sworn_date).format("Do");
             const day_of = moment(sworn_date).format("MMMM") + " " + moment(sworn_date).format("YYYY");
 
@@ -193,7 +234,8 @@
                 '&as_of_year=' + as_of_year +
                 '&before_me=' + before_me +
                 '&spouse_signature=' + spouse_signature +
-                '&day_of=' + day_of,
+                '&day_of=' + day_of +
+                rowParams,
                 '_blank' // <- This is what makes it open in a new window.
             );
         });
@@ -799,17 +841,42 @@
         const year = getComplianceYear();
         reloadAllSalnSections(year);
 
-        // Dynamic Footer Status Update
-        $('input[name="compliance_for"], input[name="filing_type"]').on('change', function() {
+        // Footer status + option hints follow the statement details
+        $('input[name="compliance_for"], input[name="filing_type"], #as_of_month, #as_of_day, #as_of_year').on('change', function() {
             updateFooterStatusDisplay();
         });
 
-        function updateFooterStatusDisplay() {
-            const type = $('input[name="compliance_for"]:checked').val() || 'ANNUAL FILING';
-            const filing = $('input[name="filing_type"]:checked').val() || 'NOT APPLICABLE';
-            $("#footer_filing_mode_display").text(`${type.toUpperCase()} — ${filing.toUpperCase()}`);
-        }
-        
+        // Values are also set programmatically (create / edit), which fires no change event
+        $('#saln_form_modal').on('shown.bs.modal', updateFooterStatusDisplay);
+
+        // Always start on Declarant > Profile & ID
+        $('#saln_form_modal').on('show.bs.modal', function (e) {
+            if (e.target !== this) return;
+            ['tab_declarant_board', 'tab_personal-info', 'tab_spouse_personal-info'].forEach(id =>
+                bootstrap.Tab.getOrCreateInstance(document.getElementById(id)).show());
+            $('#saln_form_body').scrollTop(0);
+        });
+
+        // "Next: ..." buttons at the bottom of each section
+        $('#saln_form_modal').on('click', '.sf-next', function () {
+            bootstrap.Tab.getOrCreateInstance(document.getElementById($(this).data('sf-board'))).show();
+            bootstrap.Tab.getOrCreateInstance(document.getElementById($(this).data('sf-pane'))).show();
+            $('#saln_form_body').scrollTop(0);
+        });
+
+        // Item counts on the section tabs
+        $('#saln_form_modal [data-sf-count]').each(function () {
+            const badge = this;
+            const tbody = document.querySelector(badge.dataset.sfCount);
+            if (!tbody) return;
+            const refresh = () => {
+                const n = tbody.querySelectorAll('tr:not(.saln-inline-row[data-id="0"])').length;
+                badge.textContent = n > 0 ? n : '';
+            };
+            new MutationObserver(refresh).observe(tbody, { childList: true });
+            refresh();
+        });
+
         // Initial call
         updateFooterStatusDisplay();
 
@@ -833,7 +900,7 @@
                 </div>`,
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: 'var(--saln-primary)',
+                confirmButtonColor: 'var(--primary)',
                 cancelButtonColor: '#adb5bd',
                 confirmButtonText: '<i class="bi bi-shield-check me-2"></i>Save Declaration',
                 cancelButtonText: 'Cancel',
@@ -890,7 +957,7 @@
                                 title: 'Declaration Saved!',
                                 text: 'Your SALN for ' + getComplianceYear() + ' has been successfully synchronized.',
                                 icon: 'success',
-                                confirmButtonColor: 'var(--saln-primary)'
+                                confirmButtonColor: 'var(--primary)'
                             }).then(() => {
                                 saln_form_modal.hide();
                                 loadSalnRecords();
@@ -1644,7 +1711,7 @@
     }
 
     function openSalnForEditing(complianceDate) {
-        $("#salnFormModalLabel").html('<i class="bi bi-file-earmark-text me-2"></i>SALN — Edit Statement');
+        $("#salnFormModalLabel").text('Edit SALN');
         saln_form_modal.show();
         $("#saln_loader_overlay").show();
 
@@ -1940,7 +2007,7 @@
         const $row = $(`<tr class="saln-inline-row" data-id="0" data-cfg="${cfgKey}">
             ${inputCells}
             <td class="text-center" style="white-space:nowrap">
-                <button class="btn btn-action btn-edit" style="background:#0f766e;color:#fff;min-width:32px" title="Confirm"
+                <button class="btn btn-action btn-edit" style="background:var(--primary);color:#fff;min-width:32px" title="Confirm"
                     onclick="salnConfirmInline(this,'${cfgKey}',0)">
                     <i class="bi bi-check-lg"></i>
                 </button>
@@ -2044,7 +2111,7 @@
 
         $row.html(`${inputCells}
             <td class="text-center" style="white-space:nowrap">
-                <button class="btn btn-action btn-edit" style="background:#0f766e;color:#fff;min-width:32px" title="Confirm"
+                <button class="btn btn-action btn-edit" style="background:var(--primary);color:#fff;min-width:32px" title="Confirm"
                     onclick="salnConfirmInline(this,'${cfgKey}',${rowId})">
                     <i class="bi bi-check-lg"></i>
                 </button>

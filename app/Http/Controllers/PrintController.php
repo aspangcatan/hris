@@ -709,13 +709,23 @@ class PrintController extends Controller
             $children_count = count($children);
             $effective_children_count = max(4, $children_count);
 
-            // Base limits for Page 1 - Added 1 extra row to each as requested (original was 4 and 6)
-            $real_properties_limit = 5;
-            $personal_properties_limit = 7;
+            // Rows printed per table on the main form (filled by entries first, the rest show N/A).
+            // Set from the Print SALN dialog; entries beyond a table's rows move to Annex B.
+            $rowSetting = function (string $key, int $default) use ($request) {
+                $value = $request->input($key);
+                return is_numeric($value) ? max(1, min(30, (int) $value)) : $default;
+            };
+            $rowsChosen = $request->filled('rows_real_properties') || $request->filled('rows_personal_properties');
 
-            // If children count is more than 5, we need to reduce the rows for properties to fit them in Page 1.
+            $real_properties_limit = $rowSetting('rows_real_properties', 5);
+            $personal_properties_limit = $rowSetting('rows_personal_properties', 7);
+            $liabilities_limit = $rowSetting('rows_liabilities', 4);
+            $business_limit = $rowSetting('rows_business', 3);
+            $relatives_limit = $rowSetting('rows_relatives', 5);
+
+            // Default layout only: if children count is more than 5, reduce the property rows to fit Page 1.
             // Each child row takes about the same space as a property row.
-            if ($effective_children_count > 5) {
+            if (!$rowsChosen && $effective_children_count > 5) {
                 $extra_children = $effective_children_count - 5;
                 // Reduce personal properties first, then real properties
                 for ($i = 0; $i < $extra_children; $i++) {
@@ -795,7 +805,7 @@ class PrintController extends Controller
             $personal_properties_extended = [];
             $spouse_personal_properties_extended = [];
 
-            $liabilities_array = array_fill(0, 4, [
+            $liabilities_array = array_fill(0, $liabilities_limit, [
                 'nature' => 'N/A',
                 'creditors_name' => 'N/A',
                 'outstanding_balance' => 'N/A'
@@ -813,7 +823,7 @@ class PrintController extends Controller
                 'outstanding_balance' => 'N/A'
             ]);
 
-            $business_array = array_fill(0, 3, [
+            $business_array = array_fill(0, $business_limit, [
                 'enterprise' => 'N/A',
                 'address' => 'N/A',
                 'nature' => 'N/A',
@@ -834,7 +844,7 @@ class PrintController extends Controller
                 'date_acquisition' => 'N/A'
             ]);
 
-            $relatives_array = array_fill(0, 5, [
+            $relatives_array = array_fill(0, $relatives_limit, [
                 'name' => 'N/A',
                 'relationship' => 'N/A',
                 'position' => 'N/A',
@@ -1023,11 +1033,11 @@ class PrintController extends Controller
                     'outstanding_balance' => number_format($bal, 2)
                 ];
 
-                if ($i < 4) {
+                if ($i < $liabilities_limit) {
                     $liabilities_array[$i] = $entry;
                     $liabilities_total_a += $bal;
                 } else {
-                    $b_idx = $i - 4;
+                    $b_idx = $i - $liabilities_limit;
                     if ($b_idx < 4) {
                         $liabilities_b_array[$b_idx] = $entry;
                     } else {
@@ -1084,10 +1094,10 @@ class PrintController extends Controller
                     'date_acquisition' => date('m/d/Y', strtotime($bus->date_acquisition))
                 ];
 
-                if ($i < 3) {
+                if ($i < $business_limit) {
                     $business_array[$i] = $entry;
                 } else {
-                    $b_idx = $i - 3;
+                    $b_idx = $i - $business_limit;
                     if ($b_idx < 3) {
                         $business_b_array[$b_idx] = $entry;
                     } else {
@@ -1139,7 +1149,7 @@ class PrintController extends Controller
                     'agency' => $rel->agency
                 ];
 
-                if ($i < 5) {
+                if ($i < $relatives_limit) {
                     $relatives_array[$i] = $entry;
                 } else {
                     $relatives_array[] = $entry;
@@ -1168,7 +1178,7 @@ class PrintController extends Controller
             $formattedAddress = $addressParts->join(', ');
 
             // Determine if Annex B is needed (Declarant Overflow)
-            $show_annex_b = (count($all_real_properties) > $real_properties_limit || count($all_personal_properties) > $personal_properties_limit || count($all_liabilities) > 4 || count($all_business) > 3);
+            $show_annex_b = (count($all_real_properties) > $real_properties_limit || count($all_personal_properties) > $personal_properties_limit || count($all_liabilities) > $liabilities_limit || count($all_business) > $business_limit);
 
             // Determine if Annex C is needed (Spouse Proof Presence)
             $show_annex_c = (count($spouse_real_properties_db) > 0 || count($spouse_personal_properties_db) > 0 || count($spouse_liabilities_db) > 0 || count($spouse_business_db) > 0);

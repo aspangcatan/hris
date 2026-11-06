@@ -517,6 +517,34 @@
                     </select>
                     <label>Can the spouse able to sign?</label>
                 </div>
+
+                <div class="saln-print-rows">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                        <div class="saln-print-rows-title"><i class="bi bi-table me-1"></i>Rows per table</div>
+                        <button type="button" class="btn btn-link btn-sm p-0" id="btn_reset_saln_rows">Reset to default</button>
+                    </div>
+                    <div class="saln-print-rows-hint mb-2">
+                        Rows printed on the main form. Empty rows show N/A; entries beyond this move to Annex B.
+                    </div>
+                    <div class="row g-2">
+                        @foreach([
+                            'rows_real_properties'     => ['Real properties', 5],
+                            'rows_personal_properties' => ['Personal properties', 7],
+                            'rows_liabilities'         => ['Liabilities', 4],
+                            'rows_business'            => ['Business interests', 3],
+                            'rows_relatives'           => ['Relatives in government', 5],
+                        ] as $rowId => [$rowLabel, $rowDefault])
+                            <div class="col-6 {{ $loop->last ? 'col-sm-12' : '' }}">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control saln-row-setting" id="{{ $rowId }}"
+                                           min="1" max="30" step="1" value="{{ $rowDefault }}" data-default="{{ $rowDefault }}">
+                                    <label for="{{ $rowId }}">{{ $rowLabel }}</label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
                     <button class="btn btn-success btn-modal-save" id="btn_confirm_print">PRINT</button>

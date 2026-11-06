@@ -78,4 +78,22 @@ class ServiceRecordsControllerTest extends TestCase
         $this->assertSame(1, $newRecordsCount);
         $this->assertSame('Nurse III', ServiceRecords::find($newId)->designation);
     }
+
+    /** @test */
+    public function present_record_saves_current_work_flag_and_falls_back_date_to_to_date_from()
+    {
+        $controller = app(ServiceRecordsController::class);
+
+        $response = $controller->insertUpdateServiceRecords(new Request($this->payload([
+            'date_from' => '2025-01-12',
+            'date_to' => '',
+            'current_work' => 1,
+        ])));
+        $data = json_decode($response->getContent(), true);
+
+        $this->assertSame(200, $data['code']);
+        $record = ServiceRecords::find($data['id']);
+        $this->assertSame(1, (int) $record->current_work);
+        $this->assertSame('2025-01-12', date('Y-m-d', strtotime($record->date_to)));
+    }
 }

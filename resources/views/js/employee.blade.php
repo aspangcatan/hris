@@ -167,6 +167,7 @@
             $(".error_list").empty();
             $("#service_from").val("");
             $("#service_to").val("");
+            $("#service_present").prop("checked", false).trigger("change");
             $("#service_designation").val("");
             $("#service_status").val("");
             $("#service_salary").val("");
@@ -174,6 +175,14 @@
             $("#service_leave").val("");
             $("#service_separation").val("");
             service_records_modal.toggle();
+        });
+
+        $("#service_present").change(function () {
+            const is_present = $(this).is(":checked");
+            $("#service_to").prop("disabled", is_present);
+            if (is_present) {
+                $("#service_to").val("").removeClass("is-invalid");
+            }
         });
 
         $("#btn_search").click(function () {
@@ -392,7 +401,7 @@
 
             const date_from = $("#service_from").val();
             const date_to = $("#service_to").val();
-            const current_work = 0;
+            const current_work = $("#service_present").is(":checked") ? 1 : 0;
             const designation = $("#service_designation").val().trim();
             const appointment_status = $("#service_status").val();
             const monthly_salary = $("#service_salary").val();
@@ -406,9 +415,9 @@
                 $("#service_from").addClass("is-invalid");
             }
 
-            if (date_to == "") {
+            if (date_to == "" && current_work != 1) {
                 is_valid = false;
-                $(".error_list").append("<li>Date to is required</li>");
+                $(".error_list").append("<li>Date to is required (or mark as Present)</li>");
                 $("#service_to").addClass("is-invalid");
             }
 
@@ -678,7 +687,9 @@
         const separation = $("#service_" + id + " td:eq(7)").text();
 
         $("#service_from").val(moment(date_from, "MM/DD/YYYY").format("YYYY-MM-DD"));
-        $("#service_to").val(moment(date_to, "MM/DD/YYYY").format("YYYY-MM-DD"));
+        const is_present = date_to.trim() == "Present";
+        $("#service_present").prop("checked", is_present).trigger("change");
+        $("#service_to").val(is_present ? "" : moment(date_to, "MM/DD/YYYY").format("YYYY-MM-DD"));
         $("#service_designation").val(designation);
         $("#service_status").val(status);
         $("#service_salary").val(monthly_salary);

@@ -243,10 +243,11 @@
                     return `<option value="${value}">${label}</option>`;
                 }).get().join('');
 
-                $(".advance-schedule-select").each(function () {
-                    $(this).html(`<option value="">-- Select --</option>${scheduleOptions}`);
+                $(".advance-schedule-select, #advance_quick_schedule").each(function () {
+                    $(this).html(`<option value="">No schedule (clear)</option>${scheduleOptions}`);
                     $(this).val('');
                 });
+                $("#advance_quick_schedule").val($("#advance_quick_schedule option:eq(1)").val() || '');
 
                 renderAdvanceEmployeeTable();
                 $("#advance_employee_search").val("");
@@ -254,7 +255,9 @@
                 $("#advance_select_all_employees").prop("checked", true);
 
                 syncAdvanceRangeBounds();
-                updateAdvanceRangeState();
+                setAdvanceRange('month');
+                $("#advance_month_label").text($('#filter_month option:selected').text() + ' ' + $('#filter_year').val());
+                refreshAdvanceDays();
                 $('#advanceScheduleModal').modal('show');
             });
 
@@ -316,7 +319,7 @@
                     return;
                 }
 
-                const originalText = $btn.text();
+                const originalText = $btn.html();
                 $btn.prop('disabled', true);
                 $btn.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving...');
 
@@ -354,7 +357,7 @@
                     })
                     .finally(() => {
                         $btn.prop('disabled', false);
-                        $btn.text(originalText);
+                        $btn.html(originalText);
                     });
             });
 
@@ -364,13 +367,42 @@
 
             $('#advance_select_all_employees').on('change', function () {
                 $('.advance-employee-check').prop('checked', $(this).is(':checked'));
+                updateAdvanceSummary();
             });
 
             $("body").on("change", ".advance-employee-check", function () {
                 const total = $(".advance-employee-check").length;
                 const checked = $(".advance-employee-check:checked").length;
                 $("#advance_select_all_employees").prop("checked", total > 0 && total === checked);
+                updateAdvanceSummary();
             });
+
+            // Clicking anywhere on an employee row toggles it
+            $("body").on("click", ".advance-employee-row", function (e) {
+                if ($(e.target).is('input')) return;
+                $(this).find('.advance-employee-check').prop('checked', (i, v) => !v).trigger('change');
+            });
+
+            // Quick date ranges
+            $('#advanceScheduleModal').on('click', '[data-asb-range]', function () {
+                setAdvanceRange($(this).data('asb-range'));
+            });
+
+            // Quick fill of the weekly pattern
+            $('#advanceScheduleModal').on('click', '[data-asb-fill]', function () {
+                const days = {
+                    weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                    weekend: ['Saturday', 'Sunday'],
+                    all: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                }[$(this).data('asb-fill')];
+                const value = $('#advance_quick_schedule').val();
+                $('.advance-schedule-select').each(function () {
+                    if (days.includes($(this).data('day'))) $(this).val(value);
+                });
+                refreshAdvanceDays();
+            });
+
+            $('#advanceScheduleModal').on('change', '.advance-schedule-select', refreshAdvanceDays);
 
             $("body").on("click", ".schedule-cell", function () {
                 if (!canManageSchedule) {
@@ -539,14 +571,91 @@
             currentEmployees.forEach(emp => {
                 tbody.append(`
                     <tr class="advance-employee-row" data-search="${(emp.name + ' ' + emp.designation).toLowerCase()}">
-                        <td class="text-center">
-                            <input type="checkbox" class="form-check-input advance-employee-check" value="${emp.id}" checked>
+                        <td>
+                            <input type="checkbox" class="form-check-input advance-employee-check" value="${emp.id}" checked aria-label="Select ${emp.name}">
                         </td>
-                        <td>${emp.name}</td>
-                        <td>${emp.designation}</td>
+                        <td>
+                            <div class="asb-emp-name">${emp.name}</div>
+                            <div class="asb-emp-role">${emp.designation || ''}</div>
+                        </td>
                     </tr>
                 `);
             });
+            updateAdvanceSummary();
+        }
+
+        function formatYmd(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        // Fill the From/To dates with a preset inside the month being viewed
+        function setAdvanceRange(preset) {
+            const year = Number($('#filter_year').val());
+            const month = Number($('#filter_month').val());
+            if (!year || !month) return;
+
+            const first = new Date(year, month - 1, 1);
+            const last = getLastDayOfMonth(year, month - 1);
+            let start = first, end = last;
+
+            if (preset === 'today') {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                if (today > last) {
+                    toastr.info("Today is after this month.", "Date range");
+                    return;
+                }
+                start = today < first ? first : today;
+            } else if (preset === 'first') {
+                end = new Date(year, month - 1, 15);
+            } else if (preset === 'second') {
+                start = new Date(year, month - 1, 16);
+            }
+
+            $('#advance_start_date').val(formatYmd(start));
+            $('#advance_end_date').val(formatYmd(end));
+            updateAdvanceRangeState();
+        }
+
+        // Mark days left on "No schedule (clear)" and refresh the footer summary
+        function refreshAdvanceDays() {
+            $('.advance-schedule-select').each(function () {
+                $(this).closest('.asb-day').toggleClass('is-clear', !$(this).val());
+            });
+            updateAdvanceSummary();
+        }
+
+        function updateAdvanceSummary() {
+            const total = $('.advance-employee-check').length;
+            const selected = $('.advance-employee-check:checked').length;
+            $('#advance_selected_count')
+                .text(`${selected} of ${total} selected`)
+                .toggleClass('is-none', selected === 0);
+
+            const year = $('#filter_year').val();
+            const month = $('#filter_month').val();
+            const start = $('#advance_start_date').val();
+            const end = $('#advance_end_date').val();
+            const { valid } = getAdvanceRangeValidation();
+
+            let setDates = 0, clearDates = 0;
+            if (valid) {
+                $('.advance-schedule-select').each(function () {
+                    const n = getDatesForDayOfWeek($(this).data('day'), year, month, start, end).length;
+                    if ($(this).val()) setDates += n; else clearDates += n;
+                });
+            }
+
+            const range = valid
+                ? `${moment(start).format('MMM D')} – ${moment(end).format('MMM D, YYYY')}`
+                : 'no valid date range';
+            $('#advance_summary').html(`
+                <span><i class="bi bi-people me-1"></i><strong>${selected}</strong> employee${selected === 1 ? '' : 's'}</span>
+                <span><i class="bi bi-calendar-range me-1"></i>${range}</span>
+                <span><i class="bi bi-calendar-check me-1"></i><strong>${setDates}</strong> date${setDates === 1 ? '' : 's'} scheduled</span>
+                <span class="asb-clear-count"><i class="bi bi-eraser me-1"></i><strong>${clearDates}</strong> cleared</span>
+            `);
+            $('#save_advance_schedule').prop('disabled', !valid || selected === 0);
         }
 
         function filterAdvanceEmployees(keyword) {
@@ -559,16 +668,11 @@
 
         function updateAdvanceRangeState(showToast = false) {
             const { valid, message } = getAdvanceRangeValidation();
-            const $btn = $('#save_advance_schedule');
             $('#advance_range_error').text(valid ? '' : message);
             if (!valid && showToast && message) {
                 toastr.warning(message, "Invalid Range");
-                $btn.prop('disabled', true);
-
-                
-            }else{
-                $btn.prop('disabled', false);
             }
+            updateAdvanceSummary(); // also enables/disables the Apply button
 
             return valid;
         }
@@ -730,8 +834,9 @@
 
             const first = new Date(Number(year), Number(month) - 1, 1);
             const last = getLastDayOfMonth(Number(year), Number(month) - 1);
-            const min = first.toISOString().slice(0, 10);
-            const max = last.toISOString().slice(0, 10);
+            // Local date, not toISOString(): in UTC+8 that shifts to the previous day
+            const min = formatYmd(first);
+            const max = formatYmd(last);
 
             $('#advance_start_date').attr('min', min).attr('max', max);
             $('#advance_end_date').attr('min', min).attr('max', max);

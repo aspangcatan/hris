@@ -174,8 +174,8 @@
             </li>
         @endif
 
-        {{-- LEAVE MANAGEMENT --}}
-        @if(true)
+        {{-- LEAVE MANAGEMENT (hidden for now) --}}
+        @if(false)
             @if(permission_check('leave.file') || permission_check('leave.approve') || permission_check('leave.approve_hr'))
                 <li class="nav-heading">Leave Management</li>
                 @permission('leave.file')

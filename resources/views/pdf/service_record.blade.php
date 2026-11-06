@@ -140,7 +140,7 @@
         @foreach($service_records as $data)
             <tr class="text-center text-v-center">
                 <td class="b-b b-r">{{ date('m/d/Y', strtotime($data['date_from'])) }}</td>
-                <td class="b-b b-r">{{ date('m/d/Y', strtotime($data['date_to'])) }}</td>
+                <td class="b-b b-r">{{ $data['current_work'] == 1 ? 'Present' : date('m/d/Y', strtotime($data['date_to'])) }}</td>
                 <td class="b-b b-r">{{ $data['designation'] }}</td>
                 <td class="b-b b-r">{{ $data['appointment_status'] }}</td>
                 <td class="b-b b-r">{{ number_format($data['monthly_salary'],2) }}</td>

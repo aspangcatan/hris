@@ -1,567 +1,351 @@
-<div class="modal fade" id="saln_form_modal" tabindex="-1" aria-labelledby="salnFormModalLabel" aria-hidden="true"
+@php
+    /*
+     * List sections of the SALN form. Every id here (pane, tbody, add button, checkbox) is wired
+     * up in js/saln.blade.php (SALN_INLINE_CFG + the get* loaders) - keep them in sync.
+     */
+    $salnListSections = [
+        'children' => [
+            'icon' => 'bi-people', 'title' => 'Unmarried children below 18',
+            'help' => 'Your unmarried children below 18 years old who live in your household.',
+            'add' => 'Add child',
+            'cols' => ['Full name', 'Date of birth'],
+        ],
+        'real' => [
+            'icon' => 'bi-house', 'title' => 'Real properties',
+            'help' => 'Land, houses, buildings and other real estate. Copy the assessed and market values from the tax declaration.',
+            'add' => 'Add property',
+            'cols' => ['Description<small>e.g. lot, house</small>', 'Kind<small>e.g. residential</small>', 'Exact location',
+                       'Assessed value', 'Current fair market value', 'Year acquired', 'Mode of acquisition', 'Acquisition cost'],
+        ],
+        'personal' => [
+            'icon' => 'bi-car-front', 'title' => 'Personal properties',
+            'help' => 'Vehicles, jewelry, appliances, gadgets, furniture, cash in bank and other personal items.',
+            'add' => 'Add item',
+            'cols' => ['Description', 'Year(s) acquired', 'Acquisition cost / amount'],
+        ],
+        'liabilities' => [
+            'icon' => 'bi-credit-card', 'title' => 'Liabilities',
+            'help' => 'Loans, mortgages, credit card balances and other debts still unpaid as of the statement date.',
+            'add' => 'Add liability',
+            'cols' => ['Nature<small>e.g. housing loan</small>', 'Name of creditor', 'Outstanding balance'],
+        ],
+        'business' => [
+            'icon' => 'bi-briefcase', 'title' => 'Business interests & financial connections',
+            'help' => 'Businesses, companies or partnerships where you hold shares, ownership or any financial connection.',
+            'add' => 'Add business',
+            'cols' => ['Name of business / entity', 'Business address', 'Nature of interest', 'Date acquired'],
+            'none' => 'I/We do not have any business interest or financial connection.',
+        ],
+        'relatives' => [
+            'icon' => 'bi-diagram-3', 'title' => 'Relatives in government service',
+            'help' => 'Relatives within the fourth civil degree of blood or marriage (including in-laws) who work in government.',
+            'add' => 'Add relative',
+            'cols' => ['Name of relative', 'Relationship', 'Position', 'Agency & address'],
+            'none' => 'I/We do not know of any relative/s in the government service.',
+        ],
+        'marriages' => [
+            'icon' => 'bi-heart', 'title' => 'Other marriages',
+            'help' => 'Only if you have been married more than once: the full name of each previous spouse.',
+            'add' => 'Add name',
+            'cols' => ['Full name of spouse'],
+        ],
+    ];
+
+    // [pane id => [tab label, section key, tbody id, add-button id, "none" checkbox id]]
+    $salnBoards = [
+        'declarant' => [
+            'pane' => 'declarant_board', 'label' => 'Declarant', 'icon' => 'bi-person-fill', 'profile' => 'personal-info',
+            'tabs' => [
+                'children-info'       => ['Children', 'children', 'children_list', 'btn_add_children', null],
+                'real-properties'     => ['Real properties', 'real', 'real_properties_list', 'btn_add_real_properties', null],
+                'personal-properties' => ['Personal properties', 'personal', 'personal_properties_list', 'btn_add_personal_properties', null],
+                'liabilities'         => ['Liabilities', 'liabilities', 'liabilities_list', 'btn_add_liabilities', null],
+                'business-interests'  => ['Business interests', 'business', 'business_interest_list', 'btn_add_business_interest', 'business_interest_checkbox'],
+                'relatives'           => ['Relatives in gov\'t', 'relatives', 'government_relative_list', 'btn_add_government_relative', 'government_relatives_checkbox'],
+                'marriages'           => ['Other marriages', 'marriages', 'marriages_list', 'btn_add_marriages', null],
+            ],
+        ],
+        'spouse' => [
+            'pane' => 'spouse_board', 'label' => 'Spouse', 'icon' => 'bi-people-fill', 'profile' => 'spouse_personal-info',
+            'tabs' => [
+                'spouse_real-properties'     => ['Real properties', 'real', 'spouse_real_properties_list', 'spouse_btn_add_real_properties', null],
+                'spouse_personal-properties' => ['Personal properties', 'personal', 'spouse_personal_properties_list', 'spouse_btn_add_personal_properties', null],
+                'spouse_liabilities'         => ['Liabilities', 'liabilities', 'spouse_liabilities_list', 'spouse_btn_add_liabilities', null],
+                'spouse_business-interests'  => ['Business interests', 'business', 'spouse_business_interest_list', 'spouse_btn_add_business_interest', 'spouse_business_interest_checkbox'],
+            ],
+        ],
+    ];
+
+    // Flat reading order of every pane, for the "Next section" buttons.
+    $salnOrder = [];
+    foreach ($salnBoards as $board) {
+        $salnOrder[] = ['board' => $board['pane'], 'pane' => $board['profile'], 'label' => $board['label'] . ' profile'];
+        foreach ($board['tabs'] as $paneId => $tab) {
+            $salnOrder[] = ['board' => $board['pane'], 'pane' => $paneId, 'label' => ($board['pane'] === 'spouse_board' ? 'Spouse ' . lcfirst($tab[0]) : $tab[0])];
+        }
+    }
+    $salnNext = function ($paneId) use ($salnOrder) {
+        foreach ($salnOrder as $i => $step) {
+            if ($step['pane'] === $paneId) return $salnOrder[$i + 1] ?? null;
+        }
+        return null;
+    };
+@endphp
+
+<div class="modal fade sf-modal" id="saln_form_modal" tabindex="-1" aria-labelledby="salnFormModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header saln-premium-header">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="saln-premium-header-icon">
-                        <i class="bi bi-file-earmark-text"></i>
-                    </div>
+            <div class="modal-header">
+                <div class="modal-heading">
+                    <div class="modal-icon"><i class="bi bi-file-earmark-text"></i></div>
                     <div>
-                        <h5 class="modal-title mb-0 fw-800 text-white" id="salnFormModalLabel">
-                            SALN Declaration
-                        </h5>
-                        <div class="text-white opacity-75" style="font-size:.85rem">
-                            Sworn Statement of Assets, Liabilities &amp; Net Worth
-                        </div>
+                        <h5 class="modal-title" id="salnFormModalLabel">SALN Declaration</h5>
+                        <p class="modal-sub">Sworn Statement of Assets, Liabilities and Net Worth</p>
                     </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0 position-relative">
-                <!-- Premium Loader Overlay -->
+
+            <div class="modal-body sf-body" id="saln_form_body">
                 <div id="saln_loader_overlay" class="saln-loader-overlay" style="display: none;">
                     <div class="loader-content">
                         <div class="premium-spinner"></div>
-                        <div class="loader-text fw-bold text-dark">Synchronizing Records</div>
-                        <div class="loader-subtext text-muted">Optimizing your historical data...</div>
+                        <div class="loader-text fw-bold">Loading your SALN</div>
+                        <div class="loader-subtext text-muted">Fetching the records for this statement...</div>
                     </div>
                 </div>
 
-                <div class="saln-form-container">
-                    <div class="container-fluid">
-                        <!-- Upper Section: Compliance & Filing Type -->
-                        <div class="saln-section-card mb-4">
-                            <div class="text-center">
-                                <h4 class="fw-800 mb-4" style="letter-spacing: -0.5px; color: var(--saln-text-main);">COMPLIANCE CONFIGURATION</h4>
-                                
-                                <div class="row justify-content-center g-4">
-                                    <div class="col-lg-5">
-                                        <div class="p-4 rounded-4 bg-light border border-2 border-white shadow-sm">
-                                            <div class="form-label-premium mb-3">Filing Context</div>
-                                            <div class="d-flex justify-content-center gap-4 flex-wrap">
-                                                <div class="form-check custom-option">
-                                                    <input class="form-check-input" type="radio" value="Assumption of office" name="compliance_for" id="comp_assumption">
-                                                    <label class="form-check-label fw-600" for="comp_assumption">Assumption</label>
-                                                </div>
-                                                <div class="form-check custom-option">
-                                                    <input class="form-check-input" type="radio" value="Annual Filing" name="compliance_for" id="comp_annual" checked>
-                                                    <label class="form-check-label fw-600" for="comp_annual">Annual</label>
-                                                </div>
-                                                <div class="form-check custom-option">
-                                                    <input class="form-check-input" type="radio" value="Exit" name="compliance_for" id="comp_exit">
-                                                    <label class="form-check-label fw-600" for="comp_exit">Exit</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-5">
-                                        <div class="p-4 rounded-4 bg-light border border-2 border-white shadow-sm">
-                                            <div class="form-label-premium mb-3">Filing Type</div>
-                                            <div class="d-flex justify-content-center gap-4 flex-wrap">
-                                                <div class="form-check custom-option">
-                                                    <input class="form-check-input" type="radio" value="Joint Filing" name="filing_type" id="filing_joint">
-                                                    <label class="form-check-label fw-600" for="filing_joint">Joint</label>
-                                                </div>
-                                                <div class="form-check custom-option">
-                                                    <input class="form-check-input" type="radio" value="Separate Filing" name="filing_type" id="filing_separate">
-                                                    <label class="form-check-label fw-600" for="filing_separate">Separate</label>
-                                                </div>
-                                                <div class="form-check custom-option">
-                                                    <input class="form-check-input" type="radio" value="Not Applicable" name="filing_type" id="filing_na" checked>
-                                                    <label class="form-check-label fw-600" for="filing_na">N/A</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                {{-- How it works --}}
+                <div class="sf-guide">
+                    <i class="bi bi-info-circle"></i>
+                    <div>
+                        <strong>How to fill this in:</strong>
+                        <span>1. Set the statement details below.</span>
+                        <span>2. Go through each section. Rows in a list are saved as soon as you click <i class="bi bi-check-lg"></i>.</span>
+                        <span>3. Click <strong>Save declaration</strong> to save the profile and ID details.</span>
+                    </div>
+                </div>
 
-                                <div class="mt-4">
-                                    <span class="text-muted fw-600">Effective Date: </span>
-                                    <select class="underline mx-1" id="as_of_month">
-                                        @foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)
-                                            <option value="{{ $m }}" {{ $m == 'December' ? 'selected' : '' }}>{{ $m }}</option>
-                                        @endforeach
-                                    </select>
-                                    <select class="underline mx-1" id="as_of_day">
-                                        @for($d = 1; $d <= 31; $d++) <option value="{{ $d }}" {{ $d == 31 ? 'selected' : '' }}>{{ $d }}</option> @endfor
-                                    </select>
-                                    <select class="underline mx-1" id="as_of_year">
-                                        @for($y = 2020; $y <= date('Y'); $y++) <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option> @endfor
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Main Navigation Tabs -->
-                        <div class="text-center">
-                            <ul class="nav nav-pills saln-tab-nav mb-5" role="tablist">
-                                <li class="nav-item">
-                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#declarant_board" type="button">
-                                        <i class="bi bi-person-fill me-2"></i>DECLARANT DATA
-                                    </button>
-                                </li>
-                                <li class="nav-item">
-                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#spouse_board" type="button">
-                                        <i class="bi bi-people-fill me-2"></i>SPOUSE DATA
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div class="tab-content">
-                            <!-- DECLARANT TAB -->
-                            <div class="tab-pane fade show active" id="declarant_board">
-                                <ul class="nav nav-tabs saln-sub-tab-nav" role="tablist">
-                                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#personal-info">Profile & ID</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#children-info">Children</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#real-properties">Real Assets</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#personal-properties">Personal Assets</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#liabilities">Liabilities</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#business-interests">Business/Financial</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#relatives">Gov't Relatives</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#marriages">Marriages</button></li>
-                                </ul>
-
-                                <div class="tab-content">
-                                    <!-- Personal Info Section -->
-                                    <div class="tab-pane fade show active" id="personal-info">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title"><i class="bi bi-person-badge"></i>Personal & Government ID Info</div>
-                                            <div class="row g-4">
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Firstname</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_fname" readonly/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Middlename</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_mname" readonly/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Lastname</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_lname" readonly/>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label-premium">Position</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_position"/>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label-premium">Agency/Office</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_agency"/>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label-premium">Office Address</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_address"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Government Issued ID</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_issued_id"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">ID No.</label>
-                                                    <input type="text" class="form-control-premium w-100" id="declarant_id_no"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Date Issued</label>
-                                                    <input type="date" class="form-control-premium w-100" id="declarant_date_issued"/>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Children List -->
-                                    <div class="tab-pane fade" id="children-info">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-people"></i>
-                                                Household Children Info
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_children">
-                                                    <i class="bi bi-plus-lg me-0"></i>
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Full Name of Child</th>
-                                                            <th style="width: 30%">Date of Birth</th>
-                                                            <th style="width: 15%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="children_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Real Properties -->
-                                    <div class="tab-pane fade" id="real-properties">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-house"></i>
-                                                Real Properties
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_real_properties">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD ASSET
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Description <small class="d-block text-muted">(e.g. Lot, House)</small></th>
-                                                            <th>Kind <small class="d-block text-muted">(e.g. Residential)</small></th>
-                                                            <th>Location</th>
-                                                            <th>Assessed Value</th>
-                                                            <th>Market Value</th>
-                                                            <th>Year</th>
-                                                            <th>Mode</th>
-                                                            <th>Acquisition Cost</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="real_properties_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Personal Properties -->
-                                    <div class="tab-pane fade" id="personal-properties">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-laptop"></i>
-                                                Personal Properties
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_personal_properties">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD ASSET
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Gadgets/Appliances/Others</th>
-                                                            <th>Various Years</th>
-                                                            <th>Acquisition Cost</th>
-                                                            <th style="width: 15%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="personal_properties_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Liabilities -->
-                                    <div class="tab-pane fade" id="liabilities">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-credit-card"></i>
-                                                Liabilities
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_liabilities">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD LIABILITY
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Nature</th>
-                                                            <th>Name of Creditors</th>
-                                                            <th>Outstanding Balance</th>
-                                                            <th style="width: 15%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="liabilities_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Business Interests -->
-                                    <div class="tab-pane fade" id="business-interests">
-                                        <div class="saln-section-card text-center">
-                                            <div class="saln-card-title justify-content-center"><i class="bi bi-briefcase"></i>Business Interests & Financial Connections</div>
-                                            <div class="p-3 bg-light rounded-4 mb-4 d-inline-block">
-                                                <div class="form-check m-0">
-                                                    <input class="form-check-input" type="checkbox" id="business_interest_checkbox">
-                                                    <label class="form-check-label fw-bold" for="business_interest_checkbox">
-                                                        I/We do not have any business interest or financial connection
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="text-end mb-3">
-                                                <button class="btn btn-finalize btn-sm" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_business_interest">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD NEW
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Entity/Business</th>
-                                                            <th>Address</th>
-                                                            <th>Nature of Interest</th>
-                                                            <th>Acquisition Date</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="business_interest_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Relatives in Gov't -->
-                                    <div class="tab-pane fade" id="relatives">
-                                        <div class="saln-section-card text-center">
-                                            <div class="saln-card-title justify-content-center"><i class="bi bi-diagram-3"></i>Relatives in Government Service</div>
-                                            <div class="p-3 bg-light rounded-4 mb-4 d-inline-block">
-                                                <div class="form-check m-0">
-                                                    <input class="form-check-input" type="checkbox" id="government_relatives_checkbox" >
-                                                    <label class="form-check-label fw-bold" for="government_relatives_checkbox">
-                                                        I/We do not know of any relative/s in the government service
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="text-end mb-3">
-                                                <button class="btn btn-finalize btn-sm" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_government_relative">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD NEW
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Name of Relative</th>
-                                                            <th>Relationship</th>
-                                                            <th>Position</th>
-                                                            <th>Agency/Address</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="government_relative_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Marriages -->
-                                    <div class="tab-pane fade" id="marriages">
-                                        <div class="saln-section-card text-center">
-                                            <div class="saln-card-title justify-content-center"><i class="bi bi-heart"></i>Multiple Marriages Information</div>
-                                            <div class="text-end mb-3">
-                                                <button class="btn btn-finalize btn-sm" style="padding: 8px 16px; border-radius: 10px;" id="btn_add_marriages">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD ENTRY
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Full Name of Spouse(s)</th>
-                                                            <th style="width: 20%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="marriages_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- SPOUSE TAB -->
-                            <div class="tab-pane fade" id="spouse_board">
-                                <ul class="nav nav-tabs saln-sub-tab-nav" role="tablist">
-                                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#spouse_personal-info">Profile & ID</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#spouse_real-properties">Real Assets</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#spouse_personal-properties">Personal Assets</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#spouse_liabilities">Liabilities</button></li>
-                                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#spouse_business-interests">Business/Financial</button></li>
-                                </ul>
-
-                                <div class="tab-content">
-                                    <div class="tab-pane fade show active" id="spouse_personal-info">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title"><i class="bi bi-person-heart"></i>Spouse's Profile & ID Information</div>
-                                            <div class="row g-4">
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Firstname</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_fname"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Middlename</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_mname"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Lastname</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_lname"/>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label-premium">Position</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_position"/>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label-premium">Agency/Office</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_agency"/>
-                                                </div>
-                                                <div class="col-12">
-                                                    <label class="form-label-premium">Office Address</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_address"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Government Issued ID</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_issued_id"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">ID No.</label>
-                                                    <input type="text" class="form-control-premium w-100" id="spouse_id_no"/>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label-premium">Date Issued</label>
-                                                    <input type="date" class="form-control-premium w-100" id="spouse_date_issued"/>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Spouse Real Properties -->
-                                    <div class="tab-pane fade" id="spouse_real-properties">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-house-heart"></i>
-                                                Spouse's Real Properties
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="spouse_btn_add_real_properties">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD ASSET
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Description</th>
-                                                            <th>Kind</th>
-                                                            <th>Location</th>
-                                                            <th>Assessed Value</th>
-                                                            <th>Market Value</th>
-                                                            <th>Year</th>
-                                                            <th>Mode</th>
-                                                            <th>Acquisition Cost</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="spouse_real_properties_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Spouse Personal -->
-                                    <div class="tab-pane fade" id="spouse_personal-properties">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-item-heart"></i>
-                                                Spouse's Personal Properties
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="spouse_btn_add_personal_properties">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD ASSET
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Item Description</th>
-                                                            <th>Various Years</th>
-                                                            <th>Acquisition Cost</th>
-                                                            <th style="width: 15%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="spouse_personal_properties_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Spouse Liabilities -->
-                                    <div class="tab-pane fade" id="spouse_liabilities">
-                                        <div class="saln-section-card">
-                                            <div class="saln-card-title">
-                                                <i class="bi bi-credit-card-2-back"></i>
-                                                Spouse's Liabilities
-                                                <button class="btn btn-finalize btn-sm ms-auto" style="padding: 8px 16px; border-radius: 10px;" id="spouse_btn_add_liabilities">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD LIABILITY
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Nature</th>
-                                                            <th>Name of Creditors</th>
-                                                            <th>Outstanding Balance</th>
-                                                            <th style="width: 15%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="spouse_liabilities_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- Spouse Business -->
-                                    <div class="tab-pane fade" id="spouse_business-interests">
-                                        <div class="saln-section-card text-center">
-                                            <div class="saln-card-title justify-content-center"><i class="bi bi-briefcase"></i>Spouse's Business Interests</div>
-                                            <div class="p-4 bg-light rounded-4 mb-4 d-inline-block">
-                                                <div class="form-check m-0">
-                                                    <input class="form-check-input" type="checkbox" id="spouse_business_interest_checkbox">
-                                                    <label class="form-check-label fw-bold" for="spouse_business_interest_checkbox">
-                                                        Spouse has no business interest or financial connection
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="text-end mb-3">
-                                                <button class="btn btn-finalize btn-sm" style="padding: 8px 16px; border-radius: 10px;" id="spouse_btn_add_business_interest">
-                                                    <i class="bi bi-plus-lg me-1"></i>ADD NEW
-                                                </button>
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table saln-table-premium text-center">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Entity/Business</th>
-                                                            <th>Address</th>
-                                                            <th>Nature of Interest</th>
-                                                            <th>Acquisition Date</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="spouse_business_interest_list"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                {{-- Step 1: statement details --}}
+                <section class="sf-card">
+                    <div class="sf-card-head">
+                        <div class="sf-card-icon"><i class="bi bi-calendar2-check"></i></div>
+                        <div class="sf-card-text">
+                            <h6>Statement details</h6>
+                            <p>Which SALN this is and how it is filed.</p>
                         </div>
                     </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <label class="sf-label">Assets declared as of</label>
+                            <div class="sf-date">
+                                <select class="form-select" id="as_of_month" aria-label="Month">
+                                    @foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $m)
+                                        <option value="{{ $m }}" {{ $m == 'December' ? 'selected' : '' }}>{{ $m }}</option>
+                                    @endforeach
+                                </select>
+                                <select class="form-select" id="as_of_day" aria-label="Day">
+                                    @for($d = 1; $d <= 31; $d++)
+                                        <option value="{{ $d }}" {{ $d == 31 ? 'selected' : '' }}>{{ $d }}</option>
+                                    @endfor
+                                </select>
+                                <select class="form-select" id="as_of_year" aria-label="Year">
+                                    @for($y = 2020; $y <= date('Y'); $y++)
+                                        <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div class="sf-hint">Annual SALN is usually as of December 31.</div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <label class="sf-label">Reason for filing</label>
+                            <div class="sf-seg" role="radiogroup" aria-label="Reason for filing">
+                                <input type="radio" class="btn-check" value="Assumption of office" name="compliance_for" id="comp_assumption">
+                                <label for="comp_assumption">Assumption</label>
+                                <input type="radio" class="btn-check" value="Annual Filing" name="compliance_for" id="comp_annual" checked>
+                                <label for="comp_annual">Annual</label>
+                                <input type="radio" class="btn-check" value="Exit" name="compliance_for" id="comp_exit">
+                                <label for="comp_exit">Exit</label>
+                            </div>
+                            <div class="sf-hint" id="sf_compliance_hint"></div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <label class="sf-label">Filing with spouse</label>
+                            <div class="sf-seg" role="radiogroup" aria-label="Filing with spouse">
+                                <input type="radio" class="btn-check" value="Joint Filing" name="filing_type" id="filing_joint">
+                                <label for="filing_joint">Joint</label>
+                                <input type="radio" class="btn-check" value="Separate Filing" name="filing_type" id="filing_separate">
+                                <label for="filing_separate">Separate</label>
+                                <input type="radio" class="btn-check" value="Not Applicable" name="filing_type" id="filing_na" checked>
+                                <label for="filing_na">Not applicable</label>
+                            </div>
+                            <div class="sf-hint" id="sf_filing_hint"></div>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- Whose data --}}
+                <div class="sf-who" role="tablist">
+                    @foreach($salnBoards as $key => $board)
+                        <button class="sf-who-btn {{ $loop->first ? 'active' : '' }}" id="tab_{{ $board['pane'] }}"
+                                data-bs-toggle="tab" data-bs-target="#{{ $board['pane'] }}" type="button" role="tab">
+                            <i class="bi {{ $board['icon'] }}"></i>
+                            <span>{{ $board['label'] }}</span>
+                            <small>{{ $key === 'declarant' ? 'Your own information' : 'Your spouse\'s information' }}</small>
+                        </button>
+                    @endforeach
+                </div>
+
+                <div class="tab-content">
+                    @foreach($salnBoards as $key => $board)
+                        <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="{{ $board['pane'] }}" role="tabpanel">
+                            <ul class="nav nav-tabs sf-tabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active" id="tab_{{ $board['profile'] }}" data-bs-toggle="tab"
+                                            data-bs-target="#{{ $board['profile'] }}" type="button" role="tab">Profile &amp; ID</button>
+                                </li>
+                                @foreach($board['tabs'] as $paneId => $tab)
+                                    <li class="nav-item">
+                                        <button class="nav-link" id="tab_{{ $paneId }}" data-bs-toggle="tab"
+                                                data-bs-target="#{{ $paneId }}" type="button" role="tab">
+                                            {{ $tab[0] }}<span class="sf-count" data-sf-count="#{{ $tab[2] }}"></span>
+                                        </button>
+                                    </li>
+                                @endforeach
+                            </ul>
+
+                            <div class="tab-content">
+                                {{-- Profile & ID --}}
+                                @php $p = $key === 'declarant' ? 'declarant' : 'spouse'; $next = $salnNext($board['profile']); @endphp
+                                <div class="tab-pane fade show active" id="{{ $board['profile'] }}" role="tabpanel">
+                                    <section class="sf-card">
+                                        <div class="sf-card-head">
+                                            <div class="sf-card-icon"><i class="bi {{ $key === 'declarant' ? 'bi-person-badge' : 'bi-person-heart' }}"></i></div>
+                                            <div class="sf-card-text">
+                                                <h6>{{ $key === 'declarant' ? 'Your profile & government ID' : 'Spouse profile & government ID' }}</h6>
+                                                <p>
+                                                    @if($key === 'declarant')
+                                                        Your name comes from your Personal Data Sheet. Check your position, office and a valid government ID.
+                                                    @else
+                                                        Leave this blank if you have no spouse. The government ID is the one your spouse will present.
+                                                    @endif
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label class="sf-label" for="{{ $p }}_fname">First name</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_fname" {{ $p === 'declarant' ? 'readonly' : '' }}/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sf-label" for="{{ $p }}_mname">Middle name</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_mname" {{ $p === 'declarant' ? 'readonly' : '' }}/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sf-label" for="{{ $p }}_lname">Last name</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_lname" {{ $p === 'declarant' ? 'readonly' : '' }}/>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="sf-label" for="{{ $p }}_position">Position</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_position" placeholder="e.g. Nurse II"/>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="sf-label" for="{{ $p }}_agency">Agency / office</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_agency"/>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="sf-label" for="{{ $p }}_address">Office address</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_address"/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sf-label" for="{{ $p }}_issued_id">Government-issued ID</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_issued_id" placeholder="e.g. Passport, UMID"/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sf-label" for="{{ $p }}_id_no">ID number</label>
+                                                <input type="text" class="form-control" id="{{ $p }}_id_no"/>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="sf-label" for="{{ $p }}_date_issued">Date issued</label>
+                                                <input type="date" class="form-control" id="{{ $p }}_date_issued"/>
+                                            </div>
+                                        </div>
+                                        @include('modals.partials.saln_form_next', ['next' => $next])
+                                    </section>
+                                </div>
+
+                                {{-- List sections --}}
+                                @foreach($board['tabs'] as $paneId => $tab)
+                                    @php
+                                        [$tabLabel, $sectionKey, $tbodyId, $addBtnId, $noneId] = $tab;
+                                        $s = $salnListSections[$sectionKey];
+                                        $isSpouse = $key === 'spouse';
+                                        $next = $salnNext($paneId);
+                                    @endphp
+                                    <div class="tab-pane fade" id="{{ $paneId }}" role="tabpanel">
+                                        <section class="sf-card">
+                                            <div class="sf-card-head">
+                                                <div class="sf-card-icon"><i class="bi {{ $s['icon'] }}"></i></div>
+                                                <div class="sf-card-text">
+                                                    <h6>{{ $isSpouse ? 'Spouse ' . lcfirst($s['title']) : $s['title'] }}</h6>
+                                                    <p>{{ $s['help'] }}</p>
+                                                </div>
+                                                <button type="button" class="btn btn-primary btn-sm sf-add" id="{{ $addBtnId }}">
+                                                    <i class="bi bi-plus-lg me-1"></i>{{ $s['add'] }}
+                                                </button>
+                                            </div>
+
+                                            @if($noneId)
+                                                <label class="sf-none" for="{{ $noneId }}">
+                                                    <input class="form-check-input" type="checkbox" id="{{ $noneId }}">
+                                                    <span>{{ $isSpouse ? 'My spouse does not have any business interest or financial connection.' : $s['none'] }}</span>
+                                                </label>
+                                            @endif
+
+                                            <div class="table-responsive sf-table-shell">
+                                                <table class="table align-middle mb-0">
+                                                    <thead>
+                                                        <tr>
+                                                            @foreach($s['cols'] as $col)
+                                                                <th>{!! $col !!}</th>
+                                                            @endforeach
+                                                            <th class="text-center sf-col-actions">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="{{ $tbodyId }}"></tbody>
+                                                </table>
+                                                <div class="sf-empty">
+                                                    <i class="bi bi-inbox"></i>
+                                                    <div>Nothing added yet.</div>
+                                                    <small>Click <strong>{{ $s['add'] }}</strong> to add one{{ $noneId ? ', or tick the box above if you have none' : '' }}.</small>
+                                                </div>
+                                            </div>
+                                            @include('modals.partials.saln_form_next', ['next' => $next])
+                                        </section>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
-            <!-- Redesigned Confirmation Footer -->
-            <div class="confirmation-footer">
-                <div class="footer-info">
-                   <div class="footer-info-item me-4 d-none d-md-flex">
-                        <span class="footer-info-label">Current Filling Mode</span>
-                        <span class="footer-info-value" id="footer_filing_mode_display">ANNUAL FILING</span>
-                    </div>
+            <div class="modal-footer sf-footer">
+                <div class="sf-status">
+                    <span class="sf-status-label">Filing</span>
+                    <span class="sf-status-value" id="footer_filing_mode_display">ANNUAL FILING</span>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="btn btn-light text-muted fw-bold px-4 py-3 rounded-4" data-bs-dismiss="modal">
-                        CANCEL
+                <div class="d-flex flex-wrap gap-2 ms-auto">
+                    <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn_print_saln">
+                        <i class="bi bi-printer me-1"></i>Preview PDF
                     </button>
-                    <button class="btn btn-outline-success fw-bold px-4 py-3 rounded-4" id="btn_print_saln" style="border-width: 2px;">
-                        <i class="bi bi-printer me-2"></i>PREVIEW PDF
-                    </button>
-                    <button type="button" class="btn-finalize" id="btn_save_and_finalize">
-                        <i class="bi bi-shield-check"></i>
-                        SAVE DECLARATION
+                    <button type="button" class="btn btn-modal-save" id="btn_save_and_finalize">
+                        <i class="bi bi-shield-check me-1"></i>Save declaration
                     </button>
                 </div>
             </div>

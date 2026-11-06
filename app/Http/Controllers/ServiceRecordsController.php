@@ -26,9 +26,11 @@ class ServiceRecordsController extends Controller
                 $service_records = new ServiceRecords;
                 $service_records->user_id = $request->user_id;
             }
+            $is_present = (int) $request->current_work === 1;
             $service_records->date_from = $request->date_from;
-            $service_records->date_to = $request->date_to;
-            $service_records->current_work = $request->current_work;
+            // date_to is NOT NULL; for a present record, mirror date_from (same convention as work experience).
+            $service_records->date_to = $is_present ? $request->date_from : $request->date_to;
+            $service_records->current_work = $is_present ? 1 : 0;
             $service_records->designation = $request->designation;
             $service_records->appointment_status = $request->appointment_status;
             $service_records->monthly_salary = $request->monthly_salary;

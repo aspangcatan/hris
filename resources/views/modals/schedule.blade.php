@@ -25,214 +25,232 @@
 </div>
 
 <style>
-    #advanceScheduleModal .modal-content {
-        border: 0;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 25px 50px rgba(16, 24, 40, 0.2);
-        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    /* Advance Schedule Builder (#advanceScheduleModal) - theme-v2 tokens, prefix asb- */
+    .asb-modal .modal-dialog { max-width: min(1140px, calc(100vw - 2rem)); }
+    .asb-modal .modal-body { display: flex; flex-direction: column; gap: 1rem; }
+    .asb-month {
+        display: inline-flex; align-items: center; gap: 0.375rem; margin-left: auto;
+        padding: 0.3rem 0.75rem; border-radius: 999px; background: var(--primary-fixed);
+        color: var(--primary); font-size: 0.8125rem; font-weight: 700; white-space: nowrap;
     }
 
-    #advanceScheduleModal .modal-header {
-        border-bottom: 0;
-        padding: 1rem 1.25rem;
-        background: linear-gradient(135deg, #0f766e 0%, #0f766e 50%, #0ea5a4 100%);
-        color: #fff;
+    .asb-card { display: flex; flex-direction: column; height: 100%; padding: 1rem 1.125rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .asb-card + .asb-card { margin-top: 1rem; }
+    .asb-card-head { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.875rem; }
+    .asb-step {
+        display: grid; place-items: center; flex-shrink: 0; width: 1.75rem; height: 1.75rem; border-radius: 50%;
+        background: var(--primary); color: #fff; font: 700 0.8125rem/1 var(--font-head);
     }
+    .asb-card-head h6 { margin: 0; font: 700 0.9375rem/1.4 var(--font-head); color: var(--on-surface); }
+    .asb-card-head p { margin: 0.125rem 0 0; font-size: 0.8125rem; color: var(--outline); }
 
-    #advanceScheduleModal .modal-title {
-        font-weight: 700;
-        letter-spacing: 0.2px;
+    .asb-label { display: block; margin-bottom: 0.375rem; font-size: 0.8125rem; font-weight: 600; color: var(--on-surface-variant); }
+
+    /* Employees */
+    .asb-search { position: relative; }
+    .asb-search .bi { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--outline); pointer-events: none; }
+    .asb-search .form-control { padding-left: 2.25rem; }
+    .asb-emp-bar {
+        display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+        margin: 0.75rem 0 0.5rem; font-size: 0.8125rem;
     }
+    .asb-emp-bar .form-check { display: flex; align-items: center; gap: 0.5rem; margin: 0; padding: 0; }
+    .asb-emp-bar .form-check-input { float: none; margin: 0; }
+    .asb-emp-bar .form-check-label { font-weight: 600; color: var(--on-surface) !important; cursor: pointer; }
+    .asb-count { padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--surface-low); color: var(--on-surface-variant); font-weight: 600; white-space: nowrap; }
+    .asb-count.is-none { background: var(--danger-container); color: var(--on-danger-container); }
 
-    #advanceScheduleModal .btn-close {
-        filter: brightness(0) invert(1);
-        opacity: 0.9;
+    .asb-emp-list { flex: 1; min-height: 14rem; max-height: 26rem; overflow-y: auto; border: 1px solid var(--line); border-radius: 0.75rem; }
+    .asb-emp-list table { margin: 0; }
+    .asb-emp-list tbody td { padding: 0.5rem 0.75rem; border-color: var(--line); }
+    .asb-emp-list .advance-employee-row { cursor: pointer; }
+    .asb-emp-list .advance-employee-row:hover td { background: var(--surface-low); }
+    .asb-emp-list .advance-employee-row:has(.advance-employee-check:checked) td { background: var(--primary-soft); }
+    .asb-emp-list .advance-employee-row td:first-child { width: 2.5rem; text-align: center; }
+    .asb-emp-name { font-weight: 600; color: var(--on-surface); line-height: 1.3; }
+    .asb-emp-role { font-size: 0.75rem; color: var(--outline); }
+
+    /* Date range */
+    .asb-range { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .asb-quick { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.625rem; }
+    .asb-chip {
+        padding: 0.25rem 0.7rem; border: 1px solid var(--outline-variant); border-radius: 999px; background: var(--surface);
+        font-size: 0.75rem; font-weight: 600; color: var(--on-surface-variant);
     }
+    .asb-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+    .asb-error { margin-top: 0.5rem; font-size: 0.8125rem; font-weight: 600; color: var(--danger); }
+    .asb-error:empty { display: none; }
 
-    #advanceScheduleModal .premium-panel {
-        background: #fff;
-        border: 1px solid #e6ebf2;
-        border-radius: 14px;
-        padding: 1rem;
-        box-shadow: 0 8px 20px rgba(16, 24, 40, 0.05);
+    /* Weekly pattern */
+    .asb-fill {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;
+        padding: 0.625rem 0.75rem; border: 1px dashed var(--outline-variant); border-radius: 0.75rem; background: var(--surface-low);
     }
-
-    #advanceScheduleModal .panel-title {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: #344054;
-        margin-bottom: 0.65rem;
-        text-transform: uppercase;
-        letter-spacing: 0.35px;
+    .asb-fill .form-select { flex: 1 1 12rem; min-width: 0; width: auto; }
+    .asb-fill-label { font-size: 0.8125rem; font-weight: 600; color: var(--on-surface); }
+    .asb-days { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: 0.5rem; }
+    .asb-day {
+        display: flex; align-items: center; gap: 0.625rem; padding: 0.5rem 0.625rem;
+        border: 1px solid var(--line); border-radius: 0.75rem; background: var(--surface);
     }
+    .asb-day-name { width: 5.5rem; flex-shrink: 0; font-size: 0.875rem; font-weight: 700; color: var(--on-surface); }
+    .asb-day-name small { display: block; font-size: 0.6875rem; font-weight: 500; color: var(--outline); }
+    .asb-day .form-select { flex: 1; min-width: 0; }
+    .asb-day.is-weekend { background: var(--surface-low); }
+    .asb-day.is-clear { border-style: dashed; }
+    .asb-day.is-clear .form-select { color: var(--outline); }
+    .asb-note { display: flex; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.8125rem; color: var(--on-surface-variant); }
+    .asb-note .bi { color: var(--on-warning-container); }
 
-    #advanceScheduleModal #advance_employee_search {
-        border-radius: 10px;
-        border: 1px solid #d5deea;
-        padding: 0.6rem 0.75rem;
-    }
+    /* Footer summary */
+    .asb-footer { justify-content: space-between; }
+    .asb-summary { display: flex; flex-wrap: wrap; gap: 0.375rem 1rem; font-size: 0.8125rem; color: var(--on-surface-variant); min-width: 0; }
+    .asb-summary strong { color: var(--on-surface); }
+    .asb-summary .asb-clear-count strong { color: var(--on-warning-container); }
 
-    #advanceScheduleModal #advance_employee_search:focus {
-        border-color: #0ea5a4;
-        box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
-    }
-
-    #advanceScheduleModal .employee-table thead th,
-    #advanceScheduleModal .weekly-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background: #f2f6fb;
-        color: #475467;
-        font-weight: 700;
-        font-size: 0.78rem;
-        text-transform: uppercase;
-        letter-spacing: 0.35px;
-    }
-
-    #advanceScheduleModal .employee-table tbody tr:hover {
-        background: #f8fbff;
-    }
-
-    #advanceScheduleModal .weekly-table select {
-        min-width: 110px;
-        border-radius: 8px;
-        border-color: #d5deea;
-    }
-
-    #advanceScheduleModal .range-input {
-        border-radius: 10px;
-        border: 1px solid #d5deea;
-        padding: 0.55rem 0.75rem;
-    }
-
-    #advanceScheduleModal .range-input:focus {
-        border-color: #0ea5a4;
-        box-shadow: 0 0 0 0.2rem rgba(14, 165, 164, 0.14);
-    }
-
-    #advanceScheduleModal .range-help {
-        font-size: 0.8rem;
-        color: #667085;
-    }
-
-    #advanceScheduleModal .range-error {
-        font-size: 0.82rem;
-        color: #b42318;
-        font-weight: 600;
-        min-height: 1.1rem;
-    }
-
-    #advanceScheduleModal .modal-footer {
-        border-top: 1px solid #e9eef5;
-        background: #f8fafc;
-    }
-
-    #advanceScheduleModal #save_advance_schedule {
-        border-radius: 10px;
-        padding: 0.52rem 1.1rem;
-        font-weight: 600;
-        background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 100%);
-        border: none;
-        box-shadow: 0 10px 18px rgba(15, 118, 110, 0.24);
+    @media (max-width: 575.98px) {
+        .asb-range { grid-template-columns: 1fr; }
+        .asb-month { display: none; }
+        .asb-summary { display: none; }
     }
 </style>
 
-<div class="modal fade" id="advanceScheduleModal" tabindex="-1" aria-labelledby="advanceScheduleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xxl">
+<div class="modal fade asb-modal" id="advanceScheduleModal" tabindex="-1" aria-labelledby="advanceScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title text-white">Advance Schedule Builder</h5>
-                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-heading">
+                    <div class="modal-icon"><i class="bi bi-calendar-week"></i></div>
+                    <div>
+                        <h5 class="modal-title" id="advanceScheduleModalLabel">Advance Schedule Builder</h5>
+                        <p class="modal-sub">Give many employees the same weekly schedule in one go.</p>
+                    </div>
+                </div>
+                <span class="asb-month"><i class="bi bi-calendar3"></i><span id="advance_month_label"></span></span>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
                 <div class="row g-3">
-                    <div class="col-lg-6">
-                        <div class="premium-panel h-100">
-                            <div class="panel-title">Employee Selection</div>
-                            <label for="advance_employee_search" class="form-label mb-1">Search Employee</label>
-                            <input type="text" id="advance_employee_search" class="form-control" placeholder="Type name or designation...">
+                    {{-- Step 1: employees --}}
+                    <div class="col-lg-5">
+                        <section class="asb-card">
+                            <div class="asb-card-head">
+                                <span class="asb-step">1</span>
+                                <div>
+                                    <h6>Choose employees</h6>
+                                    <p>Everyone is selected. Untick anyone who should keep their current schedule.</p>
+                                </div>
+                            </div>
 
-                            <div class="table-responsive mt-3" style="max-height: 360px;">
-                                <table class="table table-bordered table-sm align-middle employee-table mb-0">
-                                    <thead>
-                                    <tr>
-                                        <th style="width: 50px;">
-                                            <input type="checkbox" id="advance_select_all_employees">
-                                        </th>
-                                        <th>Employee</th>
-                                        <th>Designation</th>
-                                    </tr>
-                                    </thead>
+                            <div class="asb-search">
+                                <i class="bi bi-search"></i>
+                                <input type="text" id="advance_employee_search" class="form-control" placeholder="Search name or designation" aria-label="Search employee">
+                            </div>
+
+                            <div class="asb-emp-bar">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="advance_select_all_employees">
+                                    <label class="form-check-label" for="advance_select_all_employees">Select all</label>
+                                </div>
+                                <span class="asb-count" id="advance_selected_count">0 selected</span>
+                            </div>
+
+                            <div class="asb-emp-list">
+                                <table class="table align-middle employee-table">
                                     <tbody id="advance_employee_table_body">
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">No employees loaded yet.</td>
-                                    </tr>
+                                    <tr><td colspan="3" class="text-center text-muted">No employees loaded yet.</td></tr>
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                        </section>
                     </div>
-                    <div class="col-lg-6">
-                        <div class="row">
-   <div class="col-lg-12">
-                        <div class="premium-panel">
-                            <div class="panel-title">Schedule Range</div>
-                            <div class="row g-3 align-items-end">
-                                <div class="col-md-5">
-                                    <label for="advance_start_date" class="form-label mb-1">Start Date</label>
+
+                    <div class="col-lg-7">
+                        {{-- Step 2: dates --}}
+                        <section class="asb-card">
+                            <div class="asb-card-head">
+                                <span class="asb-step">2</span>
+                                <div>
+                                    <h6>Pick the dates</h6>
+                                    <p>Only dates inside this range are changed. It must stay within the month you're viewing.</p>
+                                </div>
+                            </div>
+                            <div class="asb-range">
+                                <div>
+                                    <label for="advance_start_date" class="asb-label">From</label>
                                     <input type="date" id="advance_start_date" class="form-control range-input" required>
                                 </div>
-                                <div class="col-md-5">
-                                    <label for="advance_end_date" class="form-label mb-1">End Date</label>
+                                <div>
+                                    <label for="advance_end_date" class="asb-label">To</label>
                                     <input type="date" id="advance_end_date" class="form-control range-input" required>
                                 </div>
-                                <div class="col-md-2">
-                                    <span class="range-help d-block">Pick a custom range. Only dates inside the range will be scheduled.</span>
+                            </div>
+                            <div class="asb-quick">
+                                <button type="button" class="asb-chip" data-asb-range="month">Whole month</button>
+                                <button type="button" class="asb-chip" data-asb-range="today">Today to month end</button>
+                                <button type="button" class="asb-chip" data-asb-range="first">1st – 15th</button>
+                                <button type="button" class="asb-chip" data-asb-range="second">16th – month end</button>
+                            </div>
+                            <div id="advance_range_error" class="asb-error range-error"></div>
+
+                             {{-- Step 3: weekly pattern --}}
+                        <div class="mt-5">
+                            <div class="asb-card-head">
+                                <span class="asb-step">3</span>
+                                <div>
+                                    <h6>Set the weekly pattern</h6>
+                                    <p>Pick a schedule for each day of the week. It repeats on every matching date in the range.</p>
                                 </div>
                             </div>
-                            <div id="advance_range_error" class="range-error mt-2"></div>
-                        </div>
-                    </div>
-                    <div class="col-lg-12">
-                        <div class="premium-panel h-100">
-                            <div class="panel-title">Weekly Template</div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm align-middle weekly-table mb-0">
-                                    <thead>
-                                    <tr>
-                                        @php
-                                            $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-                                        @endphp
-                                        @foreach($days as $day)
-                                            <th>{{ $day }}</th>
-                                        @endforeach
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr>
-                                        @foreach($days as $day)
-                                            <td>
-                                                <select class="form-select form-select-sm advance-schedule-select" data-day="{{ $day }}">
-                                                    <option value="">-- Select --</option>
-                                                </select>
-                                            </td>
-                                        @endforeach
-                                    </tr>
-                                    </tbody>
-                                </table>
+
+                            <div class="asb-fill">
+                                <span class="asb-fill-label">Quick fill</span>
+                                <select class="form-select form-select-sm" id="advance_quick_schedule" aria-label="Schedule to fill">
+                                    <option value="">No schedule (clear)</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-asb-fill="weekdays">Mon – Fri</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-asb-fill="weekend">Sat – Sun</button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" data-asb-fill="all">Every day</button>
                             </div>
-                        </div>
+
+                            <div class="asb-days">
+                                @php
+                                    $days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+                                @endphp
+                                @foreach($days as $day)
+                                    <div class="asb-day {{ in_array($day, ['Saturday','Sunday']) ? 'is-weekend' : '' }}">
+                                        <label class="asb-day-name" for="advance_day_{{ strtolower($day) }}">
+                                            {{ $day }}
+                                            @if(in_array($day, ['Saturday','Sunday']))<small>Weekend</small>@endif
+                                        </label>
+                                        <select class="form-select form-select-sm advance-schedule-select" id="advance_day_{{ strtolower($day) }}" data-day="{{ $day }}">
+                                            <option value="">No schedule (clear)</option>
+                                        </select>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <div class="asb-note">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <span>A day set to <strong>No schedule (clear)</strong> removes any existing schedule on those dates for the selected employees.</span>
+                            </div>
+                        </section>
+                        </section>
+
+                       
                     </div>
-                        </div>
-                    </div>
-                 
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-success" id="save_advance_schedule" disabled>Apply Schedule</button>
+
+            <div class="modal-footer asb-footer">
+                <div class="asb-summary" id="advance_summary"></div>
+                <div class="d-flex gap-2 ms-auto">
+                    <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-modal-save" id="save_advance_schedule" disabled>
+                        <i class="bi bi-check2-circle me-1"></i>Apply schedule
+                    </button>
+                </div>
             </div>
         </div>
     </div>

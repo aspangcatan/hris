@@ -1,4 +1,8 @@
 <script>
+    function serviceDateToText(record) {
+        return record.current_work == 1 ? "Present" : moment(record.date_to).format("MM/DD/YYYY");
+    }
+
     function getServiceRecords(id) {
         if (is_service_loaded) return;
 
@@ -24,7 +28,7 @@
                     const tr = `
                 <tr id='service_` + it.id + `'>
                 <td>` + moment(it.date_from).format("MM/DD/YYYY") + `</td>
-                <td>` + moment(it.date_to).format("MM/DD/YYYY") + `</td>
+                <td>` + serviceDateToText(it) + `</td>
                 <td>` + it.designation + `</td>
                 <td>` + it.appointment_status + `</td>
                 <td>` + it.monthly_salary + `</td>
@@ -70,7 +74,7 @@
                     const tr = `
                 <tr id='service_` + data.id + `'>
                 <td>` + moment(params.date_from).format("MM/DD/YYYY") + `</td>
-                <td>` + moment(params.date_to).format("MM/DD/YYYY") + `</td>
+                <td>` + serviceDateToText(params) + `</td>
                 <td>` + params.designation + `</td>
                 <td>` + params.appointment_status + `</td>
                 <td>` + params.monthly_salary + `</td>
@@ -87,7 +91,7 @@
                     $("#service_records_list").append(tr);
                 } else {
                     $("#service_" + params.id + " td:eq(0)").text(moment(params.date_from).format("MM/DD/YYYY"));
-                    $("#service_" + params.id + " td:eq(1)").text(moment(params.date_to).format("MM/DD/YYYY"));
+                    $("#service_" + params.id + " td:eq(1)").text(serviceDateToText(params));
                     $("#service_" + params.id + " td:eq(2)").text(params.designation);
                     $("#service_" + params.id + " td:eq(3)").text(params.appointment_status);
                     $("#service_" + params.id + " td:eq(4)").text(params.monthly_salary);
@@ -99,6 +103,7 @@
                 service_id = 0;
                 $("#service_from").val("");
                 $("#service_to").val("");
+                $("#service_present").prop("checked", false).trigger("change");
                 $("#service_designation").val("");
                 $("#service_status").val("");
                 $("#service_salary").val("");
