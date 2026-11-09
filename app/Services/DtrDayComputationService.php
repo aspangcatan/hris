@@ -21,7 +21,9 @@ class DtrDayComputationService
      * @param Collection $logs dtr_logs rows (created_at, status) spanning
      *   $startDate minus one day through $endDate plus one day.
      * @param array $exemptions ['holidays' => [date => ['type'=>,'description'=>]],
-     *   'leaves' => [date => true], 'hospitalOrders' => [date => true],
+     *   'leaves' => [date => ['hours' => n] | true] (hours below the
+     *   schedule's work minutes = partial-day leave; true = full day),
+     *   'hospitalOrders' => [date => true],
      *   'passSlips' => [date => true], 'absenceExemptDates' => [date => true]].
      *   IMPORTANT: 'absenceExemptDates' is a *different* set than the other
      *   three, used only for is_absent - it must be pre-computed by the
@@ -152,6 +154,68 @@ class DtrDayComputationService
     }
 
     /**
+     * Leave minutes for one date's leave entry. Entries shaped ['hours' => n]
+     * (from printDTR and DTRServices) give n * 60; anything else (e.g. `true`
+     * for LWOP) returns null, meaning "treat as a full-day leave".
+     */
+    private function leaveMinutes($entry): ?int
+    {
+        if (is_array($entry) && isset($entry['hours']) && is_numeric($entry['hours'])) {
+            return (int) round(((float) $entry['hours']) * 60);
+        }
+
+        return null;
+    }
+
+    /**
+     * Minutes worked between first-in and last-out, counted only inside the
+     * schedule's window (time_in .. time_out_latest) and minus the scheduled
+     * break. Early arrivals before time_in and stays past time_out_latest
+     * don't count.
+     */
+    private function workedMinutesWithinSchedule($schedule, string $currentDay, $firstIn, $lastOut): int
+    {
+        $schedIn = Carbon::parse($currentDay . ' ' . $schedule->time_in);
+        $schedOut = Carbon::parse($currentDay . ' ' . $schedule->time_out);
+        if ($schedOut->lte($schedIn)) {
+            $schedOut->addDay();
+        }
+        $latestOut = !empty($schedule->time_out_latest)
+            ? Carbon::parse($currentDay . ' ' . $schedule->time_out_latest)
+            : $schedOut->copy();
+        if ($latestOut->lt($schedOut)) {
+            $latestOut->addDay();
+        }
+
+        $start = Carbon::parse($firstIn)->startOfMinute()->max($schedIn);
+        $end = Carbon::parse($lastOut)->startOfMinute()->min($latestOut);
+        if ($end->lte($start)) {
+            return 0;
+        }
+
+        $minutes = $start->diffInMinutes($end);
+
+        if (!empty($schedule->break_out) && !empty($schedule->break_in)) {
+            $breakOut = Carbon::parse($currentDay . ' ' . $schedule->break_out);
+            $breakIn = Carbon::parse($currentDay . ' ' . $schedule->break_in);
+            if ($breakOut->lt($schedIn)) {
+                $breakOut->addDay();
+            }
+            if ($breakIn->lte($breakOut)) {
+                $breakIn->addDay();
+            }
+
+            $overlapStart = $breakOut->copy()->max($start);
+            $overlapEnd = $breakIn->copy()->min($end);
+            if ($overlapEnd->gt($overlapStart)) {
+                $minutes -= $overlapStart->diffInMinutes($overlapEnd);
+            }
+        }
+
+        return max(0, $minutes);
+    }
+
+    /**
      * Extracted from DTRController::printDTR()'s per-day closure (lines
      * 886-1336 as of the pre-extraction version of that file). Presentational
      * fields (day_marker, planned_schedule text, off_label) are intentionally
@@ -209,6 +273,22 @@ class DtrDayComputationService
                 $renderedMinutes = max($scheduledSpanMinutes - $scheduledBreakMinutes, 0);
             }
         }
+
+        // Partial-day leave: the leave hours plus the hours actually worked
+        // must add up to the scheduled hours; any shortfall is undertime.
+        // A leave covering the whole schedule (or with unknown hours) keeps
+        // the old full-day exemption. Holidays, hospital orders and pass slips
+        // still exempt the whole day.
+        $leaveMinutes = $hasLeave ? $this->leaveMinutes($leaves[$currentDay]) : null;
+        $isPartialLeave = $leaveMinutes !== null
+            && $schedule
+            && !$isOffSchedule
+            && $renderedMinutes > 0
+            && $leaveMinutes < $renderedMinutes
+            && !$isHoliday
+            && !$hasHospitalOrder
+            && !$hasApprovedPassSlip
+            && !$skipAllAutomation;
 
         $lateMinutes = 0;
         $undertimeMinutes = 0;
@@ -535,6 +615,15 @@ class DtrDayComputationService
                     }
                 }
             }
+        }
+
+        if ($isPartialLeave) {
+            $workedMinutes = ($firstIn && $lastOut)
+                ? $this->workedMinutesWithinSchedule($schedule, $currentDay, $firstIn, $lastOut)
+                : 0;
+            $lateMinutes = 0;
+            $undertimeMinutes = max(0, $renderedMinutes - $leaveMinutes - $workedMinutes);
+            $exemptionReason = 'partial_leave';
         }
 
         // Absence mirrors buildPresentAbsentByRange()'s existing semantics

@@ -287,10 +287,10 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/cutoff-summaries/manage', function () {
         return view('settings.cutoff_summaries');
     })->name('cutoff_summaries')->middleware('permission:payroll.settings');
-    Route::get('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaries'])->name('getCutoffSummaries');
-    Route::post('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'createCutoffSummaries'])->name('createCutoffSummaries');
+    Route::get('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaries'])->name('getCutoffSummaries')->middleware('permission:payroll.settings');
+    Route::post('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'createCutoffSummaries'])->name('createCutoffSummaries')->middleware('permission:payroll.settings');
     Route::get('/cutoff-periods', [\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
-    Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview');
+    Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview')->middleware('permission:payroll.settings');
     Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
     Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
     Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits')->middleware('permission:leave.manage_credits');

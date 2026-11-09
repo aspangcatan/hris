@@ -225,7 +225,7 @@ class DTRServicesTest extends TestCase
     /** @test */
     public function it_pads_the_query_window_and_returns_only_dates_within_the_requested_range()
     {
-        DB::shouldReceive('table->join->where->where->whereRaw->whereBetween->pluck->map->unique->values->toArray')
+        DB::shouldReceive('table->join->where->where->whereRaw->where->whereBetween->pluck->map->unique->values->toArray')
             ->once()
             ->andReturn([
                 '2025-08-29', // Friday before the requested range - buffer-only, part of the same bridged run

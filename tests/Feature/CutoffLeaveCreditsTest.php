@@ -45,11 +45,17 @@ class CutoffLeaveCreditsTest extends TestCase
     {
         // These tables are MyISAM, so DatabaseTransactions rollback is a no-op — clean up explicitly.
         if ($this->masterId) {
+            DB::table('hris.cutoff_summary_days')->where('cutoff_id', $this->masterId)->delete();
             DB::table('hris.cutoff_summaries')->where('cutoff_id', $this->masterId)->delete();
             DB::table('hris.cutoff_summaries_master')->where('id', $this->masterId)->delete();
         }
         DB::table('hris.leave_credits')->where('user_id', $this->userId)->delete();
         DB::table('credit_earned_logs')->where('user_id', $this->userId)->delete();
+        $appIds = DB::table('hris.leave_applications')->where('user_id', $this->userId)->pluck('id');
+        DB::table('hris.leave_date_applied')->whereIn('leave_application_id', $appIds)->delete();
+        DB::table('hris.leave_applications')->whereIn('id', $appIds)->delete();
+        DB::table('hris.schedules')->where('employee_id', $this->userId)->delete();
+        DB::table('hris.dtr_logs')->where('userid', $this->userId)->delete();
 
         foreach ($this->originalPoints as $present => $points) {
             DB::table('monthly_earned_points')->where('present', $present)->update(['points' => $points]);
@@ -156,11 +162,220 @@ class CutoffLeaveCreditsTest extends TestCase
         $firstRunCredit = DB::table('hris.leave_credits')
             ->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
 
-        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', $payload)->assertOk();
+        // Second Save: nothing left to credit -> refused with a clear message.
+        $second = $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', $payload);
+        $second->assertStatus(422);
+        $this->assertStringContainsString('already credited for July 2027', $second->json('message'));
         $secondRunCredit = DB::table('hris.leave_credits')
             ->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
 
         $this->assertEqualsWithDelta((float) $firstRunCredit, (float) $secondRunCredit, 0.001);
+    }
+
+    /** @test */
+    public function reapplying_an_older_month_after_a_newer_one_does_not_double_credit()
+    {
+        $this->actAsAdmin();
+
+        $june = $this->seedCutoff('2027-06-01', '2027-06-30', 'June Order Test', 22, 22);
+        $juneMaster = $this->masterId;
+        $july = $this->seedCutoff('2027-07-01', '2027-07-31', 'July Order Test', 22, 22);
+
+        try {
+            $apply = fn($id) => $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
+                'cutoff_id' => $id, 'employees' => [$this->userId],
+            ]);
+
+            $first = $apply($june);
+            $first->assertOk();
+            $this->assertStringContainsString('posted to 1 employee', $first->json('message'));
+            $apply($july)->assertOk();
+            $afterBoth = (float) DB::table('hris.leave_credits')
+                ->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
+
+            // Used to credit June a second time (last_updated_month was July).
+            $apply($june)->assertStatus(422);
+            $afterRetry = (float) DB::table('hris.leave_credits')
+                ->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
+
+            $this->assertEqualsWithDelta($afterBoth, $afterRetry, 0.001);
+            $this->assertSame(1, DB::table('credit_earned_logs')
+                ->where('user_id', $this->userId)->where('year', 2027)->where('month', 6)->where('leave_type_id', 2)->count());
+        } finally {
+            DB::table('hris.cutoff_summaries')->where('cutoff_id', $juneMaster)->delete();
+            DB::table('hris.cutoff_summaries_master')->where('id', $juneMaster)->delete();
+        }
+    }
+
+    /** @test */
+    public function a_cutoff_with_no_attendance_cannot_be_credited()
+    {
+        $this->actAsAdmin();
+
+        $masterId = $this->seedCutoff('2027-08-01', '2027-08-31', 'Empty Attendance Test', 0, 22);
+
+        $preview = $this->withoutMiddleware()
+            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $masterId]));
+        $preview->assertOk();
+        $this->assertSame(1, $preview->json('to_credit'));
+        $this->assertStringContainsString('has any attendance', (string) $preview->json('message'));
+
+        $apply = $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
+            'cutoff_id' => $masterId, 'employees' => [$this->userId],
+        ]);
+        $apply->assertStatus(422);
+        $this->assertFalse(DB::table('credit_earned_logs')->where('user_id', $this->userId)->exists(),
+            'An empty cutoff must not post zeros (that would lock the month).');
+    }
+
+    /** @test */
+    public function job_order_employees_are_left_out_of_preview_and_apply()
+    {
+        $this->actAsAdmin();
+
+        $masterId = $this->seedCutoff('2027-08-01', '2027-08-31', 'August Test Cutoff', 20, 22);
+        // employees is InnoDB, so DatabaseTransactions rolls this row back.
+        DB::table('hris.employees')->insert(['user_id' => $this->userId, 'employee_type' => 'Job Order']);
+
+        $preview = $this->withoutMiddleware()
+            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $masterId]));
+        $preview->assertOk();
+        $this->assertNull(
+            collect($preview->json('data'))->firstWhere('employee_id', $this->userId),
+            'A Job Order employee must not appear in the earned-credits preview.'
+        );
+
+        // Even if the client sends the JO employee, the server must not credit
+        // them - with no one else in the cutoff there's nothing to post.
+        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
+            'cutoff_id' => $masterId,
+            'employees' => [$this->userId],
+        ])->assertStatus(422);
+
+        $this->assertFalse(
+            DB::table('hris.leave_credits')->where('user_id', $this->userId)->exists(),
+            'A Job Order employee must not receive earned credits.'
+        );
+    }
+
+    /** @test */
+    public function cancelled_leave_dates_are_not_counted_when_a_cutoff_is_generated()
+    {
+        // 2027-09-06..10 is Mon-Fri. Paid leave on Mon (active) + Tue (cancelled);
+        // LWOP on Wed (active) + Thu (cancelled).
+        $paidId = DB::table('hris.leave_applications')->insertGetId([
+            'user_id' => $this->userId, 'status' => 'Approved', 'is_lwop' => 0, 'created_at' => now(),
+        ]);
+        $lwopId = DB::table('hris.leave_applications')->insertGetId([
+            'user_id' => $this->userId, 'status' => 'Approved', 'is_lwop' => 1, 'created_at' => now(),
+        ]);
+        DB::table('hris.leave_date_applied')->insert([
+            ['leave_application_id' => $paidId, 'date_applied' => '2027-09-06', 'hours' => 8, 'status' => 'active'],
+            ['leave_application_id' => $paidId, 'date_applied' => '2027-09-07', 'hours' => 8, 'status' => 'cancelled'],
+            ['leave_application_id' => $lwopId, 'date_applied' => '2027-09-08', 'hours' => 8, 'status' => 'active'],
+            ['leave_application_id' => $lwopId, 'date_applied' => '2027-09-09', 'hours' => 8, 'status' => 'cancelled'],
+        ]);
+
+        $dtr = app(\App\Services\DTRServices::class);
+        $breakdown = $dtr->getCutoffBreakdown($this->userId, '2027-09-06', '2027-09-10');
+
+        $this->assertSame(1, $breakdown['approved_leave_days'], 'Cancelled paid-leave date must not count.');
+        $this->assertSame(1, $breakdown['lwop_days'], 'Cancelled LWOP date must not count.');
+        // No logs at all: only the active paid-leave Monday counts as present.
+        $this->assertSame(1, $dtr->getTotalPresentByRange($this->userId, '2027-09-06', '2027-09-10'));
+    }
+
+    /** @test */
+    public function partial_day_leave_plus_worked_hours_is_counted_in_cutoff_generation()
+    {
+        // Mon 2027-10-04 and Tue 2027-10-05 on 8S (08:00-17:00, 12-13 break).
+        $scheduleId = DB::table('hris.schedule_master_lists')->where('code', '8S')->value('id');
+        $this->assertNotNull($scheduleId, 'Needs the 8S schedule.');
+        foreach (['2027-10-04', '2027-10-05'] as $date) {
+            DB::table('hris.schedules')->insert([
+                'employee_id' => $this->userId, 'schedule_id' => $scheduleId,
+                'schedule_date' => $date, 'updated_by' => $this->userId, 'created_at' => now(),
+            ]);
+        }
+
+        // A 4-hour leave on both days.
+        $appId = DB::table('hris.leave_applications')->insertGetId([
+            'user_id' => $this->userId, 'status' => 'Approved', 'is_lwop' => 0, 'created_at' => now(),
+        ]);
+        DB::table('hris.leave_date_applied')->insert([
+            ['leave_application_id' => $appId, 'date_applied' => '2027-10-04', 'hours' => 4, 'status' => 'active'],
+            ['leave_application_id' => $appId, 'date_applied' => '2027-10-05', 'hours' => 4, 'status' => 'active'],
+        ]);
+
+        // Mon: worked 08:00-12:00 (complete). Tue: worked 13:30-17:00 (30 min short).
+        DB::table('hris.dtr_logs')->insert([
+            ['userid' => $this->userId, 'status' => 'IN',  'created_at' => '2027-10-04 08:00:00'],
+            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2027-10-04 12:00:00'],
+            ['userid' => $this->userId, 'status' => 'IN',  'created_at' => '2027-10-05 13:30:00'],
+            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2027-10-05 17:00:00'],
+        ]);
+
+        $dtr = app(\App\Services\DTRServices::class);
+        $breakdown = $dtr->getCutoffBreakdown($this->userId, '2027-10-04', '2027-10-05');
+
+        $this->assertSame(0, $breakdown['late_minutes']);
+        $this->assertSame(30, $breakdown['undertime_minutes']);
+        $this->assertSame(0, $breakdown['absences']);
+        $this->assertSame(2, $dtr->getTotalPresentByRange($this->userId, '2027-10-04', '2027-10-05'));
+    }
+
+    /** @test */
+    public function cww_employee_with_perfect_attendance_earns_the_full_credit()
+    {
+        $this->actAsAdmin();
+
+        // Mon-Thu CWW, Fri-Sun OFF (2027-11-08..14). Weekdays = 5, but the
+        // employee's own work days = 4.
+        $cww = DB::table('hris.schedule_master_lists')->where('code', 'CWW')->value('id');
+        $off = DB::table('hris.schedule_master_lists')->where('code', 'OFF')->value('id');
+        $this->assertNotNull($cww, 'Needs the CWW schedule.');
+        $this->assertNotNull($off, 'Needs the OFF schedule.');
+
+        $plan = [
+            '2027-11-08' => $cww, '2027-11-09' => $cww, '2027-11-10' => $cww, '2027-11-11' => $cww,
+            '2027-11-12' => $off, '2027-11-13' => $off, '2027-11-14' => $off,
+        ];
+        foreach ($plan as $date => $scheduleId) {
+            DB::table('hris.schedules')->insert([
+                'employee_id' => $this->userId, 'schedule_id' => $scheduleId,
+                'schedule_date' => $date, 'updated_by' => $this->userId, 'created_at' => now(),
+            ]);
+        }
+
+        // Perfect attendance on all 4 CWW days, plus a visit on the Friday rest
+        // day (must not count as an extra present day).
+        $logs = [];
+        foreach (['2027-11-08', '2027-11-09', '2027-11-10', '2027-11-11', '2027-11-12'] as $date) {
+            $logs[] = ['userid' => $this->userId, 'status' => 'IN',  'created_at' => "$date 07:00:00"];
+            $logs[] = ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => "$date 18:00:00"];
+        }
+        DB::table('hris.dtr_logs')->insert($logs);
+
+        $summary = app(\App\Services\PayrollServices::class)->generateCutoffSummary(
+            $this->userId, '2027-11-08', '2027-11-14', 'CWW Test Cutoff', $this->userId
+        );
+        $this->masterId = (int) $summary->cutoff_id;
+
+        $this->assertSame(5, (int) $summary->total_working_days, 'Plain weekday count is unchanged (payroll uses it).');
+        $this->assertSame(4, (int) $summary->scheduled_work_days);
+        $this->assertSame(4, (int) $summary->days_present, 'The rest-day visit is not a present day.');
+        $this->assertSame(0, (int) $summary->days_absent);
+
+        $preview = $this->withoutMiddleware()
+            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]));
+        $preview->assertOk();
+        $row = collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
+        $this->assertNotNull($row);
+
+        // 4 of 4 scheduled days -> lookup key 30 (full credit), not round(4/5*30) = 24.
+        $fullPoints = (float) DB::table('monthly_earned_points')->where('present', 30)->value('points');
+        $this->assertSame(4, $row['work_days']);
+        $this->assertEqualsWithDelta($fullPoints, (float) $row['earned_points'], 0.001);
     }
 
     /** @test */

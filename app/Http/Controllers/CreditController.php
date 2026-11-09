@@ -50,7 +50,16 @@ class CreditController extends Controller
                 return response()->json(['success' => false, 'message' => 'Cutoff period not found.'], 422);
             }
 
-            return response()->json(['success' => true, 'data' => $computed['employees']]);
+            $toCredit = $computed['employees']->where('already_credited', false)->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => $computed['employees'],
+                'period_label' => $computed['period_label'],
+                'to_credit' => $toCredit,
+                // Shown by the page when Save would post nothing.
+                'message' => $this->nothingToCreditMessage($computed),
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
@@ -71,8 +80,20 @@ class CreditController extends Controller
                 return response()->json(['success' => false, 'message' => 'Cutoff period not found.'], 422);
             }
 
+            $nothingMessage = $this->nothingToCreditMessage($computed);
+            if ($nothingMessage !== null) {
+                return response()->json(['success' => false, 'message' => $nothingMessage], 422);
+            }
+
+            $credited = 0;
+            $skipped = 0;
             foreach ($computed['employees'] as $employee) {
-                $this->leaveCreditService->updateEarnedCredits(
+                if ($employee['already_credited']) {
+                    $skipped++;
+                    continue;
+                }
+
+                $posted = $this->leaveCreditService->updateEarnedCredits(
                     $employee['employee_id'],
                     $computed['year'],
                     $computed['month'],
@@ -81,12 +102,55 @@ class CreditController extends Controller
                     $employee['earned_points'],
                     $employee['deducted_points']
                 );
+
+                // 0 = someone else credited this employee a moment ago.
+                $posted > 0 ? $credited++ : $skipped++;
             }
 
-            return response()->json(['success' => true, 'message' => 'Leave credits earned updated.']);
+            $message = "Leave credits earned for {$computed['period_label']} were posted to {$credited} "
+                . ($credited === 1 ? 'employee' : 'employees') . '.';
+            if ($skipped > 0) {
+                $message .= " {$skipped} already credited for {$computed['period_label']} "
+                    . ($skipped === 1 ? 'was' : 'were') . ' skipped.';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'credited' => $credited,
+                'skipped' => $skipped,
+            ]);
         } catch (\Exception $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
+    }
+
+    /**
+     * Why Save would post nothing for this cutoff, or null if at least one
+     * employee can be credited. Credits need at least one employee who isn't
+     * credited for the month yet, and at least one of those with attendance -
+     * so an empty cutoff (no logs yet) can't post zeros and lock the month.
+     */
+    private function nothingToCreditMessage(array $computed): ?string
+    {
+        $employees = $computed['employees'];
+        $label = $computed['period_label'];
+
+        if ($employees->isEmpty()) {
+            return "There are no employees to credit in this cutoff for {$label}.";
+        }
+
+        $pending = $employees->where('already_credited', false);
+        if ($pending->isEmpty()) {
+            return "All employees in this cutoff were already credited for {$label}. Nothing was posted.";
+        }
+
+        if ($pending->where('total_present', '>', 0)->isEmpty()) {
+            return "None of the employees still to be credited for {$label} has any attendance in this cutoff. "
+                . 'Check that the time logs are complete, regenerate the cutoff, then try again.';
+        }
+
+        return null;
     }
 
     /**
@@ -109,7 +173,17 @@ class CreditController extends Controller
         $table = $this->payrollServices->getCutoffSummaryTableName();
         $query = DB::table($table . ' as cs')
             ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+            ->leftJoin('hris.employees as e', 'e.user_id', '=', 'cs.employee_id')
             ->where('cs.cutoff_id', $cutoffId)
+            // Job Order employees don't earn VL/SL credits. The current marker is
+            // employees.employee_type; users.status = 'JO' is an older one, still
+            // left on a few rows.
+            ->where(function ($q) {
+                $q->whereNull('e.employee_type')->orWhere('e.employee_type', '<>', 'Job Order');
+            })
+            ->where(function ($q) {
+                $q->whereNull('u.status')->orWhere('u.status', '<>', 'JO');
+            })
             ->select('cs.*', 'u.fname', 'u.mname', 'u.lname', 'u.suffix');
 
         if (!empty($employeeIds)) {
@@ -120,9 +194,21 @@ class CreditController extends Controller
         $month = (int) $period->format('m');
         $year = (int) $period->format('Y');
 
-        $employees = $query->orderBy('u.lname')->get()->map(function ($summary) use ($month, $year) {
+        $rows = $query->orderBy('u.lname')->get();
+        $alreadyCredited = array_flip($this->leaveCreditService->alreadyCreditedUserIds(
+            $rows->pluck('employee_id')->map(fn($id) => (int) $id)->all(),
+            $year,
+            $month
+        ));
+
+        $employees = $rows->map(function ($summary) use ($month, $year, $alreadyCredited) {
             $totalPresent = (int) ($summary->days_present ?? 0);
-            $totalWorkingDays = (int) ($summary->total_working_days ?? 0);
+            // The employee's own scheduled work days (CWW/shift = fewer days),
+            // so perfect attendance always earns the full 1.250. Cutoffs
+            // generated before this column existed have 0 - fall back to the
+            // plain weekday count until they are regenerated.
+            $totalWorkingDays = (int) ($summary->scheduled_work_days ?? 0)
+                ?: (int) ($summary->total_working_days ?? 0);
             $totalLateUndertime = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
 
             $result = $this->leaveCreditService->computeEarnedCredits(
@@ -141,13 +227,21 @@ class CreditController extends Controller
                 'employee_id' => $summary->employee_id,
                 'name' => $fullName,
                 'total_present' => $result['total_present'],
+                'work_days' => $totalWorkingDays,
                 'total_late_undertime' => $result['total_late_undertime'],
                 'earned_points' => $result['monthly_points_earned'],
                 'deducted_points' => $result['total_deductions'],
                 'net_points' => $result['net_points'],
+                'already_credited' => isset($alreadyCredited[(int) $summary->employee_id]),
             ];
         })->values();
 
-        return ['master' => $master, 'month' => $month, 'year' => $year, 'employees' => $employees];
+        return [
+            'master' => $master,
+            'month' => $month,
+            'year' => $year,
+            'period_label' => $period->format('F Y'),
+            'employees' => $employees,
+        ];
     }
 }

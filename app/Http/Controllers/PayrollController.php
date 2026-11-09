@@ -594,6 +594,38 @@ class PayrollController extends Controller
                 'employees.*' => 'required|integer',
             ]);
 
+            // A cutoff covers one calendar month at most (half-month ranges are
+            // fine), and only the previous month can be generated - the team
+            // generates last month's cutoff around the 10th of the next month.
+            $start = \Carbon\Carbon::parse($validated['start_date']);
+            $end = \Carbon\Carbon::parse($validated['end_date']);
+            if ($start->format('Y-m') !== $end->format('Y-m')) {
+                throw ValidationException::withMessages([
+                    'end_date' => 'The start and end dates must be in the same month.',
+                ]);
+            }
+            $previousMonth = now()->startOfMonth()->subMonth();
+            if ($start->format('Y-m') !== $previousMonth->format('Y-m')) {
+                throw ValidationException::withMessages([
+                    'start_date' => 'Cutoffs can only be generated for the previous month ('
+                        . $previousMonth->format('F Y') . ').',
+                ]);
+            }
+
+            // Resigned and retired employees are never included in a cutoff.
+            $separated = DB::table('hris.employees')
+                ->whereIn('user_id', $validated['employees'])
+                ->whereIn('employee_type', ['Resigned', 'Retired'])
+                ->pluck('user_id')
+                ->map(fn($id) => (int) $id)
+                ->all();
+            $validated['employees'] = array_values(array_diff(array_map('intval', $validated['employees']), $separated));
+            if (empty($validated['employees'])) {
+                throw ValidationException::withMessages([
+                    'employees' => 'All selected employees are resigned or retired. Select at least one active employee.',
+                ]);
+            }
+
             $table = $this->payrollServices->getCutoffSummaryTableName();
             $master = $this->payrollServices->getOrCreateCutoffMaster(
                 $validated['start_date'],
@@ -628,11 +660,19 @@ class PayrollController extends Controller
                 }
             });
 
-            return response()->json(['success' => true, 'message' => 'Cutoff summaries generated.']);
+            $message = 'Cutoff summaries generated for ' . count($validated['employees'])
+                . (count($validated['employees']) === 1 ? ' employee.' : ' employees.');
+            if (!empty($separated)) {
+                $message .= ' ' . count($separated) . ' resigned/retired '
+                    . (count($separated) === 1 ? 'employee was' : 'employees were') . ' left out.';
+            }
+
+            return response()->json(['success' => true, 'message' => $message]);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed.',
+                // Show the actual reason (e.g. "previous month only") on the page.
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $exception) {
@@ -658,8 +698,12 @@ class PayrollController extends Controller
     public function getCutoffSummaryPreview(Request $request)
     {
         try {
-            $startDate = $request->query('start_date');
-            $endDate = $request->query('end_date');
+            // Rows are looked up by cutoff ID: two cutoffs can share the same
+            // dates (e.g. one per office), so dates alone would mix them.
+            $cutoffId = (int) $request->query('cutoff_id');
+            if ($cutoffId <= 0) {
+                return response()->json(['success' => false, 'message' => 'Cutoff ID is required.'], 422);
+            }
             $employees = $request->query('employees', []);
 
             if (is_string($employees)) {
@@ -682,12 +726,7 @@ class PayrollController extends Controller
                     'u.suffix'
                 );
 
-            if (!empty($startDate)) {
-                $query->where('cm.period_start', $startDate);
-            }
-            if (!empty($endDate)) {
-                $query->where('cm.period_end', $endDate);
-            }
+            $query->where('cs.cutoff_id', $cutoffId);
             if (!empty($employees)) {
                 $query->whereIn('cs.employee_id', $employees);
             }

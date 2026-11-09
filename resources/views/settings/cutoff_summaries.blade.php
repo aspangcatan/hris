@@ -204,6 +204,7 @@
                             <thead>
                             <tr>
                                 <th>Employee</th>
+                                <th title="The employee's own work days in this cutoff (rest days and holidays excluded)">Scheduled Days</th>
                                 <th>Days Present</th>
                                 <th>Days Absent</th>
                                 <th>Late (mins)</th>
@@ -217,7 +218,7 @@
                             </thead>
                             <tbody id="cutoff_detail_body">
                             <tr>
-                                <td colspan="10" class="text-muted text-center">No cutoff summaries found.</td>
+                                <td colspan="11" class="text-muted text-center">No cutoff summaries found.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -244,21 +245,23 @@
                             aria-label="Close"></button>
                 </div>
                 <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
+                    <div class="alert alert-warning d-none" id="leave_credits_notice" role="alert"></div>
                     <div class="table-responsive">
                         <table class="table align-middle text-center saln-table-premium">
                             <thead>
                             <tr>
                                 <th>Employee</th>
-                                <th>Total Present</th>
+                                <th>Present / Work Days</th>
                                 <th>Late/Undertime (mins)</th>
                                 <th>Earned Points</th>
                                 <th>Deducted Points</th>
                                 <th>Net Points</th>
+                                <th>Status</th>
                             </tr>
                             </thead>
                             <tbody id="leave_credits_body">
                             <tr>
-                                <td colspan="6" class="text-muted text-center">No data computed.</td>
+                                <td colspan="7" class="text-muted text-center">No data computed.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -281,6 +284,7 @@
         let cutoffPeriods = [];
         let currentCutoffDetail = {id: null, start: null, end: null, title: null};
         let leaveCreditPreview = [];
+        let leaveCreditsCanSave = false;
         $(document).ready(function () {
             loadCutoffPeriods();
 
@@ -333,7 +337,7 @@
             }
 
             cutoffPeriods.forEach(item => {
-                const title = item.remarks || `Cutoff ${item.period_start} - ${item.period_end}`;
+                const title = item.title || `Cutoff ${item.period_start} - ${item.period_end}`;
                 const row = `
                     <tr data-title="${title.toLowerCase()}">
                         <td>${title}</td>
@@ -388,7 +392,7 @@
                 return;
             }
 
-            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}`)
+            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}&exclude_separated=1`)
                 .then(response => response.json())
                 .then(data => {
                     const $tbody = $("#cutoff_employee_body");
@@ -471,7 +475,7 @@
                     const payload = isJson ? await res.json() : await res.text();
                     if (!res.ok) {
                         const message = isJson
-                            ? (payload.message || "Request failed.")
+                            ? (payload.message || (res.status === 403 ? "You do not have permission to generate cutoffs." : payload.error) || "Request failed.")
                             : (payload || "Request failed.");
                         throw new Error(message);
                     }
@@ -515,6 +519,15 @@
             $("#cutoff_title").val("");
             $("#cutoff_modal_start_date").val("");
             $("#cutoff_modal_end_date").val("");
+            // Only last month can be generated (the server enforces this too).
+            const today = new Date();
+            const pad = n => String(n).padStart(2, "0");
+            const firstPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const lastPrev = new Date(today.getFullYear(), today.getMonth(), 0);
+            const toIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            $("#cutoff_modal_start_date, #cutoff_modal_end_date")
+                .attr("min", toIso(firstPrev))
+                .attr("max", toIso(lastPrev));
             $("#cutoff_search_name").val("");
             $("#cutoff_select_all").prop("checked", false);
             $("#cutoff_employee_body").empty()
@@ -543,7 +556,7 @@
             $("#cutoff_detail_title").text(title);
             $("#cutoff_detail_start").text(formatDisplayDate(start));
             $("#cutoff_detail_end").text(formatDisplayDate(end));
-            loadCutoffDetails(start, end);
+            loadCutoffDetails(id);
             $("#cutoff_detail_modal").modal("show");
         });
 
@@ -555,10 +568,9 @@
             saveLeaveCredits();
         });
 
-        function loadCutoffDetails(startDate, endDate) {
+        function loadCutoffDetails(cutoffId) {
             const params = new URLSearchParams();
-            if (startDate) params.append("start_date", startDate);
-            if (endDate) params.append("end_date", endDate);
+            params.append("cutoff_id", cutoffId);
 
             fetch(`{{ route('getCutoffSummaryPreview') }}?${params.toString()}`)
                 .then(res => res.json())
@@ -566,7 +578,7 @@
                     const $tbody = $("#cutoff_detail_body");
                     $tbody.empty();
                     if (!data.success || !data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='10' class='text-muted text-center'>No cutoff summaries found.</td></tr>");
+                        $tbody.append("<tr><td colspan='11' class='text-muted text-center'>No cutoff summaries found.</td></tr>");
                         return;
                     }
 
@@ -577,6 +589,7 @@
                         const row = `
                             <tr>
                                 <td>${fullName}</td>
+                                <td>${Number(item.scheduled_work_days) > 0 ? item.scheduled_work_days : '<span class="text-muted" title="Regenerate this cutoff to fill this in">—</span>'}</td>
                                 <td>${item.days_present ?? 0}</td>
                                 <td>${item.days_absent ?? 0}</td>
                                 <td>${item.late_minutes ?? 0}</td>
@@ -612,26 +625,45 @@
                     const $tbody = $("#leave_credits_body");
                     $tbody.empty();
                     leaveCreditPreview = [];
+                    leaveCreditsCanSave = false;
 
-                    if (!data.success || !data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='6' class='text-muted text-center'>No data computed.</td></tr>");
+                    if (!data.success) {
+                        toastr.error(data.message || data.error || "Failed to compute leave credits.", "Error");
                         return;
                     }
 
-                    leaveCreditPreview = data.data;
-                    data.data.forEach(item => {
-                        const row = `
-                            <tr>
-                                <td>${formatEmployeeName(item.name)}</td>
-                                <td>${item.total_present ?? 0}</td>
-                                <td>${item.total_late_undertime ?? 0}</td>
-                                <td>${formatThreeDecimals(item.earned_points)}</td>
-                                <td>${formatThreeDecimals(item.deducted_points)}</td>
-                                <td>${formatThreeDecimals(item.net_points)}</td>
-                            </tr>`;
-                        $tbody.append(row);
-                    });
+                    // Nothing to post (no employees, all already credited, or no attendance):
+                    // tell the user and keep Save disabled.
+                    const notice = data.message || "";
+                    $("#leave_credits_notice").toggleClass("d-none", !notice).text(notice);
+                    if (notice) {
+                        toastr.warning(notice, "Nothing to credit");
+                    }
+                    leaveCreditsCanSave = !notice;
 
+                    if (!data.data || !data.data.length) {
+                        $tbody.append("<tr><td colspan='7' class='text-muted text-center'>No employees to credit.</td></tr>");
+                    } else {
+                        leaveCreditPreview = data.data;
+                        data.data.forEach(item => {
+                            const status = item.already_credited
+                                ? `<span class="badge bg-secondary">Already credited</span>`
+                                : `<span class="badge bg-success">To be credited</span>`;
+                            const row = `
+                                <tr class="${item.already_credited ? 'text-muted' : ''}">
+                                    <td>${formatEmployeeName(item.name)}</td>
+                                    <td>${item.total_present ?? 0} / ${item.work_days ?? 0}</td>
+                                    <td>${item.total_late_undertime ?? 0}</td>
+                                    <td>${formatThreeDecimals(item.earned_points)}</td>
+                                    <td>${formatThreeDecimals(item.deducted_points)}</td>
+                                    <td>${formatThreeDecimals(item.net_points)}</td>
+                                    <td>${status}</td>
+                                </tr>`;
+                            $tbody.append(row);
+                        });
+                    }
+
+                    $("#btn_save_leave_credits").prop("disabled", !leaveCreditsCanSave);
                     $("#leave_credits_modal").modal("show");
                 })
                 .catch(err => {
@@ -646,6 +678,11 @@
         function saveLeaveCredits() {
             if (!currentCutoffDetail.id) {
                 toastr.error("Cutoff period is not set.", "Validation");
+                return;
+            }
+
+            if (!leaveCreditsCanSave || !leaveCreditPreview.length) {
+                toastr.warning($("#leave_credits_notice").text() || "There is no one to credit in this cutoff.", "Nothing to credit");
                 return;
             }
 
@@ -666,10 +703,11 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        toastr.success(data.message || "Leave credits updated.", "Information");
+                        toastr.success(data.message || "Leave credits posted.", "Information");
                         $("#leave_credits_modal").modal("hide");
                     } else {
-                        toastr.error(data.message || "Failed to update leave credits.", "Error");
+                        // e.g. everyone was already credited, or nobody has attendance.
+                        toastr.warning(data.message || data.error || "No leave credits were posted.", "Nothing posted");
                     }
                 })
                 .catch(err => {
@@ -678,6 +716,7 @@
                 })
                 .finally(() => {
                     setButtonLoading($button, false, "Save");
+                    $button.prop("disabled", !leaveCreditsCanSave);
                 });
         }
 

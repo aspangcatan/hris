@@ -117,6 +117,12 @@ class EmployeeController extends Controller
                     if ($type)
                         $query->where('e.employee_type', '=', $type);
                 })
+                // Used by the cutoff generator: resigned/retired staff are never in a cutoff.
+                ->when($request->boolean('exclude_separated'), function ($query) {
+                    $query->where(function ($q) {
+                        $q->whereNull('e.employee_type')->orWhereNotIn('e.employee_type', ['Resigned', 'Retired']);
+                    });
+                })
                 ->orderBy('u.fname', 'ASC')
                 ->orderBy('u.lname', 'ASC')
                 ->get(['e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 'u.picture', 'd.description as designation']);

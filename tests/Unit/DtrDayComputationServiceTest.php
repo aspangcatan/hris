@@ -196,4 +196,92 @@ class DtrDayComputationServiceTest extends TestCase
         $this->assertEquals(255, $result['2027-06-02']['late_minutes']);
         $this->assertEquals(0, $result['2027-06-02']['undertime_minutes']);
     }
+
+    /**
+     * Partial-day leave on an 8S day (08:00-17:00, 12-13 break = 480 work minutes).
+     * Returns the computed day for a 4-hour leave plus the given logs.
+     */
+    private function computePartialLeaveDay(array $logs, $leaveEntry = ['hours' => 4], array $extraExemptions = []): array
+    {
+        $day = '2027-05-03';
+        $schedules = collect([$day => $this->schedule('08:00:00', '17:00:00', '12:00:00', '13:00:00')]);
+        $exemptions = array_merge([
+            'leaves' => [$day => $leaveEntry],
+            'absenceExemptDates' => [$day => true],
+        ], $extraExemptions);
+
+        return $this->service->computeRange(9501, $day, $day, $schedules, collect($logs), $exemptions)[$day];
+    }
+
+    /** @test */
+    public function four_hour_leave_plus_four_worked_hours_is_a_complete_day(): void
+    {
+        // Morning worked, afternoon on leave.
+        $am = $this->computePartialLeaveDay([
+            $this->log('2027-05-03 08:00:00', 'IN'),
+            $this->log('2027-05-03 12:00:00', 'OUT'),
+        ]);
+        $this->assertEquals(0, $am['late_minutes']);
+        $this->assertEquals(0, $am['undertime_minutes']);
+        $this->assertFalse($am['is_absent']);
+        $this->assertSame('partial_leave', $am['exemption_reason']);
+
+        // Morning on leave, afternoon worked.
+        $pm = $this->computePartialLeaveDay([
+            $this->log('2027-05-03 13:00:00', 'IN'),
+            $this->log('2027-05-03 17:00:00', 'OUT'),
+        ]);
+        $this->assertEquals(0, $pm['late_minutes']);
+        $this->assertEquals(0, $pm['undertime_minutes']);
+    }
+
+    /** @test */
+    public function partial_leave_shortfall_becomes_undertime(): void
+    {
+        // 4h leave + 13:30-17:00 (3.5h worked) = 30 minutes short.
+        $result = $this->computePartialLeaveDay([
+            $this->log('2027-05-03 13:30:00', 'IN'),
+            $this->log('2027-05-03 17:00:00', 'OUT'),
+        ]);
+
+        $this->assertEquals(0, $result['late_minutes']);
+        $this->assertEquals(30, $result['undertime_minutes']);
+    }
+
+    /** @test */
+    public function partial_leave_with_no_logs_charges_the_uncovered_hours_as_undertime_not_absence(): void
+    {
+        $result = $this->computePartialLeaveDay([]);
+
+        $this->assertEquals(240, $result['undertime_minutes']);
+        $this->assertFalse($result['is_absent']);
+    }
+
+    /** @test */
+    public function work_outside_the_schedule_window_does_not_fill_a_partial_leave(): void
+    {
+        // 06:00-10:00: only 08:00-10:00 is inside the schedule -> 2h worked, 2h short.
+        $result = $this->computePartialLeaveDay([
+            $this->log('2027-05-03 06:00:00', 'IN'),
+            $this->log('2027-05-03 10:00:00', 'OUT'),
+        ]);
+
+        $this->assertEquals(120, $result['undertime_minutes']);
+    }
+
+    /** @test */
+    public function full_day_leave_lwop_and_holiday_keep_the_whole_day_exemption(): void
+    {
+        $fullDay = $this->computePartialLeaveDay([], ['hours' => 8]);
+        $this->assertEquals(0, $fullDay['undertime_minutes']);
+        $this->assertSame('leave', $fullDay['exemption_reason']);
+
+        $lwop = $this->computePartialLeaveDay([], true);
+        $this->assertEquals(0, $lwop['undertime_minutes']);
+
+        $holiday = $this->computePartialLeaveDay([], ['hours' => 4], [
+            'holidays' => ['2027-05-03' => ['type' => 'Regular', 'description' => 'Test Holiday']],
+        ]);
+        $this->assertEquals(0, $holiday['undertime_minutes']);
+    }
 }

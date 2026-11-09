@@ -57,7 +57,32 @@ class LeaveCreditService
         }
     }
 
-    public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes, $earnedPoints, $deductionPoints)
+    /**
+     * Employee ids (from $userIds) that already have earned credits posted for
+     * this month/year - for any monthly-earned leave type.
+     */
+    public function alreadyCreditedUserIds(array $userIds, int $year, int $month): array
+    {
+        if (empty($userIds)) {
+            return [];
+        }
+
+        return DB::table('credit_earned_logs')
+            ->whereIn('user_id', $userIds)
+            ->where('year', $year)
+            ->where('month', $month)
+            ->distinct()
+            ->pluck('user_id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Posts one month's earned credits to every monthly-earned leave type.
+     * Returns how many leave types were actually credited (0 = the month was
+     * already credited for this employee, nothing changed).
+     */
+    public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes, $earnedPoints, $deductionPoints): int
     {
         $leaveTypes = DB::table('hris.leave_types')
             ->where('status', 'active')
@@ -66,6 +91,7 @@ class LeaveCreditService
 
 
         $date_updated = $year . '-' . $month;
+        $posted = 0;
 
         foreach ($leaveTypes as $leaveType) {
             // Late/undertime is charged only to types flagged deduct_tardiness (VL);
@@ -73,11 +99,24 @@ class LeaveCreditService
             $typeDeduction = (int) ($leaveType->deduct_tardiness ?? 0) === 1 ? $deductionPoints : 0;
             $creditedPoints = round($earnedPoints - $typeDeduction, 3);
 
-            DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent) {
+            DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent, &$posted) {
                 // Lock the employee's credit rows (the same rows a leave filing locks), then check
                 // "already processed this month?" under that lock - so a double-clicked Apply
                 // cannot credit the month twice.
                 DB::table('hris.leave_credits')->where('user_id', $userid)->lockForUpdate()->get(['id']);
+
+                // The posting log is the record of every month ever credited.
+                // (leave_credits.last_updated_month only holds the LATEST month,
+                // so re-applying an older month used to credit it a second time.)
+                $alreadyCredited = DB::table('credit_earned_logs')
+                    ->where('user_id', $userid)
+                    ->where('year', $year)
+                    ->where('month', $month)
+                    ->where('leave_type_id', $leaveType->id)
+                    ->exists();
+                if ($alreadyCredited) {
+                    return;
+                }
 
                 $credit = DB::table('hris.leave_credits')
                     ->where('user_id', $userid)
@@ -85,7 +124,7 @@ class LeaveCreditService
                     ->first(['id', 'last_updated_month']);
 
                 if ($credit && $credit->last_updated_month === $date_updated) {
-                    return; // already credited for this month
+                    return; // older postings made before every month was logged
                 }
 
                 if ($credit) {
@@ -115,7 +154,11 @@ class LeaveCreditService
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                $posted++;
             });
         }
+
+        return $posted;
     }
 }

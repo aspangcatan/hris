@@ -86,9 +86,20 @@ class DTRServices
             true
         );
 
+        // Paid leave carries its filed hours so a partial-day leave only covers
+        // part of the schedule; LWOP (incl. absorbed weekends/holidays) stays a
+        // full-day exemption.
+        $leaves = [];
+        foreach ($this->getApprovedLeaveHoursByRange($userid, $start_date, $end_date) as $date => $hours) {
+            $leaves[$date] = ['hours' => $hours];
+        }
+        foreach ($lwopDates as $date) {
+            $leaves[$date] = true;
+        }
+
         return [
             'holidays' => $holidays,
-            'leaves' => array_fill_keys(array_unique(array_merge($leaveDates, $lwopDates)), true),
+            'leaves' => $leaves,
             'hospitalOrders' => $hospitalOrders,
             'passSlips' => $passSlips,
             'absenceExemptDates' => $absenceExemptDates,
@@ -100,6 +111,21 @@ class DTRServices
         [$presentDays] = $this->buildPresentAbsentByRange($userid, $start_date, $end_date);
 
         return count($presentDays);
+    }
+
+    /**
+     * The employee's own work days in the range: plotted, non-OFF, non-holiday
+     * schedule dates (e.g. 18 for a Mon-Thu CWW month instead of 22 weekdays).
+     * Falls back to non-holiday weekdays when nothing is plotted. This is the
+     * same date set days present is counted against, so perfect attendance
+     * always gives present == scheduled work days.
+     */
+    public function getScheduledWorkDaysByRange($userid, $start_date, $end_date): int
+    {
+        $holidays = $this->getHolidayDatesByRange($start_date, $end_date);
+        $schedules = $this->mapSchedules($this->getEmployeePlottedSchedules($userid, $start_date, $end_date));
+
+        return count($this->resolveExpectedWorkDates($schedules, $start_date, $end_date, $holidays));
     }
 
     private function buildPresentAbsentByRange($userid, $start_date, $end_date)
@@ -187,6 +213,7 @@ class DTRServices
         $scheduleMap = [];
         foreach ($plottedSchedules as $schedule) {
             $scheduleMap[$schedule->schedule_date] = [
+                'code' => $schedule->code ?? null,
                 'type' => $schedule->type ?? 'FIXED',
                 'time_in' => $schedule->time_in,
                 'time_out' => $schedule->time_out,
@@ -221,6 +248,12 @@ class DTRServices
             return collect(array_keys($schedules))
                 ->reject(function ($date) use ($holidays) {
                     return in_array($date, $holidays, true);
+                })
+                // Rest days (OFF) aren't work days - same rule the DTR day
+                // computation already uses for absences.
+                ->reject(function ($date) use ($schedules) {
+                    $code = trim((string) ($schedules[$date]['code'] ?? ''));
+                    return $code !== '' && strtoupper($code) === 'OFF';
                 })
                 ->values()
                 ->all();
@@ -361,12 +394,34 @@ class DTRServices
             ->where('la.user_id', $userid)
             ->where('la.is_lwop', 0)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
+            ->where('lda.status', 'active') // cancelled dates no longer count as leave
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
             ->pluck('lda.date_applied')
             ->map(function ($date) {
                 return Carbon::parse($date)->toDateString();
             })
             ->toArray();
+    }
+
+    /** [date => total filed hours] for approved, active, non-LWOP leave dates. */
+    private function getApprovedLeaveHoursByRange($userid, $startDate, $endDate): array
+    {
+        $hours = [];
+        $rows = DB::table('hris.leave_applications as la')
+            ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+            ->where('la.user_id', $userid)
+            ->where('la.is_lwop', 0)
+            ->whereRaw('LOWER(la.status) = ?', ['approved'])
+            ->where('lda.status', 'active')
+            ->whereBetween('lda.date_applied', [$startDate, $endDate])
+            ->get(['lda.date_applied', 'lda.hours']);
+
+        foreach ($rows as $row) {
+            $date = Carbon::parse($row->date_applied)->toDateString();
+            $hours[$date] = ($hours[$date] ?? 0) + (int) $row->hours;
+        }
+
+        return $hours;
     }
 
     private function getApprovedLwopDatesByRange($userid, $startDate, $endDate)
@@ -379,6 +434,7 @@ class DTRServices
             ->where('la.user_id', $userid)
             ->where('la.is_lwop', 1)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
+            ->where('lda.status', 'active') // cancelled dates no longer count as LWOP
             ->whereBetween('lda.date_applied', [$bufferedStart, $bufferedEnd])
             ->pluck('lda.date_applied')
             ->map(function ($date) {

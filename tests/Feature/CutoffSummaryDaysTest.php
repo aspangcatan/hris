@@ -63,12 +63,19 @@ class CutoffSummaryDaysTest extends TestCase
             ['userid' => $this->userId, 'status' => 'OUT', 'type' => 2, 'created_at' => '2027-06-01 17:00:00', 'updated_at' => '2027-06-01 17:00:00'],
         ]);
 
-        $response = $this->withoutMiddleware()->postJson('/cutoff-summaries', [
-            'title' => 'CSD Test Cutoff',
-            'start_date' => '2027-06-01',
-            'end_date' => '2027-06-01',
-            'employees' => [$this->userId],
-        ]);
+        // Cutoffs can only be generated for the previous month: pretend it's
+        // July 10, 2027, when the team would generate June's cutoff.
+        \Illuminate\Support\Carbon::setTestNow('2027-07-10 09:00:00');
+        try {
+            $response = $this->withoutMiddleware()->postJson('/cutoff-summaries', [
+                'title' => 'CSD Test Cutoff',
+                'start_date' => '2027-06-01',
+                'end_date' => '2027-06-01',
+                'employees' => [$this->userId],
+            ]);
+        } finally {
+            \Illuminate\Support\Carbon::setTestNow();
+        }
         $response->assertOk();
 
         $this->masterId = DB::table('hris.cutoff_summaries_master')
