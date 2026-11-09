@@ -57,9 +57,17 @@ class ServiceRecordsController extends Controller
                 return response(['code' => 500, 'message' => 'Only .xlsx or .xls files are accepted.']);
             }
 
-            $result = app(ServiceRecordExcelParser::class)->parse($file->getRealPath(), (int) $request->user_id);
+            $startCol = strtoupper(trim((string) $request->input('start_col', ServiceRecordExcelParser::FIRST_COLUMN)));
+            $startRow = $request->input('start_row', ServiceRecordExcelParser::FIRST_DATA_ROW);
+            $endCol = strtoupper(trim((string) $request->input('end_col', ServiceRecordExcelParser::LAST_COLUMN)));
+            $endRow = $request->input('end_row', $startRow);
+            if ($error = ServiceRecordExcelParser::rangeError($startCol, $startRow, $endCol, $endRow)) {
+                return response(['code' => 500, 'message' => $error]);
+            }
+
+            $result = app(ServiceRecordExcelParser::class)->parse($file->getRealPath(), (int) $request->user_id, $startCol, (int) $startRow, $endCol, (int) $endRow);
             if (count($result['rows']) === 0) {
-                return response(['code' => 500, 'message' => 'No service record rows found. Data is expected to start at row 13 (columns H to O).']);
+                return response(['code' => 500, 'message' => "No service record rows found. Expected a date in {$startCol}{$startRow} (range {$startCol}{$startRow} to {$endCol}{$endRow})."]);
             }
 
             return response(array_merge(['code' => 200, 'file_name' => $file->getClientOriginalName()], $result));

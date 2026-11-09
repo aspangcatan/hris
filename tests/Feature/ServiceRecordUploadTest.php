@@ -7,6 +7,7 @@ use App\Models\ServiceRecords;
 use App\Services\ServiceRecordExcelParser;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -40,8 +41,13 @@ class ServiceRecordUploadTest extends TestCase
     /**
      * Builds a workbook laid out like SERVICE_RECORD_TEMPLATE.xlsx (header H10, data from H13, footer after).
      */
-    private function makeWorkbook(array $name = ['PANGCATAN', 'ASNAUI', 'OPTINA']): string
+    private function makeWorkbook(array $name = ['PANGCATAN', 'ASNAUI', 'OPTINA'], string $startCol = 'H', int $startRow = 13): string
     {
+        $startIndex = Coordinate::columnIndexFromString($startCol);
+        $cols = [];
+        for ($i = 0; $i < 9; $i++) {
+            $cols[] = Coordinate::stringFromColumnIndex($startIndex + $i);
+        }
         $book = new Spreadsheet();
         $ws = $book->getActiveSheet();
         $ws->setCellValue('H1', 'SERVICE RECORD');
@@ -65,17 +71,17 @@ class ServiceRecordUploadTest extends TestCase
             // bad To date
             ['02/01/2026', 'sometime', 'Administrative Assistant II', 'Casual', 1000, $office, null, null, null],
         ];
-        $r = 13;
+        $r = $startRow;
         foreach ($rows as $row) {
-            foreach (['H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'] as $i => $col) {
+            foreach ($cols as $i => $col) {
                 if ($row[$i] !== null) {
                     $ws->setCellValue($col . $r, $row[$i]);
                 }
             }
             $r++;
         }
-        $ws->setCellValue('H' . $r, 'Issued in compliance with Executive Order No. 54 dated August 10, 1954.');
-        $ws->setCellValue('H' . ($r + 2), 'DATE ISSUED : January 23, 2026');
+        $ws->setCellValue($cols[0] . $r, 'Issued in compliance with Executive Order No. 54 dated August 10, 1954.');
+        $ws->setCellValue($cols[0] . ($r + 2), 'DATE ISSUED : January 23, 2026');
 
         $path = tempnam(sys_get_temp_dir(), 'srx') . '.xlsx';
         (new Xlsx($book))->save($path);
@@ -164,6 +170,54 @@ class ServiceRecordUploadTest extends TestCase
         $response->assertOk();
         $this->assertSame(200, $response->json('code'));
         $this->assertCount(4, $response->json('rows'));
+    }
+
+    /** @test */
+    public function parser_reads_from_a_custom_range()
+    {
+        $path = $this->makeWorkbook(['PANGCATAN', 'ASNAUI', 'OPTINA'], 'B', 20);
+        $rows = app(ServiceRecordExcelParser::class)->parse($path, $this->userId, 'B', 20, 'I', 20)['rows'];
+
+        $this->assertCount(4, $rows);
+        $this->assertSame(20, $rows[0]['row']);
+        $this->assertSame('2023-07-17', $rows[0]['date_from']);
+        $this->assertSame('2023-12-31', $rows[0]['date_to']);
+        $this->assertSame('Administrative Assistant I', $rows[0]['designation']);
+        $this->assertSame('223440', $rows[0]['monthly_salary']);
+        $this->assertSame('Promoted', $rows[1]['separation']);
+        $this->assertSame(1, $rows[2]['current_work']);
+    }
+
+    /** @test */
+    public function parse_upload_uses_the_requested_range()
+    {
+        $file = new UploadedFile($this->makeWorkbook(['PANGCATAN', 'ASNAUI', 'OPTINA'], 'c', 5), 'X.xlsx', null, null, true);
+        $request = Request::create('/service_records/parse', 'POST', [
+            'user_id' => $this->userId, 'start_col' => 'c', 'start_row' => 5, 'end_col' => 'J', 'end_row' => 5,
+        ], [], ['file' => $file]);
+
+        $data = json_decode(app(ServiceRecordsController::class)->parseUpload($request)->getContent(), true);
+
+        $this->assertSame(200, $data['code']);
+        $this->assertCount(4, $data['rows']);
+        $this->assertSame(5, $data['rows'][0]['row']);
+    }
+
+    /** @test */
+    public function parse_upload_rejects_an_invalid_range()
+    {
+        $bad = [
+            ['start_col' => 'H', 'start_row' => 13, 'end_col' => 'N', 'end_row' => 13],   // 7 columns
+            ['start_col' => 'H', 'start_row' => 13, 'end_col' => 'O', 'end_row' => 14],   // different rows
+            ['start_col' => 'H1', 'start_row' => 13, 'end_col' => 'O', 'end_row' => 13],  // bad column
+            ['start_col' => 'H', 'start_row' => 0, 'end_col' => 'O', 'end_row' => 0],     // bad row
+        ];
+        foreach ($bad as $range) {
+            $file = new UploadedFile($this->makeWorkbook(), 'X.xlsx', null, null, true);
+            $request = Request::create('/service_records/parse', 'POST', array_merge(['user_id' => $this->userId], $range), [], ['file' => $file]);
+            $data = json_decode(app(ServiceRecordsController::class)->parseUpload($request)->getContent(), true);
+            $this->assertSame(500, $data['code'], json_encode($range));
+        }
     }
 
     /** @test */

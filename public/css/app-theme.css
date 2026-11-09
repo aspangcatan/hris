@@ -1525,10 +1525,24 @@
 .theme-v2 .sru-modal .sru-footer { justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
 .theme-v2 .sru-modal .sru-footer-note { font-size: 0.8125rem; color: var(--on-surface-variant); }
 
+/* Reading-range step (#service_range_modal) */
+.theme-v2 .sru-modal .sru-range { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }
+.theme-v2 .sru-modal .sru-range-group {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 0.625rem;
+    padding: 0.875rem 1rem; background: var(--surface);
+    border: 1px solid var(--line); border-radius: var(--radius);
+}
+.theme-v2 .sru-modal .sru-range-heading { grid-column: 1 / -1; font-weight: 600; color: var(--on-surface); }
+.theme-v2 .sru-modal .sru-col { text-transform: uppercase; }
+.theme-v2 .sru-modal .sru-range-hint { margin-top: 0.875rem; font-size: 0.8125rem; color: var(--on-surface-variant); }
+.theme-v2 .sru-modal .sru-range-hint code { color: var(--primary); font-weight: 600; }
+.theme-v2 .sru-modal #sru_range_error { margin-top: 0.75rem; }
+
 @media (max-width: 991.98px) {
     .theme-v2 .sru-modal .sru-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 575.98px) {
     .theme-v2 .sru-modal .sru-grid { grid-template-columns: 1fr; }
+    .theme-v2 .sru-modal .sru-range { grid-template-columns: 1fr; }
     .theme-v2 .sru-modal .sru-field.sru-wide { grid-column: auto; }
 }

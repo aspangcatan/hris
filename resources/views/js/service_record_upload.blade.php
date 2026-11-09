@@ -1,5 +1,76 @@
 <script>
-    /* Service record Excel upload: parse → review cards → Confirm All. Uses employee_id from js/employee. */
+    /* Service record Excel upload: set range → parse → review cards → Confirm All. Uses employee_id from js/employee. */
+    const SRU_RANGE_DEFAULT = {start_col: "H", start_row: "13", end_col: "O", end_row: "13"};
+    const SRU_RANGE_KEY = "hris.serviceRecordUploadRange";
+    const SRU_FIELD_COUNT = 8; // From, To, Designation, Status, Salary, Office, Leave, Separation
+
+    function sruColIndex(col) {
+        return col.split("").reduce((n, ch) => n * 26 + (ch.charCodeAt(0) - 64), 0);
+    }
+
+    function sruLoadRange() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(SRU_RANGE_KEY) || "null");
+            if (saved && saved.start_col) return saved;
+        } catch (e) {}
+        return SRU_RANGE_DEFAULT;
+    }
+
+    function sruSaveRange(range) {
+        try { localStorage.setItem(SRU_RANGE_KEY, JSON.stringify(range)); } catch (e) {}
+    }
+
+    function sruFillRange(range) {
+        $("#sru_start_col").val(range.start_col);
+        $("#sru_start_row").val(range.start_row);
+        $("#sru_end_col").val(range.end_col);
+        $("#sru_end_row").val(range.end_row);
+        sruCheckRange();
+    }
+
+    function sruReadRange() {
+        return {
+            start_col: $("#sru_start_col").val().trim().toUpperCase(),
+            start_row: $("#sru_start_row").val().trim(),
+            end_col: $("#sru_end_col").val().trim().toUpperCase(),
+            end_row: $("#sru_end_row").val().trim(),
+        };
+    }
+
+    /** Mirrors ServiceRecordExcelParser::rangeError; returns a message or "". */
+    function sruRangeError(r) {
+        if (!/^[A-Z]{1,3}$/.test(r.start_col) || !/^[A-Z]{1,3}$/.test(r.end_col)) return "Columns must be letters only (e.g. H).";
+        if (!/^[1-9]\d*$/.test(r.start_row) || !/^[1-9]\d*$/.test(r.end_row)) return "Rows must be whole numbers starting at 1.";
+        if (r.start_row !== r.end_row) return "Starting and ending row must be the same — the range describes the first data row.";
+        const span = sruColIndex(r.end_col) - sruColIndex(r.start_col) + 1;
+        if (span !== SRU_FIELD_COUNT) {
+            return `The range must cover exactly ${SRU_FIELD_COUNT} columns (From, To, Designation, Status, Salary, Office, Leave, Separation); ${r.start_col} to ${r.end_col} covers ${span}.`;
+        }
+        return "";
+    }
+
+    /** Shows the error or a reading preview; returns the range when valid, else null. */
+    function sruCheckRange() {
+        const r = sruReadRange();
+        const error = sruRangeError(r);
+        $("#sru_range_error").toggleClass("d-none", !error).text(error);
+        $("#btn_sru_choose_file").prop("disabled", !!error);
+        if (error) {
+            $("#sru_range_hint").empty();
+            return null;
+        }
+        const next = Number(r.start_row) + 1;
+        $("#sru_range_hint").html(
+            `Reads <code>${r.start_col}${r.start_row}:${r.end_col}${r.end_row}</code>, then <code>${r.start_col}${next}:${r.end_col}${next}</code>, and so on, ` +
+            `stopping at the first row where column <code>${r.start_col}</code> is not a date.`
+        );
+        return r;
+    }
+
+    function openServiceRange() {
+        sruFillRange(sruLoadRange());
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("service_range_modal")).show();
+    }
     const SRU_REQUIRED = {
         date_from: "From date is required",
         designation: "Designation is required",
@@ -125,13 +196,16 @@
     }
 
     function uploadServiceRecordFile(file) {
-        const $btn = $("#btn_upload_service_records");
+        const range = sruCheckRange();
+        if (!range) return;
+        const $btn = $("#btn_sru_choose_file");
         const originalHtml = $btn.html();
         $btn.prop("disabled", true).html('<span class="spinner-border spinner-border-sm me-1"></span>Reading...');
 
         const form = new FormData();
         form.append("file", file);
         form.append("user_id", employee_id);
+        Object.entries(range).forEach(([k, v]) => form.append(k, v));
 
         fetch('{{ route('parseServiceRecordUpload') }}', {
             method: "POST",
@@ -141,9 +215,11 @@
             .then(res => res.json())
             .then(data => {
                 if (data.code != 200) {
-                    toastr.error(data.message || "Could not read the file", "Upload");
+                    $("#sru_range_error").removeClass("d-none").text(data.message || "Could not read the file");
                     return;
                 }
+                sruSaveRange(range);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById("service_range_modal")).hide();
                 openServiceUpload(data);
             })
             .catch(err => {
@@ -194,7 +270,21 @@
     }
 
     $(function () {
-        $("#btn_upload_service_records").on("click", () => $("#service_upload_input").val("").trigger("click"));
+        $("#btn_upload_service_records").on("click", openServiceRange);
+        $("#btn_sru_choose_file").on("click", () => {
+            if (sruCheckRange()) $("#service_upload_input").val("").trigger("click");
+        });
+        $("#btn_sru_range_reset").on("click", () => sruFillRange(SRU_RANGE_DEFAULT));
+        $("#sru_start_col, #sru_end_col").on("input", function () {
+            $(this).val($(this).val().toUpperCase().replace(/[^A-Z]/g, ""));
+            sruCheckRange();
+        });
+        // Ending row follows the starting row; both describe the same first data row.
+        $("#sru_start_row").on("input", function () {
+            $("#sru_end_row").val($(this).val());
+            sruCheckRange();
+        });
+        $("#sru_end_row").on("input", sruCheckRange);
         $("#service_upload_input").on("change", function () {
             if (this.files.length) uploadServiceRecordFile(this.files[0]);
         });
