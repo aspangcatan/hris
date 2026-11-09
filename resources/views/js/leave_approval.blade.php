@@ -266,7 +266,7 @@
         renderLeaveAttachments(data);
 
         $('#dates_applied_body').html(data.dates.map(d =>
-            `<tr><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hrs</td><td>${renderDateDisapproveCell(d, data.current_approval_role)}</td></tr>`
+            `<tr><td>${renderWorkScheduleCell(d)}</td><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${formatLeaveDuration(d)}</td><td>${renderDateDisapproveCell(d, data.current_approval_role)}</td></tr>`
         ).join(""));
 
         $('#step0').toggleClass('d-none', !data.approvals.hr_compliance);

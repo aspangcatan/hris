@@ -87,8 +87,8 @@ class DTRServices
         // part of the schedule; LWOP (incl. absorbed weekends/holidays) stays a
         // full-day exemption.
         $leaves = [];
-        foreach ($this->getApprovedLeaveHoursByRange($userid, $start_date, $end_date) as $date => $hours) {
-            $leaves[$date] = ['hours' => $hours];
+        foreach ($this->getApprovedLeaveEntriesByRange($userid, $start_date, $end_date) as $date => $entry) {
+            $leaves[$date] = $entry;
         }
         foreach ($lwopDates as $date) {
             $leaves[$date] = true;
@@ -401,24 +401,37 @@ class DTRServices
     }
 
     /** [date => total filed hours] for approved, active, non-LWOP leave dates. */
-    private function getApprovedLeaveHoursByRange($userid, $startDate, $endDate): array
+    /**
+     * [date => leave entry] for approved, active, non-LWOP leave dates, in the shape
+     * DtrDayComputationService expects:
+     *  - hour-based types: ['hours' => n] (fewer hours than the schedule = partial-day leave)
+     *  - day-based types : true for a whole day (covers the whole schedule, whatever its
+     *                      length), ['fraction' => 0.5] for a half day (half the schedule)
+     */
+    private function getApprovedLeaveEntriesByRange($userid, $startDate, $endDate): array
     {
-        $hours = [];
+        $entries = [];
         $rows = DB::table('hris.leave_applications as la')
             ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
+            ->leftJoin('hris.leave_types as lt', 'lt.id', '=', 'lda.leave_type_id')
             ->where('la.user_id', $userid)
             ->where('la.is_lwop', 0)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
             ->where('lda.status', 'active')
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
-            ->get(['lda.date_applied', 'lda.hours']);
+            ->get(['lda.date_applied', 'lda.hours', 'lt.deduction_unit']);
 
         foreach ($rows as $row) {
             $date = Carbon::parse($row->date_applied)->toDateString();
-            $hours[$date] = ($hours[$date] ?? 0) + (int) $row->hours;
+            if (strtolower((string) $row->deduction_unit) === 'days') {
+                $entries[$date] = (int) $row->hours >= 8 ? true : ['fraction' => 0.5];
+                continue;
+            }
+            $previous = is_array($entries[$date] ?? null) ? (int) ($entries[$date]['hours'] ?? 0) : 0;
+            $entries[$date] = ['hours' => $previous + (int) $row->hours];
         }
 
-        return $hours;
+        return $entries;
     }
 
     private function getApprovedLwopDatesByRange($userid, $startDate, $endDate)

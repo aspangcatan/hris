@@ -126,7 +126,7 @@ class LeaveController extends Controller
             }
 
             // Fetch all active leave types
-            $leave_types = DB::table('leave_types')->where('status', 'active')->get(['id', 'description', 'code', 'days_prior', 'commutation']);
+            $leave_types = DB::table('leave_types')->where('status', 'active')->get(['id', 'description', 'code', 'days_prior', 'commutation', 'deduction_unit']);
 
             // Initialize leave credits array
             $leave_credits = [];
@@ -158,6 +158,7 @@ class LeaveController extends Controller
                     'code'         => $type->code,
                     'days_prior'   => (int) ($type->days_prior ?? 0),
                     'commutation'  => (int) ($type->commutation ?? 0),
+                    'deduction_unit' => $type->deduction_unit ?? 'hours',
                     'balance'      => number_format($computed_balance, 3),
                 ];
             }
@@ -172,20 +173,47 @@ class LeaveController extends Controller
     public function insertUpdateLeaveType(Request $request)
     {
         try {
-            DB::table('leave_types')->updateOrInsert([
-                'description' => $request->description,
-            ], [
-                'code'           => $request->code,
+            $description = trim((string) $request->description);
+            $code = trim((string) $request->code);
+            if ($description === '' || $code === '') {
+                return response()->json(['error' => 'Description and code are required.'], 422);
+            }
+
+            // Editing (inline in the list) updates the row by id, so a renamed type stays the
+            // same type. Matching by description used to insert a duplicate on rename.
+            $id = (int) $request->id;
+            $duplicate = DB::table('leave_types')
+                ->where(fn($q) => $q->where('description', $description)->orWhere('code', $code))
+                ->when($id > 0, fn($q) => $q->where('id', '<>', $id))
+                ->exists();
+            if ($duplicate) {
+                return response()->json(['error' => 'Another leave type already uses this description or code.'], 422);
+            }
+
+            $values = [
+                'description'    => $description,
+                'code'           => $code,
                 'status'         => $request->status ?? 'active',
                 'monthly_earned' => $request->monthly_earned ?? 1,
                 'deduct_tardiness' => $request->deduct_tardiness ?? 0,
+                'deduction_unit' => in_array($request->deduction_unit, ['hours', 'days'], true) ? $request->deduction_unit : 'hours',
                 'monetizable'    => $request->monetizable ?? 0,
                 'days_prior'         => $request->days_prior ?? 0,
                 'commutation'        => $request->commutation ?? 0,
                 'default_credit'     => $request->default_credit,
                 'min_monetize_days'  => $request->min_monetize_days,
                 'min_retained_days'  => $request->min_retained_days,
-            ]);
+            ];
+
+            if ($id > 0) {
+                if (!DB::table('leave_types')->where('id', $id)->exists()) {
+                    return response()->json(['error' => 'Leave type not found.'], 404);
+                }
+                DB::table('leave_types')->where('id', $id)->update($values);
+                return response()->json(['message' => 'Leave type updated']);
+            }
+
+            DB::table('leave_types')->insert($values);
             return response()->json(['message' => 'Leave type successfully stored']);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);

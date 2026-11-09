@@ -702,15 +702,19 @@ class DTRController extends Controller
                     ->whereMonth('lda.date_applied', $month)
                     ->whereYear('lda.date_applied', $year)
                     ->where('la.status', 'Approved')
-                    ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code', 'lda.hours')
+                    ->select(DB::raw('DATE(lda.date_applied) as date_applied'), 'lt.code', 'lda.hours', 'lt.deduction_unit')
                     ->get();
 
                 $leaves = [];
                 foreach ($leavesRaw as $l) {
-                    $leaves[Carbon::parse($l->date_applied)->toDateString()] = [
+                    // Day-based leave (Wellness, SPL...): a whole day covers the whole schedule
+                    // (hours = null), a half day covers half of it - same as cutoff generation.
+                    $isDayBased = strtolower((string) $l->deduction_unit) === 'days';
+                    $leaves[Carbon::parse($l->date_applied)->toDateString()] = array_filter([
                         'code' => $l->code,
-                        'hours' => $l->hours
-                    ];
+                        'hours' => $isDayBased ? null : $l->hours,
+                        'fraction' => $isDayBased && (int) $l->hours < 8 ? 0.5 : null,
+                    ], fn($v) => $v !== null);
                 }
 
                 // H.O

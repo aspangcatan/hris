@@ -507,6 +507,81 @@ class LeaveCreditIntegrityTest extends TestCase
         $this->assertEquals(5.0, $this->typeBalance($vlId), 'both VL parts came back');
     }
 
+    // ============================================ leave settings: inline edit saves by id
+
+    /** @test */
+    public function editing_a_leave_type_updates_the_same_row_and_refuses_duplicates(): void
+    {
+        $controller = app(\App\Http\Controllers\LeaveController::class);
+        $before = DB::table('hris.leave_types')->count();
+        $fields = [
+            'id' => $this->leaveTypeId, 'code' => 'CRITEST', 'status' => 'active', 'monthly_earned' => 0,
+            'deduct_tardiness' => 0, 'deduction_unit' => 'days', 'monetizable' => 0, 'days_prior' => 0, 'commutation' => 0,
+        ];
+
+        // Rename: same id, no new row (matching by description used to insert a duplicate).
+        $response = $controller->insertUpdateLeaveType(new Request($fields + ['description' => 'Cri Test Leave Renamed']));
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame($before, DB::table('hris.leave_types')->count());
+        $row = DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->first();
+        $this->assertSame('Cri Test Leave Renamed', $row->description);
+        $this->assertSame('days', $row->deduction_unit);
+
+        // Another type's code is refused.
+        $response = $controller->insertUpdateLeaveType(new Request(array_merge($fields, ['description' => 'Whatever', 'code' => 'VL'])));
+        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame('CRITEST', DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->value('code'));
+
+        DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->update(['description' => 'Cri Test Leave', 'deduction_unit' => 'hours']);
+    }
+
+    // ============================================ day-based leave types (deduction_unit = days)
+
+    /** @test */
+    public function day_based_leave_deducts_per_day_whatever_the_hours(): void
+    {
+        DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->update(['deduction_unit' => 'days']);
+        try {
+            // Whole day (8) + half day (4) = 1.5 days, not 1.5 "points of 12 hours".
+            $appId = app(LeaveApplicationService::class)->insertLeaveApplication([
+                'commutation' => 'Not Requested',
+                'dates' => [
+                    ['date_applied' => '2027-03-01', 'hours' => 8, 'leave_type_id' => $this->leaveTypeId],
+                    ['date_applied' => '2027-03-02', 'hours' => 4, 'leave_type_id' => $this->leaveTypeId],
+                ],
+                'applicant_signature' => $this->sig,
+            ])['app_id'];
+
+            $this->assertEquals(8.5, $this->balance());
+            $this->assertEquals([1.0, 0.5], DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)
+                ->orderBy('date_applied')->pluck('credits_deducted')->map(fn($v) => (float) $v)->all());
+
+            // A 10-hour entry is not allowed for a day-based type.
+            try {
+                app(LeaveApplicationService::class)->insertLeaveApplication([
+                    'commutation' => 'Not Requested',
+                    'dates' => [['date_applied' => '2027-03-03', 'hours' => 10, 'leave_type_id' => $this->leaveTypeId]],
+                    'applicant_signature' => $this->sig,
+                ]);
+                $this->fail('Expected a 10-hour day-based date to be refused');
+            } catch (\Exception $e) {
+                $this->assertStringContainsString('filed per day', $e->getMessage());
+            }
+            $this->assertEquals(8.5, $this->balance(), 'nothing deducted by the refused filing');
+
+            // Hour-based types still use the CSC conversion: 10 hours = 1.250.
+            DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->update(['deduction_unit' => 'hours']);
+            app(LeaveApplicationService::class)->insertLeaveApplication([
+                'commutation' => 'Not Requested',
+                'dates' => [['date_applied' => '2027-03-04', 'hours' => 10, 'leave_type_id' => $this->leaveTypeId]],
+                'applicant_signature' => $this->sig,
+            ]);
+            $this->assertEquals(7.25, $this->balance());
+        } finally {
+            DB::table('hris.leave_types')->where('id', $this->leaveTypeId)->update(['deduction_unit' => 'hours']);
+        }
+    }
+
     // ==================================================== LWOP flag on edit (review #6)
 
     /** @test */

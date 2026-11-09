@@ -159,12 +159,16 @@ class DtrDayComputationService
     }
 
     /**
-     * Leave minutes for one date's leave entry. Entries shaped ['hours' => n]
-     * (from printDTR and DTRServices) give n * 60; anything else (e.g. `true`
-     * for LWOP) returns null, meaning "treat as a full-day leave".
+     * Leave minutes for one date's leave entry:
+     *  - ['hours' => n]        (hour-based leave)  -> n * 60
+     *  - ['fraction' => 0.5]   (day-based half day) -> that share of the day's scheduled minutes
+     *  - anything else (`true` for LWOP or a day-based whole day) -> null = full-day leave
      */
-    private function leaveMinutes($entry): ?int
+    private function leaveMinutes($entry, int $renderedMinutes = 0): ?int
     {
+        if (is_array($entry) && isset($entry['fraction']) && is_numeric($entry['fraction'])) {
+            return $renderedMinutes > 0 ? (int) round($renderedMinutes * (float) $entry['fraction']) : null;
+        }
         if (is_array($entry) && isset($entry['hours']) && is_numeric($entry['hours'])) {
             return (int) round(((float) $entry['hours']) * 60);
         }
@@ -367,7 +371,7 @@ class DtrDayComputationService
         // A leave covering the whole schedule (or with unknown hours) keeps
         // the old full-day exemption. Holidays, hospital orders and pass slips
         // still exempt the whole day.
-        $leaveMinutes = $hasLeave ? $this->leaveMinutes($leaves[$currentDay]) : null;
+        $leaveMinutes = $hasLeave ? $this->leaveMinutes($leaves[$currentDay], $renderedMinutes) : null;
         $isPartialLeave = $leaveMinutes !== null
             && $schedule
             && !$isOffSchedule

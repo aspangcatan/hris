@@ -383,7 +383,7 @@ class LeaveApplicationService
 
             $leaveTypes = DB::table('leave_types')
                 ->whereIn('id', $leaveIds)
-                ->get(['id', 'description', 'days_prior', 'status'])
+                ->get(['id', 'description', 'days_prior', 'status', 'deduction_unit'])
                 ->keyBy('id');
 
             $this->assertValidFiling($leaveIds, $leaveTypes, $dates, $appId ?? null);
@@ -494,7 +494,7 @@ class LeaveApplicationService
 
             $leaveTypes = DB::table('leave_types')
                 ->whereIn('id', $leaveIds)
-                ->get(['id', 'description', 'days_prior', 'status'])
+                ->get(['id', 'description', 'days_prior', 'status', 'deduction_unit'])
                 ->keyBy('id');
 
             $this->assertValidFiling($leaveIds, $leaveTypes, $dates, $appId ?? null);
@@ -563,6 +563,14 @@ class LeaveApplicationService
      */
     private function planCharges(array $dates, $leaveTypes, bool $isLwop, array $giveBack = []): array
     {
+        // Day-based types are filed per whole day (8) or half day (4) only.
+        foreach ($dates as $d) {
+            $type = $leaveTypes[(int) $d['leave_type_id']] ?? null;
+            if ($this->isDayBased($type) && !in_array((int) $d['hours'], [4, 8], true)) {
+                throw new \Exception("{$type->description} is filed per day: choose Whole day or Half day for each date.");
+            }
+        }
+
         $rows = [];
         if ($isLwop) {
             foreach (array_keys($dates) as $i) {
@@ -600,7 +608,7 @@ class LeaveApplicationService
 
         foreach ($order as $i) {
             $typeId = (int) $dates[$i]['leave_type_id'];
-            $credits = $this->minuteConversionService->computeDeduction(((int) $dates[$i]['hours']) * 60);
+            $credits = $this->creditsForDate($leaveTypes[$typeId] ?? null, (int) $dates[$i]['hours']);
             $own = $credits;
             $fallback = 0.0;
 
@@ -647,6 +655,26 @@ class LeaveApplicationService
         }
 
         return ['rows' => $rows, 'byType' => array_filter($byType, fn($amount) => $amount > 0)];
+    }
+
+    /** Day-based leave types are deducted per day, not by hours (leave_types.deduction_unit). */
+    private function isDayBased($leaveType): bool
+    {
+        return $leaveType && strtolower((string) ($leaveType->deduction_unit ?? 'hours')) === 'days';
+    }
+
+    /**
+     * Credits one filed date costs. Hour-based types use the CSC conversion (8 hours = 1.000,
+     * 10 hours = 1.250); day-based types cost 1.000 per whole day (stored as 8) and 0.500 per
+     * half day (stored as 4), whatever the employee's shift length.
+     */
+    private function creditsForDate($leaveType, int $hours): float
+    {
+        if ($this->isDayBased($leaveType)) {
+            return $hours >= 8 ? 1.0 : 0.5;
+        }
+
+        return $this->minuteConversionService->computeDeduction($hours * 60);
     }
 
     /** @param array<int, float> $byType */
@@ -749,6 +777,7 @@ class LeaveApplicationService
                 'lda.leave_type_id',
                 'lda.status',
                 'lt.description as leave_type_name',
+                'lt.deduction_unit',
                 'lda.sh_flagged_disapprove',
                 'lda.sh_disapproval_remark',
                 'lda.final_disapproved',

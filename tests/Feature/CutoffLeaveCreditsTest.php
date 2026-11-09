@@ -462,6 +462,34 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
+    public function a_whole_day_of_day_based_leave_covers_a_ten_hour_day_in_cutoff_generation()
+    {
+        // CWW day (10 work hours), a whole day of Wellness (day-based), no logs.
+        $cww = DB::table('hris.schedule_master_lists')->where('code', 'CWW')->value('id');
+        $wellness = DB::table('hris.leave_types')->where('deduction_unit', 'days')->value('id');
+        $this->assertNotNull($cww, 'Needs the CWW schedule.');
+        $this->assertNotNull($wellness, 'Needs a day-based leave type.');
+
+        DB::table('hris.schedules')->insert([
+            'employee_id' => $this->userId, 'schedule_id' => $cww,
+            'schedule_date' => '2027-12-13', 'updated_by' => $this->userId, 'created_at' => now(),
+        ]);
+        $appId = DB::table('hris.leave_applications')->insertGetId([
+            'user_id' => $this->userId, 'status' => 'Approved', 'is_lwop' => 0, 'created_at' => now(),
+        ]);
+        DB::table('hris.leave_date_applied')->insert([
+            'leave_application_id' => $appId, 'leave_type_id' => $wellness,
+            'date_applied' => '2027-12-13', 'hours' => 8, 'status' => 'active',
+        ]);
+
+        $breakdown = app(\App\Services\DTRServices::class)->getCutoffBreakdown($this->userId, '2027-12-13', '2027-12-13');
+
+        // Filed as "8" (whole day) but the day is 10 hours: still no undertime, no absence.
+        $this->assertSame(0, $breakdown['undertime_minutes']);
+        $this->assertSame(0, $breakdown['absences']);
+    }
+
+    /** @test */
     public function preview_rejects_a_nonexistent_cutoff_id()
     {
         $this->actAsAdmin();

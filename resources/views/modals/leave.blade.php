@@ -88,6 +88,7 @@
                                     <li>Half day: select <strong>4</strong> (deducts 0.500 day)</li>
                                 </ul>
                                 <div class="mt-1">If you file fewer hours than your schedule, the hours not covered are counted as undertime.</div>
+                                <div class="mt-1">Leaves counted per day (e.g. Wellness, Special Privilege) are filed as <strong>Whole day</strong> or <strong>Half day</strong> instead: 1 day deducts 1.000 whatever your schedule.</div>
                             </div>
                         </div>
 
@@ -305,10 +306,11 @@
                         <table class="table lv-table mb-0">
                             <thead>
                             <tr>
-                                <th style="width: 30%;">Leave type</th>
-                                <th style="width: 20%;">Date</th>
-                                <th style="width: 15%;">Duration</th>
-                                <th style="width: 35%;">{{ $isLeaveApproval ? 'Disapprove' : 'Status' }}</th>
+                                <th style="width: 24%;">Work Schedule</th>
+                                <th style="width: 22%;">Leave type</th>
+                                <th style="width: 15%;">Date</th>
+                                <th style="width: 11%;">Duration</th>
+                                <th style="width: 28%;">{{ $isLeaveApproval ? 'Disapprove' : 'Status' }}</th>
                             </tr>
                             </thead>
                             <tbody id="dates_applied_body"></tbody>
@@ -408,6 +410,38 @@
 
     function lvEscape(text) {
         return String(text ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    }
+
+    // Duration cell: day-based types (Wellness, SPL...) show "1 day" / "Half day", others hours.
+    function formatLeaveDuration(d) {
+        if (d.deduction_unit === 'days') {
+            return Number(d.duration) >= 8 ? '1 day' : 'Half day';
+        }
+        return `${d.duration} hrs`;
+    }
+
+    // "Work Schedule" cell of the Dates Applied table: the employee's plotted schedule on that
+    // date, flagged when the hours filed don't match it (e.g. 8 hours filed on a 10-hour day).
+    // Day-based leaves cover the day whatever its length, so they are never flagged.
+    function renderWorkScheduleCell(d) {
+        const s = d.work_schedule;
+        if (!s) {
+            return `<span class="text-muted small">No schedule plotted</span>`;
+        }
+        if (s.is_off) {
+            return `<span class="fw-semibold">${lvEscape(s.label || 'Rest day')}</span><div class="small text-muted">${lvEscape(s.code || 'OFF')}</div>`;
+        }
+        // Hours are only used for the mismatch warning; the cell shows the schedule's label.
+        const hours = Number(s.hours || 0);
+        const hoursText = Number.isInteger(hours) ? hours : hours.toFixed(1);
+        const filed = Number(d.duration || 0);
+        const mismatch = d.deduction_unit !== 'days' && hours > 0 && filed > 0 && Math.abs(filed - hours) > 0.01
+            ? `<div class="small text-warning-emphasis"><i class="bi bi-exclamation-triangle-fill"></i> Filed ${filed} hrs, schedule is ${hoursText} hrs</div>`
+            : '';
+        const label = s.label || `${s.time_in} - ${s.time_out}`;
+        return `<span class="fw-semibold">${lvEscape(label)}</span>`
+            + `<div class="small text-muted">${lvEscape(s.code || '')}</div>`
+            + mismatch;
     }
 
     // Attachments tile of the leave view (multi-attachment list, or the legacy single file).

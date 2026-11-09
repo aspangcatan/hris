@@ -418,6 +418,13 @@ class LeaveApplicationController extends Controller
 
         $detailsCollection = collect($leave->details ?? []);
 
+        // The employee's plotted schedule on each leave date, so viewers can check that the
+        // hours filed match the schedule (a 10-hour day should be filed as 10 hours).
+        $schedules = $this->workSchedulesFor(
+            (int) $leave->user_id,
+            collect($leave->dates ?? [])->pluck('date_applied')->map(fn($d) => \Carbon\Carbon::parse($d)->toDateString())->all()
+        );
+
         return response()->json([
             'name'            => trim($leave->fname . ' ' . ($leave->mname ? $leave->mname . ' ' : '') . $leave->lname),
             'type'            => $leave->leave_type,
@@ -465,6 +472,9 @@ class LeaveApplicationController extends Controller
                 'id'                    => $d->id,
                 'date'                  => $d->date_applied,
                 'duration'              => $d->hours,
+                // 'days' = filed per day (8 = whole day, 4 = half day), not by hours
+                'deduction_unit'        => $d->deduction_unit ?? 'hours',
+                'work_schedule'         => $schedules[\Carbon\Carbon::parse($d->date_applied)->toDateString()] ?? null,
                 'leave_type_id'         => $d->leave_type_id ?? null,
                 'leave_type'            => $d->leave_type_name ?? '',
                 'is_cancelled'          => ($d->status ?? '') === 'cancelled',
@@ -474,6 +484,70 @@ class LeaveApplicationController extends Controller
                 'dh_disapproval_remark' => $d->dh_disapproval_remark ?? null,
             ])->values(),
         ]);
+    }
+
+    /**
+     * Plotted schedule per date: code, time range and working hours (span minus the
+     * scheduled break). OFF dates are rest days. Dates with nothing plotted are left out.
+     *
+     * @param  string[] $dates Y-m-d
+     * @return array<string, array{code: ?string, label: ?string, time_in: ?string, time_out: ?string, hours: float, is_off: bool}>
+     */
+    private function workSchedulesFor(int $userId, array $dates): array
+    {
+        if (empty($dates)) {
+            return [];
+        }
+
+        $rows = DB::table('hris.schedules as s')
+            ->join('hris.schedule_master_lists as sml', 's.schedule_id', '=', 'sml.id')
+            ->where('s.employee_id', $userId)
+            ->whereIn('s.schedule_date', $dates)
+            ->get(['s.schedule_date', 'sml.code', 'sml.label', 'sml.time_in', 'sml.time_out', 'sml.break_out', 'sml.break_in']);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $date = \Carbon\Carbon::parse($row->schedule_date)->toDateString();
+            $isOff = strtoupper(trim((string) $row->code)) === 'OFF';
+            $hours = 0.0;
+
+            if (!$isOff && $row->time_in && $row->time_out) {
+                $in = \Carbon\Carbon::parse("$date {$row->time_in}");
+                $out = \Carbon\Carbon::parse("$date {$row->time_out}");
+                if ($out->lte($in)) {
+                    $out->addDay(); // overnight shift
+                }
+                $minutes = $in->diffInMinutes($out);
+
+                if ($row->break_out && $row->break_in) {
+                    $breakOut = \Carbon\Carbon::parse("$date {$row->break_out}");
+                    $breakIn = \Carbon\Carbon::parse("$date {$row->break_in}");
+                    if ($breakOut->lt($in)) {
+                        $breakOut->addDay();
+                    }
+                    if ($breakIn->lte($breakOut)) {
+                        $breakIn->addDay();
+                    }
+                    $overlapStart = $breakOut->copy()->max($in);
+                    $overlapEnd = $breakIn->copy()->min($out);
+                    if ($overlapEnd->gt($overlapStart)) {
+                        $minutes -= $overlapStart->diffInMinutes($overlapEnd);
+                    }
+                }
+                $hours = round($minutes / 60, 2);
+            }
+
+            $result[$date] = [
+                'code'     => $row->code,
+                'label'    => $row->label,
+                'time_in'  => $isOff ? null : \Carbon\Carbon::parse($row->time_in)->format('g:i A'),
+                'time_out' => $isOff ? null : \Carbon\Carbon::parse($row->time_out)->format('g:i A'),
+                'hours'    => $hours,
+                'is_off'   => $isOff,
+            ];
+        }
+
+        return $result;
     }
 
     public function serveAttachment(string $filename)

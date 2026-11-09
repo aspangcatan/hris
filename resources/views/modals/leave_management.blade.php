@@ -8,7 +8,9 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="modal-title-text">Manage Leave Types</div>
+                <div class="modal-title-text" id="leave_type_modal_title">Add Leave Type</div>
+                <input type="hidden" id="leave_type_id" value="">
+
                 <div class="mt-3">
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="description" placeholder="">
@@ -39,6 +41,14 @@
                         </select>
                         <label>Deduct Late/Undertime from Earned Credits</label>
                         <div class="form-text">Yes for Vacation Leave only (CSC). No = always earns the full monthly amount.</div>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-control" id="deduction_unit">
+                            <option value="hours">Hours (8 hours = 1.000 point)</option>
+                            <option value="days">Days (1 day = 1.000, half day = 0.500)</option>
+                        </select>
+                        <label>Deduct by</label>
+                        <div class="form-text">Hours for VL, SL, CTO (a 10-hour day deducts 1.250). Days for leaves granted per day, such as Wellness or Special Privilege (filed as whole or half days, whatever the shift length).</div>
                     </div>
                     <div class="form-floating mb-3">
                         <select class="form-control" id="monetizable">

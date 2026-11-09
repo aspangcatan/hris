@@ -244,6 +244,8 @@
 
         // Refresh detail sections, date minimums, commutation, and attachment visibility on date-row leave type change
         $(document).on('change', ".date-leave-type", function () {
+            // Day-based types (Wellness, SPL...) are filed as Whole day / Half day, not hours.
+            syncHoursSelect($(this).closest('tr').find("select[name='leave_hours[]']"), $(this).val());
             refreshDetailsVisibility();
             updateDateInputMins();
             refreshCommutationVisibility();
@@ -472,17 +474,14 @@
         // Skipped entirely in LWOP mode — filing without credits is the whole point.
         const isLwop = $('#is_lwop_flag').val() === '1';
         if (!isLwop) {
-            const hoursPerType = {};
-            date_applied_array.forEach(d => {
-                if (!d.leave_type_id) return;
-                hoursPerType[d.leave_type_id] = (hoursPerType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
-            });
-            // Credits needed per balance. When Sick Leave runs out, the rest is charged to
-            // Vacation Leave (CSC MC 41 s. 1998, Sec. 56) - the server applies the same rule.
+            // Credits needed per balance (day-based types: 1.000 per whole day, 0.500 per half
+            // day). When Sick Leave runs out, the rest is charged to Vacation Leave
+            // (CSC MC 41 s. 1998, Sec. 56) - the server applies the same rules.
             const milli = v => Math.round(v * 1000);
             const neededPerType = {};
-            Object.entries(hoursPerType).forEach(([typeId, hours]) => {
-                neededPerType[typeId] = hours * CREDIT_PER_HOUR;
+            date_applied_array.forEach(d => {
+                if (!d.leave_type_id) return;
+                neededPerType[d.leave_type_id] = (neededPerType[d.leave_type_id] || 0) + creditsForDate(d.leave_type_id, d.hours);
             });
             const sl = LEAVE_TYPES.find(t => t.code === 'SL');
             const vl = LEAVE_TYPES.find(t => t.code === 'VL');
@@ -510,6 +509,11 @@
                         `but your Vacation Leave balance (${balance.toFixed(3)}) cannot cover ${needed.toFixed(3)}. File the remaining days as leave without pay.`,
                         "Insufficient Balance"
                     );
+                } else if (isDayBasedType(lt.id)) {
+                    toastr.error(
+                        `Insufficient ${lt.description} credits. You have ${balance.toFixed(3)} day(s) available but are filing ${needed.toFixed(3)} day(s).`,
+                        "Insufficient Balance"
+                    );
                 } else {
                     const availableHours = balance / CREDIT_PER_HOUR;
                     const totalHours = needed / CREDIT_PER_HOUR;
@@ -533,14 +537,14 @@
         // LWOP is the employee's choice, but tell them first if they still have credits that
         // could cover these dates as an ordinary (with pay) leave.
         if (isLwop) {
-            const hoursByType = {};
+            const creditsByType = {};
             date_applied_array.forEach(d => {
-                if (d.leave_type_id) hoursByType[d.leave_type_id] = (hoursByType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
+                if (d.leave_type_id) creditsByType[d.leave_type_id] = (creditsByType[d.leave_type_id] || 0) + creditsForDate(d.leave_type_id, d.hours);
             });
-            const withBalance = Object.entries(hoursByType).map(([typeId, hours]) => {
+            const withBalance = Object.entries(creditsByType).map(([typeId, needed]) => {
                 const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
                 const balance = lt ? parseFloat(lt.balance) || 0 : 0;
-                return { lt, balance, needed: hours * CREDIT_PER_HOUR };
+                return { lt, balance, needed };
             }).filter(x => x.lt && x.balance > 0);
 
             if (withBalance.length > 0) {
@@ -820,6 +824,40 @@
             ).join('');
     }
 
+    // ---- Day-based leave types (leave_types.deduction_unit = 'days') -------------------------
+    // Filed as Whole day (stored as 8) or Half day (stored as 4); deducted 1.000 / 0.500 per date
+    // whatever the shift length. Hour-based types keep the hours list (8 hours = 1.000).
+    const HOUR_OPTIONS = [4, 8, 10, 12, 16, 24];
+
+    function isDayBasedType(typeId) {
+        const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
+        return !!lt && lt.deduction_unit === 'days';
+    }
+
+    function creditsForDate(typeId, hours) {
+        const h = parseInt(hours, 10) || 0;
+        return isDayBasedType(typeId) ? (h >= 8 ? 1 : 0.5) : h * CREDIT_PER_HOUR;
+    }
+
+    function hoursOptionsHtml(dayBased, selected) {
+        if (dayBased) {
+            const sel = parseInt(selected, 10) === 4 ? 4 : 8;
+            return `<option value="8" ${sel === 8 ? 'selected' : ''}>Whole day</option>`
+                 + `<option value="4" ${sel === 4 ? 'selected' : ''}>Half day</option>`;
+        }
+        const sel = HOUR_OPTIONS.includes(parseInt(selected, 10)) ? parseInt(selected, 10) : 8;
+        return HOUR_OPTIONS.map(h => `<option value="${h}" ${h === sel ? 'selected' : ''}>${h}</option>`).join('');
+    }
+
+    // Rebuilds an hours <select> for the chosen leave type, keeping the current value when it still fits.
+    function syncHoursSelect($select, typeId, selected) {
+        if (!$select || !$select.length) return;
+        const dayBased = isDayBasedType(typeId);
+        if (($select.data('mode') || 'hours') === (dayBased ? 'days' : 'hours') && selected === undefined) return;
+        $select.html(hoursOptionsHtml(dayBased, selected !== undefined ? selected : $select.val()));
+        $select.data('mode', dayBased ? 'days' : 'hours');
+    }
+
     function addRow(selectedLeaveTypeId) {
         const minDate = minDateForType(LEAVE_TYPES.find(t => t.id === selectedLeaveTypeId));
         const opts    = buildLeaveTypeOptions(selectedLeaveTypeId || null);
@@ -845,6 +883,9 @@
             <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)">Remove</button></td>
         </tr>
         `);
+        if (selectedLeaveTypeId) {
+            syncHoursSelect($("#dates_table_body tr:last select[name='leave_hours[]']"), selectedLeaveTypeId);
+        }
     }
 
     function removeRow(button) {
@@ -893,6 +934,7 @@
     }
 
     $(document).on('change', '#range_leave_type', function () {
+        syncHoursSelect($("#range_hours"), $(this).val());
         const minDate = getRangeMinDate();
         setDateMin($("#range_start_date"), minDate);
         if (minDate && $("#range_start_date").val() && $("#range_start_date").val() < minDate) $("#range_start_date").val('');
@@ -998,7 +1040,7 @@
                     </div>
                 `);
 
-                LEAVE_TYPES.push({ id: it.id, description: it.description, code: it.code, balance: it.balance, days_prior: it.days_prior ?? 0, commutation: it.commutation ?? 0 });
+                LEAVE_TYPES.push({ id: it.id, description: it.description, code: it.code, balance: it.balance, days_prior: it.days_prior ?? 0, commutation: it.commutation ?? 0, deduction_unit: it.deduction_unit || 'hours' });
             });
 
             return data;
@@ -1199,6 +1241,8 @@
                 $("#dates_table_body").append($row);
                 // Set date AFTER appending — bypasses browser min-constraint clearing
                 $row.find('input[name="leave_dates[]"]').val(dateValue);
+                // Day-based types show Whole day / Half day instead of hours
+                syncHoursSelect($row.find("select[name='leave_hours[]']"), d.leave_type_id, d.duration);
             });
 
             // Enable detail groups based on the pre-filled date row types
@@ -1289,7 +1333,7 @@
                                 : leaveStatus === 'rejected'
                                     ? `<span class="lv-pill lv-pill-rejected">Rejected</span>`
                                     : `<span class="lv-pill lv-pill-muted">Pending</span>`;
-                    return `<tr><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${d.duration} hrs</td><td>${state}</td></tr>`;
+                    return `<tr><td>${renderWorkScheduleCell(d)}</td><td>${escapeHtml(d.leave_type || '')}</td><td>${moment(d.date).format("MM/DD/YYYY")}</td><td>${formatLeaveDuration(d)}</td><td>${state}</td></tr>`;
                 }).join("")
             );
 

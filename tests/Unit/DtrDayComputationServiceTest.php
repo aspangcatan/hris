@@ -416,6 +416,36 @@ class DtrDayComputationServiceTest extends TestCase
     }
 
     /** @test */
+    public function day_based_half_day_covers_half_of_the_schedule(): void
+    {
+        // 8S = 480 work minutes; a day-based half day covers 240 of them.
+        $worked = $this->computePartialLeaveDay([
+            $this->log('2027-05-03 08:00:00', 'IN'),
+            $this->log('2027-05-03 12:00:00', 'OUT'),
+        ], ['fraction' => 0.5]);
+        $this->assertEquals(0, $worked['undertime_minutes']);
+
+        $noLogs = $this->computePartialLeaveDay([], ['fraction' => 0.5]);
+        $this->assertEquals(240, $noLogs['undertime_minutes']);
+        $this->assertFalse($noLogs['is_absent']);
+    }
+
+    /** @test */
+    public function day_based_half_day_on_a_ten_hour_day_covers_five_hours(): void
+    {
+        // CWW-like 07:00-18:00 with 12-13 break = 600 work minutes; half day = 300 minutes,
+        // so 5 hours worked (07:00-12:00) completes the day.
+        $day = '2027-05-04';
+        $schedules = collect([$day => $this->schedule('07:00:00', '18:00:00', '12:00:00', '13:00:00')]);
+        $result = $this->service->computeRange(9501, $day, $day, $schedules, collect([
+            $this->log("$day 07:00:00", 'IN'),
+            $this->log("$day 12:00:00", 'OUT'),
+        ]), ['leaves' => [$day => ['fraction' => 0.5]], 'absenceExemptDates' => [$day => true]])[$day];
+
+        $this->assertEquals(0, $result['undertime_minutes']);
+    }
+
+    /** @test */
     public function full_day_leave_lwop_and_holiday_keep_the_whole_day_exemption(): void
     {
         $fullDay = $this->computePartialLeaveDay([], ['hours' => 8]);

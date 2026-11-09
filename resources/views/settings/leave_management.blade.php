@@ -52,8 +52,7 @@
             color: #1e293b;
             font-weight: 500;
             vertical-align: middle;
-        }
-    </style>
+        }    </style>
 
     <div class="leave-board">
         <div class="leave-head">
@@ -82,6 +81,7 @@
                     <th>Min. Monetize Days</th>
                     <th>Min. Retained Days</th>
                     <th>Deduct Late/UT</th>
+                    <th>Deduct by</th>
                     <th colspan="2" style="width: 4%"></th>
                 </tr>
                 </thead>
