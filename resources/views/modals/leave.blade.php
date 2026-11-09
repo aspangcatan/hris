@@ -74,21 +74,42 @@
                             </div>
                         </div>
 
-                        {{-- Credits are deducted by the hours filed (8 hours = 1 day), so the hours must
-                             match the filer's schedule on that day. --}}
+                        {{-- Filing guide. Hour-based leaves are deducted by the hours filed (8 hours = 1.000),
+                             so the hours must match the filer's schedule; day-based leaves (Leave Settings >
+                             Deduct by = Days) are filed as whole/half days. The day-based list is read from
+                             leave_types so it follows Leave Settings. --}}
+                        @php
+                            $dayBasedLeaveNames = \Illuminate\Support\Facades\DB::table('hris.leave_types')
+                                ->where('status', 'active')
+                                ->where('deduction_unit', 'days')
+                                ->orderBy('description')
+                                ->pluck('description');
+                        @endphp
                         <div class="alert alert-info d-flex gap-2 align-items-start py-2 px-3 mb-3 small" role="note" id="leave_hours_notice">
                             <i class="bi bi-info-circle-fill mt-1"></i>
-                            <div>
-                                <strong>Select the hours that match your schedule on each day.</strong>
-                                Credits are deducted by the hours you file (8 hours = 1 day).
-                                <ul class="mb-0 mt-1 ps-3">
-                                    <li>8-hour schedule: select <strong>8</strong> (deducts 1.000 day)</li>
-                                    <li>10-hour schedule (e.g. compressed work week): select <strong>10</strong> (deducts 1.250 days)</li>
-                                    <li>12-hour shift: select <strong>12</strong> (deducts 1.500 days)</li>
-                                    <li>Half day: select <strong>4</strong> (deducts 0.500 day)</li>
-                                </ul>
-                                <div class="mt-1">If you file fewer hours than your schedule, the hours not covered are counted as undertime.</div>
-                                <div class="mt-1">Leaves counted per day (e.g. Wellness, Special Privilege) are filed as <strong>Whole day</strong> or <strong>Half day</strong> instead: 1 day deducts 1.000 whatever your schedule.</div>
+                            <div class="d-flex flex-column gap-2">
+                                <div>
+                                    <strong>Vacation, Sick and other leaves counted in hours:</strong>
+                                    select the hours that match your schedule on each day (8 hours = 1.000 day).
+                                    <ul class="mb-0 mt-1 ps-3">
+                                        <li>8-hour schedule: <strong>8</strong> (deducts 1.000)</li>
+                                        <li>10-hour schedule, e.g. compressed work week: <strong>10</strong> (deducts 1.250)</li>
+                                        <li>12-hour shift: <strong>12</strong> (deducts 1.500)</li>
+                                        <li>Half of an 8-hour day: <strong>4</strong> (deducts 0.500)</li>
+                                    </ul>
+                                    <div class="mt-1">If you file fewer hours than your schedule, the hours not covered count as undertime.</div>
+                                </div>
+                                @if($dayBasedLeaveNames->isNotEmpty())
+                                    <div>
+                                        <strong>Leaves counted per day:</strong>
+                                        choose <strong>Whole day</strong> (deducts 1.000) or <strong>Half day</strong> (deducts 0.500), whatever your schedule.
+                                        <div class="text-muted mt-1">{{ $dayBasedLeaveNames->implode(', ') }}</div>
+                                    </div>
+                                @endif
+                                <div>
+                                    <strong>Sick Leave:</strong> if your Sick Leave credits run out, the rest is charged to Vacation Leave.
+                                    If Vacation Leave can't cover it either, file the remaining days as leave without pay.
+                                </div>
                             </div>
                         </div>
 
