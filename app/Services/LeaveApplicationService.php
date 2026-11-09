@@ -390,30 +390,9 @@ class LeaveApplicationService
             $this->assertValidDetails($leaveIds, $leaveTypes, $data['details_map'] ?? []);
             $this->assertValidLeaveDates($leaveTypes, $datesByType);
 
-            // Validate credit balance per type (credits proportional to actual days per type)
-            // Skipped entirely for LWOP — an LWOP filing never checks or deducts credits.
-            if (!$isLwop) {
-                foreach ($leaveIds as $leaveId) {
-                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
-
-                    $credit    = DB::table('leave_credits')
-                        ->where('user_id', Auth::id())
-                        ->where('leave_id', $leaveId)
-                        ->first(['based_credit', 'used_credit']);
-                    $available = $credit ? round($credit->based_credit - $credit->used_credit, 3) : null;
-
-                    $desc = $leaveTypes[$leaveId]->description;
-
-                    if ($available === null) {
-                        throw new \Exception("No leave credits found for {$desc}.");
-                    }
-
-                    if ($available < round($typeCredits, 3)) {
-                        throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
-                    }
-                }
-            }
+            // Works out what each date charges (SL running out falls back to VL) and checks
+            // every balance. Nothing is charged for LWOP.
+            $plan = $this->planCharges($dates, $leaveTypes, $isLwop);
 
             // ONE leave_application record
             $appId = DB::table('leave_applications')->insertGetId([
@@ -443,33 +422,12 @@ class LeaveApplicationService
                 ]);
             }
 
-            // Deduct credits per leave type — skipped entirely for LWOP.
-            if (!$isLwop) {
-                foreach ($leaveIds as $leaveId) {
-                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
+            // Deduct credits per leave balance (an SL shortfall is deducted from VL).
+            $this->deductPlannedCharges($plan['byType']);
 
-                    DB::table('leave_credits')
-                        ->where('user_id', Auth::id())
-                        ->where('leave_id', $leaveId)
-                        ->decrement('based_credit', $typeCredits);
-                }
-            }
-
-            // Insert dates with leave_type_id, status, and per-date credits_deducted.
-            // credits_deducted is always 0 for LWOP — this also makes the downstream
-            // approval-rejection credit-restore logic a natural no-op for LWOP rows,
-            // since it restores by summing credits_deducted.
-            DB::table('leave_date_applied')->insert(
-                collect($dates)->map(fn($d) => [
-                    'leave_application_id' => $appId,
-                    'leave_type_id'        => $d['leave_type_id'],
-                    'date_applied'         => $d['date_applied'],
-                    'hours'                => $d['hours'],
-                    'status'               => 'active',
-                    'credits_deducted'     => $isLwop ? 0 : $this->minuteConversionService->computeDeduction($d['hours'] * 60),
-                ])->toArray()
-            );
+            // Insert dates with leave_type_id, status, and per-date charges. For LWOP every
+            // charge is 0, so the downstream credit-restore logic is a natural no-op.
+            $this->insertDateRows($appId, $dates, $plan['rows']);
 
             // Approval chain - a head's own step goes to the head above (see OrgHierarchyService)
             DB::table('leave_application_approvals')->insert(
@@ -515,11 +473,12 @@ class LeaveApplicationService
 
             // Credits this application currently holds, per leave type. They are given back
             // before the new dates are deducted. For LWOP every credits_deducted is 0.
-            $oldCreditsByType = DB::table('hris.leave_date_applied')
-                ->where('leave_application_id', $appId)
-                ->get(['leave_type_id', 'credits_deducted'])
-                ->groupBy('leave_type_id')
-                ->map(fn($rows) => (float) $rows->sum('credits_deducted'));
+            // (Includes any part of a sick leave date that was charged to VL.)
+            $oldCreditsByType = LeaveDateCharges::byType(
+                DB::table('hris.leave_date_applied')
+                    ->where('leave_application_id', $appId)
+                    ->get(LeaveDateCharges::COLUMNS)
+            );
 
             // Validate everything BEFORE writing anything, so a rejected edit leaves the
             // application and its credits exactly as they were (even on a non-transactional engine).
@@ -542,32 +501,8 @@ class LeaveApplicationService
             $this->assertValidDetails($leaveIds, $leaveTypes, $data['details_map'] ?? []);
             $this->assertValidLeaveDates($leaveTypes, $datesByType);
 
-            if (!$isLwop) {
-                foreach ($leaveIds as $leaveId) {
-                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
-
-                    $credit    = DB::table('leave_credits')
-                        ->where('user_id', Auth::id())
-                        ->where('leave_id', $leaveId)
-                        ->lockForUpdate()
-                        ->first(['based_credit', 'used_credit']);
-                    // Balance once this application's current deduction is given back
-                    $available = $credit
-                        ? round($credit->based_credit - $credit->used_credit + ($oldCreditsByType[$leaveId] ?? 0), 3)
-                        : null;
-
-                    $desc = $leaveTypes[$leaveId]->description;
-
-                    if ($available === null) {
-                        throw new \Exception("No leave credits found for {$desc}.");
-                    }
-
-                    if ($available < round($typeCredits, 3)) {
-                        throw new \Exception("Insufficient {$desc} credits. Need {$typeCredits}, you have {$available}.");
-                    }
-                }
-            }
+            // Balances are checked as if this application's current deduction were given back.
+            $plan = $this->planCharges($dates, $leaveTypes, $isLwop, $oldCreditsByType);
 
             // All checks passed - now give back the old deduction and replace the dates.
             foreach ($oldCreditsByType as $typeId => $amount) {
@@ -597,30 +532,11 @@ class LeaveApplicationService
                 ]);
             }
 
-            // Deduct credits per type — skipped entirely for LWOP.
-            if (!$isLwop) {
-                foreach ($leaveIds as $leaveId) {
-                    $typeHours   = collect($datesByType[$leaveId] ?? [])->sum('hours');
-                    $typeCredits = $this->minuteConversionService->computeDeduction($typeHours * 60);
-
-                    DB::table('leave_credits')
-                        ->where('user_id', Auth::id())
-                        ->where('leave_id', $leaveId)
-                        ->decrement('based_credit', $typeCredits);
-                }
-            }
+            // Deduct credits per balance (an SL shortfall is deducted from VL).
+            $this->deductPlannedCharges($plan['byType']);
 
             // Insert new dates
-            DB::table('leave_date_applied')->insert(
-                collect($dates)->map(fn($d) => [
-                    'leave_application_id' => $appId,
-                    'leave_type_id'        => $d['leave_type_id'],
-                    'date_applied'         => $d['date_applied'],
-                    'hours'                => $d['hours'],
-                    'status'               => 'active',
-                    'credits_deducted'     => $isLwop ? 0 : $this->minuteConversionService->computeDeduction($d['hours'] * 60),
-                ])->toArray()
-            );
+            $this->insertDateRows($appId, $dates, $plan['rows']);
 
             DB::table('leave_applications')->where('id', $appId)->update([
                 'commutation'         => $data['commutation'] ?? null,
@@ -629,6 +545,137 @@ class LeaveApplicationService
                 'updated_at'          => now(),
             ]);
         });
+    }
+
+    /**
+     * What each date charges, and to which balance, plus the total per balance - after
+     * checking every balance covers it. Throws with a user-facing message if not.
+     *
+     * Sick leave falls back to vacation leave when SL runs out (CSC MC No. 41, s. 1998,
+     * Sec. 56: "When an employee had already exhausted his sick leave credits, he can use
+     * his vacation leave credits but not vice versa."). Dates are charged in date order,
+     * so the earliest days use SL first; a date can be split (e.g. 0.5 SL + 0.5 VL). If VL
+     * can't cover the rest either, nothing is filed - the employee files it as LWOP.
+     *
+     * @param  array<int, array{date_applied: string, hours: int, leave_type_id: int}> $dates
+     * @param  array<int, float> $giveBack credits this application already holds (edit only)
+     * @return array{rows: array<int, array{credits_deducted: float, fallback_leave_type_id: ?int, fallback_credits: float}>, byType: array<int, float>}
+     */
+    private function planCharges(array $dates, $leaveTypes, bool $isLwop, array $giveBack = []): array
+    {
+        $rows = [];
+        if ($isLwop) {
+            foreach (array_keys($dates) as $i) {
+                $rows[$i] = ['credits_deducted' => 0, 'fallback_leave_type_id' => null, 'fallback_credits' => 0];
+            }
+            return ['rows' => $rows, 'byType' => []];
+        }
+
+        $codes = DB::table('leave_types')->whereIn('code', ['SL', 'VL'])->pluck('id', 'code');
+        $slId = isset($codes['SL']) ? (int) $codes['SL'] : null;
+        $vlId = isset($codes['VL']) ? (int) $codes['VL'] : null;
+
+        $available = function (int $typeId) use ($giveBack): ?float {
+            $credit = DB::table('leave_credits')
+                ->where('user_id', Auth::id())
+                ->where('leave_id', $typeId)
+                ->first(['based_credit', 'used_credit']);
+
+            return $credit
+                ? round($credit->based_credit - $credit->used_credit + ($giveBack[$typeId] ?? 0), 3)
+                : null;
+        };
+        $description = fn(int $typeId) => $leaveTypes[$typeId]->description
+            ?? DB::table('leave_types')->where('id', $typeId)->value('description')
+            ?? 'leave';
+
+        $order = array_keys($dates);
+        usort($order, fn($a, $b) => strcmp((string) $dates[$a]['date_applied'], (string) $dates[$b]['date_applied']));
+
+        $slAvailable = $slId ? $available($slId) : null;
+        $slLeft = max(0.0, (float) ($slAvailable ?? 0));
+        $slNeeded = 0.0;
+        $fallbackTotal = 0.0;
+        $byType = [];
+
+        foreach ($order as $i) {
+            $typeId = (int) $dates[$i]['leave_type_id'];
+            $credits = $this->minuteConversionService->computeDeduction(((int) $dates[$i]['hours']) * 60);
+            $own = $credits;
+            $fallback = 0.0;
+
+            if ($slId && $vlId && $typeId === $slId) {
+                $slNeeded += $credits;
+                $own = round(min($credits, $slLeft), 3);
+                $fallback = round($credits - $own, 3);
+                $slLeft = round($slLeft - $own, 3);
+            }
+
+            $rows[$i] = [
+                'credits_deducted' => $own,
+                'fallback_leave_type_id' => $fallback > 0 ? $vlId : null,
+                'fallback_credits' => $fallback,
+            ];
+            $byType[$typeId] = round(($byType[$typeId] ?? 0) + $own, 3);
+            if ($fallback > 0) {
+                $byType[$vlId] = round(($byType[$vlId] ?? 0) + $fallback, 3);
+                $fallbackTotal = round($fallbackTotal + $fallback, 3);
+            }
+        }
+
+        foreach ($byType as $typeId => $needed) {
+            if ($needed <= 0) {
+                continue;
+            }
+            $have = $available($typeId);
+
+            if ($typeId === $vlId && $fallbackTotal > 0 && ($have === null || $have < $needed)) {
+                $sl = number_format((float) ($slAvailable ?? 0), 3);
+                $vl = number_format((float) ($have ?? 0), 3);
+                throw new \Exception(
+                    "Not enough Sick Leave credits: you have {$sl}, this leave needs " . number_format($slNeeded, 3) . '. '
+                    . 'The rest would be charged to Vacation Leave, but your Vacation Leave balance (' . $vl . ') '
+                    . 'cannot cover ' . number_format($needed, 3) . '. File the remaining days as leave without pay.'
+                );
+            }
+            if ($have === null) {
+                throw new \Exception('No leave credits found for ' . $description($typeId) . '.');
+            }
+            if ($have < $needed) {
+                throw new \Exception('Insufficient ' . $description($typeId) . " credits. Need {$needed}, you have {$have}.");
+            }
+        }
+
+        return ['rows' => $rows, 'byType' => array_filter($byType, fn($amount) => $amount > 0)];
+    }
+
+    /** @param array<int, float> $byType */
+    private function deductPlannedCharges(array $byType): void
+    {
+        foreach ($byType as $typeId => $amount) {
+            DB::table('leave_credits')
+                ->where('user_id', Auth::id())
+                ->where('leave_id', $typeId)
+                ->decrement('based_credit', $amount);
+        }
+    }
+
+    private function insertDateRows(int $appId, array $dates, array $planRows): void
+    {
+        $rows = [];
+        foreach ($dates as $i => $d) {
+            $rows[] = [
+                'leave_application_id'   => $appId,
+                'leave_type_id'          => $d['leave_type_id'],
+                'date_applied'           => $d['date_applied'],
+                'hours'                  => $d['hours'],
+                'status'                 => 'active',
+                'credits_deducted'       => $planRows[$i]['credits_deducted'],
+                'fallback_leave_type_id' => $planRows[$i]['fallback_leave_type_id'],
+                'fallback_credits'       => $planRows[$i]['fallback_credits'],
+            ];
+        }
+        DB::table('leave_date_applied')->insert($rows);
     }
 
     /**
@@ -658,12 +705,14 @@ class LeaveApplicationService
             }
             $balance = $credit ? (float) $credit->based_credit - (float) $credit->used_credit : 0.0;
 
-            $less = $isRejected ? 0.0 : (float) DB::table('hris.leave_date_applied')
-                ->where('leave_application_id', $leaveApplication->id)
-                ->where('leave_type_id', $typeId)
-                ->where('status', '!=', 'cancelled')
-                ->where('final_disapproved', 0)
-                ->sum('credits_deducted');
+            // Includes the part of sick leave dates charged to this type (SL -> VL fallback).
+            $less = $isRejected ? 0.0 : (float) (LeaveDateCharges::byType(
+                DB::table('hris.leave_date_applied')
+                    ->where('leave_application_id', $leaveApplication->id)
+                    ->where('status', '!=', 'cancelled')
+                    ->where('final_disapproved', 0)
+                    ->get(LeaveDateCharges::COLUMNS)
+            )[(int) $typeId] ?? 0);
 
             $certification[$typeId] = [
                 'leave_id'     => (int) $typeId,
@@ -703,7 +752,10 @@ class LeaveApplicationService
                 'lda.sh_flagged_disapprove',
                 'lda.sh_disapproval_remark',
                 'lda.final_disapproved',
-                'lda.dh_disapproval_remark'
+                'lda.dh_disapproval_remark',
+                'lda.credits_deducted',
+                'lda.fallback_leave_type_id',
+                'lda.fallback_credits'
             )
             ->orderBy('lda.date_applied', 'asc')
             ->get();

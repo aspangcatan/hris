@@ -139,15 +139,14 @@ class LeaveApplicationController extends Controller
                         ->where('leave_application_id', $model->id)
                         ->where('final_disapproved', 0)
                         ->where('status', '!=', 'cancelled')
-                        ->get(['leave_type_id', 'credits_deducted']);
+                        ->get(\App\Services\LeaveDateCharges::COLUMNS);
 
-                    $creditsByType = $dates->groupBy('leave_type_id');
-                    foreach ($creditsByType as $typeId => $rows) {
-                        if (!$typeId) continue;
+                    // Each part goes back to the balance it came from (SL -> VL fallback included).
+                    foreach (\App\Services\LeaveDateCharges::byType($dates) as $typeId => $amount) {
                         DB::table('leave_credits')
                             ->where('user_id', $model->user_id)
                             ->where('leave_id', $typeId)
-                            ->increment('based_credit', $rows->sum('credits_deducted'));
+                            ->increment('based_credit', $amount);
                     }
                 }
 
@@ -430,9 +429,12 @@ class LeaveApplicationController extends Controller
             'hr_action'       => DB::table('leave_applications')->where('id', $id)
                 ->first(['cert_as_of', 'approved_days_with_pay', 'approved_days_without_pay', 'approved_others']),
             'created_at'      => $leave->created_at,
+            // Includes VL when part of a sick leave was charged to VL (SL ran out).
             'credit_balances' => array_values($this->leaveApplicationService->getCreditCertification(
                 $leave,
-                collect($leave->dates ?? [])->pluck('leave_type_id')->filter()->unique()->values()->all()
+                collect($leave->dates ?? [])->pluck('leave_type_id')
+                    ->merge(collect($leave->dates ?? [])->pluck('fallback_leave_type_id'))
+                    ->filter()->unique()->values()->all()
             )),
             'leave_ids'       => $detailsCollection->pluck('leave_id')->values(),
             'leave_types_map' => $detailsCollection->keyBy('leave_id')->map(fn($d) => $d->leave_type)->toArray(),

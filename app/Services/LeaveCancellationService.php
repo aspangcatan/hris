@@ -437,15 +437,14 @@ class LeaveCancellationService
                 // Restore leave credits per leave type
                 $cancelledDates = DB::table('hris.leave_date_applied')
                     ->whereIn('id', $dateIds)
-                    ->get(['leave_type_id', 'credits_deducted']);
+                    ->get(LeaveDateCharges::COLUMNS);
 
-                $creditsByType = $cancelledDates->groupBy('leave_type_id');
-                foreach ($creditsByType as $typeId => $rows) {
-                    if (!$typeId) continue;
+                // Each part goes back to the balance it came from (SL -> VL fallback included).
+                foreach (LeaveDateCharges::byType($cancelledDates) as $typeId => $amount) {
                     DB::table('hris.leave_credits')
                         ->where('user_id', $userId)
                         ->where('leave_id', $typeId)
-                        ->increment('based_credit', $rows->sum('credits_deducted'));
+                        ->increment('based_credit', $amount);
                 }
 
                 // Mark cancelled dates as cancelled (preserve history)

@@ -378,6 +378,135 @@ class LeaveCreditIntegrityTest extends TestCase
         $this->assertGreaterThan(0, $file('fever (Non-Work Related)')['app_id']);
     }
 
+    // ============================================ SL -> VL fallback (MC 41 s. 1998, Sec. 56)
+
+    /** Gives the employee SL/VL balances and returns [slId, vlId]. */
+    private function slVl(float $sl, float $vl): array
+    {
+        $slId = (int) DB::table('hris.leave_types')->where('code', 'SL')->value('id');
+        $vlId = (int) DB::table('hris.leave_types')->where('code', 'VL')->value('id');
+        foreach ([$slId => $sl, $vlId => $vl] as $typeId => $credit) {
+            DB::table('hris.leave_credits')->insert([
+                'user_id' => $this->employeeId, 'leave_id' => $typeId,
+                'based_credit' => $credit, 'used_credit' => 0, 'last_updated_month' => '2027-1',
+            ]);
+        }
+
+        return [$slId, $vlId];
+    }
+
+    private function typeBalance(int $typeId): float
+    {
+        $c = DB::table('hris.leave_credits')->where('user_id', $this->employeeId)->where('leave_id', $typeId)->first();
+        return round($c->based_credit - $c->used_credit, 3);
+    }
+
+    /** Files 8h sick leave dates as the employee. */
+    private function fileSick(int $slId, array $days): int
+    {
+        return app(LeaveApplicationService::class)->insertLeaveApplication([
+            'dates' => array_map(fn($d) => ['date_applied' => $d, 'hours' => 8, 'leave_type_id' => $slId], $days),
+            'details_map' => [(string) $slId => ['detail' => 'Out Patient (Specify Illness)', 'extra' => 'fever (Non-Work Related)']],
+            'applicant_signature' => $this->sig,
+        ])['app_id'];
+    }
+
+    /** @test */
+    public function sick_leave_beyond_its_balance_is_charged_to_vacation_leave(): void
+    {
+        [$slId, $vlId] = $this->slVl(1.5, 5.0);
+
+        $appId = $this->fileSick($slId, ['2027-03-01', '2027-03-02', '2027-03-03']); // 3.0 needed
+
+        $this->assertEquals(0.0, $this->typeBalance($slId));
+        $this->assertEquals(3.5, $this->typeBalance($vlId), '1.5 of the 3 days come from VL');
+
+        // Earliest days use SL first; the middle day is split.
+        $rows = DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)->orderBy('date_applied')
+            ->get(['leave_type_id', 'credits_deducted', 'fallback_leave_type_id', 'fallback_credits']);
+        $this->assertSame([$slId, $slId, $slId], $rows->pluck('leave_type_id')->map(fn($v) => (int) $v)->all(), 'dates stay sick leave');
+        $this->assertEquals([1.0, 0.5, 0.0], $rows->pluck('credits_deducted')->map(fn($v) => (float) $v)->all());
+        $this->assertEquals([0.0, 0.5, 1.0], $rows->pluck('fallback_credits')->map(fn($v) => (float) $v)->all());
+        $this->assertEquals([null, $vlId, $vlId], $rows->pluck('fallback_leave_type_id')->map(fn($v) => $v === null ? null : (int) $v)->all());
+
+        // The certification shows the VL part as "less" on Vacation Leave.
+        $cert = app(LeaveApplicationService::class)->getCreditCertification(
+            DB::table('hris.leave_applications')->where('id', $appId)->first(), [$slId, $vlId]
+        );
+        $this->assertEquals(1.5, $cert[$slId]['less']);
+        $this->assertEquals(1.5, $cert[$vlId]['less']);
+    }
+
+    /** @test */
+    public function sick_leave_is_refused_when_vacation_leave_cannot_cover_the_rest_either(): void
+    {
+        [$slId, $vlId] = $this->slVl(1.0, 0.5);
+
+        try {
+            $this->fileSick($slId, ['2027-03-01', '2027-03-02']); // needs 2.0, only 1.5 in total
+            $this->fail('Expected the filing to be refused');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Not enough Sick Leave credits', $e->getMessage());
+            $this->assertStringContainsString('leave without pay', $e->getMessage());
+        }
+
+        $this->assertEquals(1.0, $this->typeBalance($slId));
+        $this->assertEquals(0.5, $this->typeBalance($vlId));
+        $this->assertSame(0, DB::table('hris.leave_applications')->where('user_id', $this->employeeId)->count());
+    }
+
+    /** @test */
+    public function vacation_leave_never_falls_back_to_sick_leave(): void
+    {
+        [$slId, $vlId] = $this->slVl(10.0, 0.5);
+        DB::table('hris.leave_types')->where('id', $vlId)->update(['days_prior' => 0]);
+
+        try {
+            app(LeaveApplicationService::class)->insertLeaveApplication([
+                'dates' => [['date_applied' => '2027-03-01', 'hours' => 8, 'leave_type_id' => $vlId]],
+                'details_map' => [(string) $vlId => ['detail' => 'Within the Philippines', 'extra' => 'Cebu']],
+                'applicant_signature' => $this->sig,
+            ]);
+            $this->fail('Expected insufficient VL to be refused');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Insufficient Vacation Leave', $e->getMessage());
+        } finally {
+            DB::table('hris.leave_types')->where('id', $vlId)->update(['days_prior' => 5]);
+        }
+
+        $this->assertEquals(10.0, $this->typeBalance($slId), 'SL is never used for VL');
+    }
+
+    /** @test */
+    public function every_restore_returns_each_part_to_its_own_balance(): void
+    {
+        [$slId, $vlId] = $this->slVl(1.5, 5.0);
+
+        // Edit: the old split is given back, then the new dates are charged again.
+        $appId = $this->fileSick($slId, ['2027-03-01', '2027-03-02', '2027-03-03']);
+        app(LeaveApplicationService::class)->updateLeaveApplication($appId, [
+            'dates' => [['date_applied' => '2027-03-01', 'hours' => 8, 'leave_type_id' => $slId]],
+            'details_map' => [(string) $slId => ['detail' => 'Out Patient (Specify Illness)', 'extra' => 'fever (Non-Work Related)']],
+            'applicant_signature' => $this->sig,
+        ]);
+        $this->assertEquals(0.5, $this->typeBalance($slId));
+        $this->assertEquals(5.0, $this->typeBalance($vlId), 'VL fully given back by the edit');
+
+        // Delete (before any approver acts): everything goes back.
+        app(LeaveApplicationController::class)->delete(new Request(), $appId);
+        $this->assertEquals(1.5, $this->typeBalance($slId));
+        $this->assertEquals(5.0, $this->typeBalance($vlId));
+
+        // Approve, then cancel the split date and the fully-VL date.
+        $appId = $this->fileSick($slId, ['2027-03-08', '2027-03-09', '2027-03-10']);
+        $this->approve($appId);
+        [, $split, $allVl] = $this->dateIds($appId);
+        $this->approveCancellation($this->fileCancellation([$split, $allVl]));
+
+        $this->assertEquals(0.5, $this->typeBalance($slId), 'only the split date\'s SL part came back');
+        $this->assertEquals(5.0, $this->typeBalance($vlId), 'both VL parts came back');
+    }
+
     // ==================================================== LWOP flag on edit (review #6)
 
     /** @test */

@@ -477,17 +477,54 @@
                 if (!d.leave_type_id) return;
                 hoursPerType[d.leave_type_id] = (hoursPerType[d.leave_type_id] || 0) + parseInt(d.hours, 10);
             });
-            for (const [typeId, totalHours] of Object.entries(hoursPerType)) {
+            // Credits needed per balance. When Sick Leave runs out, the rest is charged to
+            // Vacation Leave (CSC MC 41 s. 1998, Sec. 56) - the server applies the same rule.
+            const milli = v => Math.round(v * 1000);
+            const neededPerType = {};
+            Object.entries(hoursPerType).forEach(([typeId, hours]) => {
+                neededPerType[typeId] = hours * CREDIT_PER_HOUR;
+            });
+            const sl = LEAVE_TYPES.find(t => t.code === 'SL');
+            const vl = LEAVE_TYPES.find(t => t.code === 'VL');
+            let slFallback = 0;
+            let slBalance = 0;
+            if (sl && vl && neededPerType[sl.id] !== undefined) {
+                slBalance = Math.max(0, parseFloat(sl.balance) || 0);
+                if (milli(neededPerType[sl.id]) > milli(slBalance)) {
+                    slFallback = neededPerType[sl.id] - slBalance;
+                    neededPerType[sl.id] = slBalance;
+                    neededPerType[vl.id] = (neededPerType[vl.id] || 0) + slFallback;
+                }
+            }
+
+            for (const [typeId, needed] of Object.entries(neededPerType)) {
                 const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
                 if (!lt) continue;
-                const availableHours = parseFloat(lt.balance) / CREDIT_PER_HOUR;
-                if (Math.round(totalHours * CREDIT_PER_HOUR * 1000) > Math.round(parseFloat(lt.balance) * 1000)) {
-                    is_valid = false;
+                const balance = parseFloat(lt.balance) || 0;
+                if (milli(needed) <= milli(balance)) continue;
+
+                is_valid = false;
+                if (vl && lt.id === vl.id && slFallback > 0) {
+                    toastr.error(
+                        `Not enough Sick Leave credits (${slBalance.toFixed(3)} day(s)). The rest would be charged to Vacation Leave, ` +
+                        `but your Vacation Leave balance (${balance.toFixed(3)}) cannot cover ${needed.toFixed(3)}. File the remaining days as leave without pay.`,
+                        "Insufficient Balance"
+                    );
+                } else {
+                    const availableHours = balance / CREDIT_PER_HOUR;
+                    const totalHours = needed / CREDIT_PER_HOUR;
                     toastr.error(
                         `Insufficient ${lt.description} credits. You have ${availableHours.toFixed(2)} hrs available but are filing ${totalHours} hrs.`,
                         "Insufficient Balance"
                     );
                 }
+            }
+
+            if (is_valid && slFallback > 0) {
+                toastr.info(
+                    `Your Sick Leave balance covers ${slBalance.toFixed(3)} day(s). The remaining ${slFallback.toFixed(3)} day(s) will be charged to Vacation Leave.`,
+                    "Sick Leave ran out"
+                );
             }
         }
 
