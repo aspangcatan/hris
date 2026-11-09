@@ -242,27 +242,27 @@ class DTRServices
         return collect($scheduleMap);
     }
 
+    /**
+     * Work days in the range, decided date by date (same rule as
+     * DtrDayComputationService::resolveExpectedWorkDates, so days present,
+     * scheduled work days and absences always agree): a plotted date follows
+     * its schedule (OFF = rest day), an unplotted date uses the weekday rule,
+     * holidays are never work days.
+     */
     private function resolveExpectedWorkDates(array $schedules, $startDate, $endDate, array $holidays): array
     {
-        if (!empty($schedules)) {
-            return collect(array_keys($schedules))
-                ->reject(function ($date) use ($holidays) {
-                    return in_array($date, $holidays, true);
-                })
-                // Rest days (OFF) aren't work days - same rule the DTR day
-                // computation already uses for absences.
-                ->reject(function ($date) use ($schedules) {
-                    $code = trim((string) ($schedules[$date]['code'] ?? ''));
-                    return $code !== '' && strtoupper($code) === 'OFF';
-                })
-                ->values()
-                ->all();
-        }
-
         return collect($this->getAllDaysByRange($startDate, $endDate))
-            ->filter(function ($date) use ($holidays) {
-                $day = Carbon::parse($date);
-                return $day->isWeekday() && !in_array($date, $holidays, true);
+            ->filter(function ($date) use ($schedules, $holidays) {
+                if (in_array($date, $holidays, true)) {
+                    return false;
+                }
+
+                if (isset($schedules[$date])) {
+                    $code = trim((string) ($schedules[$date]['code'] ?? ''));
+                    return !($code !== '' && strtoupper($code) === 'OFF');
+                }
+
+                return Carbon::parse($date)->isWeekday();
             })
             ->values()
             ->all();

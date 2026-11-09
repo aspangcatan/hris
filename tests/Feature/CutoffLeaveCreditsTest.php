@@ -379,6 +379,46 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
+    public function half_plotted_range_counts_unplotted_weekdays_as_work_days_everywhere()
+    {
+        // Week 1 (2027-11-08..14) plotted: CWW Mon-Thu, OFF Fri-Sun.
+        // Week 2 (2027-11-15..19) NOT plotted (scheduler forgot).
+        $cww = DB::table('hris.schedule_master_lists')->where('code', 'CWW')->value('id');
+        $off = DB::table('hris.schedule_master_lists')->where('code', 'OFF')->value('id');
+        $plan = [
+            '2027-11-08' => $cww, '2027-11-09' => $cww, '2027-11-10' => $cww, '2027-11-11' => $cww,
+            '2027-11-12' => $off, '2027-11-13' => $off, '2027-11-14' => $off,
+        ];
+        foreach ($plan as $date => $scheduleId) {
+            DB::table('hris.schedules')->insert([
+                'employee_id' => $this->userId, 'schedule_id' => $scheduleId,
+                'schedule_date' => $date, 'updated_by' => $this->userId, 'created_at' => now(),
+            ]);
+        }
+
+        // Worked all 4 CWW days, plus Mon-Tue of the unplotted week; absent Wed-Fri.
+        $logs = [];
+        foreach (['2027-11-08', '2027-11-09', '2027-11-10', '2027-11-11'] as $date) {
+            $logs[] = ['userid' => $this->userId, 'status' => 'IN',  'created_at' => "$date 07:00:00"];
+            $logs[] = ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => "$date 18:00:00"];
+        }
+        foreach (['2027-11-15', '2027-11-16'] as $date) {
+            $logs[] = ['userid' => $this->userId, 'status' => 'IN',  'created_at' => "$date 08:00:00"];
+            $logs[] = ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => "$date 17:00:00"];
+        }
+        DB::table('hris.dtr_logs')->insert($logs);
+
+        $dtr = app(\App\Services\DTRServices::class);
+        $start = '2027-11-08';
+        $end = '2027-11-21';
+
+        // 4 plotted CWW days + 5 unplotted weekdays (not just the 4 plotted ones).
+        $this->assertSame(9, $dtr->getScheduledWorkDaysByRange($this->userId, $start, $end));
+        $this->assertSame(6, $dtr->getTotalPresentByRange($this->userId, $start, $end));
+        $this->assertSame(3, $dtr->getCutoffBreakdown($this->userId, $start, $end)['absences']);
+    }
+
+    /** @test */
     public function preview_rejects_a_nonexistent_cutoff_id()
     {
         $this->actAsAdmin();

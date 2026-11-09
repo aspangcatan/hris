@@ -89,21 +89,25 @@ class DtrDayComputationService
      */
     private function resolveExpectedWorkDates(Collection $schedules, string $startDate, string $endDate, array $holidays): array
     {
-        if ($schedules->isNotEmpty()) {
-            return $schedules->keys()
-                ->filter(function ($date) use ($startDate, $endDate) {
-                    return $date >= $startDate && $date <= $endDate;
-                })
-                ->reject(fn($date) => array_key_exists($date, $holidays))
-                ->reject(fn($date) => $this->isOffScheduleCode($schedules[$date]->code ?? null))
-                ->values()
-                ->all();
-        }
-
+        // Each date is decided on its own, and only dates inside the range
+        // count (the caller's +/-1 buffer day exists for overnight-shift logs
+        // only). A plotted date follows its schedule (OFF = rest day); an
+        // unplotted date falls back to the weekday rule. Previously ANY plotted
+        // date - even the buffer day - switched the whole range to "plotted
+        // dates only", so an unplotted month had zero work days and zero absences.
         $dates = [];
         foreach (CarbonPeriod::create($startDate, $endDate) as $date) {
-            if ($date->isWeekday() && !array_key_exists($date->toDateString(), $holidays)) {
-                $dates[] = $date->toDateString();
+            $day = $date->toDateString();
+            if (array_key_exists($day, $holidays)) {
+                continue;
+            }
+
+            if (isset($schedules[$day])) {
+                if (!$this->isOffScheduleCode($schedules[$day]->code ?? null)) {
+                    $dates[] = $day;
+                }
+            } elseif ($date->isWeekday()) {
+                $dates[] = $day;
             }
         }
         return $dates;
@@ -624,6 +628,15 @@ class DtrDayComputationService
             $lateMinutes = 0;
             $undertimeMinutes = max(0, $renderedMinutes - $leaveMinutes - $workedMinutes);
             $exemptionReason = 'partial_leave';
+        }
+
+        // An unplotted day has no schedule window to match logs against, so
+        // attendance is that day's first IN and last OUT - the same rule
+        // DTRServices::resolveDailyLogs() uses for days present. Without this,
+        // an unplotted weekday was always absent, even with a full day of logs.
+        if (!$schedule && !($firstIn && $lastOut)) {
+            $firstIn = $dayLogs->where('status', 'IN')->min('created_at');
+            $lastOut = $dayLogs->where('status', 'OUT')->max('created_at');
         }
 
         // Absence mirrors buildPresentAbsentByRange()'s existing semantics

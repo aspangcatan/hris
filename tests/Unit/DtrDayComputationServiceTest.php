@@ -197,6 +197,71 @@ class DtrDayComputationServiceTest extends TestCase
         $this->assertEquals(0, $result['2027-06-02']['undertime_minutes']);
     }
 
+    /** @test */
+    public function a_plotted_buffer_day_outside_the_range_does_not_erase_the_ranges_absences(): void
+    {
+        // Only Jul 31 is plotted (the buffer day before an August range); August itself
+        // is unplotted and has no logs. Mon Aug 2 - Fri Aug 6, 2027 must be absences.
+        $schedules = collect(['2027-07-31' => $this->schedule('08:00:00', '17:00:00', '12:00:00', '13:00:00')]);
+
+        $result = $this->service->computeRange(9501, '2027-08-01', '2027-08-07', $schedules, collect(), []);
+
+        $absent = collect($result)->filter(fn($d) => $d['is_absent'])->keys()->all();
+        $this->assertSame(['2027-08-02', '2027-08-03', '2027-08-04', '2027-08-05', '2027-08-06'], $absent);
+    }
+
+    /** @test */
+    public function unplotted_weekdays_inside_a_partly_plotted_range_are_work_days(): void
+    {
+        // Mon-Tue plotted (worked), Wed-Fri forgotten by the scheduler, no logs.
+        $schedules = collect([
+            '2027-08-02' => $this->schedule('08:00:00', '17:00:00', '12:00:00', '13:00:00'),
+            '2027-08-03' => $this->schedule('08:00:00', '17:00:00', '12:00:00', '13:00:00'),
+        ]);
+        $logs = collect([
+            $this->log('2027-08-02 08:00:00', 'IN'), $this->log('2027-08-02 17:00:00', 'OUT'),
+            $this->log('2027-08-03 08:00:00', 'IN'), $this->log('2027-08-03 17:00:00', 'OUT'),
+        ]);
+
+        $result = $this->service->computeRange(9501, '2027-08-02', '2027-08-08', $schedules, $logs, []);
+
+        $absent = collect($result)->filter(fn($d) => $d['is_absent'])->keys()->all();
+        $this->assertSame(['2027-08-04', '2027-08-05', '2027-08-06'], $absent);
+    }
+
+    /** @test */
+    public function an_unplotted_weekday_with_a_full_day_of_logs_is_not_absent(): void
+    {
+        $logs = collect([$this->log('2027-08-02 08:00:00', 'IN'), $this->log('2027-08-02 17:00:00', 'OUT')]);
+
+        $result = $this->service->computeRange(9501, '2027-08-02', '2027-08-02', collect(), $logs, []);
+
+        $this->assertFalse($result['2027-08-02']['is_absent']);
+    }
+
+    /** @test */
+    public function an_unplotted_weekday_with_only_a_time_in_is_still_absent(): void
+    {
+        $logs = collect([$this->log('2027-08-02 08:00:00', 'IN')]);
+
+        $result = $this->service->computeRange(9501, '2027-08-02', '2027-08-02', collect(), $logs, []);
+
+        $this->assertTrue($result['2027-08-02']['is_absent']);
+    }
+
+    /** @test */
+    public function off_days_unplotted_weekends_and_holidays_are_never_absences(): void
+    {
+        $off = (object) array_merge((array) $this->schedule('00:00:00', '00:00:00'), ['code' => 'OFF']);
+        $schedules = collect(['2027-08-06' => $off]); // Friday rest day (CWW)
+        $exemptions = ['holidays' => ['2027-08-05' => ['type' => 'Regular', 'description' => 'Test Holiday']]];
+
+        // Thu holiday, Fri OFF, Sat/Sun unplotted - all without logs.
+        $result = $this->service->computeRange(9501, '2027-08-05', '2027-08-08', $schedules, collect(), $exemptions);
+
+        $this->assertEmpty(collect($result)->filter(fn($d) => $d['is_absent'])->all());
+    }
+
     /**
      * Partial-day leave on an 8S day (08:00-17:00, 12-13 break = 480 work minutes).
      * Returns the computed day for a 4-hour leave plus the given logs.
