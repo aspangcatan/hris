@@ -74,6 +74,23 @@
                             </div>
                         </div>
 
+                        {{-- Credits are deducted by the hours filed (8 hours = 1 day), so the hours must
+                             match the filer's schedule on that day. --}}
+                        <div class="alert alert-info d-flex gap-2 align-items-start py-2 px-3 mb-3 small" role="note" id="leave_hours_notice">
+                            <i class="bi bi-info-circle-fill mt-1"></i>
+                            <div>
+                                <strong>Select the hours that match your schedule on each day.</strong>
+                                Credits are deducted by the hours you file (8 hours = 1 day).
+                                <ul class="mb-0 mt-1 ps-3">
+                                    <li>8-hour schedule: select <strong>8</strong> (deducts 1.000 day)</li>
+                                    <li>10-hour schedule (e.g. compressed work week): select <strong>10</strong> (deducts 1.250 days)</li>
+                                    <li>12-hour shift: select <strong>12</strong> (deducts 1.500 days)</li>
+                                    <li>Half day: select <strong>4</strong> (deducts 0.500 day)</li>
+                                </ul>
+                                <div class="mt-1">If you file fewer hours than your schedule, the hours not covered are counted as undertime.</div>
+                            </div>
+                        </div>
+
                         <div id="date_range_panel" class="lf-range d-none">
                             <div class="row g-2 align-items-end">
                                 <div class="col-md-3">

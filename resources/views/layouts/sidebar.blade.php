@@ -174,8 +174,7 @@
             </li>
         @endif
 
-        {{-- LEAVE MANAGEMENT (hidden for now) --}}
-        @if(false)
+        {{-- LEAVE MANAGEMENT --}}
             @if(permission_check('leave.file') || permission_check('leave.approve') || permission_check('leave.approve_hr'))
                 <li class="nav-heading">Leave Management</li>
                 @permission('leave.file')
@@ -224,7 +223,6 @@
                     </li>
                 @endpermission
             @endif
-        @endif
         {{-- HR MANAGEMENT --}}
         @if(permission_check('employee.view') || permission_check('promotion.manage'))
         <li class="nav-heading">HR Management</li>
@@ -321,9 +319,9 @@
         @endif
 
         {{-- SETTINGS --}}
-        {{-- Leave settings hidden for now; restore "|| permission_check('leave.manage_types') || permission_check('leave.manage_credits')" when re-enabled --}}
         @php($isAdmin = strtolower((string) session('access_rights')) === 'admin')
-        @if(permission_check('calendar.manage') || permission_check('hospital_order.create') || $isAdmin)
+        @if(permission_check('calendar.manage') || permission_check('hospital_order.create') || $isAdmin
+            || permission_check('leave.manage_types') || permission_check('leave.manage_credits'))
             <li class="nav-heading">Settings</li>
             @permission('calendar.manage')
                 <li class="nav-item">
@@ -359,7 +357,6 @@
                     </a>
                 </li>
             @endif
-            @if(false)
             @permission('leave.manage_types')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_management') ? '' : 'collapsed' }}"
@@ -378,7 +375,6 @@
                 </a>
             </li>
             @endpermission
-            @endif
         @endif
 
         {{-- MOBILE DTR --}}
