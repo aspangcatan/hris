@@ -785,22 +785,27 @@ class DTRController extends Controller
                     $schedules[$s->schedule_date] = $s;
                 }
 
-                // Approved pass slips: waive late/undertime for the day.
-                // Official type still keeps the OB marker display behavior.
+                // Approved pass slips: an official slip (OB) waives the day's
+                // late/undertime and keeps the OB marker. A personal slip no
+                // longer waives the day - its times are passed so the shared
+                // computation can work out its in-hours minutes (VL credits only).
                 $approvedPassSlipsRaw = DB::table('hris.pass_slips')
                     ->where('user_id', $employee->id)
                     ->where('status', 'approved')
                     ->whereMonth('slip_date', $month)
                     ->whereYear('slip_date', $year)
-                    ->select(DB::raw('DATE(slip_date) as slip_date'), 'type')
+                    ->select(DB::raw('DATE(slip_date) as slip_date'), 'type', 'time_out', 'time_in')
                     ->get();
 
                 $approvedPassSlips = [];
                 $officialPassSlips = [];
                 foreach ($approvedPassSlipsRaw as $ps) {
-                    $approvedPassSlips[$ps->slip_date] = true;
+                    $approvedPassSlips[$ps->slip_date] = $approvedPassSlips[$ps->slip_date] ?? ['official' => false, 'personal' => []];
                     if (strtoupper((string) $ps->type) === 'OFFICIAL') {
+                        $approvedPassSlips[$ps->slip_date]['official'] = true;
                         $officialPassSlips[$ps->slip_date] = true;
+                    } else {
+                        $approvedPassSlips[$ps->slip_date]['personal'][] = ['time_out' => $ps->time_out, 'time_in' => $ps->time_in];
                     }
                 }
 
@@ -868,7 +873,8 @@ class DTRController extends Controller
                     $hasLeave = array_key_exists($currentDay, $leaves);
                     $hasHospitalOrder = !empty($hospitalOrders[$currentDay]);
                     $hasApprovedOvertime = !empty($overtimeRequests[$currentDay]);
-                    $hasApprovedPassSlip = !empty($approvedPassSlips[$currentDay]);
+                    // Only an official slip excuses the day (same as DtrDayComputationService).
+                    $hasApprovedPassSlip = !empty($approvedPassSlips[$currentDay]['official']);
                     $hasOfficialPassSlip = !empty($officialPassSlips[$currentDay]);
                     $hasExcusedRecord = $hasLeave || $hasHospitalOrder || $hasApprovedPassSlip;
                     // Holidays should still compute late/undertime when there are actual timelogs.

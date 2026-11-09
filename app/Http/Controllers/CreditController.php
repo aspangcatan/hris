@@ -209,7 +209,11 @@ class CreditController extends Controller
             // plain weekday count until they are regenerated.
             $totalWorkingDays = (int) ($summary->scheduled_work_days ?? 0)
                 ?: (int) ($summary->total_working_days ?? 0);
-            $totalLateUndertime = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
+            // Personal pass slip minutes (in working hours) are charged to VL
+            // here, together with late/undertime; payroll never reads them.
+            $passSlipMinutes = (int) ($summary->approved_pass_slips_minutes ?? 0);
+            $lateUndertimeOnly = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
+            $totalLateUndertime = $lateUndertimeOnly + $passSlipMinutes;
 
             $result = $this->leaveCreditService->computeEarnedCredits(
                 $totalPresent,
@@ -229,6 +233,8 @@ class CreditController extends Controller
                 'total_present' => $result['total_present'],
                 'work_days' => $totalWorkingDays,
                 'total_late_undertime' => $result['total_late_undertime'],
+                'late_undertime_minutes' => $lateUndertimeOnly,
+                'pass_slip_minutes' => $passSlipMinutes,
                 'earned_points' => $result['monthly_points_earned'],
                 'deducted_points' => $result['total_deductions'],
                 'net_points' => $result['net_points'],

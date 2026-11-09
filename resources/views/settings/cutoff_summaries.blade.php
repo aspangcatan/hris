@@ -2,6 +2,10 @@
 @section('content')
     @include('layouts.saln_styles')
     <style>
+        /* The type-warning modal opens on top of the Create Cutoff modal. */
+        .cutoff-stacked-modal { z-index: 1065; }
+        .modal-backdrop.cutoff-stacked-backdrop { z-index: 1060; }
+
         .saln-board {
             background: #ffffff;
             border: 1px solid #e2e8f0;
@@ -163,11 +167,12 @@
                                 </th>
                                 <th>Employee</th>
                                 <th>Designation</th>
+                                <th>Employee Type</th>
                             </tr>
                             </thead>
                             <tbody id="cutoff_employee_body">
                             <tr>
-                                <td colspan="3" class="text-muted text-center">No employees loaded.</td>
+                                <td colspan="4" class="text-muted text-center">No employees loaded.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -176,6 +181,28 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-success btn-edit" id="btn_save_cutoff">Generate Cutoff</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Shown over the Create Cutoff modal when the selection includes non-Permanent employees. --}}
+    <div class="modal fade payroll-modal-theme cutoff-stacked-modal" id="cutoff_type_warning_modal" tabindex="-1"
+         aria-labelledby="cutoffTypeWarningLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title text-white" id="cutoffTypeWarningLabel">Check the selected employees</h4>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Some selected employees are not <strong>Permanent</strong>:</p>
+                    <div id="cutoff_type_warning_list"></div>
+                    <p class="small text-muted mb-0 mt-2" id="cutoff_type_warning_note"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-view" id="btn_type_warning_back">Go back</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btn_type_warning_keep">Keep &amp; generate</button>
+                    <button type="button" class="btn btn-success btn-edit" id="btn_type_warning_remove">Remove &amp; generate</button>
                 </div>
             </div>
         </div>
@@ -211,7 +238,7 @@
                                 <th>Undertime (mins)</th>
                                 <th>Hospital Orders</th>
                                 <th>Overtime (mins)</th>
-                                <th>Pass Slips (mins)</th>
+                                <th title="Personal pass slip minutes inside working hours - deducted from VL earned credits only">Personal Pass Slips (mins)</th>
                                 <th>Approved Leave</th>
                                 <th>LWOP Days</th>
                             </tr>
@@ -252,7 +279,7 @@
                             <tr>
                                 <th>Employee</th>
                                 <th>Present / Work Days</th>
-                                <th>Late/Undertime (mins)</th>
+                                <th title="Late/undertime + personal pass slip minutes, all deducted from VL">Late/Undertime + Pass Slips (mins)</th>
                                 <th>Earned Points</th>
                                 <th>Deducted Points</th>
                                 <th>Net Points</th>
@@ -392,7 +419,7 @@
                 return;
             }
 
-            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}&exclude_separated=1`)
+            fetch(`{{ route('getEmployeeByDivisionSection') }}?division=${division}&section=${section}`)
                 .then(response => response.json())
                 .then(data => {
                     const $tbody = $("#cutoff_employee_body");
@@ -400,7 +427,7 @@
                     $("#cutoff_select_all").prop("checked", false);
 
                     if (!data.results || data.results.length < 1) {
-                        $tbody.append("<tr><td colspan='3' class='text-muted text-center'>No employees found.</td></tr>");
+                        $tbody.append("<tr><td colspan='4' class='text-muted text-center'>No employees found.</td></tr>");
                         return;
                     }
 
@@ -408,11 +435,14 @@
                         const middleInitial = emp.mname ? emp.mname.charAt(0) + '.' : '';
                         const suffix = emp.suffix ? ` ${emp.suffix}` : '';
                         const fullName = formatEmployeeName(`${emp.lname}, ${emp.fname} ${middleInitial}${suffix}`);
+                        const type = (emp.employee_type || "").trim();
                         const row = `
                             <tr data-name="${fullName.toLowerCase()}">
-                                <td><input type="checkbox" class="form-check-input cutoff-employee" value="${emp.user_id}"></td>
+                                <td><input type="checkbox" class="form-check-input cutoff-employee" value="${emp.user_id}"
+                                           data-name="${fullName}" data-type="${type}"></td>
                                 <td>${fullName}</td>
                                 <td>${emp.designation ?? '-'}</td>
+                                <td>${employeeTypeBadge(type)}</td>
                             </tr>`;
                         $tbody.append(row);
                     });
@@ -434,13 +464,94 @@
             });
         }
 
+        // Resigned/Retired are always left out by the server; the other
+        // non-Permanent types are allowed but the user must confirm them.
+        const SEPARATED_TYPES = ["Resigned", "Retired"];
+
+        function employeeTypeBadge(type) {
+            if (!type) {
+                return `<span class="text-muted">—</span>`;
+            }
+            if (type === "Permanent") {
+                return `<span class="badge bg-success">${type}</span>`;
+            }
+            const cls = SEPARATED_TYPES.includes(type) ? "bg-danger" : "bg-warning text-dark";
+            return `<span class="badge ${cls}">${type}</span>`;
+        }
+
+        // Checked employees whose type is set and isn't Permanent.
+        function flaggedSelectedEmployees() {
+            return $("#cutoff_employee_body .cutoff-employee:checked").map(function () {
+                const type = ($(this).data("type") || "").toString();
+                return type && type !== "Permanent"
+                    ? {id: parseInt($(this).val(), 10), name: $(this).data("name"), type: type}
+                    : null;
+            }).get();
+        }
+
+        function selectedEmployeeIds() {
+            return $("#cutoff_employee_body .cutoff-employee:checked").map(function () {
+                return parseInt($(this).val(), 10);
+            }).get();
+        }
+
+        function showTypeWarning(flagged) {
+            const byType = {};
+            flagged.forEach(e => (byType[e.type] = byType[e.type] || []).push(e.name));
+
+            const $list = $("#cutoff_type_warning_list").empty();
+            Object.keys(byType).sort().forEach(type => {
+                const names = byType[type].map(n => `<li>${n}</li>`).join("");
+                $list.append(`
+                    <div class="mb-2">
+                        ${employeeTypeBadge(type)} <strong>${byType[type].length}</strong> selected
+                        <ul class="mb-0 small">${names}</ul>
+                    </div>`);
+            });
+
+            const separated = flagged.filter(e => SEPARATED_TYPES.includes(e.type)).length;
+            const others = flagged.length - separated;
+            $("#cutoff_type_warning_note").text(separated > 0
+                ? `Resigned and retired employees are always left out of a cutoff, even if you keep them.`
+                : "");
+            // Nothing left to keep when every flagged employee is resigned/retired.
+            $("#btn_type_warning_keep").toggle(others > 0);
+
+            $("#cutoff_type_warning_modal").modal("show");
+        }
+
+        $("#cutoff_type_warning_modal").on("shown.bs.modal", function () {
+            $(".modal-backdrop").last().addClass("cutoff-stacked-backdrop");
+        });
+
+        $("#btn_type_warning_back").click(function () {
+            $("#cutoff_type_warning_modal").modal("hide");
+        });
+
+        $("#btn_type_warning_keep").click(function () {
+            $("#cutoff_type_warning_modal").modal("hide");
+            submitCutoff(selectedEmployeeIds());
+        });
+
+        $("#btn_type_warning_remove").click(function () {
+            const flaggedIds = flaggedSelectedEmployees().map(e => e.id);
+            flaggedIds.forEach(id => $(`#cutoff_employee_body .cutoff-employee[value='${id}']`).prop("checked", false));
+            $("#cutoff_select_all").prop("checked", false);
+            $("#cutoff_type_warning_modal").modal("hide");
+
+            const remaining = selectedEmployeeIds();
+            if (remaining.length < 1) {
+                showCutoffFeedback("No employees left after removing them. Please select at least one employee.", "danger");
+                return;
+            }
+            submitCutoff(remaining);
+        });
+
         function createCutoffSummaries() {
             const title = ($("#cutoff_title").val() || "").trim();
             const startDate = $("#cutoff_modal_start_date").val();
             const endDate = $("#cutoff_modal_end_date").val();
-            const selected = $("#cutoff_employee_body .cutoff-employee:checked").map(function () {
-                return parseInt($(this).val(), 10);
-            }).get();
+            const selected = selectedEmployeeIds();
 
             if (!title || !startDate || !endDate) {
                 showCutoffFeedback("Please fill in title, start date, and end date.", "danger");
@@ -451,6 +562,20 @@
                 showCutoffFeedback("Please select at least one employee.", "danger");
                 return;
             }
+
+            const flagged = flaggedSelectedEmployees();
+            if (flagged.length > 0) {
+                showTypeWarning(flagged);
+                return;
+            }
+
+            submitCutoff(selected);
+        }
+
+        function submitCutoff(selected) {
+            const title = ($("#cutoff_title").val() || "").trim();
+            const startDate = $("#cutoff_modal_start_date").val();
+            const endDate = $("#cutoff_modal_end_date").val();
 
             showCutoffFeedback("Generating cutoff summaries, please wait...", "info");
             const $saveBtn = $("#btn_save_cutoff");
@@ -531,7 +656,7 @@
             $("#cutoff_search_name").val("");
             $("#cutoff_select_all").prop("checked", false);
             $("#cutoff_employee_body").empty()
-                .append("<tr><td colspan='3' class='text-muted text-center'>No employees loaded.</td></tr>");
+                .append("<tr><td colspan='4' class='text-muted text-center'>No employees loaded.</td></tr>");
             loadDivision();
         }
 
@@ -653,7 +778,7 @@
                                 <tr class="${item.already_credited ? 'text-muted' : ''}">
                                     <td>${formatEmployeeName(item.name)}</td>
                                     <td>${item.total_present ?? 0} / ${item.work_days ?? 0}</td>
-                                    <td>${item.total_late_undertime ?? 0}</td>
+                                    <td>${item.total_late_undertime ?? 0}${Number(item.pass_slip_minutes) > 0 ? `<div class="small text-muted">${item.late_undertime_minutes} + ${item.pass_slip_minutes} slip</div>` : ''}</td>
                                     <td>${formatThreeDecimals(item.earned_points)}</td>
                                     <td>${formatThreeDecimals(item.deducted_points)}</td>
                                     <td>${formatThreeDecimals(item.net_points)}</td>

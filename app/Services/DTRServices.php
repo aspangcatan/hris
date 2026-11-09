@@ -7,18 +7,6 @@ use Illuminate\Support\Facades\DB;
 
 class DTRServices
 {
-    private function calculatePersonalPassSlipMinutes($date, $timeOut, $timeIn): int
-    {
-        if (empty($timeOut) || empty($timeIn)) {
-            return 0;
-        }
-
-        $start = Carbon::parse($date . ' ' . $timeOut);
-        $end = Carbon::parse($date . ' ' . $timeIn);
-
-        return $end->gt($start) ? $start->diffInMinutes($end) : 0;
-    }
-
     public function getTotalPresent($userid, $month, $year)
     {
         $startDate = Carbon::createFromDate($year, $month, 1)->toDateString();
@@ -34,6 +22,7 @@ class DTRServices
             'late_minutes' => $results->sum('late_minutes'),
             'undertime_minutes' => $results->sum('undertime_minutes'),
             'absences' => $results->where('is_absent', true)->count(),
+            'pass_slip_minutes' => (int) $results->sum('pass_slip_minutes'),
         ];
     }
 
@@ -74,10 +63,18 @@ class DTRServices
         $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
         $lwopDates = $this->getApprovedLwopDatesByRange($userid, $start_date, $end_date);
         $hospitalOrders = array_fill_keys($this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date), true);
-        $passSlips = array_fill_keys(
-            $this->getApprovedPassSlipsByRange($userid, $start_date, $end_date)->pluck('slip_date')->unique()->all(),
-            true
-        );
+        // Official slips excuse the day; personal slips carry their times so
+        // only their in-hours minutes are charged (to earned credits).
+        $passSlips = [];
+        foreach ($this->getApprovedPassSlipsByRange($userid, $start_date, $end_date) as $slip) {
+            $date = Carbon::parse($slip->slip_date)->toDateString();
+            $passSlips[$date] = $passSlips[$date] ?? ['official' => false, 'personal' => []];
+            if (strtolower((string) ($slip->type ?? '')) === 'personal') {
+                $passSlips[$date]['personal'][] = ['time_out' => $slip->time_out, 'time_in' => $slip->time_in];
+            } else {
+                $passSlips[$date]['official'] = true;
+            }
+        }
 
         $specialDutyDates = $this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date);
         $officialPassSlipDates = $this->getApprovedPassSlipDatesByRange($userid, $start_date, $end_date);
@@ -675,27 +672,17 @@ class DTRServices
         $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $startDate, $endDate);
         $approvedLwop = $this->getApprovedLwopDatesByRange($userid, $startDate, $endDate);
         $approvedHospitalOrders = $this->getApprovedHospitalOrderDatesByRange($userid, $startDate, $endDate);
-        $approvedPassSlips = $this->getApprovedPassSlipsByRange($userid, $startDate, $endDate);
         $approvedOvertimeMinutes = $this->getApprovedOvertimeMinutesByRange($userid, $startDate, $endDate);
-
-        $personalPassSlipMinutes = $approvedPassSlips
-            ->filter(function ($passSlip) {
-                return strtolower((string) ($passSlip->type ?? '')) === 'personal';
-            })
-            ->sum(function ($passSlip) {
-                return $this->calculatePersonalPassSlipMinutes(
-                    $passSlip->slip_date,
-                    $passSlip->time_out,
-                    $passSlip->time_in
-                );
-            });
 
         return [
             'late_minutes' => (int) ($result['late_minutes'] ?? 0),
             'undertime_minutes' => (int) ($result['undertime_minutes'] ?? 0),
             'absences' => (int) ($result['absences'] ?? 0),
             'approved_overtime_minutes' => $approvedOvertimeMinutes,
-            'approved_pass_slips_minutes' => (int) $personalPassSlipMinutes,
+            // Personal pass slip minutes inside working hours on days actually
+            // worked (not the raw time_out..time_in). Charged to VL earned
+            // credits only - payroll does not read this column.
+            'approved_pass_slips_minutes' => (int) ($result['pass_slip_minutes'] ?? 0),
             'approved_leave_days' => count(array_unique($approvedLeaves)),
             'lwop_days' => count(array_unique($approvedLwop)),
             'hospital_order_days' => count(array_unique($approvedHospitalOrders)),

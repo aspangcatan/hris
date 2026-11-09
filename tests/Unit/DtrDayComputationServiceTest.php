@@ -262,6 +262,87 @@ class DtrDayComputationServiceTest extends TestCase
         $this->assertEmpty(collect($result)->filter(fn($d) => $d['is_absent'])->all());
     }
 
+    /** 8S day (08:00-17:00, 12-13 break) with the given logs and pass slip entry. */
+    private function computeSlipDay(array $logs, array $slipEntry): array
+    {
+        $day = '2027-05-10';
+        $schedules = collect([$day => $this->schedule('08:00:00', '17:00:00', '12:00:00', '13:00:00')]);
+
+        return $this->service->computeRange(9501, $day, $day, $schedules, collect($logs), [
+            'passSlips' => [$day => $slipEntry],
+        ])[$day];
+    }
+
+    private function personalSlip(string $out, string $in): array
+    {
+        return ['official' => false, 'personal' => [['time_out' => $out, 'time_in' => $in]]];
+    }
+
+    /** @test */
+    public function personal_pass_slip_minutes_are_returned_separately_and_do_not_erase_lateness(): void
+    {
+        // 30 min late + a 14:00-15:00 personal slip.
+        $result = $this->computeSlipDay([
+            $this->log('2027-05-10 08:30:00', 'IN'),
+            $this->log('2027-05-10 17:00:00', 'OUT'),
+        ], $this->personalSlip('14:00:00', '15:00:00'));
+
+        $this->assertEquals(30, $result['late_minutes'], 'A personal slip must not erase the day\'s lateness.');
+        $this->assertEquals(0, $result['undertime_minutes'], 'Slip minutes are not salary undertime.');
+        $this->assertEquals(60, $result['pass_slip_minutes']);
+    }
+
+    /** @test */
+    public function personal_pass_slip_counts_only_inside_working_hours(): void
+    {
+        // The real slip on file: 16:49-19:50, but work ends at 17:00 -> 11 minutes.
+        $result = $this->computeSlipDay([
+            $this->log('2027-05-10 08:00:00', 'IN'),
+            $this->log('2027-05-10 17:00:00', 'OUT'),
+        ], $this->personalSlip('16:49:00', '19:50:00'));
+
+        $this->assertEquals(11, $result['pass_slip_minutes']);
+    }
+
+    /** @test */
+    public function personal_pass_slip_excludes_the_lunch_break(): void
+    {
+        $result = $this->computeSlipDay([
+            $this->log('2027-05-10 08:00:00', 'IN'),
+            $this->log('2027-05-10 17:00:00', 'OUT'),
+        ], $this->personalSlip('11:30:00', '13:30:00'));
+
+        $this->assertEquals(60, $result['pass_slip_minutes']);
+    }
+
+    /** @test */
+    public function personal_pass_slip_is_not_double_counted_with_undertime(): void
+    {
+        // Slip 16:00-17:00 and the employee simply left at 16:00: that hour is
+        // already undertime, so the slip adds nothing on top.
+        $result = $this->computeSlipDay([
+            $this->log('2027-05-10 08:00:00', 'IN'),
+            $this->log('2027-05-10 16:00:00', 'OUT'),
+        ], $this->personalSlip('16:00:00', '17:00:00'));
+
+        $this->assertEquals(60, $result['undertime_minutes']);
+        $this->assertEquals(0, $result['pass_slip_minutes']);
+    }
+
+    /** @test */
+    public function official_pass_slip_still_excuses_the_whole_day(): void
+    {
+        $result = $this->computeSlipDay([
+            $this->log('2027-05-10 09:00:00', 'IN'),
+            $this->log('2027-05-10 15:00:00', 'OUT'),
+        ], ['official' => true, 'personal' => []]);
+
+        $this->assertEquals(0, $result['late_minutes']);
+        $this->assertEquals(0, $result['undertime_minutes']);
+        $this->assertEquals(0, $result['pass_slip_minutes']);
+        $this->assertSame('pass_slip', $result['exemption_reason']);
+    }
+
     /**
      * Partial-day leave on an 8S day (08:00-17:00, 12-13 break = 480 work minutes).
      * Returns the computed day for a 4-hour leave plus the given logs.

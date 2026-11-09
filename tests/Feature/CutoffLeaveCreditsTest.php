@@ -56,6 +56,7 @@ class CutoffLeaveCreditsTest extends TestCase
         DB::table('hris.leave_applications')->whereIn('id', $appIds)->delete();
         DB::table('hris.schedules')->where('employee_id', $this->userId)->delete();
         DB::table('hris.dtr_logs')->where('userid', $this->userId)->delete();
+        DB::table('hris.pass_slips')->where('user_id', $this->userId)->delete();
 
         foreach ($this->originalPoints as $present => $points) {
             DB::table('monthly_earned_points')->where('present', $present)->update(['points' => $points]);
@@ -416,6 +417,48 @@ class CutoffLeaveCreditsTest extends TestCase
         $this->assertSame(9, $dtr->getScheduledWorkDaysByRange($this->userId, $start, $end));
         $this->assertSame(6, $dtr->getTotalPresentByRange($this->userId, $start, $end));
         $this->assertSame(3, $dtr->getCutoffBreakdown($this->userId, $start, $end)['absences']);
+    }
+
+    /** @test */
+    public function personal_pass_slip_minutes_are_deducted_from_vl_credits_but_not_payroll_undertime()
+    {
+        $this->actAsAdmin();
+
+        // Mon 2027-12-06 on 8S, worked 08:30-17:00 (30 min late), personal slip 14:00-15:00.
+        $scheduleId = DB::table('hris.schedule_master_lists')->where('code', '8S')->value('id');
+        DB::table('hris.schedules')->insert([
+            'employee_id' => $this->userId, 'schedule_id' => $scheduleId,
+            'schedule_date' => '2027-12-06', 'updated_by' => $this->userId, 'created_at' => now(),
+        ]);
+        DB::table('hris.dtr_logs')->insert([
+            ['userid' => $this->userId, 'status' => 'IN',  'created_at' => '2027-12-06 08:30:00'],
+            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2027-12-06 17:00:00'],
+        ]);
+        DB::table('hris.pass_slips')->insert([
+            'user_id' => $this->userId, 'slip_date' => '2027-12-06', 'time_out' => '14:00:00',
+            'time_in' => '15:00:00', 'type' => 'personal', 'status' => 'approved', 'created_at' => now(),
+        ]);
+
+        $summary = app(\App\Services\PayrollServices::class)->generateCutoffSummary(
+            $this->userId, '2027-12-06', '2027-12-06', 'Pass Slip Test Cutoff', $this->userId
+        );
+        $this->masterId = (int) $summary->cutoff_id;
+
+        // Payroll reads late + undertime only: the slip is not salary undertime.
+        $this->assertSame(30, (int) $summary->late_minutes);
+        $this->assertSame(0, (int) $summary->undertime_minutes);
+        $this->assertSame(60, (int) $summary->approved_pass_slips_minutes);
+
+        $row = collect($this->withoutMiddleware()
+            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]))
+            ->assertOk()->json('data'))->firstWhere('employee_id', $this->userId);
+
+        // VL deduction = 30 late + 60 slip = 90 minutes.
+        $this->assertSame(90, $row['total_late_undertime']);
+        $this->assertSame(30, $row['late_undertime_minutes']);
+        $this->assertSame(60, $row['pass_slip_minutes']);
+        $expected = app(\App\Services\MinuteConversionService::class)->computeDeduction(90);
+        $this->assertEqualsWithDelta((float) $expected, (float) $row['deducted_points'], 0.001);
     }
 
     /** @test */

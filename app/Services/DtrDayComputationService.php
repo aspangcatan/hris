@@ -24,7 +24,8 @@ class DtrDayComputationService
      *   'leaves' => [date => ['hours' => n] | true] (hours below the
      *   schedule's work minutes = partial-day leave; true = full day),
      *   'hospitalOrders' => [date => true],
-     *   'passSlips' => [date => true], 'absenceExemptDates' => [date => true]].
+     *   'passSlips' => [date => ['official' => bool, 'personal' => [['time_out'=>,'time_in'=>], ...]] | true],
+     *   'absenceExemptDates' => [date => true]].
      *   IMPORTANT: 'absenceExemptDates' is a *different* set than the other
      *   three, used only for is_absent - it must be pre-computed by the
      *   caller as the union of leave dates, hospital-order dates, approved
@@ -172,6 +173,81 @@ class DtrDayComputationService
     }
 
     /**
+     * Chargeable minutes of the day's personal pass slips: each slip's
+     * time_out..time_in, clipped to the worked span (first-in .. last-out,
+     * itself clipped to time_in .. time_out_latest) and minus the scheduled
+     * break. Overlapping slips are merged so no minute is counted twice.
+     */
+    private function personalPassSlipMinutes($schedule, string $currentDay, $firstIn, $lastOut, array $slips): int
+    {
+        $schedIn = Carbon::parse($currentDay . ' ' . $schedule->time_in);
+        $schedOut = Carbon::parse($currentDay . ' ' . $schedule->time_out);
+        if ($schedOut->lte($schedIn)) {
+            $schedOut->addDay();
+        }
+        $latestOut = !empty($schedule->time_out_latest)
+            ? Carbon::parse($currentDay . ' ' . $schedule->time_out_latest)
+            : $schedOut->copy();
+        if ($latestOut->lt($schedOut)) {
+            $latestOut->addDay();
+        }
+
+        $spanStart = Carbon::parse($firstIn)->startOfMinute()->max($schedIn);
+        $spanEnd = Carbon::parse($lastOut)->startOfMinute()->min($latestOut);
+        if ($spanEnd->lte($spanStart)) {
+            return 0;
+        }
+
+        $breakOut = $breakIn = null;
+        if (!empty($schedule->break_out) && !empty($schedule->break_in)) {
+            $breakOut = Carbon::parse($currentDay . ' ' . $schedule->break_out);
+            $breakIn = Carbon::parse($currentDay . ' ' . $schedule->break_in);
+            if ($breakOut->lt($schedIn)) {
+                $breakOut->addDay();
+            }
+            if ($breakIn->lte($breakOut)) {
+                $breakIn->addDay();
+            }
+        }
+
+        // Clip every slip to the worked span, then merge overlaps.
+        $windows = [];
+        foreach ($slips as $slip) {
+            if (empty($slip['time_out']) || empty($slip['time_in'])) {
+                continue;
+            }
+            $out = Carbon::parse($currentDay . ' ' . $slip['time_out'])->startOfMinute()->max($spanStart);
+            $in = Carbon::parse($currentDay . ' ' . $slip['time_in'])->startOfMinute()->min($spanEnd);
+            if ($in->gt($out)) {
+                $windows[] = [$out, $in];
+            }
+        }
+        usort($windows, fn($a, $b) => $a[0] <=> $b[0]);
+
+        $minutes = 0;
+        $cursor = null;
+        foreach ($windows as [$out, $in]) {
+            if ($cursor && $out->lt($cursor)) {
+                $out = $cursor->copy();
+            }
+            if ($in->lte($out)) {
+                continue;
+            }
+            $minutes += $out->diffInMinutes($in);
+            if ($breakOut) {
+                $overlapStart = $out->copy()->max($breakOut);
+                $overlapEnd = $in->copy()->min($breakIn);
+                if ($overlapEnd->gt($overlapStart)) {
+                    $minutes -= $overlapStart->diffInMinutes($overlapEnd);
+                }
+            }
+            $cursor = $in->copy();
+        }
+
+        return max(0, $minutes);
+    }
+
+    /**
      * Minutes worked between first-in and last-out, counted only inside the
      * schedule's window (time_in .. time_out_latest) and minus the scheduled
      * break. Early arrivals before time_in and stays past time_out_latest
@@ -241,7 +317,15 @@ class DtrDayComputationService
         $isHoliday = array_key_exists($currentDay, $holidays);
         $hasLeave = array_key_exists($currentDay, $leaves);
         $hasHospitalOrder = !empty($hospitalOrders[$currentDay]);
-        $hasApprovedPassSlip = !empty($passSlips[$currentDay]);
+        // Only an OFFICIAL pass slip (OB) excuses the whole day. A personal
+        // slip no longer erases the day's lateness/undertime; its in-hours
+        // minutes are returned separately as pass_slip_minutes (charged to VL
+        // earned credits only, never to salary). A bare `true` entry is the
+        // old "excused" format and still means official.
+        $passSlipEntry = $passSlips[$currentDay] ?? null;
+        $hasApprovedPassSlip = $passSlipEntry === true
+            || (is_array($passSlipEntry) && !empty($passSlipEntry['official']));
+        $personalPassSlips = is_array($passSlipEntry) ? ($passSlipEntry['personal'] ?? []) : [];
         $hasExcusedRecord = $hasLeave || $hasHospitalOrder || $hasApprovedPassSlip;
         $hasComputationExemption = $hasExcusedRecord;
 
@@ -630,6 +714,15 @@ class DtrDayComputationService
             $exemptionReason = 'partial_leave';
         }
 
+        // Personal pass slip time actually inside the worked span (so it never
+        // overlaps lateness before first-in or undertime after last-out), within
+        // schedule hours and minus the lunch break.
+        $passSlipMinutes = 0;
+        if (!empty($personalPassSlips) && $schedule && !$isOffSchedule && !$hasExcusedRecord
+            && !$skipAllAutomation && $firstIn && $lastOut) {
+            $passSlipMinutes = $this->personalPassSlipMinutes($schedule, $currentDay, $firstIn, $lastOut, $personalPassSlips);
+        }
+
         // An unplotted day has no schedule window to match logs against, so
         // attendance is that day's first IN and last OUT - the same rule
         // DTRServices::resolveDailyLogs() uses for days present. Without this,
@@ -654,6 +747,7 @@ class DtrDayComputationService
             'is_absent' => $isAbsent,
             'is_holiday' => $isHoliday,
             'exemption_reason' => $exemptionReason,
+            'pass_slip_minutes' => $passSlipMinutes,
         ];
     }
 }
