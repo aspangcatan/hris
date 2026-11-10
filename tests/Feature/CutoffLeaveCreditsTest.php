@@ -499,4 +499,147 @@ class CutoffLeaveCreditsTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    /** Complete 08:00-17:00 logs on every non-holiday weekday from..to, except $skip. */
+    private function logWeekdays(string $from, string $to, array $skip = []): void
+    {
+        $holidays = DB::table('hris.calendar_holidays')->whereBetween('date', [$from, $to])->pluck('date')
+            ->map(fn($d) => \Carbon\Carbon::parse($d)->toDateString())->all();
+        $logs = [];
+        foreach (\Carbon\CarbonPeriod::create($from, $to) as $day) {
+            $date = $day->toDateString();
+            if ($day->isWeekend() || in_array($date, $holidays, true) || in_array($date, $skip, true)) {
+                continue;
+            }
+            $logs[] = ['userid' => $this->userId, 'status' => 'IN', 'created_at' => "$date 08:00:00"];
+            $logs[] = ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => "$date 17:00:00"];
+        }
+        DB::table('hris.dtr_logs')->insert($logs);
+    }
+
+    /** @param array<string, int> $hoursByDate */
+    private function fileApprovedLwop(array $hoursByDate): void
+    {
+        $appId = DB::table('hris.leave_applications')->insertGetId([
+            'user_id' => $this->userId, 'status' => 'Approved', 'is_lwop' => 1, 'created_at' => now(),
+        ]);
+        foreach ($hoursByDate as $date => $hours) {
+            DB::table('hris.leave_date_applied')->insert([
+                'leave_application_id' => $appId, 'date_applied' => $date, 'hours' => $hours, 'status' => 'active',
+            ]);
+        }
+    }
+
+    /** @test */
+    public function without_pay_days_do_not_count_the_weekend_around_a_short_absence()
+    {
+        // June 2026 (Jun 12 = holiday). LWOP Fri Jun 5 + unexcused absence Mon Jun 8:
+        // a 4-day span, so Sat/Sun Jun 6-7 are NOT without pay (CSC Sec. 33).
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
+        $this->fileApprovedLwop(['2026-06-05' => 8]);
+
+        $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+
+        $this->assertSame(2.0, $days);
+    }
+
+    /** @test */
+    public function without_pay_days_absorb_the_weekend_inside_a_run_of_lwop_and_absences_over_seven_days()
+    {
+        // LWOP Mon Jun 1 - Fri Jun 5, then unexcused absences Mon Jun 8 - Thu Jun 11:
+        // one 11-day run -> Sat/Sun Jun 6-7 count too: 5 + 2 + 4 = 11.
+        $this->logWeekdays('2026-05-18', '2026-07-10', [
+            '2026-06-01', '2026-06-02', '2026-06-03', '2026-06-04', '2026-06-05',
+            '2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11',
+        ]);
+        $this->fileApprovedLwop([
+            '2026-06-01' => 8, '2026-06-02' => 8, '2026-06-03' => 8, '2026-06-04' => 8, '2026-06-05' => 8,
+        ]);
+
+        $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+
+        $this->assertSame(11.0, $days);
+    }
+
+    /** @test */
+    public function a_whole_month_without_logs_is_thirty_days_without_pay()
+    {
+        $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+
+        $this->assertSame(30.0, $days);
+    }
+
+    /** @test */
+    public function a_half_day_lwop_is_half_a_day_without_pay()
+    {
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-10']);
+        DB::table('hris.dtr_logs')->insert([
+            ['userid' => $this->userId, 'status' => 'IN', 'created_at' => '2026-06-10 08:00:00'],
+            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2026-06-10 12:00:00'],
+        ]);
+        $this->fileApprovedLwop(['2026-06-10' => 4]);
+
+        $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+
+        $this->assertSame(0.5, $days);
+    }
+
+    /** @test */
+    public function generated_cutoff_stores_without_pay_days_and_credits_use_thirty_minus_them()
+    {
+        $this->actAsAdmin();
+
+        // June 2026: LWOP Fri Jun 5 + unexcused absence Mon Jun 8, everything else worked.
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
+        $this->fileApprovedLwop(['2026-06-05' => 8]);
+
+        $summary = app(\App\Services\PayrollServices::class)->generateCutoffSummary(
+            $this->userId, '2026-06-01', '2026-06-30', 'Sec 33 E2E Test Cutoff', $this->userId
+        );
+        $this->masterId = (int) $summary->cutoff_id;
+
+        $this->assertEquals(1.0, (float) $summary->lwop_days, 'Only the filed LWOP date; the weekend is not absorbed.');
+        $this->assertSame(1, (int) $summary->days_absent);
+        $this->assertNotNull($summary->credit_without_pay_days, 'Column must be filled at generation.');
+        $this->assertEquals(2.0, (float) $summary->credit_without_pay_days);
+
+        $preview = $this->withoutMiddleware()
+            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]));
+        $preview->assertOk();
+        $row = collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
+        $this->assertNotNull($row);
+
+        // Key 30 - 2 = 28 -> HR's row for 28 days.
+        $expected = (float) DB::table('monthly_earned_points')->where('present', 28)->value('points');
+        $this->assertEquals(2.0, (float) $row['without_pay_days']);
+        $this->assertEqualsWithDelta($expected, (float) $row['earned_points'], 0.001);
+        $this->assertEqualsWithDelta(0.0, (float) $row['deducted_points'], 0.001);
+
+        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
+            'cutoff_id' => $this->masterId,
+            'employees' => [$this->userId],
+        ])->assertOk();
+
+        $vl = DB::table('hris.leave_credits')->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
+        $this->assertEqualsWithDelta($expected, (float) $vl, 0.001);
+    }
+
+    /** @test */
+    public function earned_credits_use_thirty_minus_without_pay_days()
+    {
+        $service = app(\App\Services\LeaveCreditService::class);
+
+        // setUp sets present 25 = 1.7; the other rows are HR's real table.
+        $this->assertEquals(1.7, $service->computeEarnedCredits(20, 0, 22, 6, 2026, 5.0)['monthly_points_earned']);
+        $this->assertEquals(0.0, $service->computeEarnedCredits(0, 0, 22, 6, 2026, 30.0)['monthly_points_earned']);
+        $this->assertEquals(0.0, $service->computeEarnedCredits(0, 0, 22, 6, 2026, 31.0)['monthly_points_earned']);
+
+        // Half key: halfway between the 25 and 26 rows.
+        $p26 = (float) DB::table('monthly_earned_points')->where('present', 26)->value('points');
+        $this->assertEquals(round(1.7 + 0.5 * ($p26 - 1.7), 3), $service->computeEarnedCredits(21, 0, 22, 6, 2026, 4.5)['monthly_points_earned']);
+
+        // NULL (old cutoff) keeps the present / work days formula: 16/22 x 30 = 21.8 -> 22.
+        $p22 = (float) DB::table('monthly_earned_points')->where('present', 22)->value('points');
+        $this->assertEquals($p22, $service->computeEarnedCredits(16, 0, 22, 6, 2026, null)['monthly_points_earned']);
+    }
 }

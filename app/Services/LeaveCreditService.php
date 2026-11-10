@@ -14,9 +14,30 @@ class LeaveCreditService
         $this->minuteConversionService = $minuteConversionService;
     }
 
-    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month = null, $year = null)
+    /**
+     * @param float|null $withoutPayDays days without pay in the month (LWOP + unexcused absences,
+     *        CSC Sec. 33 rest days included - cutoff_summaries.credit_without_pay_days). When
+     *        given, the lookup key is 30 - $withoutPayDays (CSC's 30-day month); otherwise the
+     *        older present / work days x 30 scaling is used (cutoffs generated before it existed).
+     */
+    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month = null, $year = null, $withoutPayDays = null)
     {
         try {
+            if ($withoutPayDays !== null) {
+                $lookupPresent = max(0.0, min(30.0, 30 - (float) $withoutPayDays));
+                $monthly_points_earned = $this->earnedPointsFor($lookupPresent);
+                $lateUndertimeDeductions = $this->minuteConversionService->computeDeduction($totalLateUndertime);
+
+                return [
+                    'monthly_points_earned' => round($monthly_points_earned, 3),
+                    'total_deductions' => round($lateUndertimeDeductions, 3),
+                    'net_points' => round($monthly_points_earned - $lateUndertimeDeductions, 3),
+                    'total_present' => $totalPresent,
+                    'total_late_undertime' => $totalLateUndertime,
+                    'lookup_present' => round($lookupPresent, 3),
+                ];
+            }
+
             // Get monthly earned points for given present days
             if (!empty($totalWorkingDays)) {
                 // Scale actual attendance to a 30-day equivalent so full
@@ -55,6 +76,34 @@ class LeaveCreditService
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    /**
+     * monthly_earned_points for a (possibly fractional) days-present key. HR's
+     * table has whole days 1..30 only, so a half key is interpolated between
+     * the two rows (29.5 -> halfway between 29 and 30 = CSC's 0.5-day LWOP
+     * value). 0 days = 0 points.
+     */
+    public function earnedPointsFor(float $present): float
+    {
+        if ($present <= 0) {
+            return 0.0;
+        }
+
+        $points = DB::table('monthly_earned_points')->pluck('points', 'present')
+            ->mapWithKeys(fn($value, $key) => [(int) round((float) $key) => (float) $value])
+            ->all();
+        $points[0] = 0.0;
+
+        $low = (int) floor($present);
+        $high = (int) ceil($present);
+        $lowPoints = $points[$low] ?? 0.0;
+        if ($high === $low) {
+            return round($lowPoints, 3);
+        }
+        $highPoints = $points[$high] ?? $lowPoints;
+
+        return round($lowPoints + ($present - $low) * ($highPoints - $lowPoints), 3);
     }
 
     /**

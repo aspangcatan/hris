@@ -215,12 +215,21 @@ class CreditController extends Controller
             $lateUndertimeOnly = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
             $totalLateUndertime = $lateUndertimeOnly + $passSlipMinutes;
 
+            // Days without pay (LWOP + unexcused absences, CSC Sec. 33 rest
+            // days included): credits use 30 - this. NULL = cutoff generated
+            // before the column existed -> old present / work days formula
+            // until the cutoff is regenerated.
+            $withoutPayDays = isset($summary->credit_without_pay_days)
+                ? (float) $summary->credit_without_pay_days
+                : null;
+
             $result = $this->leaveCreditService->computeEarnedCredits(
                 $totalPresent,
                 $totalLateUndertime,
                 $totalWorkingDays,
                 $month,
-                $year
+                $year,
+                $withoutPayDays
             );
 
             $middleInitial = !empty($summary->mname) ? strtoupper(substr($summary->mname, 0, 1)) . '.' : '';
@@ -232,6 +241,7 @@ class CreditController extends Controller
                 'name' => $fullName,
                 'total_present' => $result['total_present'],
                 'work_days' => $totalWorkingDays,
+                'without_pay_days' => $withoutPayDays,
                 'total_late_undertime' => $result['total_late_undertime'],
                 'late_undertime_minutes' => $lateUndertimeOnly,
                 'pass_slip_minutes' => $passSlipMinutes,

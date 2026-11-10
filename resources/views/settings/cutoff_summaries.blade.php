@@ -777,7 +777,9 @@
                             const row = `
                                 <tr class="${item.already_credited ? 'text-muted' : ''}">
                                     <td>${formatEmployeeName(item.name)}</td>
-                                    <td>${item.total_present ?? 0} / ${item.work_days ?? 0}</td>
+                                    <td>${item.total_present ?? 0} / ${item.work_days ?? 0}${item.without_pay_days !== null && item.without_pay_days !== undefined
+                                        ? `<div class="small text-muted" title="LWOP + unexcused absences (CSC Sec. 33). Credits use 30 minus this.">${Number(item.without_pay_days)} w/o pay</div>`
+                                        : `<div class="small text-warning" title="Generated before the CSC Sec. 33 rule - regenerate this cutoff to use it">old formula</div>`}</td>
                                     <td>${item.total_late_undertime ?? 0}${Number(item.pass_slip_minutes) > 0 ? `<div class="small text-muted">${item.late_undertime_minutes} + ${item.pass_slip_minutes} slip</div>` : ''}</td>
                                     <td>${formatThreeDecimals(item.earned_points)}</td>
                                     <td>${formatThreeDecimals(item.deducted_points)}</td>

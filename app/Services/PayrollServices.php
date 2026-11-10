@@ -1065,7 +1065,7 @@ class PayrollServices
         $absences = $result['absences'] ?? 0;
         $daysPresent = max($totalPresent, 0);
 
-        DB::table($table)->insert([
+        DB::table($table)->insert($this->withCreditWithoutPayDays($table, [
             'employee_id' => $employeeId,
             'cutoff_id' => $master->id,
             'period_start' => $startDate,
@@ -1086,7 +1086,7 @@ class PayrollServices
             'remarks' => $master->title ?? null,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ], $employeeId, $startDate, $endDate));
 
         $this->persistCutoffSummaryDays($master->id, $employeeId, $startDate, $endDate);
 
@@ -1159,6 +1159,7 @@ class PayrollServices
             'remarks' => $master->title ?? $title,
             'updated_at' => now(),
         ];
+        $payload = $this->withCreditWithoutPayDays($table, $payload, $employeeId, $startDate, $endDate);
 
         DB::table($table)->updateOrInsert(
             [
@@ -1237,6 +1238,31 @@ class PayrollServices
         }
 
         return 'cutoff_summaries_master';
+    }
+
+    /**
+     * Adds credit_without_pay_days (days without pay for earned credits, CSC
+     * Sec. 33 - see DTRServices::getCreditWithoutPayDaysByRange) to a cutoff
+     * summary row. Skipped until migration 2026_11_10_100000 has run, so
+     * generating cutoffs keeps working before it is deployed.
+     */
+    private function withCreditWithoutPayDays(string $table, array $payload, $employeeId, $startDate, $endDate): array
+    {
+        static $hasColumn = [];
+        if (!array_key_exists($table, $hasColumn)) {
+            [$schema, $name] = strpos($table, '.') !== false ? explode('.', $table, 2) : [DB::getDatabaseName(), $table];
+            $hasColumn[$table] = (bool) DB::selectOne(
+                'SELECT 1 AS found FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
+                [$schema, $name, 'credit_without_pay_days']
+            );
+        }
+
+        if ($hasColumn[$table]) {
+            $payload['credit_without_pay_days'] = app(DTRServices::class)
+                ->getCreditWithoutPayDaysByRange($employeeId, $startDate, $endDate);
+        }
+
+        return $payload;
     }
 
     private function tableExistsInSchema(string $schema, string $table): bool
