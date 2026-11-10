@@ -292,15 +292,7 @@
                 </a>
             </li>
             @endpermission
-            @permission('payroll.view')
-            <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('cutoff_summaries') ? '' : 'collapsed' }}"
-                    href="{{ route('cutoff_summaries') }}">
-                    <i class="bi bi-calendar-range"></i>
-                    <span>Cutoff Summary</span>
-                </a>
-            </li>
-            @endpermission
+            {{-- Cutoff Summary is shown under Settings (next to Leave Credits Earned). --}}
         @endif
         @endif
 
@@ -321,7 +313,8 @@
         {{-- SETTINGS --}}
         @php($isAdmin = strtolower((string) session('access_rights')) === 'admin')
         @if(permission_check('calendar.manage') || permission_check('hospital_order.create') || $isAdmin
-            || permission_check('leave.manage_types') || permission_check('leave.manage_credits'))
+            || permission_check('leave.manage_types') || permission_check('leave.manage_credits')
+            || permission_check('payroll.settings'))
             <li class="nav-heading">Settings</li>
             @permission('calendar.manage')
                 <li class="nav-item">
@@ -365,11 +358,14 @@
                     <span>Leave Settings</span>
                 </a>
             </li>
+            @endpermission
+            {{-- Same permission as the page itself (routes: cutoff_summaries = payroll.settings). --}}
+            @permission('payroll.settings')
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('lwop_settings') ? '' : 'collapsed' }}"
-                    href="{{ route('lwop_settings') }}">
-                    <i class="bi bi-sliders"></i>
-                    <span>LWOP Settings</span>
+                <a class="nav-link {{ request()->routeIs('cutoff_summaries') ? '' : 'collapsed' }}"
+                    href="{{ route('cutoff_summaries') }}">
+                    <i class="bi bi-calendar-range"></i>
+                    <span>Cutoff Summary</span>
                 </a>
             </li>
             @endpermission
@@ -379,6 +375,13 @@
                     href="{{ route('bulk-leave-credits.index') }}">
                     <i class="bi bi-credit-card-fill"></i>
                     <span>Bulk Leave Credits</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('leave_credits_earned') ? '' : 'collapsed' }}"
+                    href="{{ route('leave_credits_earned') }}">
+                    <i class="bi bi-calculator"></i>
+                    <span>Leave Credits Earned</span>
                 </a>
             </li>
             @endpermission

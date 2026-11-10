@@ -33,15 +33,12 @@ class CutoffLeaveCreditsTest extends TestCase
         // data (present/minute are unique columns) - overwrite the specific
         // rows this test needs and restore them in tearDown, so assertions
         // don't depend on production lookup-table values.
-        $this->originalPoints = DB::table('monthly_earned_points')->whereIn('present', [25])->pluck('points', 'present');
-        DB::table('monthly_earned_points')->updateOrInsert(['present' => 25], ['points' => 1.7]);
+        $this->originalPoints = DB::table('monthly_earned_points')->whereIn('lwop', [5])->pluck('points', 'lwop');
+        DB::table('monthly_earned_points')->updateOrInsert(['lwop' => 5], ['points' => 1.7]);
 
         $this->originalDeductions = DB::table('minute_conversions')->whereIn('minute', [60, 15])->pluck('points_deduction', 'minute');
         DB::table('minute_conversions')->updateOrInsert(['minute' => 60], ['points_deduction' => 0.1]);
         DB::table('minute_conversions')->updateOrInsert(['minute' => 15], ['points_deduction' => 0.025]);
-
-        // HR's three weekend cases, whatever the LWOP Settings page holds right now.
-        \App\Services\LwopCaseService::override(\App\Services\LwopCaseService::HR_DEFAULT_CASES);
     }
 
     protected function tearDown(): void
@@ -62,13 +59,11 @@ class CutoffLeaveCreditsTest extends TestCase
         DB::table('hris.pass_slips')->where('user_id', $this->userId)->delete();
 
         foreach ($this->originalPoints as $present => $points) {
-            DB::table('monthly_earned_points')->where('present', $present)->update(['points' => $points]);
+            DB::table('monthly_earned_points')->where('lwop', $present)->update(['points' => $points]);
         }
         foreach ($this->originalDeductions as $minute => $deduction) {
             DB::table('minute_conversions')->where('minute', $minute)->update(['points_deduction' => $deduction]);
         }
-        \App\Services\LwopCaseService::override(null);
-        \App\Services\LwopCaseService::flush();
 
         parent::tearDown();
     }
@@ -379,7 +374,7 @@ class CutoffLeaveCreditsTest extends TestCase
         $this->assertNotNull($row);
 
         // 4 of 4 scheduled days -> lookup key 30 (full credit), not round(4/5*30) = 24.
-        $fullPoints = (float) DB::table('monthly_earned_points')->where('present', 30)->value('points');
+        $fullPoints = (float) DB::table('monthly_earned_points')->where('lwop', 0)->value('points');
         $this->assertSame(4, $row['work_days']);
         $this->assertEqualsWithDelta($fullPoints, (float) $row['earned_points'], 0.001);
     }
@@ -505,6 +500,39 @@ class CutoffLeaveCreditsTest extends TestCase
         $response->assertStatus(422);
     }
 
+    /** @test */
+    public function leave_credits_earned_page_renders_for_a_signed_in_user()
+    {
+        // The layout header needs a real user record (the mocked admin in actAsAdmin has none).
+        $userId = DB::table('tdh_user.users')->value('id');
+        $model = config('auth.providers.users.model');
+        $this->actingAs($model::find($userId));
+        session(['access_rights' => 'admin']);
+
+        $this->withoutMiddleware()->get('/leave-credits-earned')
+            ->assertOk()
+            ->assertSee('Leave Credits Earned')
+            ->assertSee(route('leave_credits_earned.cutoffs'), false);
+    }
+
+    /** @test */
+    public function leave_credits_earned_page_lists_cutoffs_and_their_credited_count()
+    {
+        $this->actAsAdmin();
+        $masterId = $this->seedCutoff('2027-08-01', '2027-08-31', 'Sidebar Page Test Cutoff', 22, 22);
+
+        $listed = fn() => collect($this->withoutMiddleware()->getJson('/leave-credits-earned/cutoffs')->assertOk()->json('data'))
+            ->firstWhere('id', $masterId);
+        $this->assertSame(['August 2027', 1, 0], [$listed()['month_label'], $listed()['employees'], $listed()['credited']]);
+
+        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
+            'cutoff_id' => $masterId,
+            'employees' => [$this->userId],
+        ])->assertOk();
+
+        $this->assertSame(1, $listed()['credited'], 'Posted employees show as credited.');
+    }
+
     /** Complete 08:00-17:00 logs on every non-holiday weekday from..to, except $skip. */
     private function logWeekdays(string $from, string $to, array $skip = []): void
     {
@@ -536,32 +564,24 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
-    public function without_pay_days_count_lwop_and_absences_and_the_weekend_stays_present_without_a_case()
+    public function credit_lwop_days_are_strictly_filed_and_approved_lwop()
     {
-        // June 2026: LWOP Fri Jun 5 + unexcused absence Mon Jun 8 ("LWOP | Absent" has no case).
+        // June 2026: LWOP Fri Jun 5 + unexcused absence Mon Jun 8: credits count the filed day only.
         $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
         $this->fileApprovedLwop(['2026-06-05' => 8]);
 
         $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
 
-        $this->assertSame(2.0, $days);
+        $this->assertSame(1.0, $days, 'Only the filed Friday: no weekend, no absence.');
     }
 
     /** @test */
-    public function a_whole_month_without_logs_counts_weekends_only_where_a_case_says_so()
+    public function a_whole_month_absent_without_filing_has_no_lwop_days_for_credits()
     {
-        // June 2026 has 21 work days (Jun 12 is a holiday). No logs at all.
-        $dtr = app(\App\Services\DTRServices::class);
-        $june = fn() => $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+        // No logs and nothing filed: 21 absences, but no filed LWOP -> key 0 -> full 1.250.
+        $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
 
-        $this->assertSame(21.0, $june(), 'HR cases only: every weekend present.');
-
-        // With "Absent | Absent": 3 of June's 4 weekends count (6 days). The Jun 13-14 weekend
-        // follows the Jun 12 holiday, which is present and ends it.
-        \App\Services\LwopCaseService::override([
-            ['friday' => 'absent', 'monday' => 'absent', 'saturday' => true, 'sunday' => true],
-        ]);
-        $this->assertSame(27.0, $june());
+        $this->assertSame(0.0, $days);
     }
 
     /** @test */
@@ -580,23 +600,23 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
-    public function generated_cutoff_stores_without_pay_days_and_credits_use_thirty_minus_them()
+    public function generated_cutoff_reads_table_iii_by_filed_lwop_days()
     {
         $this->actAsAdmin();
 
-        // June 2026: LWOP Fri Jun 5 + unexcused absence Mon Jun 8, everything else worked.
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
+        // June 2026: LWOP Fri Jun 5, present Mon Jun 8, everything else worked.
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05']);
         $this->fileApprovedLwop(['2026-06-05' => 8]);
 
         $summary = app(\App\Services\PayrollServices::class)->generateCutoffSummary(
-            $this->userId, '2026-06-01', '2026-06-30', 'Weekend cases E2E Test Cutoff', $this->userId
+            $this->userId, '2026-06-01', '2026-06-30', 'Table III E2E Test Cutoff', $this->userId
         );
         $this->masterId = (int) $summary->cutoff_id;
 
-        $this->assertEquals(1.0, (float) $summary->lwop_days, 'Only the filed LWOP date; the weekend is not absorbed.');
-        $this->assertSame(1, (int) $summary->days_absent);
+        $this->assertEquals(1.0, (float) $summary->lwop_days, 'Cutoff LWOP days: the filed Friday only.');
+        $this->assertSame(0, (int) $summary->days_absent);
         $this->assertNotNull($summary->credit_without_pay_days, 'Column must be filled at generation.');
-        $this->assertEquals(2.0, (float) $summary->credit_without_pay_days);
+        $this->assertEquals(1.0, (float) $summary->credit_without_pay_days, 'Credits: the filed Friday only.');
 
         $preview = $this->withoutMiddleware()
             ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]));
@@ -604,9 +624,10 @@ class CutoffLeaveCreditsTest extends TestCase
         $row = collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
         $this->assertNotNull($row);
 
-        // Key 30 - 2 = 28 -> HR's row for 28 days.
-        $expected = (float) DB::table('monthly_earned_points')->where('present', 28)->value('points');
-        $this->assertEquals(2.0, (float) $row['without_pay_days']);
+        // Table III: 1.00 day on LWOP -> 1.208.
+        $expected = (float) DB::table('monthly_earned_points')->where('lwop', 1)->value('points');
+        $this->assertEqualsWithDelta(1.208, $expected, 0.0005);
+        $this->assertEquals(1.0, (float) $row['without_pay_days']);
         $this->assertEqualsWithDelta($expected, (float) $row['earned_points'], 0.001);
         $this->assertEqualsWithDelta(0.0, (float) $row['deducted_points'], 0.001);
 
@@ -619,140 +640,38 @@ class CutoffLeaveCreditsTest extends TestCase
         $this->assertEqualsWithDelta($expected, (float) $vl, 0.001);
     }
 
-    private function lwopDaysInJune(): float
-    {
-        return app(\App\Services\DTRServices::class)->getCutoffBreakdown($this->userId, '2026-06-01', '2026-06-30')['lwop_days'];
-    }
-
     /** @test */
-    public function weekend_case_hr_examples_friday_lwop_and_friday_plus_monday()
+    public function cutoff_lwop_days_are_the_filed_lwop_days_only()
     {
-        // HR's cases (setUp): LWOP Fri + present Mon = 3; LWOP Fri + LWOP Mon = 4 (Jun 5 Fri, Jun 8 Mon).
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05']);
-        $this->fileApprovedLwop(['2026-06-05' => 8]);
-        $this->assertSame(3.0, $this->lwopDaysInJune(), 'LWOP Fri, present Mon: Fri + Sat + Sun.');
-
-        DB::table('hris.dtr_logs')->where('userid', $this->userId)->whereDate('created_at', '2026-06-08')->delete();
-        $this->fileApprovedLwop(['2026-06-08' => 8]);
-        $this->assertSame(4.0, $this->lwopDaysInJune(), 'LWOP Fri + Mon: Fri, Sat, Sun, Mon.');
-    }
-
-    /** @test */
-    public function weekend_case_hr_example_monday_lwop_alone_is_one_day()
-    {
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-08']);
-        $this->fileApprovedLwop(['2026-06-08' => 8]);
-
-        $this->assertSame(1.0, $this->lwopDaysInJune(), 'Present Fri, LWOP Mon: Monday only.');
-    }
-
-    /** @test */
-    public function a_holiday_is_always_present_and_ends_the_weekend()
-    {
-        // LWOP Thu Jun 11; Fri Jun 12 is a holiday; weekend; present Mon Jun 15.
-        // The holiday is present, and the weekend after it has no LWOP Friday: Thursday only.
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-11']);
-        $this->fileApprovedLwop(['2026-06-11' => 8]);
-
-        $this->assertSame(1.0, $this->lwopDaysInJune());
-    }
-
-    /** @test */
-    public function a_combination_without_a_case_is_present_until_hr_adds_it()
-    {
-        // LWOP Fri Jun 5, unexcused absence Mon Jun 8: "LWOP | Absent" is not one of HR's three cases.
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
-        $this->fileApprovedLwop(['2026-06-05' => 8]);
-        $dtr = app(\App\Services\DTRServices::class);
-        $credits = fn() => $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
-
-        $this->assertSame(1.0, $this->lwopDaysInJune());
-        $this->assertSame(2.0, $credits(), 'Fri LWOP + Mon absence; the weekend is present.');
-
-        \App\Services\LwopCaseService::override(array_merge(\App\Services\LwopCaseService::HR_DEFAULT_CASES, [
-            ['friday' => 'lwop', 'monday' => 'absent', 'saturday' => true, 'sunday' => true],
-        ]));
-        $this->assertSame(3.0, $this->lwopDaysInJune(), 'New case: the weekend after the LWOP Friday counts.');
-        $this->assertSame(4.0, $credits());
-    }
-
-    /** @test */
-    public function a_case_can_mark_only_saturday()
-    {
-        \App\Services\LwopCaseService::override([
-            ['friday' => 'lwop', 'monday' => 'present', 'saturday' => true, 'sunday' => false],
-        ]);
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05']);
-        $this->fileApprovedLwop(['2026-06-05' => 8]);
-
-        $this->assertSame(2.0, $this->lwopDaysInJune(), 'Fri + Sat; Sunday present.');
-    }
-
-    /** @test */
-    public function a_weekend_between_absences_counts_for_credits_only_and_never_changes_pay()
-    {
-        // Unexcused absences Fri Jun 19 and Mon Jun 22, no LWOP filed; HR adds "Absent | Absent".
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-19', '2026-06-22']);
-        \App\Services\LwopCaseService::override([
-            ['friday' => 'absent', 'monday' => 'absent', 'saturday' => true, 'sunday' => true],
-        ]);
+        // LWOP Fri Jun 5 + Mon Jun 8 and Thu Jun 11 (Fri Jun 12 is a holiday): weekends and
+        // holidays are never LWOP, so the cutoff counts exactly the 3 filed days.
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08', '2026-06-11']);
+        $this->fileApprovedLwop(['2026-06-05' => 8, '2026-06-08' => 8, '2026-06-11' => 8]);
         $dtr = app(\App\Services\DTRServices::class);
 
-        $this->assertSame(4.0, $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30'), 'Fri + Sat + Sun + Mon.');
         $breakdown = $dtr->getCutoffBreakdown($this->userId, '2026-06-01', '2026-06-30');
-        $this->assertSame(0.0, $breakdown['lwop_days'], 'No LWOP filed: the LWOP figure stays 0.');
-        $this->assertSame(2, $breakdown['absences'], 'Pay figure unchanged: 2 absent work days.');
+        $this->assertSame(3.0, $breakdown['lwop_days']);
+        $this->assertSame(0, $breakdown['absences'], 'LWOP days are not absences.');
+        $this->assertSame(3.0, $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30'));
     }
 
     /** @test */
-    public function a_saturday_plotted_as_a_work_day_is_not_a_weekend_day()
-    {
-        // Shift worker: Sat Jun 6 plotted as a work day and worked. LWOP Fri Jun 5, present Mon Jun 8.
-        // Saturday is judged as a work day (present); Sunday's day before is that Saturday -> no case.
-        $scheduleId = DB::table('hris.schedule_master_lists')->where('code', '8S')->value('id');
-        $this->assertNotNull($scheduleId, 'Needs the 8S schedule.');
-        DB::table('hris.schedules')->insert([
-            'employee_id' => $this->userId, 'schedule_id' => $scheduleId,
-            'schedule_date' => '2026-06-06', 'updated_by' => $this->userId, 'created_at' => now(),
-        ]);
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05']);
-        DB::table('hris.dtr_logs')->insert([
-            ['userid' => $this->userId, 'status' => 'IN', 'created_at' => '2026-06-06 08:00:00'],
-            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2026-06-06 17:00:00'],
-        ]);
-        $this->fileApprovedLwop(['2026-06-05' => 8]);
-
-        $this->assertSame(1.0, $this->lwopDaysInJune(), 'Only the filed Friday.');
-    }
-
-    /** @test */
-    public function the_weekend_after_a_month_end_friday_lands_in_the_next_month()
-    {
-        // LWOP Fri Jul 31 2026, present Mon Aug 3: Sat Aug 1 and Sun Aug 2 belong to August.
-        $this->logWeekdays('2026-07-01', '2026-08-14', ['2026-07-31']);
-        $this->fileApprovedLwop(['2026-07-31' => 8]);
-        $dtr = app(\App\Services\DTRServices::class);
-
-        $this->assertSame(1.0, $dtr->getCutoffBreakdown($this->userId, '2026-07-01', '2026-07-31')['lwop_days']);
-        $this->assertSame(2.0, $dtr->getCutoffBreakdown($this->userId, '2026-08-01', '2026-08-31')['lwop_days']);
-    }
-
-    /** @test */
-    public function earned_credits_use_thirty_minus_without_pay_days()
+    public function earned_credits_are_read_from_table_iii_by_lwop_days()
     {
         $service = app(\App\Services\LeaveCreditService::class);
+        $row = fn($lwop) => (float) DB::table('monthly_earned_points')->where('lwop', $lwop)->value('points');
 
-        // setUp sets present 25 = 1.7; the other rows are HR's real table.
+        // setUp sets lwop 5 = 1.7; the other rows are Table III.
         $this->assertEquals(1.7, $service->computeEarnedCredits(20, 0, 22, 6, 2026, 5.0)['monthly_points_earned']);
+        $this->assertEquals(1.250, $service->computeEarnedCredits(22, 0, 22, 6, 2026, 0.0)['monthly_points_earned']);
+        $this->assertEquals($row(2.5), $service->computeEarnedCredits(20, 0, 22, 6, 2026, 2.5)['monthly_points_earned'], 'Half-day row read directly.');
         $this->assertEquals(0.0, $service->computeEarnedCredits(0, 0, 22, 6, 2026, 30.0)['monthly_points_earned']);
         $this->assertEquals(0.0, $service->computeEarnedCredits(0, 0, 22, 6, 2026, 31.0)['monthly_points_earned']);
 
-        // Half key: halfway between the 25 and 26 rows.
-        $p26 = (float) DB::table('monthly_earned_points')->where('present', 26)->value('points');
-        $this->assertEquals(round(1.7 + 0.5 * ($p26 - 1.7), 3), $service->computeEarnedCredits(21, 0, 22, 6, 2026, 4.5)['monthly_points_earned']);
+        // Between rows (0.4 day = 4 h of a 10-hour shift): interpolated between 0.00 and 0.50.
+        $this->assertEquals(round($row(0) + 0.8 * ($row(0.5) - $row(0)), 3), $service->computeEarnedCredits(22, 0, 22, 6, 2026, 0.4)['monthly_points_earned']);
 
-        // NULL (old cutoff) keeps the present / work days formula: 16/22 x 30 = 21.8 -> 22.
-        $p22 = (float) DB::table('monthly_earned_points')->where('present', 22)->value('points');
-        $this->assertEquals($p22, $service->computeEarnedCredits(16, 0, 22, 6, 2026, null)['monthly_points_earned']);
+        // NULL (old cutoff) keeps the present / work days formula: 16/22 x 30 = 21.8 -> 22 present = 8 LWOP.
+        $this->assertEquals($row(8), $service->computeEarnedCredits(16, 0, 22, 6, 2026, null)['monthly_points_earned']);
     }
 }

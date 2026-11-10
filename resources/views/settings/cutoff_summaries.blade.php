@@ -278,17 +278,15 @@
                             <thead>
                             <tr>
                                 <th>Employee</th>
-                                <th>Present / Work Days</th>
-                                <th title="Late/undertime + personal pass slip minutes, all deducted from VL">Late/Undertime + Pass Slips (mins)</th>
-                                <th>Earned Points</th>
-                                <th>Deducted Points</th>
-                                <th>Net Points</th>
+                                <th title="Filed and approved LWOP days this month">LWOP</th>
+                                <th title="CSC Table III value for the LWOP days, minus late/undertime and personal pass slips">VL</th>
+                                <th title="CSC Table III value for the LWOP days">SL</th>
                                 <th>Status</th>
                             </tr>
                             </thead>
                             <tbody id="leave_credits_body">
                             <tr>
-                                <td colspan="7" class="text-muted text-center">No data computed.</td>
+                                <td colspan="5" class="text-muted text-center">No data computed.</td>
                             </tr>
                             </tbody>
                         </table>
@@ -767,7 +765,7 @@
                     leaveCreditsCanSave = !notice;
 
                     if (!data.data || !data.data.length) {
-                        $tbody.append("<tr><td colspan='7' class='text-muted text-center'>No employees to credit.</td></tr>");
+                        $tbody.append("<tr><td colspan='5' class='text-muted text-center'>No employees to credit.</td></tr>");
                     } else {
                         leaveCreditPreview = data.data;
                         data.data.forEach(item => {
@@ -777,13 +775,11 @@
                             const row = `
                                 <tr class="${item.already_credited ? 'text-muted' : ''}">
                                     <td>${formatEmployeeName(item.name)}</td>
-                                    <td>${item.total_present ?? 0} / ${item.work_days ?? 0}${item.without_pay_days !== null && item.without_pay_days !== undefined
-                                        ? `<div class="small text-muted" title="LWOP + unexcused absences (CSC Sec. 33). Credits use 30 minus this.">${Number(item.without_pay_days)} w/o pay</div>`
-                                        : `<div class="small text-warning" title="Generated before the CSC Sec. 33 rule - regenerate this cutoff to use it">old formula</div>`}</td>
-                                    <td>${item.total_late_undertime ?? 0}${Number(item.pass_slip_minutes) > 0 ? `<div class="small text-muted">${item.late_undertime_minutes} + ${item.pass_slip_minutes} slip</div>` : ''}</td>
+                                    <td>${item.without_pay_days !== null && item.without_pay_days !== undefined
+                                        ? Number(item.without_pay_days)
+                                        : `<span class="small text-warning" title="Generated before the Table III LWOP lookup - regenerate this cutoff to use it">old formula</span>`}</td>
+                                    <td title="${formatThreeDecimals(item.earned_points)} - ${formatThreeDecimals(item.deducted_points)} late/undertime">${formatThreeDecimals(item.net_points)}</td>
                                     <td>${formatThreeDecimals(item.earned_points)}</td>
-                                    <td>${formatThreeDecimals(item.deducted_points)}</td>
-                                    <td>${formatThreeDecimals(item.net_points)}</td>
                                     <td>${status}</td>
                                 </tr>`;
                             $tbody.append(row);

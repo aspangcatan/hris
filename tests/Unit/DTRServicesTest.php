@@ -14,13 +14,10 @@ class DTRServicesTest extends TestCase
     {
         parent::setUp();
         $this->dtrService = new DTRServices();
-        // No weekend cases and no database lookup (the DB facade is mocked here).
-        \App\Services\LwopCaseService::override([]);
     }
 
     protected function tearDown(): void
     {
-        \App\Services\LwopCaseService::override(null);
         // Plain PHPUnit TestCase: reset the DB facade mock so one test's
         // query expectations don't answer the next test's queries.
         \Mockery::close();
@@ -139,16 +136,12 @@ class DTRServicesTest extends TestCase
         return $reflection->invokeArgs($this->dtrService, $args);
     }
 
-    /** LWOP rows the getLwopDaysByRange query returns, plus no holidays and the given plotted schedules. */
+    /** LWOP rows the getLwopDaysByRange query returns (already limited to the range), plus the plotted schedules. */
     private function mockLwopQueries(array $lwopRows, array $plottedSchedules = []): void
     {
         DB::shouldReceive('table->join->where->where->whereRaw->where->where->whereBetween->get')
             ->once()
             ->andReturn(collect(array_map(fn($row) => (object) $row, $lwopRows)));
-
-        DB::shouldReceive('table->whereBetween->pluck->map->toArray')
-            ->once()
-            ->andReturn([]);
 
         DB::shouldReceive('table->join->where->whereBetween->get')
             ->once()
@@ -156,18 +149,16 @@ class DTRServicesTest extends TestCase
     }
 
     /** @test */
-    public function it_returns_only_filed_lwop_dates_within_the_requested_range()
+    public function lwop_dates_are_the_filed_dates_only_with_no_weekends_added()
     {
-        // No weekend cases (setUp): only the filed dates inside the range count.
+        // LWOP Fri Sep 5 and Mon Sep 8: the weekend between them is never LWOP.
         $this->mockLwopQueries(array_map(fn($date) => ['date_applied' => $date, 'hours' => 8], [
-            '2025-08-29', // Friday before the range - outside it
-            '2025-09-01', '2025-09-02', '2025-09-05', '2025-09-08',
-            '2025-09-12', // after the range - outside it
+            '2025-09-08', '2025-09-01', '2025-09-05',
         ]));
 
         $dates = $this->invokePrivateMethod('getApprovedLwopDatesByRange', [1, '2025-09-01', '2025-09-09']);
 
-        $this->assertSame(['2025-09-01', '2025-09-02', '2025-09-05', '2025-09-08'], $dates);
+        $this->assertSame(['2025-09-01', '2025-09-05', '2025-09-08'], $dates);
     }
 
     /** @test */

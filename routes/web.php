@@ -233,12 +233,6 @@ Route::group(['middleware' => 'auth'], function () {
         return view('settings.leave_management');
     })->name('leave_management')->middleware('permission:leave.manage_types');
 
-    // LWOP Settings: weekend cases (Friday before / Monday after decide whether Sat/Sun count as LWOP).
-    Route::get('/lwop-settings', [\App\Http\Controllers\LwopCaseController::class, 'index'])->name('lwop_settings')->middleware('permission:leave.manage_types');
-    Route::get('/lwop-settings/list', [\App\Http\Controllers\LwopCaseController::class, 'list'])->name('lwop_settings.list')->middleware('permission:leave.manage_types');
-    Route::post('/lwop-settings/save', [\App\Http\Controllers\LwopCaseController::class, 'save'])->name('lwop_settings.save')->middleware('permission:leave.manage_types');
-    Route::delete('/lwop-settings/delete', [\App\Http\Controllers\LwopCaseController::class, 'delete'])->name('lwop_settings.delete')->middleware('permission:leave.manage_types');
-
     Route::get('/bulk-leave-credits', function () {
         return view('settings.bulk_leave_credits');
     })->name('bulk-leave-credits.index')->middleware('permission:leave.manage_credits');
@@ -300,6 +294,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
     Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
     Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
+    // Leave Credits Earned page (sidebar): pick a generated cutoff, compute, post.
+    Route::get('/leave-credits-earned', [\App\Http\Controllers\CreditController::class, 'leaveCreditsEarnedPage'])->name('leave_credits_earned')->middleware('permission:leave.manage_credits');
+    Route::get('/leave-credits-earned/cutoffs', [\App\Http\Controllers\CreditController::class, 'leaveCreditCutoffs'])->name('leave_credits_earned.cutoffs')->middleware('permission:leave.manage_credits');
 
     //PAYROLL
     Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');

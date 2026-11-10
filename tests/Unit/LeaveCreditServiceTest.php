@@ -31,11 +31,11 @@ class LeaveCreditServiceTest extends TestCase
         // specific rows it needs and restores them in tearDown, rather than
         // inserting duplicates alongside the real rows.
         $this->originalPoints = DB::table('monthly_earned_points')
-            ->whereIn('present', [22, 30])
-            ->pluck('points', 'present');
+            ->whereIn('lwop', [8, 0])
+            ->pluck('points', 'lwop');
 
-        DB::table('monthly_earned_points')->updateOrInsert(['present' => 22], ['points' => 1.5]);
-        DB::table('monthly_earned_points')->updateOrInsert(['present' => 30], ['points' => 2.0]);
+        DB::table('monthly_earned_points')->updateOrInsert(['lwop' => 8], ['points' => 1.5]);
+        DB::table('monthly_earned_points')->updateOrInsert(['lwop' => 0], ['points' => 2.0]);
 
         $this->originalDeductions = DB::table('minute_conversions')
             ->whereIn('minute', [60, 15])
@@ -51,7 +51,7 @@ class LeaveCreditServiceTest extends TestCase
         // RefreshDatabase's transaction wrapping is a silent no-op for them -
         // restore the real values this test overwrote in setUp.
         foreach ($this->originalPoints as $present => $points) {
-            DB::table('monthly_earned_points')->where('present', $present)->update(['points' => $points]);
+            DB::table('monthly_earned_points')->where('lwop', $present)->update(['points' => $points]);
         }
         foreach ($this->originalDeductions as $minute => $deduction) {
             DB::table('minute_conversions')->where('minute', $minute)->update(['points_deduction' => $deduction]);

@@ -35,6 +35,59 @@ class CreditController extends Controller
         }
     }
 
+    /** Leave Credits Earned page (sidebar). */
+    public function leaveCreditsEarnedPage()
+    {
+        return view('settings.leave_credits_earned');
+    }
+
+    /**
+     * Generated cutoffs to compute earned credits from, newest first, with how
+     * many employees each has and how many of them are already credited for
+     * that month.
+     */
+    public function leaveCreditCutoffs()
+    {
+        $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+        $table = $this->payrollServices->getCutoffSummaryTableName();
+
+        $cutoffs = DB::table($masterTable . ' as cm')
+            ->join($table . ' as cs', 'cs.cutoff_id', '=', 'cm.id')
+            ->groupBy('cm.id', 'cm.title', 'cm.period_start', 'cm.period_end')
+            ->orderByDesc('cm.period_start')
+            ->orderByDesc('cm.id')
+            ->limit(60)
+            ->get([
+                'cm.id', 'cm.title', 'cm.period_start', 'cm.period_end',
+                DB::raw('COUNT(DISTINCT cs.employee_id) as employees'),
+            ]);
+
+        return response()->json([
+            'data' => $cutoffs->map(function ($c) use ($table) {
+                $period = Carbon::parse($c->period_start);
+                $credited = DB::table($table . ' as cs')
+                    ->join('credit_earned_logs as l', function ($join) use ($period) {
+                        $join->on('l.user_id', '=', 'cs.employee_id')
+                            ->where('l.year', (int) $period->format('Y'))
+                            ->where('l.month', (int) $period->format('m'));
+                    })
+                    ->where('cs.cutoff_id', $c->id)
+                    ->distinct()
+                    ->count('cs.employee_id');
+
+                return [
+                    'id' => (int) $c->id,
+                    'title' => $c->title,
+                    'period_start' => $c->period_start,
+                    'period_end' => $c->period_end,
+                    'month_label' => $period->format('F Y'),
+                    'employees' => (int) $c->employees,
+                    'credited' => $credited,
+                ];
+            })->values(),
+        ]);
+    }
+
     public function previewCutoffLeaveCredits(Request $request)
     {
         try {
@@ -215,10 +268,9 @@ class CreditController extends Controller
             $lateUndertimeOnly = (int) ($summary->late_minutes ?? 0) + (int) ($summary->undertime_minutes ?? 0);
             $totalLateUndertime = $lateUndertimeOnly + $passSlipMinutes;
 
-            // Days without pay (LWOP + unexcused absences, CSC Sec. 33 rest
-            // days included): credits use 30 - this. NULL = cutoff generated
-            // before the column existed -> old present / work days formula
-            // until the cutoff is regenerated.
+            // Filed and approved LWOP days: credits are read from CSC Table III
+            // by this number. NULL = cutoff generated before the column existed
+            // -> old present / work days formula until the cutoff is regenerated.
             $withoutPayDays = isset($summary->credit_without_pay_days)
                 ? (float) $summary->credit_without_pay_days
                 : null;
