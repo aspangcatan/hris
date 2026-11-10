@@ -1248,21 +1248,31 @@ class PayrollServices
      */
     private function withCreditWithoutPayDays(string $table, array $payload, $employeeId, $startDate, $endDate): array
     {
-        static $hasColumn = [];
-        if (!array_key_exists($table, $hasColumn)) {
-            [$schema, $name] = strpos($table, '.') !== false ? explode('.', $table, 2) : [DB::getDatabaseName(), $table];
-            $hasColumn[$table] = (bool) DB::selectOne(
-                'SELECT 1 AS found FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
-                [$schema, $name, 'credit_without_pay_days']
-            );
-        }
-
-        if ($hasColumn[$table]) {
+        if ($this->cutoffSummaryHasColumn($table, 'credit_without_pay_days')) {
             $payload['credit_without_pay_days'] = app(DTRServices::class)
                 ->getCreditWithoutPayDaysByRange($employeeId, $startDate, $endDate);
         }
+        // Which LWOP Settings rule set produced the figures (migration 2026_11_10_200001).
+        if ($this->cutoffSummaryHasColumn($table, 'lwop_rule_set_id')) {
+            $payload['lwop_rule_set_id'] = (new LwopRuleService())->forDate((string) $startDate)->id;
+        }
 
         return $payload;
+    }
+
+    private function cutoffSummaryHasColumn(string $table, string $column): bool
+    {
+        static $hasColumn = [];
+        $key = $table . '.' . $column;
+        if (!array_key_exists($key, $hasColumn)) {
+            [$schema, $name] = strpos($table, '.') !== false ? explode('.', $table, 2) : [DB::getDatabaseName(), $table];
+            $hasColumn[$key] = (bool) DB::selectOne(
+                'SELECT 1 AS found FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
+                [$schema, $name, $column]
+            );
+        }
+
+        return $hasColumn[$key];
     }
 
     private function tableExistsInSchema(string $schema, string $table): bool

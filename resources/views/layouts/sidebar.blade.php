@@ -365,6 +365,13 @@
                     <span>Leave Settings</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('lwop_settings') ? '' : 'collapsed' }}"
+                    href="{{ route('lwop_settings') }}">
+                    <i class="bi bi-sliders"></i>
+                    <span>LWOP Settings</span>
+                </a>
+            </li>
             @endpermission
             @permission('leave.manage_credits')
             <li class="nav-item">

@@ -14,10 +14,13 @@ class DTRServicesTest extends TestCase
     {
         parent::setUp();
         $this->dtrService = new DTRServices();
+        // Base LWOP rules without a database lookup (the DB facade is mocked here).
+        \App\Services\LwopRuleService::override([]);
     }
 
     protected function tearDown(): void
     {
+        \App\Services\LwopRuleService::override(null);
         // Plain PHPUnit TestCase: reset the DB facade mock so one test's
         // query expectations don't answer the next test's queries.
         \Mockery::close();

@@ -64,6 +64,8 @@ class CutoffLeaveCreditsTest extends TestCase
         foreach ($this->originalDeductions as $minute => $deduction) {
             DB::table('minute_conversions')->where('minute', $minute)->update(['points_deduction' => $deduction]);
         }
+        \App\Services\LwopRuleService::override(null);
+        \App\Services\LwopRuleService::flush();
 
         parent::tearDown();
     }
@@ -622,6 +624,85 @@ class CutoffLeaveCreditsTest extends TestCase
 
         $vl = DB::table('hris.leave_credits')->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
         $this->assertEqualsWithDelta($expected, (float) $vl, 0.001);
+    }
+
+    /** LWOP Fri Jun 5 + absent Mon Jun 8 (a 4-day span), everything else worked. */
+    private function seedShortAbsenceAroundWeekend(): void
+    {
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
+        $this->fileApprovedLwop(['2026-06-05' => 8]);
+    }
+
+    /** @test */
+    public function lwop_settings_run_threshold_drives_weekend_absorption()
+    {
+        $this->seedShortAbsenceAroundWeekend();
+        $dtr = app(\App\Services\DTRServices::class);
+
+        // Base rules (> 7 days): weekend not counted.
+        \App\Services\LwopRuleService::override([]);
+        $this->assertSame(2.0, $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30'));
+
+        // A rule set with "longer than 3 days": the 4-day span now absorbs Sat/Sun.
+        \App\Services\LwopRuleService::override(['long_run_min_days' => 3]);
+        $this->assertSame(4.0, $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30'));
+    }
+
+    /** @test */
+    public function lwop_settings_can_switch_off_rest_day_counting_and_absences()
+    {
+        // LWOP Mon Jun 1 - Fri Jun 5 + absences Mon Jun 8 - Thu Jun 11 (11 with base rules).
+        $this->logWeekdays('2026-05-18', '2026-07-10', [
+            '2026-06-01', '2026-06-02', '2026-06-03', '2026-06-04', '2026-06-05',
+            '2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11',
+        ]);
+        $this->fileApprovedLwop([
+            '2026-06-01' => 8, '2026-06-02' => 8, '2026-06-03' => 8, '2026-06-04' => 8, '2026-06-05' => 8,
+        ]);
+        $dtr = app(\App\Services\DTRServices::class);
+        $june = fn() => $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+
+        \App\Services\LwopRuleService::override(['count_rest_days_in_long_runs' => false]);
+        $this->assertSame(9.0, $june(), 'No rest days absorbed: 5 LWOP + 4 absences.');
+
+        \App\Services\LwopRuleService::override(['absences_count_without_pay' => false]);
+        $this->assertSame(5.0, $june(), 'Only the 5 LWOP days (a 5-day run, nothing absorbed).');
+
+        \App\Services\LwopRuleService::override(['absences_join_runs' => false]);
+        $this->assertSame(9.0, $june(), 'Absences counted on their own: the LWOP run is only 5 days.');
+    }
+
+    /** @test */
+    public function lwop_settings_partial_day_mode_whole_counts_a_half_day_as_one()
+    {
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-10']);
+        DB::table('hris.dtr_logs')->insert([
+            ['userid' => $this->userId, 'status' => 'IN', 'created_at' => '2026-06-10 08:00:00'],
+            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2026-06-10 12:00:00'],
+        ]);
+        $this->fileApprovedLwop(['2026-06-10' => 4]);
+        $dtr = app(\App\Services\DTRServices::class);
+
+        \App\Services\LwopRuleService::override(['partial_day_mode' => 'whole']);
+        $this->assertSame(1.0, $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30'));
+        $this->assertSame(1.0, $dtr->getCutoffBreakdown($this->userId, '2026-06-01', '2026-06-30')['lwop_days']);
+    }
+
+    /** @test */
+    public function lwop_settings_month_basis_and_fractional_key_drive_earned_credits()
+    {
+        $service = app(\App\Services\LeaveCreditService::class);
+        $points = DB::table('monthly_earned_points')->pluck('points', 'present')
+            ->mapWithKeys(fn($v, $k) => [(int) round((float) $k) => (float) $v]);
+
+        \App\Services\LwopRuleService::override(['fractional_key_mode' => 'floor']);
+        $this->assertEquals($points[29], $service->computeEarnedCredits(21, 0, 22, 6, 2026, 0.5)['monthly_points_earned']);
+
+        \App\Services\LwopRuleService::override(['fractional_key_mode' => 'nearest']);
+        $this->assertEquals($points[29], $service->computeEarnedCredits(21, 0, 22, 6, 2026, 1.5)['monthly_points_earned'], '28.5 -> 29');
+
+        \App\Services\LwopRuleService::override(['month_basis_days' => 26]);
+        $this->assertEquals($points[24], $service->computeEarnedCredits(21, 0, 22, 6, 2026, 2.0)['monthly_points_earned'], '26 - 2 = 24');
     }
 
     /** @test */

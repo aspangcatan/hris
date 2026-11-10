@@ -445,28 +445,34 @@ class DTRServices
     /**
      * LWOP per date in the range: [date => ['days' => float, 'hours' => ?int]].
      *
-     * LWOP = approved LWOP filings (dates not cancelled, not disapproved by the
-     * DH) plus CSC MC 41 s. 1998, Rule XVI, Sec. 33: an absence right before or
-     * after a rest day or holiday does NOT make that rest day/holiday LWOP;
-     * only a continuous, uninterrupted LWOP run longer than 7 calendar days
-     * also counts the rest days and holidays inside it (days 1.0, hours null).
-     *
-     * Rest days follow the employee's plotted schedule (OFF = rest day, any
-     * other plotted code = work day); unplotted dates fall back to Sat/Sun.
-     * A partial-day LWOP counts filed hours / scheduled hours that day
-     * (e.g. 4 of 8 = 0.5) and, since the employee worked part of that day,
+     * LWOP = approved LWOP filings (not cancelled, not DH-disapproved) plus
+     * CSC MC 41 s. 1998, Rule XVI, Sec. 33 as set in LWOP Settings (the rule
+     * set in force on $startDate, LwopRuleService). With the base rules: an
+     * absence right before/after a rest day or holiday does NOT make that day
+     * LWOP; only a continuous LWOP run longer than 7 calendar days also counts
+     * the rest days and holidays inside it (days 1.0, hours null). Rest days
+     * follow the plotted schedule (OFF; unplotted dates -> Sat/Sun). A
+     * partial-day LWOP counts filed hours / scheduled hours (4 of 8 = 0.5) and
      * neither starts nor continues a run.
      */
     private function getLwopDaysByRange($userid, $startDate, $endDate): array
     {
-        $filings = $this->collectLwopFilings($userid, $startDate, $endDate);
+        $rules = $this->lwopRules($startDate);
+        $filings = $this->collectLwopFilings($userid, $startDate, $endDate, $rules);
         if ($filings === null) {
             return [];
         }
 
+        $runDates = $filings['whole'];
+        if (!$rules->partial_day_breaks_run) {
+            $runDates = array_merge($runDates, array_keys($filings['partial']));
+        }
+
         $lwop = $filings['partial'];
-        foreach ($this->calculateEffectiveLwopDates($filings['whole'], $filings['holidays'], $filings['scheduleCodes']) as $date) {
-            $lwop[$date] = ['days' => 1.0, 'hours' => null];
+        foreach ($this->calculateEffectiveLwopDates($runDates, $filings['holidays'], $filings['scheduleCodes'], $rules) as $date) {
+            if (!isset($filings['partial'][$date])) {
+                $lwop[$date] = ['days' => 1.0, 'hours' => null];
+            }
         }
 
         $lwop = array_filter($lwop, fn($date) => $date >= $startDate && $date <= $endDate, ARRAY_FILTER_USE_KEY);
@@ -478,68 +484,104 @@ class DTRServices
     /**
      * Days without pay for earned VL/SL credits in the range (audit C1):
      * approved LWOP plus unexcused absences (scheduled work day, no complete
-     * logs, no leave/OB/HO), with Sec. 33 applied to both together - a
-     * continuous run of LWOP and/or absences longer than 7 calendar days also
-     * counts the rest days and holidays inside it. Partial-day LWOP adds its
-     * fraction and does not join a run. Credits use 30 minus this number.
+     * logs, no leave/OB/HO), with Sec. 33 applied to both together, all as set
+     * in LWOP Settings. With the base rules a continuous run of LWOP and/or
+     * absences longer than 7 calendar days also counts the rest days and
+     * holidays inside it, and partial-day LWOP adds its fraction without
+     * joining a run. Credits use the month basis (30) minus this number.
      */
     public function getCreditWithoutPayDaysByRange($userid, $startDate, $endDate): float
     {
-        $filings = $this->collectLwopFilings($userid, $startDate, $endDate)
+        $rules = $this->lwopRules($startDate);
+        $filings = $this->collectLwopFilings($userid, $startDate, $endDate, $rules)
             ?? ['whole' => [], 'partial' => [], 'holidays' => null, 'scheduleCodes' => null];
 
-        // Absences 8 days either side are enough to tell whether a run that
-        // crosses the range edge is longer than 7 days; never past yesterday
-        // (days not yet worked have no logs and would look like absences).
-        $absenceStart = Carbon::parse($startDate)->copy()->subDays(8)->toDateString();
-        $absenceEnd = Carbon::parse($endDate)->copy()->addDays(8)->min(Carbon::yesterday())->toDateString();
-        $absentDates = $absenceEnd >= $absenceStart
-            ? $this->getDailyBreakdown($userid, $absenceStart, $absenceEnd)
-                ->filter(fn($day) => !empty($day['is_absent']))
-                ->keys()
-                ->all()
-            : [];
+        $absentDates = [];
+        if ($rules->absences_count_without_pay) {
+            // Absences one day past the run threshold either side are enough to
+            // tell whether a run crossing the range edge is long enough; never
+            // past yesterday (days not yet worked have no logs).
+            $edge = $rules->long_run_min_days + 1;
+            $absenceStart = Carbon::parse($startDate)->copy()->subDays($edge)->toDateString();
+            $absenceEnd = Carbon::parse($endDate)->copy()->addDays($edge)->min(Carbon::yesterday())->toDateString();
+            $absentDates = $absenceEnd >= $absenceStart
+                ? $this->getDailyBreakdown($userid, $absenceStart, $absenceEnd)
+                    ->filter(fn($day) => !empty($day['is_absent']))
+                    ->keys()
+                    ->all()
+                : [];
+        }
 
         if ($filings['holidays'] === null) {
             if (empty($absentDates)) {
                 return 0.0;
             }
             // No LWOP filed: still need holidays and plotted rest days for the runs.
-            $bufferedStart = Carbon::parse($startDate)->copy()->subDays(60)->toDateString();
-            $bufferedEnd = Carbon::parse($endDate)->copy()->addDays(60)->toDateString();
+            [$bufferedStart, $bufferedEnd] = $this->lwopBuffer($startDate, $endDate, $rules);
             $filings['holidays'] = $this->getHolidayDatesByRange($bufferedStart, $bufferedEnd);
             $filings['scheduleCodes'] = array_map(fn($schedule) => $schedule->code, $this->mapSchedulesWithBreaks(
                 $this->getEmployeePlottedSchedules($userid, $bufferedStart, $bufferedEnd)
             )->all());
         }
 
-        $wholeDays = array_values(array_unique(array_merge($filings['whole'], $absentDates)));
-        $days = 0.0;
-        foreach ($this->calculateEffectiveLwopDates($wholeDays, $filings['holidays'], $filings['scheduleCodes']) as $date) {
-            if ($date >= $startDate && $date <= $endDate) {
-                $days += 1.0;
+        $runDates = $filings['whole'];
+        if (!$rules->partial_day_breaks_run) {
+            $runDates = array_merge($runDates, array_keys($filings['partial']));
+        }
+        $looseAbsences = [];
+        if ($rules->absences_join_runs) {
+            $runDates = array_merge($runDates, $absentDates);
+        } else {
+            $looseAbsences = $absentDates;
+        }
+
+        $inRange = fn($date) => $date >= $startDate && $date <= $endDate;
+        $counted = [];
+        foreach ($this->calculateEffectiveLwopDates(array_values(array_unique($runDates)), $filings['holidays'], $filings['scheduleCodes'], $rules) as $date) {
+            if ($inRange($date)) {
+                $counted[$date] = isset($filings['partial'][$date]) ? $filings['partial'][$date]['days'] : 1.0;
             }
         }
         foreach ($filings['partial'] as $date => $lwop) {
-            if ($date >= $startDate && $date <= $endDate && !in_array($date, $absentDates, true)) {
-                $days += $lwop['days'];
+            if ($inRange($date) && !isset($counted[$date])) {
+                $counted[$date] = $lwop['days'];
+            }
+        }
+        foreach ($looseAbsences as $date) {
+            if ($inRange($date) && !isset($counted[$date])) {
+                $counted[$date] = 1.0;
             }
         }
 
-        return round($days, 3);
+        return round(array_sum($counted), 3);
+    }
+
+    /** The LWOP Settings rule set in force on $date. */
+    private function lwopRules(string $date): object
+    {
+        return (new LwopRuleService())->forDate($date);
+    }
+
+    /** Look-around window: wide enough to see a run that started before / ends after the range. */
+    private function lwopBuffer(string $startDate, string $endDate, object $rules): array
+    {
+        $days = max(60, $rules->long_run_min_days + 1);
+
+        return [
+            Carbon::parse($startDate)->copy()->subDays($days)->toDateString(),
+            Carbon::parse($endDate)->copy()->addDays($days)->toDateString(),
+        ];
     }
 
     /**
-     * Approved LWOP filings around the range (60 days either side, wide
-     * enough to see a run that started before / ends after it), split into
-     * whole-day dates and partial days [date => ['days' =>, 'hours' =>]],
-     * with the holidays and plotted schedule codes Sec. 33 needs.
-     * Null when nothing was filed.
+     * Approved LWOP filings around the range (see lwopBuffer), split into
+     * whole-day dates and partial days [date => ['days' =>, 'hours' =>]], with
+     * the holidays and plotted schedule codes Sec. 33 needs. Partial days are
+     * whole days when the rule set says so. Null when nothing was filed.
      */
-    private function collectLwopFilings($userid, $startDate, $endDate): ?array
+    private function collectLwopFilings($userid, $startDate, $endDate, object $rules): ?array
     {
-        $bufferedStart = Carbon::parse($startDate)->copy()->subDays(60)->toDateString();
-        $bufferedEnd = Carbon::parse($endDate)->copy()->addDays(60)->toDateString();
+        [$bufferedStart, $bufferedEnd] = $this->lwopBuffer($startDate, $endDate, $rules);
 
         $rows = DB::table('hris.leave_applications as la')
             ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
@@ -573,7 +615,7 @@ class DTRServices
             $scheduledMinutes = $this->scheduledWorkMinutes($schedules[$date] ?? null);
             $days = $scheduledMinutes > 0 ? min(1.0, round(($hours * 60) / $scheduledMinutes, 3)) : 1.0;
 
-            if ($days >= 1.0) {
+            if ($days >= 1.0 || $rules->partial_day_mode === 'whole') {
                 $wholeDays[] = $date;
             } else {
                 $partial[$date] = ['days' => $days, 'hours' => $hours];
@@ -629,20 +671,20 @@ class DTRServices
     }
 
     /**
-     * Rest day for Sec. 33: a holiday, a plotted OFF day, or - when the date
-     * is not plotted - a Saturday/Sunday. A plotted work day on a weekend is
-     * a work day.
+     * Rest day for Sec. 33: a holiday (when holidays bridge runs), a plotted
+     * OFF day, or - when the date is not plotted, or the rule set says to
+     * always use the calendar - a Saturday/Sunday.
      *
-     * @param array<string, true>   $holidaySet
+     * @param array<string, true>    $holidaySet
      * @param array<string, ?string> $scheduleCodes date => plotted schedule code
      */
-    private function isLwopRestDay(Carbon $day, array $holidaySet, array $scheduleCodes): bool
+    private function isLwopRestDay(Carbon $day, array $holidaySet, array $scheduleCodes, object $rules): bool
     {
         $date = $day->toDateString();
         if (isset($holidaySet[$date])) {
-            return true;
+            return $rules->holidays_bridge_runs;
         }
-        if (array_key_exists($date, $scheduleCodes)) {
+        if ($rules->rest_day_source === 'schedule' && array_key_exists($date, $scheduleCodes)) {
             return strtoupper(trim((string) $scheduleCodes[$date])) === 'OFF';
         }
 
@@ -650,17 +692,26 @@ class DTRServices
     }
 
     /**
-     * @param string[]               $lwopDates     whole-day LWOP dates
+     * Run dates plus, for each continuous run longer than the rule set's
+     * threshold, the rest days and holidays inside it.
+     *
+     * @param string[]               $lwopDates     whole-day run dates
      * @param string[]               $holidayDates
      * @param array<string, ?string> $scheduleCodes date => plotted schedule code (empty = Sat/Sun rule)
+     * @param object|null            $rules         LwopRuleService rule set (null = base rules)
      */
-    private function calculateEffectiveLwopDates(array $lwopDates, array $holidayDates, array $scheduleCodes = []): array
+    private function calculateEffectiveLwopDates(array $lwopDates, array $holidayDates, array $scheduleCodes = [], ?object $rules = null): array
     {
+        $rules = $rules ?? LwopRuleService::defaults();
         $sortedDates = array_values(array_unique($lwopDates));
         sort($sortedDates);
 
+        if (!$rules->count_rest_days_in_long_runs) {
+            return $sortedDates;
+        }
+
         $holidaySet = array_fill_keys($holidayDates, true);
-        $runs = $this->groupIntoLwopRuns($sortedDates, $holidaySet, $scheduleCodes);
+        $runs = $this->groupIntoLwopRuns($sortedDates, $holidaySet, $scheduleCodes, $rules);
 
         $effectiveDates = [];
         foreach ($runs as $run) {
@@ -672,12 +723,11 @@ class DTRServices
             $last = Carbon::parse(end($run));
             $span = $first->diffInDays($last) + 1;
 
-            if ($span > 7) {
+            if ($span > $rules->long_run_min_days) {
                 $cursor = $first->copy();
                 while ($cursor->lte($last)) {
                     $dateString = $cursor->toDateString();
-                    $isBridgeDay = $this->isLwopRestDay($cursor, $holidaySet, $scheduleCodes);
-                    if ($isBridgeDay && !in_array($dateString, $run, true)) {
+                    if ($this->isLwopRestDay($cursor, $holidaySet, $scheduleCodes, $rules) && !in_array($dateString, $run, true)) {
                         $effectiveDates[] = $dateString;
                     }
                     $cursor->addDay();
@@ -688,7 +738,7 @@ class DTRServices
         return array_values(array_unique($effectiveDates));
     }
 
-    private function groupIntoLwopRuns(array $sortedDates, array $holidaySet, array $scheduleCodes = []): array
+    private function groupIntoLwopRuns(array $sortedDates, array $holidaySet, array $scheduleCodes, object $rules): array
     {
         $runs = [];
         $currentRun = [];
@@ -700,7 +750,7 @@ class DTRServices
             }
 
             $previousDate = end($currentRun);
-            if ($this->isBridgedGap($previousDate, $date, $holidaySet, $scheduleCodes)) {
+            if ($this->isBridgedGap($previousDate, $date, $holidaySet, $scheduleCodes, $rules)) {
                 $currentRun[] = $date;
             } else {
                 $runs[] = $currentRun;
@@ -715,14 +765,14 @@ class DTRServices
         return $runs;
     }
 
-    /** True when every day between the two LWOP dates is a rest day or holiday. */
-    private function isBridgedGap(string $fromDate, string $toDate, array $holidaySet, array $scheduleCodes = []): bool
+    /** True when every day between the two run dates is a rest day (or bridging holiday). */
+    private function isBridgedGap(string $fromDate, string $toDate, array $holidaySet, array $scheduleCodes, object $rules): bool
     {
         $cursor = Carbon::parse($fromDate)->copy()->addDay();
         $to = Carbon::parse($toDate);
 
         while ($cursor->lt($to)) {
-            if (!$this->isLwopRestDay($cursor, $holidaySet, $scheduleCodes)) {
+            if (!$this->isLwopRestDay($cursor, $holidaySet, $scheduleCodes, $rules)) {
                 return false;
             }
             $cursor->addDay();

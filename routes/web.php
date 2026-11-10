@@ -233,6 +233,12 @@ Route::group(['middleware' => 'auth'], function () {
         return view('settings.leave_management');
     })->name('leave_management')->middleware('permission:leave.manage_types');
 
+    // LWOP Settings: effective-dated LWOP / earned-credit rules (CSC MC 41 s. 1998, Rule XVI, Sec. 33).
+    Route::get('/lwop-settings', [\App\Http\Controllers\LwopRuleController::class, 'index'])->name('lwop_settings')->middleware('permission:leave.manage_types');
+    Route::get('/lwop-settings/list', [\App\Http\Controllers\LwopRuleController::class, 'list'])->name('lwop_settings.list')->middleware('permission:leave.manage_types');
+    Route::post('/lwop-settings/save', [\App\Http\Controllers\LwopRuleController::class, 'save'])->name('lwop_settings.save')->middleware('permission:leave.manage_types');
+    Route::delete('/lwop-settings/delete', [\App\Http\Controllers\LwopRuleController::class, 'delete'])->name('lwop_settings.delete')->middleware('permission:leave.manage_types');
+
     Route::get('/bulk-leave-credits', function () {
         return view('settings.bulk_leave_credits');
     })->name('bulk-leave-credits.index')->middleware('permission:leave.manage_credits');
