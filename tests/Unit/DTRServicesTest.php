@@ -16,6 +16,15 @@ class DTRServicesTest extends TestCase
         $this->dtrService = new DTRServices();
     }
 
+    protected function tearDown(): void
+    {
+        // Plain PHPUnit TestCase: reset the DB facade mock so one test's
+        // query expectations don't answer the next test's queries.
+        \Mockery::close();
+        DB::clearResolvedInstances();
+        parent::tearDown();
+    }
+
     /** @test */
     public function it_counts_present_days_from_expected_schedules_only()
     {
@@ -222,21 +231,31 @@ class DTRServicesTest extends TestCase
         $this->assertSame(['2025-09-01', '2025-09-05'], $effective);
     }
 
-    /** @test */
-    public function it_pads_the_query_window_and_returns_only_dates_within_the_requested_range()
+    /** LWOP rows the getLwopDaysByRange query returns, plus no holidays and the given plotted schedules. */
+    private function mockLwopQueries(array $lwopRows, array $plottedSchedules = []): void
     {
-        DB::shouldReceive('table->join->where->where->whereRaw->where->whereBetween->pluck->map->unique->values->toArray')
+        DB::shouldReceive('table->join->where->where->whereRaw->where->where->whereBetween->get')
             ->once()
-            ->andReturn([
-                '2025-08-29', // Friday before the requested range - buffer-only, part of the same bridged run
-                '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05',
-                '2025-09-08', '2025-09-09',
-                '2025-10-01', // Unrelated date well after the requested range - buffer-only
-            ]);
+            ->andReturn(collect(array_map(fn($row) => (object) $row, $lwopRows)));
 
         DB::shouldReceive('table->whereBetween->pluck->map->toArray')
             ->once()
             ->andReturn([]);
+
+        DB::shouldReceive('table->join->where->whereBetween->get')
+            ->once()
+            ->andReturn(collect(array_map(fn($row) => (object) $row, $plottedSchedules)));
+    }
+
+    /** @test */
+    public function it_pads_the_query_window_and_returns_only_dates_within_the_requested_range()
+    {
+        $this->mockLwopQueries(array_map(fn($date) => ['date_applied' => $date, 'hours' => 8], [
+            '2025-08-29', // Friday before the requested range - buffer-only, part of the same bridged run
+            '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05',
+            '2025-09-08', '2025-09-09',
+            '2025-10-01', // Unrelated date well after the requested range - buffer-only
+        ]));
 
         $effective = $this->invokePrivateMethod('getApprovedLwopDatesByRange', [1, '2025-09-01', '2025-09-09']);
 
@@ -245,5 +264,80 @@ class DTRServicesTest extends TestCase
             '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04',
             '2025-09-05', '2025-09-06', '2025-09-07', '2025-09-08', '2025-09-09',
         ], $effective);
+    }
+
+    /** @test */
+    public function a_plotted_weekday_off_bridges_a_run_and_is_absorbed_when_it_exceeds_seven_days()
+    {
+        // CWW employee: Fri 09-05 plotted OFF (plus the weekend). LWOP Mon 09-01..Thu 09-04
+        // and Mon 09-08..Tue 09-09 -> one run of 9 calendar days -> Fri/Sat/Sun absorbed.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-08', '2025-09-09'],
+            [],
+            ['2025-09-05' => 'OFF'],
+        ]);
+
+        sort($effective);
+        $this->assertSame([
+            '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05',
+            '2025-09-06', '2025-09-07', '2025-09-08', '2025-09-09',
+        ], $effective);
+    }
+
+    /** @test */
+    public function a_plotted_saturday_work_day_breaks_the_run()
+    {
+        // Shift worker scheduled to work Sat 09-06 (not LWOP, not filed): the run
+        // Mon 09-01..Fri 09-05 and Mon 09-08..Tue 09-09 is interrupted -> nothing absorbed.
+        $effective = $this->invokePrivateMethod('calculateEffectiveLwopDates', [
+            ['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05', '2025-09-08', '2025-09-09'],
+            [],
+            ['2025-09-06' => 'D8'],
+        ]);
+
+        sort($effective);
+        $this->assertSame([
+            '2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05',
+            '2025-09-08', '2025-09-09',
+        ], $effective);
+    }
+
+    /** @test */
+    public function a_half_day_lwop_counts_half_a_day_and_does_not_join_a_run()
+    {
+        // Whole-day LWOP Mon 09-01..Thu 09-04, half day (4 h) Fri 09-05, whole day Mon 09-08..Tue 09-09.
+        // The half day interrupts the run: two runs of 4 and 2 days -> weekend not absorbed.
+        $this->mockLwopQueries([
+            ['date_applied' => '2025-09-01', 'hours' => 8],
+            ['date_applied' => '2025-09-02', 'hours' => 8],
+            ['date_applied' => '2025-09-03', 'hours' => 8],
+            ['date_applied' => '2025-09-04', 'hours' => 8],
+            ['date_applied' => '2025-09-05', 'hours' => 4],
+            ['date_applied' => '2025-09-08', 'hours' => 8],
+            ['date_applied' => '2025-09-09', 'hours' => 8],
+        ]);
+
+        $lwop = $this->invokePrivateMethod('getLwopDaysByRange', [1, '2025-09-01', '2025-09-30']);
+
+        $this->assertSame(['2025-09-01', '2025-09-02', '2025-09-03', '2025-09-04', '2025-09-05', '2025-09-08', '2025-09-09'], array_keys($lwop));
+        $this->assertSame(['days' => 0.5, 'hours' => 4], $lwop['2025-09-05']);
+        $this->assertSame(6.5, array_sum(array_column($lwop, 'days')));
+    }
+
+    /** @test */
+    public function lwop_fraction_uses_the_plotted_shift_length()
+    {
+        // 10-hour CWW shift 07:00-18:00 with a 12:00-13:00 break: 4 h LWOP = 0.4 day; 10 h = whole day.
+        $shift = ['code' => 'CWW', 'type' => 'FIXED', 'time_in' => '07:00:00', 'time_out' => '18:00:00',
+            'time_in_latest' => null, 'time_out_latest' => null, 'break_out' => '12:00:00', 'break_in' => '13:00:00'];
+        $this->mockLwopQueries(
+            [['date_applied' => '2025-09-01', 'hours' => 4], ['date_applied' => '2025-09-02', 'hours' => 10]],
+            [$shift + ['schedule_date' => '2025-09-01'], $shift + ['schedule_date' => '2025-09-02']]
+        );
+
+        $lwop = $this->invokePrivateMethod('getLwopDaysByRange', [1, '2025-09-01', '2025-09-30']);
+
+        $this->assertSame(0.4, $lwop['2025-09-01']['days']);
+        $this->assertSame(['days' => 1.0, 'hours' => null], $lwop['2025-09-02']);
     }
 }

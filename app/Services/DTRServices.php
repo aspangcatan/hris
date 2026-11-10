@@ -61,7 +61,8 @@ class DTRServices
     {
         $holidays = $this->getHolidayDatesByRangeWithDetails($start_date, $end_date);
         $leaveDates = $this->getApprovedLeaveDatesByRange($userid, $start_date, $end_date);
-        $lwopDates = $this->getApprovedLwopDatesByRange($userid, $start_date, $end_date);
+        $lwopDays = $this->getLwopDaysByRange($userid, $start_date, $end_date);
+        $lwopDates = array_keys($lwopDays);
         $hospitalOrders = array_fill_keys($this->getApprovedSpecialDutyDatesByRange($userid, $start_date, $end_date), true);
         // Official slips excuse the day; personal slips carry their times so
         // only their in-hours minutes are charged (to earned credits).
@@ -84,14 +85,15 @@ class DTRServices
         );
 
         // Paid leave carries its filed hours so a partial-day leave only covers
-        // part of the schedule; LWOP (incl. absorbed weekends/holidays) stays a
-        // full-day exemption.
+        // part of the schedule. Whole-day LWOP (incl. rest days/holidays absorbed
+        // under CSC Sec. 33) is a full-day exemption; partial-day LWOP covers
+        // only its filed hours, like partial paid leave.
         $leaves = [];
         foreach ($this->getApprovedLeaveEntriesByRange($userid, $start_date, $end_date) as $date => $entry) {
             $leaves[$date] = $entry;
         }
-        foreach ($lwopDates as $date) {
-            $leaves[$date] = true;
+        foreach ($lwopDays as $date => $lwop) {
+            $leaves[$date] = $lwop['hours'] === null ? true : ['hours' => $lwop['hours']];
         }
 
         return [
@@ -434,42 +436,155 @@ class DTRServices
         return $entries;
     }
 
+    /** Dates in the range that count as LWOP (see getLwopDaysByRange). */
     private function getApprovedLwopDatesByRange($userid, $startDate, $endDate)
     {
+        return array_keys($this->getLwopDaysByRange($userid, $startDate, $endDate));
+    }
+
+    /**
+     * LWOP per date in the range: [date => ['days' => float, 'hours' => ?int]].
+     *
+     * LWOP = approved LWOP filings (dates not cancelled, not disapproved by the
+     * DH) plus CSC MC 41 s. 1998, Rule XVI, Sec. 33: an absence right before or
+     * after a rest day or holiday does NOT make that rest day/holiday LWOP;
+     * only a continuous, uninterrupted LWOP run longer than 7 calendar days
+     * also counts the rest days and holidays inside it (days 1.0, hours null).
+     *
+     * Rest days follow the employee's plotted schedule (OFF = rest day, any
+     * other plotted code = work day); unplotted dates fall back to Sat/Sun.
+     * A partial-day LWOP counts filed hours / scheduled hours that day
+     * (e.g. 4 of 8 = 0.5) and, since the employee worked part of that day,
+     * neither starts nor continues a run.
+     */
+    private function getLwopDaysByRange($userid, $startDate, $endDate): array
+    {
+        // Wide enough to see a run that started before / ends after the range.
         $bufferedStart = Carbon::parse($startDate)->copy()->subDays(60)->toDateString();
         $bufferedEnd = Carbon::parse($endDate)->copy()->addDays(60)->toDateString();
 
-        $bufferedLwopDates = DB::table('hris.leave_applications as la')
+        $rows = DB::table('hris.leave_applications as la')
             ->join('hris.leave_date_applied as lda', 'la.id', '=', 'lda.leave_application_id')
             ->where('la.user_id', $userid)
             ->where('la.is_lwop', 1)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
             ->where('lda.status', 'active') // cancelled dates no longer count as LWOP
+            ->where('lda.final_disapproved', 0) // DH-disapproved dates are not LWOP
             ->whereBetween('lda.date_applied', [$bufferedStart, $bufferedEnd])
-            ->pluck('lda.date_applied')
-            ->map(function ($date) {
-                return Carbon::parse($date)->toDateString();
-            })
-            ->unique()
-            ->values()
-            ->toArray();
+            ->get(['lda.date_applied', 'lda.hours']);
 
-        $bufferedHolidayDates = $this->getHolidayDatesByRange($bufferedStart, $bufferedEnd);
+        if ($rows->isEmpty()) {
+            return [];
+        }
 
-        $effectiveDates = $this->calculateEffectiveLwopDates($bufferedLwopDates, $bufferedHolidayDates);
+        $hoursByDate = [];
+        foreach ($rows as $row) {
+            $date = Carbon::parse($row->date_applied)->toDateString();
+            $hoursByDate[$date] = ($hoursByDate[$date] ?? 0) + (int) $row->hours;
+        }
 
-        return array_values(array_filter($effectiveDates, function ($date) use ($startDate, $endDate) {
-            return $date >= $startDate && $date <= $endDate;
-        }));
+        $holidayDates = $this->getHolidayDatesByRange($bufferedStart, $bufferedEnd);
+        $schedules = $this->mapSchedulesWithBreaks(
+            $this->getEmployeePlottedSchedules($userid, $bufferedStart, $bufferedEnd)
+        )->all();
+        $scheduleCodes = array_map(fn($schedule) => $schedule->code, $schedules);
+
+        $lwop = [];
+        $wholeDays = [];
+        foreach ($hoursByDate as $date => $hours) {
+            $scheduledMinutes = $this->scheduledWorkMinutes($schedules[$date] ?? null);
+            $days = $scheduledMinutes > 0 ? min(1.0, round(($hours * 60) / $scheduledMinutes, 3)) : 1.0;
+
+            if ($days >= 1.0) {
+                $wholeDays[] = $date;
+            } else {
+                $lwop[$date] = ['days' => $days, 'hours' => $hours];
+            }
+        }
+
+        foreach ($this->calculateEffectiveLwopDates($wholeDays, $holidayDates, $scheduleCodes) as $date) {
+            $lwop[$date] = ['days' => 1.0, 'hours' => null];
+        }
+
+        $lwop = array_filter($lwop, fn($date) => $date >= $startDate && $date <= $endDate, ARRAY_FILTER_USE_KEY);
+        ksort($lwop);
+
+        return $lwop;
     }
 
-    private function calculateEffectiveLwopDates(array $lwopDates, array $holidayDates): array
+    /**
+     * Working minutes of a plotted shift (time_in..time_out, overnight aware,
+     * less the break inside it). Unplotted dates = 8 hours; OFF = 0.
+     */
+    private function scheduledWorkMinutes($schedule): int
+    {
+        if (!$schedule) {
+            return 480;
+        }
+        if (strtoupper(trim((string) ($schedule->code ?? ''))) === 'OFF'
+            || empty($schedule->time_in) || empty($schedule->time_out)) {
+            return 0;
+        }
+
+        $in = Carbon::parse('2000-01-01 ' . $schedule->time_in);
+        $out = Carbon::parse('2000-01-01 ' . $schedule->time_out);
+        if ($out->lte($in)) {
+            $out->addDay();
+        }
+        $minutes = $in->diffInMinutes($out);
+
+        if (!empty($schedule->break_out) && !empty($schedule->break_in)) {
+            $breakOut = Carbon::parse('2000-01-01 ' . $schedule->break_out);
+            if ($breakOut->lt($in)) {
+                $breakOut->addDay();
+            }
+            $breakIn = Carbon::parse($breakOut->toDateString() . ' ' . $schedule->break_in);
+            if ($breakIn->lte($breakOut)) {
+                $breakIn->addDay();
+            }
+            $overlapStart = $breakOut->copy()->max($in);
+            $overlapEnd = $breakIn->copy()->min($out);
+            if ($overlapEnd->gt($overlapStart)) {
+                $minutes -= $overlapStart->diffInMinutes($overlapEnd);
+            }
+        }
+
+        return max(0, $minutes);
+    }
+
+    /**
+     * Rest day for Sec. 33: a holiday, a plotted OFF day, or - when the date
+     * is not plotted - a Saturday/Sunday. A plotted work day on a weekend is
+     * a work day.
+     *
+     * @param array<string, true>   $holidaySet
+     * @param array<string, ?string> $scheduleCodes date => plotted schedule code
+     */
+    private function isLwopRestDay(Carbon $day, array $holidaySet, array $scheduleCodes): bool
+    {
+        $date = $day->toDateString();
+        if (isset($holidaySet[$date])) {
+            return true;
+        }
+        if (array_key_exists($date, $scheduleCodes)) {
+            return strtoupper(trim((string) $scheduleCodes[$date])) === 'OFF';
+        }
+
+        return $day->isWeekend();
+    }
+
+    /**
+     * @param string[]               $lwopDates     whole-day LWOP dates
+     * @param string[]               $holidayDates
+     * @param array<string, ?string> $scheduleCodes date => plotted schedule code (empty = Sat/Sun rule)
+     */
+    private function calculateEffectiveLwopDates(array $lwopDates, array $holidayDates, array $scheduleCodes = []): array
     {
         $sortedDates = array_values(array_unique($lwopDates));
         sort($sortedDates);
 
         $holidaySet = array_fill_keys($holidayDates, true);
-        $runs = $this->groupIntoLwopRuns($sortedDates, $holidaySet);
+        $runs = $this->groupIntoLwopRuns($sortedDates, $holidaySet, $scheduleCodes);
 
         $effectiveDates = [];
         foreach ($runs as $run) {
@@ -485,7 +600,7 @@ class DTRServices
                 $cursor = $first->copy();
                 while ($cursor->lte($last)) {
                     $dateString = $cursor->toDateString();
-                    $isBridgeDay = $cursor->isWeekend() || isset($holidaySet[$dateString]);
+                    $isBridgeDay = $this->isLwopRestDay($cursor, $holidaySet, $scheduleCodes);
                     if ($isBridgeDay && !in_array($dateString, $run, true)) {
                         $effectiveDates[] = $dateString;
                     }
@@ -497,7 +612,7 @@ class DTRServices
         return array_values(array_unique($effectiveDates));
     }
 
-    private function groupIntoLwopRuns(array $sortedDates, array $holidaySet): array
+    private function groupIntoLwopRuns(array $sortedDates, array $holidaySet, array $scheduleCodes = []): array
     {
         $runs = [];
         $currentRun = [];
@@ -509,7 +624,7 @@ class DTRServices
             }
 
             $previousDate = end($currentRun);
-            if ($this->isBridgedGap($previousDate, $date, $holidaySet)) {
+            if ($this->isBridgedGap($previousDate, $date, $holidaySet, $scheduleCodes)) {
                 $currentRun[] = $date;
             } else {
                 $runs[] = $currentRun;
@@ -524,14 +639,14 @@ class DTRServices
         return $runs;
     }
 
-    private function isBridgedGap(string $fromDate, string $toDate, array $holidaySet): bool
+    /** True when every day between the two LWOP dates is a rest day or holiday. */
+    private function isBridgedGap(string $fromDate, string $toDate, array $holidaySet, array $scheduleCodes = []): bool
     {
         $cursor = Carbon::parse($fromDate)->copy()->addDay();
         $to = Carbon::parse($toDate);
 
         while ($cursor->lt($to)) {
-            $dateString = $cursor->toDateString();
-            if (!$cursor->isWeekend() && !isset($holidaySet[$dateString])) {
+            if (!$this->isLwopRestDay($cursor, $holidaySet, $scheduleCodes)) {
                 return false;
             }
             $cursor->addDay();
@@ -683,7 +798,7 @@ class DTRServices
     {
         $result = $this->getTotalLateAbsent($userid, $startDate, $endDate);
         $approvedLeaves = $this->getApprovedLeaveDatesByRange($userid, $startDate, $endDate);
-        $approvedLwop = $this->getApprovedLwopDatesByRange($userid, $startDate, $endDate);
+        $lwopDays = $this->getLwopDaysByRange($userid, $startDate, $endDate);
         $approvedHospitalOrders = $this->getApprovedHospitalOrderDatesByRange($userid, $startDate, $endDate);
         $approvedOvertimeMinutes = $this->getApprovedOvertimeMinutesByRange($userid, $startDate, $endDate);
 
@@ -697,7 +812,8 @@ class DTRServices
             // credits only - payroll does not read this column.
             'approved_pass_slips_minutes' => (int) ($result['pass_slip_minutes'] ?? 0),
             'approved_leave_days' => count(array_unique($approvedLeaves)),
-            'lwop_days' => count(array_unique($approvedLwop)),
+            // CSC Sec. 33 LWOP days; half-day LWOP = 0.5 (see getLwopDaysByRange).
+            'lwop_days' => round(array_sum(array_column($lwopDays, 'days')), 3),
             'hospital_order_days' => count(array_unique($approvedHospitalOrders)),
         ];
     }

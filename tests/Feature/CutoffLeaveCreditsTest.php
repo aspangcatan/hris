@@ -281,7 +281,7 @@ class CutoffLeaveCreditsTest extends TestCase
         $breakdown = $dtr->getCutoffBreakdown($this->userId, '2027-09-06', '2027-09-10');
 
         $this->assertSame(1, $breakdown['approved_leave_days'], 'Cancelled paid-leave date must not count.');
-        $this->assertSame(1, $breakdown['lwop_days'], 'Cancelled LWOP date must not count.');
+        $this->assertSame(1.0, $breakdown['lwop_days'], 'Cancelled LWOP date must not count.');
         // No logs at all: only the active paid-leave Monday counts as present.
         $this->assertSame(1, $dtr->getTotalPresentByRange($this->userId, '2027-09-06', '2027-09-10'));
     }

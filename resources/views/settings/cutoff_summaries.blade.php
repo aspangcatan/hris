@@ -723,7 +723,7 @@
                                 <td>${item.approved_overtime_minutes ?? 0}</td>
                                 <td>${item.approved_pass_slips_minutes ?? 0}</td>
                                 <td>${item.approved_leave_days ?? 0}</td>
-                                <td>${item.lwop_days ?? 0}</td>
+                                <td>${Number(item.lwop_days ?? 0)}</td>
                             </tr>`;
                         $tbody.append(row);
                     });
