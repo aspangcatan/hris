@@ -1241,20 +1241,16 @@ class PayrollServices
     }
 
     /**
-     * Adds credit_without_pay_days (days without pay for earned credits, CSC
-     * Sec. 33 - see DTRServices::getCreditWithoutPayDaysByRange) to a cutoff
-     * summary row. Skipped until migration 2026_11_10_100000 has run, so
-     * generating cutoffs keeps working before it is deployed.
+     * Adds credit_without_pay_days (days without pay for earned credits - see
+     * DTRServices::getCreditWithoutPayDaysByRange) to a cutoff summary row.
+     * Skipped until migration 2026_11_10_100000 has run, so generating
+     * cutoffs keeps working before it is deployed.
      */
     private function withCreditWithoutPayDays(string $table, array $payload, $employeeId, $startDate, $endDate): array
     {
         if ($this->cutoffSummaryHasColumn($table, 'credit_without_pay_days')) {
             $payload['credit_without_pay_days'] = app(DTRServices::class)
                 ->getCreditWithoutPayDaysByRange($employeeId, $startDate, $endDate);
-        }
-        // Which LWOP Settings rule set produced the figures (migration 2026_11_10_200001).
-        if ($this->cutoffSummaryHasColumn($table, 'lwop_rule_set_id')) {
-            $payload['lwop_rule_set_id'] = (new LwopRuleService())->forDate((string) $startDate)->id;
         }
 
         return $payload;

@@ -15,25 +15,18 @@ class LeaveCreditService
     }
 
     /**
-     * @param float|null $withoutPayDays days without pay in the month (LWOP + unexcused absences,
-     *        CSC Sec. 33 rest days included - cutoff_summaries.credit_without_pay_days). When
-     *        given, the lookup key is 30 - $withoutPayDays (CSC's 30-day month); otherwise the
-     *        older present / work days x 30 scaling is used (cutoffs generated before it existed).
+     * @param float|null $withoutPayDays days without pay in the month (LWOP + unexcused absences +
+     *        weekend days an LWOP Settings case marks as LWOP - cutoff_summaries.credit_without_pay_days).
+     *        When given, the lookup key = days present = 30 - $withoutPayDays (CSC Table III, 30-day
+     *        month); otherwise the older present / work days x 30 scaling is used (cutoffs generated
+     *        before the column existed).
      */
     public function computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month = null, $year = null, $withoutPayDays = null)
     {
         try {
             if ($withoutPayDays !== null) {
-                // Month basis and fractional-key handling come from LWOP Settings
-                // (the rule set in force on the first day of the credited month).
-                $ruleDate = ($month && $year)
-                    ? Carbon::createFromDate((int) $year, (int) $month, 1)->toDateString()
-                    : Carbon::today()->toDateString();
-                $rules = (new LwopRuleService())->forDate($ruleDate);
-                $basis = (float) $rules->month_basis_days;
-
-                $lookupPresent = max(0.0, min($basis, $basis - (float) $withoutPayDays));
-                $monthly_points_earned = $this->earnedPointsFor($lookupPresent, $rules->fractional_key_mode);
+                $lookupPresent = max(0.0, min(30.0, 30 - (float) $withoutPayDays));
+                $monthly_points_earned = $this->earnedPointsFor($lookupPresent);
                 $lateUndertimeDeductions = $this->minuteConversionService->computeDeduction($totalLateUndertime);
 
                 return [
@@ -88,18 +81,12 @@ class LeaveCreditService
 
     /**
      * monthly_earned_points for a (possibly fractional) days-present key. HR's
-     * table has whole days only, so a fractional key follows LWOP Settings:
-     * 'interpolate' (29.5 -> halfway between the 29 and 30 rows = CSC's
-     * 0.5-day LWOP value), 'floor' (29.5 -> 29) or 'nearest' (29.5 -> 30).
+     * table has whole days only, so a half key is interpolated between the two
+     * rows: 29.5 -> halfway between 29 and 30 = 1.229, the CSC Table III value.
      * 0 days = 0 points.
      */
-    public function earnedPointsFor(float $present, string $fractionalMode = 'interpolate'): float
+    public function earnedPointsFor(float $present): float
     {
-        if ($fractionalMode === 'floor') {
-            $present = floor($present);
-        } elseif ($fractionalMode === 'nearest') {
-            $present = round($present);
-        }
         if ($present <= 0) {
             return 0.0;
         }
