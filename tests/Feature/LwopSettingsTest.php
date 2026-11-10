@@ -180,24 +180,49 @@ class LwopSettingsTest extends TestCase
     }
 
     /** @test */
-    public function the_page_saves_the_agency_weekend_rule()
+    public function the_page_saves_rest_day_cases_with_the_rule_set()
     {
-        if (!Schema::hasColumn('lwop_rule_sets', 'rest_day_rule')) {
-            $this->markTestSkipped('Run migration 2026_11_10_300000 first.');
+        if (!Schema::hasTable('lwop_rest_day_cases')) {
+            $this->markTestSkipped('Run migration 2026_11_10_400000 first.');
         }
         $this->actAsAdmin();
+        $cases = [
+            ['before' => 'lwop', 'after' => 'present', 'counts' => true],
+            ['before' => 'present', 'after' => 'lwop', 'counts' => false],
+            ['before' => 'lwop', 'after' => 'lwop', 'counts' => true],
+            ['before' => 'lwop', 'after' => 'absent', 'counts' => true, 'remarks' => 'test: added case'],
+        ];
 
         $this->withoutMiddleware()->postJson('/lwop-settings/save', $this->payload([
-            'rest_day_rule' => 'after_lwop',
+            'rest_day_rule' => 'cases',
             'after_lwop_includes_holidays' => false,
+            'cases' => $cases,
         ]))->assertOk();
         $id = (int) DB::table('lwop_rule_sets')->where('effective_from', '2031-03-01')->value('id');
         $this->ruleIds[] = $id;
 
         $rules = (new LwopRuleService())->forDate('2031-03-15');
-        $this->assertSame('after_lwop', $rules->rest_day_rule);
+        $this->assertSame('cases', $rules->rest_day_rule);
         $this->assertFalse($rules->after_lwop_includes_holidays);
+        $this->assertSame(['lwop|present' => true, 'present|lwop' => false, 'lwop|lwop' => true, 'lwop|absent' => true], $rules->cases);
         $this->assertSame('long_runs', (new LwopRuleService())->forDate('2031-02-28')->rest_day_rule, 'Earlier dates keep the base rule.');
+
+        $row = collect($this->withoutMiddleware()->getJson('/lwop-settings/list')->json('data'))->firstWhere('id', $id);
+        $this->assertCount(4, $row['case_list']);
+        $this->assertSame('test: added case', $row['case_list'][3]['remarks']);
+
+        // Editing replaces the cases; a repeated combination is refused.
+        $this->withoutMiddleware()->postJson('/lwop-settings/save', $this->payload([
+            'id' => $id, 'rest_day_rule' => 'cases', 'cases' => [$cases[0], $cases[0]],
+        ]))->assertStatus(422);
+        $this->withoutMiddleware()->postJson('/lwop-settings/save', $this->payload([
+            'id' => $id, 'rest_day_rule' => 'cases', 'cases' => [$cases[0]],
+        ]))->assertOk();
+        $this->assertSame(1, DB::table('lwop_rest_day_cases')->where('lwop_rule_set_id', $id)->count());
+
+        // Deleting the rule set removes its cases (foreign key cascade).
+        $this->withoutMiddleware()->deleteJson('/lwop-settings/delete', ['id' => $id])->assertOk();
+        $this->assertSame(0, DB::table('lwop_rest_day_cases')->where('lwop_rule_set_id', $id)->count());
     }
 
     /** @test */

@@ -29,25 +29,49 @@
 
                     <h6 class="mt-4 mb-2 fw-bold">LWOP identification</h6>
                     <div class="row g-3">
-                        <div class="col-md-8">
+                        <div class="col-12">
                             <div class="form-floating">
                                 <select class="form-control" id="lwop_rest_day_rule">
-                                    <option value="long_runs">Only inside a continuous run (CSC Sec. 33)</option>
-                                    <option value="after_lwop">Rest days right after an LWOP day (agency rule)</option>
+                                    <option value="long_runs">CSC Sec. 33: only inside a continuous run</option>
+                                    <option value="cases">Cases: decided by the day before and the day after</option>
                                 </select>
                                 <label>How rest days and holidays become LWOP</label>
                             </div>
-                            <div class="form-text">Agency rule: LWOP Friday = 3 days (Fri, Sat, Sun); LWOP Monday = 1 day; LWOP Friday and Monday = 4 days. Applies to LWOP days and earned credits only, never to pay, and only to filed LWOP (not to unexcused absences).</div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="form-floating">
-                                <select class="form-control" id="lwop_after_lwop_includes_holidays">
-                                    <option value="1">Yes</option>
-                                    <option value="0">No (a holiday ends the stretch)</option>
-                                </select>
-                                <label>Agency rule: holidays count too</label>
+
+                        {{-- Cases editor (shown when "Cases" is chosen) --}}
+                        <div class="col-12 lwop-cases-only">
+                            <div class="form-text mb-2">
+                                Each case looks at the work day <b>before</b> the rest days and the work day <b>after</b> them.
+                                If a case says <b>Count</b>, the rest days in between are LWOP. A combination with no case does not count.
+                                Cases affect LWOP days and earned credits only, never pay.
                             </div>
-                            <div class="form-text">E.g. LWOP Thursday, holiday Friday: Yes = Thu, Fri, Sat, Sun (4); No = Thursday only (1).</div>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-2">
+                                    <thead>
+                                    <tr>
+                                        <th style="width: 3rem">#</th>
+                                        <th>Day before</th>
+                                        <th>Day after</th>
+                                        <th>Rest days</th>
+                                        <th>Example week</th>
+                                        <th style="width: 3rem"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="lwop_case_rows"></tbody>
+                                </table>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn_add_lwop_case">
+                                <i class="bi bi-plus-circle me-1"></i> Add case
+                            </button>
+                            <div class="form-floating mt-3" style="max-width: 360px">
+                                <select class="form-control" id="lwop_after_lwop_includes_holidays">
+                                    <option value="1">Yes, a holiday is one more rest day</option>
+                                    <option value="0">No, a holiday ends the rest days</option>
+                                </select>
+                                <label>Holidays next to rest days</label>
+                            </div>
+                            <div class="form-text">E.g. LWOP Thursday, holiday Friday, weekend, present Monday: Yes = 4 days; No = Thursday only.</div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-floating">

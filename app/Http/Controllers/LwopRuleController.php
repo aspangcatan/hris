@@ -53,12 +53,17 @@ class LwopRuleController extends Controller
         $currentId = DB::table('lwop_rule_sets')->where('effective_from', '<=', $today)
             ->orderByDesc('effective_from')->value('id');
 
+        $hasCases = $this->casesTableExists();
+
         return response()->json([
-            'data' => $rows->map(function ($row) use ($usage, $baseId, $currentId) {
-                $rules = LwopRuleService::normalize($row);
+            'data' => $rows->map(function ($row) use ($usage, $baseId, $currentId, $hasCases) {
+                $caseList = $hasCases ? LwopRuleService::casesFor((int) $row->id) : null;
+                $rules = LwopRuleService::normalize($row, $caseList);
                 $used = (int) ($usage[$row->id] ?? 0);
 
                 return array_merge((array) $rules, [
+                    // Editable case rows (null = cases table not migrated yet).
+                    'case_list' => $caseList,
                     'legal_basis' => $row->legal_basis,
                     'remarks' => $row->remarks,
                     'created_by_name' => $row->created_by_name ?: null,
@@ -88,7 +93,18 @@ class LwopRuleController extends Controller
             'fractional_key_mode' => 'required|in:' . implode(',', LwopRuleService::FRACTIONAL_KEY_MODES),
             'rest_day_rule' => 'sometimes|in:' . implode(',', LwopRuleService::REST_DAY_RULES),
             'after_lwop_includes_holidays' => 'sometimes|boolean',
+            'cases' => 'sometimes|array|max:16',
+            'cases.*.before' => 'required|in:' . implode(',', LwopRuleService::CASE_STATUSES),
+            'cases.*.after' => 'required|in:' . implode(',', LwopRuleService::CASE_STATUSES),
+            'cases.*.counts' => 'required|boolean',
+            'cases.*.remarks' => 'nullable|string|max:255',
         ] + array_fill_keys(self::BOOLEAN_FIELDS, 'required|boolean'));
+
+        $cases = array_values($validated['cases'] ?? []);
+        $combos = array_map(fn($c) => $c['before'] . '|' . $c['after'], $cases);
+        if (count($combos) !== count(array_unique($combos))) {
+            return response()->json(['message' => 'Each combination of day before and day after can appear in only one case.'], 422);
+        }
 
         $id = (int) ($validated['id'] ?? 0);
         $effectiveFrom = date('Y-m-d', strtotime($validated['effective_from']));
@@ -133,7 +149,12 @@ class LwopRuleController extends Controller
                 return response()->json(['message' => 'The base rule set keeps its effective date (it covers every date before the newer rule sets).'], 422);
             }
 
-            DB::table('lwop_rule_sets')->where('id', $id)->update($values);
+            DB::transaction(function () use ($id, $values, $cases, $request) {
+                DB::table('lwop_rule_sets')->where('id', $id)->update($values);
+                if ($request->has('cases')) {
+                    $this->replaceCases($id, $cases);
+                }
+            });
             LwopRuleService::flush();
 
             return response()->json(['message' => 'Rule set updated.' . $this->regenerateNote($effectiveFrom)]);
@@ -144,7 +165,10 @@ class LwopRuleController extends Controller
             return response()->json(['message' => "The effective date must be on or after the base rule set ({$earliest})."], 422);
         }
 
-        DB::table('lwop_rule_sets')->insert($values + ['created_by' => Auth::id(), 'created_at' => now()]);
+        DB::transaction(function () use ($values, $cases) {
+            $newId = DB::table('lwop_rule_sets')->insertGetId($values + ['created_by' => Auth::id(), 'created_at' => now()]);
+            $this->replaceCases($newId, $cases);
+        });
         LwopRuleService::flush();
 
         return response()->json(['message' => 'Rule set added.' . $this->regenerateNote($effectiveFrom)]);
@@ -188,6 +212,36 @@ class LwopRuleController extends Controller
         return $count > 0
             ? " {$count} cutoff(s) starting on/after {$effectiveFrom} were already generated; they keep their figures until you regenerate them."
             : '';
+    }
+
+    /** Replace a rule set's cases with $cases, in the order given (skipped until the cases table exists). */
+    private function replaceCases(int $ruleSetId, array $cases): void
+    {
+        if (!$this->casesTableExists()) {
+            return;
+        }
+
+        DB::table('lwop_rest_day_cases')->where('lwop_rule_set_id', $ruleSetId)->delete();
+        foreach ($cases as $i => $case) {
+            DB::table('lwop_rest_day_cases')->insert([
+                'lwop_rule_set_id' => $ruleSetId,
+                'before_status' => $case['before'],
+                'after_status' => $case['after'],
+                'counts_as_lwop' => (bool) $case['counts'],
+                'remarks' => $case['remarks'] ?? null,
+                'sort_order' => $i + 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    private function casesTableExists(): bool
+    {
+        return (bool) DB::selectOne(
+            'SELECT 1 AS found FROM information_schema.tables WHERE table_schema = ? AND table_name = ?',
+            [DB::getDatabaseName(), 'lwop_rest_day_cases']
+        );
     }
 
     private function ruleSetsHaveAfterLwopColumns(): bool

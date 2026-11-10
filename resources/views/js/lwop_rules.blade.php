@@ -16,9 +16,88 @@
         rest_day_rule: 'long_runs', after_lwop_includes_holidays: true,
     };
 
+    // ---------------------------------------------------------------- Cases (day before / day after)
+    const LWOP_CASE_STATUSES = [['lwop', 'LWOP'], ['present', 'Present'], ['absent', 'Absent (no leave filed)'], ['paid_leave', 'Paid leave']];
+    // HR's examples: LWOP Fri + present Mon = 3; present Fri + LWOP Mon = 1; LWOP Fri + Mon = 4.
+    const LWOP_HR_CASES = [
+        {before: 'lwop', after: 'present', counts: true},
+        {before: 'present', after: 'lwop', counts: false},
+        {before: 'lwop', after: 'lwop', counts: true},
+    ];
+    // Fields that only apply to the CSC Sec. 33 run rule (hidden in Cases mode).
+    const LWOP_SEC33_FIELDS = ['count_rest_days_in_long_runs', 'long_run_min_days', 'holidays_bridge_runs',
+        'partial_day_breaks_run', 'absences_join_runs'];
+    let lwopCases = [];
+
+    const lwopStatusLabel = s => (LWOP_CASE_STATUSES.find(o => o[0] === s) || [s, s])[1];
+    const lwopShort = s => ({lwop: 'LWOP', present: 'PRESENT', absent: 'ABSENT', paid_leave: 'LEAVE'}[s] || s);
+
+    function lwopCaseFromMap(map) {
+        return Object.entries(map || {}).map(([key, counts]) => {
+            const [before, after] = key.split('|');
+            return {before, after, counts: !!counts};
+        });
+    }
+
+    function lwopCasePreview(c) {
+        const rest = c.counts ? 'LWOP' : '—';
+        return `<span class="small text-nowrap">FRI <b>${lwopShort(c.before)}</b> · SAT <b>${rest}</b> · SUN <b>${rest}</b> · MON <b>${lwopShort(c.after)}</b></span>`;
+    }
+
+    function renderLwopCases() {
+        const options = sel => LWOP_CASE_STATUSES.map(o => `<option value="${o[0]}" ${o[0] === sel ? 'selected' : ''}>${o[1]}</option>`).join('');
+        const $rows = $("#lwop_case_rows").empty();
+        if (!lwopCases.length) {
+            $rows.append('<tr><td colspan="6" class="text-muted small">No cases: rest days never count. Click "Add case".</td></tr>');
+        }
+        lwopCases.forEach((c, i) => {
+            $rows.append(`
+                <tr data-index="${i}">
+                    <td>${i + 1}</td>
+                    <td><select class="form-select form-select-sm lwop-case-before">${options(c.before)}</select></td>
+                    <td><select class="form-select form-select-sm lwop-case-after">${options(c.after)}</select></td>
+                    <td><select class="form-select form-select-sm lwop-case-counts">
+                        <option value="1" ${c.counts ? 'selected' : ''}>Count as LWOP</option>
+                        <option value="0" ${c.counts ? '' : 'selected'}>Do not count</option>
+                    </select></td>
+                    <td class="lwop-case-preview">${lwopCasePreview(c)}</td>
+                    <td><button type="button" class="btn btn-sm btn-outline-danger lwop-case-remove" title="Remove case"><i class="bi bi-x"></i></button></td>
+                </tr>`);
+        });
+    }
+
+    function toggleLwopRuleMode() {
+        const cases = $("#lwop_rest_day_rule").val() === 'cases';
+        $(".lwop-cases-only").toggle(cases);
+        LWOP_SEC33_FIELDS.forEach(f => $("#lwop_" + f).closest('[class^="col-"]').toggle(!cases));
+    }
+
     $(document).ready(function () {
         $("#btn_add_lwop_rule").click(function () {
             openLwopRuleModal(null);
+        });
+        $("#lwop_rest_day_rule").on("change", toggleLwopRuleMode);
+        $("#btn_add_lwop_case").on("click", function () {
+            const used = new Set(lwopCases.map(c => c.before + '|' + c.after));
+            const free = LWOP_CASE_STATUSES.flatMap(b => LWOP_CASE_STATUSES.map(a => [b[0], a[0]])).find(p => !used.has(p.join('|')));
+            if (!free) {
+                toastr.info('Every combination already has a case.');
+                return;
+            }
+            lwopCases.push({before: free[0], after: free[1], counts: true});
+            renderLwopCases();
+        });
+        $("#lwop_case_rows").on("change", "select", function () {
+            const $row = $(this).closest("tr");
+            const c = lwopCases[$row.data("index")];
+            c.before = $row.find(".lwop-case-before").val();
+            c.after = $row.find(".lwop-case-after").val();
+            c.counts = $row.find(".lwop-case-counts").val() === "1";
+            $row.find(".lwop-case-preview").html(lwopCasePreview(c));
+        });
+        $("#lwop_case_rows").on("click", ".lwop-case-remove", function () {
+            lwopCases.splice($(this).closest("tr").data("index"), 1);
+            renderLwopCases();
         });
         getLwopRules();
     });
@@ -39,6 +118,12 @@
         $("#lwop_remarks").val(item ? (item.remarks || "") : "");
         LWOP_FIELDS.booleans.forEach(f => $("#lwop_" + f).val(source[f] ? "1" : "0"));
         LWOP_FIELDS.values.forEach(f => $("#lwop_" + f).val(String(source[f] ?? LWOP_DEFAULTS[f])));
+        // A copy, so editing a new rule set never changes the one it was pre-filled from.
+        const sourceCases = source.case_list && source.case_list.length ? source.case_list
+            : (source.cases ? lwopCaseFromMap(source.cases) : LWOP_HR_CASES);
+        lwopCases = sourceCases.map(c => ({before: c.before, after: c.after, counts: !!c.counts, remarks: c.remarks || null}));
+        renderLwopCases();
+        toggleLwopRuleMode();
         $("#lwop_rule_modal").modal("show");
     }
 
@@ -76,6 +161,7 @@
         };
         LWOP_FIELDS.booleans.forEach(f => params[f] = $("#lwop_" + f).val() === "1");
         LWOP_FIELDS.values.forEach(f => params[f] = $("#lwop_" + f).val());
+        params.cases = lwopCases;
 
         const result = await lwopRequest('{{ route('lwop_settings.save') }}', 'POST', params);
         if (result.ok) {
@@ -103,8 +189,9 @@
     function describeLwopRules(r) {
         const yes = v => v ? 'Yes' : 'No';
         const lwop = [
-            r.rest_day_rule === 'after_lwop'
-                ? `<b>Agency rule:</b> rest days right after an LWOP day count (Fri LWOP = 3 days); holidays ${r.after_lwop_includes_holidays ? 'count too' : 'end the stretch'}`
+            r.rest_day_rule === 'cases'
+                ? `<b>Cases</b> (day before → day after): ${(r.case_list && r.case_list.length ? r.case_list : lwopCaseFromMap(r.cases))
+                    .map(c => `${lwopStatusLabel(c.before)} → ${lwopStatusLabel(c.after)}: <b>${c.counts ? 'count' : 'no'}</b>`).join('; ') || 'none'}; holidays ${r.after_lwop_includes_holidays ? 'are rest days' : 'end the rest days'}`
                 : (r.count_rest_days_in_long_runs
                     ? `Rest days/holidays count inside runs longer than <b>${r.long_run_min_days}</b> days`
                     : 'Rest days/holidays never count'),

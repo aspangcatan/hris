@@ -711,61 +711,92 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
-    public function agency_rule_counts_the_rest_days_right_after_an_lwop_day()
+    public function cases_hr_examples_friday_lwop_and_friday_plus_monday()
     {
-        // HR's examples: LWOP Fri = 3, LWOP Mon = 1, LWOP Fri + Mon = 4 (June 2026: Jun 5 Fri, Jun 8 Mon).
-        \App\Services\LwopRuleService::override(['rest_day_rule' => 'after_lwop']);
+        // HR's cases (the defaults): LWOP Fri + present Mon = 3; LWOP Fri + LWOP Mon = 4.
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases']);
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
+        DB::table('hris.dtr_logs')->insert([
+            ['userid' => $this->userId, 'status' => 'IN', 'created_at' => '2026-06-08 08:00:00'],
+            ['userid' => $this->userId, 'status' => 'OUT', 'created_at' => '2026-06-08 17:00:00'],
+        ]);
 
         $this->fileApprovedLwop(['2026-06-05' => 8]);
-        $this->assertSame(3.0, $this->lwopDaysInJune(), 'Fri LWOP, Mon present: Fri + Sat + Sun.');
+        $this->assertSame(3.0, $this->lwopDaysInJune(), 'LWOP Fri, present Mon: Fri + Sat + Sun.');
 
+        DB::table('hris.dtr_logs')->where('userid', $this->userId)->whereDate('created_at', '2026-06-08')->delete();
         $this->fileApprovedLwop(['2026-06-08' => 8]);
-        $this->assertSame(4.0, $this->lwopDaysInJune(), 'Fri + Mon LWOP: Fri, Sat, Sun, Mon.');
+        $this->assertSame(4.0, $this->lwopDaysInJune(), 'LWOP Fri + Mon: Fri, Sat, Sun, Mon.');
     }
 
     /** @test */
-    public function agency_rule_monday_lwop_alone_is_one_day()
+    public function cases_hr_example_monday_lwop_alone_is_one_day()
     {
-        \App\Services\LwopRuleService::override(['rest_day_rule' => 'after_lwop']);
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases']);
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-08']);
         $this->fileApprovedLwop(['2026-06-08' => 8]);
 
         $this->assertSame(1.0, $this->lwopDaysInJune(), 'Present Fri, LWOP Mon: Monday only.');
     }
 
     /** @test */
-    public function agency_rule_holiday_setting_decides_a_holiday_after_the_lwop()
+    public function cases_holiday_setting_decides_a_holiday_next_to_the_rest_days()
     {
-        // LWOP Thu Jun 11; Fri Jun 12 is a holiday (Independence Day), then the weekend.
+        // LWOP Thu Jun 11; Fri Jun 12 is a holiday (Independence Day); weekend; present Mon Jun 15.
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-11']);
         $this->fileApprovedLwop(['2026-06-11' => 8]);
 
-        \App\Services\LwopRuleService::override(['rest_day_rule' => 'after_lwop', 'after_lwop_includes_holidays' => true]);
-        $this->assertSame(4.0, $this->lwopDaysInJune(), 'Thu + Fri holiday + Sat + Sun.');
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases', 'after_lwop_includes_holidays' => true]);
+        $this->assertSame(4.0, $this->lwopDaysInJune(), 'Holiday is a rest day: Thu + Fri + Sat + Sun.');
 
-        \App\Services\LwopRuleService::override(['rest_day_rule' => 'after_lwop', 'after_lwop_includes_holidays' => false]);
-        $this->assertSame(1.0, $this->lwopDaysInJune(), 'The holiday ends the stretch: Thursday only.');
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases', 'after_lwop_includes_holidays' => false]);
+        $this->assertSame(1.0, $this->lwopDaysInJune(), 'Holiday ends the stretch (weekend sits after a holiday, no case): Thursday only.');
     }
 
     /** @test */
-    public function agency_rule_drives_credits_but_not_for_unexcused_absences()
+    public function cases_a_combination_without_a_case_does_not_count_until_hr_adds_it()
     {
-        // Filed LWOP Fri Jun 5 (3 days) + unexcused absence Fri Jun 19 (1 day, no weekend).
-        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-19']);
+        // LWOP Fri Jun 5, unexcused absence Mon Jun 8: "lwop | absent" is not one of HR's three cases.
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-05', '2026-06-08']);
         $this->fileApprovedLwop(['2026-06-05' => 8]);
-        \App\Services\LwopRuleService::override(['rest_day_rule' => 'after_lwop']);
+        $dtr = app(\App\Services\DTRServices::class);
+        $credits = fn() => $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
 
-        $days = app(\App\Services\DTRServices::class)->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30');
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases']);
+        $this->assertSame(1.0, $this->lwopDaysInJune());
+        $this->assertSame(2.0, $credits(), 'Fri LWOP + Mon absence, weekend not counted.');
 
-        $this->assertSame(4.0, $days);
-        $breakdown = app(\App\Services\DTRServices::class)->getCutoffBreakdown($this->userId, '2026-06-01', '2026-06-30');
-        $this->assertSame(1, $breakdown['absences'], 'Pay figure unchanged: only the unexcused Friday is an absence.');
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases', 'cases' => array_merge(
+            \App\Services\LwopRuleService::HR_DEFAULT_CASES,
+            [['before' => 'lwop', 'after' => 'absent', 'counts' => true]]
+        )]);
+        $this->assertSame(3.0, $this->lwopDaysInJune(), 'New case: weekend after the LWOP Friday counts.');
+        $this->assertSame(4.0, $credits());
     }
 
     /** @test */
-    public function agency_rule_weekend_after_a_month_end_friday_lands_in_the_next_month()
+    public function cases_between_absences_count_for_credits_only_and_never_change_pay()
     {
-        // Fri Jul 31 2026 LWOP: Sat Aug 1 and Sun Aug 2 belong to the August cutoff.
+        // Unexcused absences Fri Jun 19 and Mon Jun 22, no LWOP filed; HR adds "absent | absent" counts.
+        $this->logWeekdays('2026-05-18', '2026-07-10', ['2026-06-19', '2026-06-22']);
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases', 'cases' => [
+            ['before' => 'absent', 'after' => 'absent', 'counts' => true],
+        ]]);
+        $dtr = app(\App\Services\DTRServices::class);
+
+        $this->assertSame(4.0, $dtr->getCreditWithoutPayDaysByRange($this->userId, '2026-06-01', '2026-06-30'), 'Fri + Sat + Sun + Mon.');
+        $breakdown = $dtr->getCutoffBreakdown($this->userId, '2026-06-01', '2026-06-30');
+        $this->assertSame(0.0, $breakdown['lwop_days'], 'No LWOP filed: the LWOP figure stays 0.');
+        $this->assertSame(2, $breakdown['absences'], 'Pay figure unchanged: 2 absent work days.');
+    }
+
+    /** @test */
+    public function cases_weekend_after_a_month_end_friday_lands_in_the_next_month()
+    {
+        // LWOP Fri Jul 31 2026, present Mon Aug 3: Sat Aug 1 and Sun Aug 2 belong to August.
+        $this->logWeekdays('2026-07-01', '2026-08-14', ['2026-07-31']);
         $this->fileApprovedLwop(['2026-07-31' => 8]);
-        \App\Services\LwopRuleService::override(['rest_day_rule' => 'after_lwop']);
+        \App\Services\LwopRuleService::override(['rest_day_rule' => 'cases']);
         $dtr = app(\App\Services\DTRServices::class);
 
         $this->assertSame(1.0, $dtr->getCutoffBreakdown($this->userId, '2026-07-01', '2026-07-31')['lwop_days']);
