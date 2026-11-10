@@ -29,6 +29,26 @@
 
                     <h6 class="mt-4 mb-2 fw-bold">LWOP identification</h6>
                     <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="form-floating">
+                                <select class="form-control" id="lwop_rest_day_rule">
+                                    <option value="long_runs">Only inside a continuous run (CSC Sec. 33)</option>
+                                    <option value="after_lwop">Rest days right after an LWOP day (agency rule)</option>
+                                </select>
+                                <label>How rest days and holidays become LWOP</label>
+                            </div>
+                            <div class="form-text">Agency rule: LWOP Friday = 3 days (Fri, Sat, Sun); LWOP Monday = 1 day; LWOP Friday and Monday = 4 days. Applies to LWOP days and earned credits only, never to pay, and only to filed LWOP (not to unexcused absences).</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-floating">
+                                <select class="form-control" id="lwop_after_lwop_includes_holidays">
+                                    <option value="1">Yes</option>
+                                    <option value="0">No (a holiday ends the stretch)</option>
+                                </select>
+                                <label>Agency rule: holidays count too</label>
+                            </div>
+                            <div class="form-text">E.g. LWOP Thursday, holiday Friday: Yes = Thu, Fri, Sat, Sun (4); No = Thursday only (1).</div>
+                        </div>
                         <div class="col-md-6">
                             <div class="form-floating">
                                 <select class="form-control" id="lwop_count_rest_days_in_long_runs">

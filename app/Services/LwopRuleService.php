@@ -15,6 +15,14 @@ class LwopRuleService
     public const REST_DAY_SOURCES = ['schedule', 'weekend'];
     public const PARTIAL_DAY_MODES = ['fraction', 'whole'];
     public const FRACTIONAL_KEY_MODES = ['interpolate', 'floor', 'nearest'];
+    /**
+     * How rest days/holidays become LWOP:
+     *  - long_runs:  CSC Sec. 33 - only inside a continuous run longer than long_run_min_days;
+     *  - after_lwop: agency rule - rest days right after a filed whole-day LWOP count
+     *                (Fri LWOP = 3 days, Mon LWOP = 1, Fri + Mon = 4). LWOP days and
+     *                earned credits only; unexcused absences never pull rest days in.
+     */
+    public const REST_DAY_RULES = ['long_runs', 'after_lwop'];
 
     /** @var array<string, object> */
     private static array $cache = [];
@@ -39,6 +47,8 @@ class LwopRuleService
             'absences_join_runs' => true,
             'month_basis_days' => 30,
             'fractional_key_mode' => 'interpolate',
+            'rest_day_rule' => 'long_runs',
+            'after_lwop_includes_holidays' => true,
         ];
     }
 
@@ -84,6 +94,9 @@ class LwopRuleService
             'absences_join_runs' => (bool) $row->absences_join_runs,
             'month_basis_days' => max(1, (int) $row->month_basis_days),
             'fractional_key_mode' => $pick($row->fractional_key_mode, self::FRACTIONAL_KEY_MODES, $d->fractional_key_mode),
+            // Columns from migration 2026_11_10_300000; absent before it runs.
+            'rest_day_rule' => $pick($row->rest_day_rule ?? null, self::REST_DAY_RULES, $d->rest_day_rule),
+            'after_lwop_includes_holidays' => (bool) ($row->after_lwop_includes_holidays ?? $d->after_lwop_includes_holidays),
         ];
     }
 

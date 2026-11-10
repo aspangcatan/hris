@@ -468,8 +468,12 @@ class DTRServices
             $runDates = array_merge($runDates, array_keys($filings['partial']));
         }
 
+        $effective = $rules->rest_day_rule === 'after_lwop'
+            ? $this->withRestDaysAfterLwop($filings['whole'], $filings['holidays'], $filings['scheduleCodes'], $rules)
+            : $this->calculateEffectiveLwopDates($runDates, $filings['holidays'], $filings['scheduleCodes'], $rules);
+
         $lwop = $filings['partial'];
-        foreach ($this->calculateEffectiveLwopDates($runDates, $filings['holidays'], $filings['scheduleCodes'], $rules) as $date) {
+        foreach ($effective as $date) {
             if (!isset($filings['partial'][$date])) {
                 $lwop[$date] = ['days' => 1.0, 'hours' => null];
             }
@@ -524,6 +528,31 @@ class DTRServices
             )->all());
         }
 
+        $inRange = fn($date) => $date >= $startDate && $date <= $endDate;
+
+        // Agency rule (LWOP Settings "rest days right after an LWOP day"): only filed
+        // whole-day LWOP pulls in the rest days after it; absences count as themselves.
+        if ($rules->rest_day_rule === 'after_lwop') {
+            $counted = [];
+            foreach ($this->withRestDaysAfterLwop($filings['whole'], $filings['holidays'], $filings['scheduleCodes'], $rules) as $date) {
+                if ($inRange($date)) {
+                    $counted[$date] = 1.0;
+                }
+            }
+            foreach ($filings['partial'] as $date => $lwop) {
+                if ($inRange($date) && !isset($counted[$date])) {
+                    $counted[$date] = $lwop['days'];
+                }
+            }
+            foreach ($absentDates as $date) {
+                if ($inRange($date) && !isset($counted[$date])) {
+                    $counted[$date] = 1.0;
+                }
+            }
+
+            return round(array_sum($counted), 3);
+        }
+
         $runDates = $filings['whole'];
         if (!$rules->partial_day_breaks_run) {
             $runDates = array_merge($runDates, array_keys($filings['partial']));
@@ -535,7 +564,6 @@ class DTRServices
             $looseAbsences = $absentDates;
         }
 
-        $inRange = fn($date) => $date >= $startDate && $date <= $endDate;
         $counted = [];
         foreach ($this->calculateEffectiveLwopDates(array_values(array_unique($runDates)), $filings['holidays'], $filings['scheduleCodes'], $rules) as $date) {
             if ($inRange($date)) {
@@ -554,6 +582,43 @@ class DTRServices
         }
 
         return round(array_sum($counted), 3);
+    }
+
+    /**
+     * Agency rule (LWOP Settings rest_day_rule = after_lwop): each filed whole-day
+     * LWOP date plus the rest days right after it, up to the next work day -
+     * Fri LWOP = Fri + Sat + Sun; Mon LWOP = Mon only; Fri + Mon = 4. A holiday in
+     * that stretch counts only when after_lwop_includes_holidays is on; otherwise
+     * it ends the stretch. Rest days follow the plotted schedule as elsewhere.
+     *
+     * @param string[] $wholeDates filed whole-day LWOP dates
+     * @return string[] sorted dates
+     */
+    private function withRestDaysAfterLwop(array $wholeDates, array $holidayDates, array $scheduleCodes, object $rules): array
+    {
+        $holidaySet = array_fill_keys($holidayDates, true);
+        $dates = array_fill_keys($wholeDates, true);
+
+        foreach ($wholeDates as $date) {
+            $cursor = Carbon::parse($date)->addDay();
+            // A month of rest days in a row only happens with bad schedule data; stop there.
+            for ($i = 0; $i < 31; $i++) {
+                $day = $cursor->toDateString();
+                $isRest = isset($holidaySet[$day])
+                    ? $rules->after_lwop_includes_holidays
+                    : $this->isLwopRestDay($cursor, [], $scheduleCodes, $rules);
+                if (!$isRest) {
+                    break;
+                }
+                $dates[$day] = true;
+                $cursor->addDay();
+            }
+        }
+
+        $result = array_keys($dates);
+        sort($result);
+
+        return $result;
     }
 
     /** The LWOP Settings rule set in force on $date. */

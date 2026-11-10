@@ -86,6 +86,8 @@ class LwopRuleController extends Controller
             'partial_day_mode' => 'required|in:' . implode(',', LwopRuleService::PARTIAL_DAY_MODES),
             'month_basis_days' => 'required|integer|min:1|max:31',
             'fractional_key_mode' => 'required|in:' . implode(',', LwopRuleService::FRACTIONAL_KEY_MODES),
+            'rest_day_rule' => 'sometimes|in:' . implode(',', LwopRuleService::REST_DAY_RULES),
+            'after_lwop_includes_holidays' => 'sometimes|boolean',
         ] + array_fill_keys(self::BOOLEAN_FIELDS, 'required|boolean'));
 
         $id = (int) ($validated['id'] ?? 0);
@@ -103,6 +105,11 @@ class LwopRuleController extends Controller
             'updated_by' => Auth::id(),
             'updated_at' => now(),
         ];
+        // Agency weekend rule (migration 2026_11_10_300000): saved once its columns exist.
+        if ($this->ruleSetsHaveAfterLwopColumns()) {
+            $values['rest_day_rule'] = $validated['rest_day_rule'] ?? 'long_runs';
+            $values['after_lwop_includes_holidays'] = (bool) ($validated['after_lwop_includes_holidays'] ?? true);
+        }
         foreach (self::BOOLEAN_FIELDS as $field) {
             $values[$field] = (bool) $validated[$field];
         }
@@ -181,6 +188,14 @@ class LwopRuleController extends Controller
         return $count > 0
             ? " {$count} cutoff(s) starting on/after {$effectiveFrom} were already generated; they keep their figures until you regenerate them."
             : '';
+    }
+
+    private function ruleSetsHaveAfterLwopColumns(): bool
+    {
+        return (bool) DB::selectOne(
+            'SELECT 1 AS found FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
+            [DB::getDatabaseName(), 'lwop_rule_sets', 'rest_day_rule']
+        );
     }
 
     private function cutoffsTrackRuleSets(): bool

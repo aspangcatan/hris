@@ -180,6 +180,27 @@ class LwopSettingsTest extends TestCase
     }
 
     /** @test */
+    public function the_page_saves_the_agency_weekend_rule()
+    {
+        if (!Schema::hasColumn('lwop_rule_sets', 'rest_day_rule')) {
+            $this->markTestSkipped('Run migration 2026_11_10_300000 first.');
+        }
+        $this->actAsAdmin();
+
+        $this->withoutMiddleware()->postJson('/lwop-settings/save', $this->payload([
+            'rest_day_rule' => 'after_lwop',
+            'after_lwop_includes_holidays' => false,
+        ]))->assertOk();
+        $id = (int) DB::table('lwop_rule_sets')->where('effective_from', '2031-03-01')->value('id');
+        $this->ruleIds[] = $id;
+
+        $rules = (new LwopRuleService())->forDate('2031-03-15');
+        $this->assertSame('after_lwop', $rules->rest_day_rule);
+        $this->assertFalse($rules->after_lwop_includes_holidays);
+        $this->assertSame('long_runs', (new LwopRuleService())->forDate('2031-02-28')->rest_day_rule, 'Earlier dates keep the base rule.');
+    }
+
+    /** @test */
     public function a_generated_cutoff_records_the_rule_set_it_used()
     {
         $summary = app(\App\Services\PayrollServices::class)->generateCutoffSummary(

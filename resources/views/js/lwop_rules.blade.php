@@ -4,8 +4,8 @@
 
     const LWOP_FIELDS = {
         booleans: ['count_rest_days_in_long_runs', 'holidays_bridge_runs', 'partial_day_breaks_run',
-            'absences_count_without_pay', 'absences_join_runs'],
-        values: ['long_run_min_days', 'rest_day_source', 'partial_day_mode', 'month_basis_days', 'fractional_key_mode'],
+            'absences_count_without_pay', 'absences_join_runs', 'after_lwop_includes_holidays'],
+        values: ['rest_day_rule', 'long_run_min_days', 'rest_day_source', 'partial_day_mode', 'month_basis_days', 'fractional_key_mode'],
     };
 
     const LWOP_DEFAULTS = {
@@ -13,6 +13,7 @@
         holidays_bridge_runs: true, partial_day_mode: 'fraction', partial_day_breaks_run: true,
         absences_count_without_pay: true, absences_join_runs: true, month_basis_days: 30,
         fractional_key_mode: 'interpolate', legal_basis: 'CSC MC No. 41, s. 1998, Rule XVI, Sec. 33',
+        rest_day_rule: 'long_runs', after_lwop_includes_holidays: true,
     };
 
     $(document).ready(function () {
@@ -102,9 +103,11 @@
     function describeLwopRules(r) {
         const yes = v => v ? 'Yes' : 'No';
         const lwop = [
-            r.count_rest_days_in_long_runs
-                ? `Rest days/holidays count inside runs longer than <b>${r.long_run_min_days}</b> days`
-                : 'Rest days/holidays never count',
+            r.rest_day_rule === 'after_lwop'
+                ? `<b>Agency rule:</b> rest days right after an LWOP day count (Fri LWOP = 3 days); holidays ${r.after_lwop_includes_holidays ? 'count too' : 'end the stretch'}`
+                : (r.count_rest_days_in_long_runs
+                    ? `Rest days/holidays count inside runs longer than <b>${r.long_run_min_days}</b> days`
+                    : 'Rest days/holidays never count'),
             `Rest days: ${r.rest_day_source === 'schedule' ? 'plotted OFF (else Sat/Sun)' : 'Sat/Sun'}`,
             `Holidays keep a run continuous: ${yes(r.holidays_bridge_runs)}`,
             `Partial day: ${r.partial_day_mode === 'fraction' ? 'hours ÷ scheduled' : 'whole day'}; breaks a run: ${yes(r.partial_day_breaks_run)}`,
