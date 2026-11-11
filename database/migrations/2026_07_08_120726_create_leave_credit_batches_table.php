@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('leave_credit_batches', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('created_by')->index();
             $table->text('notes')->nullable();

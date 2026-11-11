@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('government_experiences', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('user_id');
             $table->date('working_from');

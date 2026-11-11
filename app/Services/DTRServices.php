@@ -307,6 +307,19 @@ class DTRServices
         return $map;
     }
 
+    /** [date => comma-separated dtr_logs ids], to trace a day back to its punches. */
+    public function getLogIdsByDate($userid, $startDate, $endDate): array
+    {
+        return DB::table('hris.dtr_logs')
+            ->where('userid', $userid)
+            ->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+            ->orderBy('created_at')
+            ->get(['id', 'created_at'])
+            ->groupBy(fn($log) => Carbon::parse($log->created_at)->toDateString())
+            ->map(fn($logs) => $logs->pluck('id')->implode(','))
+            ->all();
+    }
+
     private function getLogsByRange($userid, $startDate, $endDate)
     {
         return DB::table('hris.dtr_logs')
@@ -394,6 +407,7 @@ class DTRServices
             ->where('la.is_lwop', 0)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
             ->where('lda.status', 'active') // cancelled dates no longer count as leave
+            ->where('lda.final_disapproved', 0) // DH-disapproved dates are not paid leave (audit H3)
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
             ->pluck('lda.date_applied')
             ->map(function ($date) {
@@ -420,6 +434,7 @@ class DTRServices
             ->where('la.is_lwop', 0)
             ->whereRaw('LOWER(la.status) = ?', ['approved'])
             ->where('lda.status', 'active')
+            ->where('lda.final_disapproved', 0) // DH-disapproved dates are not paid leave (audit H3)
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
             ->get(['lda.date_applied', 'lda.hours', 'lt.deduction_unit']);
 
@@ -448,7 +463,7 @@ class DTRServices
      * partial day counts filed hours / scheduled hours (4 of 8 = 0.5, hours
      * kept), a whole day 1.0 (hours null). Weekends and holidays never count.
      */
-    private function getLwopDaysByRange($userid, $startDate, $endDate): array
+    public function getLwopDaysByRange($userid, $startDate, $endDate): array
     {
         $filings = $this->collectLwopFilings($userid, $startDate, $endDate);
 
@@ -495,15 +510,26 @@ class DTRServices
             return ['whole' => [], 'partial' => []];
         }
 
+        // Only working days count (client rule 2026-11-10): LWOP filed on a
+        // holiday or a rest day is neither a credit nor a pay deduction.
+        $plotted = $this->getEmployeePlottedSchedules($userid, $startDate, $endDate);
+        $workDates = array_flip($this->resolveExpectedWorkDates(
+            $this->mapSchedules($plotted),
+            $startDate,
+            $endDate,
+            $this->getHolidayDatesByRange($startDate, $endDate)
+        ));
+
         $hoursByDate = [];
         foreach ($rows as $row) {
             $date = Carbon::parse($row->date_applied)->toDateString();
+            if (!isset($workDates[$date])) {
+                continue;
+            }
             $hoursByDate[$date] = ($hoursByDate[$date] ?? 0) + (int) $row->hours;
         }
 
-        $schedules = $this->mapSchedulesWithBreaks(
-            $this->getEmployeePlottedSchedules($userid, $startDate, $endDate)
-        )->all();
+        $schedules = $this->mapSchedulesWithBreaks($plotted)->all();
 
         $partial = [];
         $wholeDays = [];
@@ -525,7 +551,7 @@ class DTRServices
      * Working minutes of a plotted shift (time_in..time_out, overnight aware,
      * less the break inside it). Unplotted dates = 8 hours; OFF = 0.
      */
-    private function scheduledWorkMinutes($schedule): int
+    public function scheduledWorkMinutes($schedule): int
     {
         if (!$schedule) {
             return 480;

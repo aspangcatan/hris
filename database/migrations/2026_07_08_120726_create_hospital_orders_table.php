@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('hospital_orders', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('order_number', 100)->unique('order_number_UNIQUE');
             $table->date('order_date')->nullable();

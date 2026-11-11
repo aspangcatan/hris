@@ -341,6 +341,11 @@ class OvertimeServices
                 'last_updated_month' => Carbon::now()->format('Y-m'),
             ]);
         }
+
+        app(LeaveLedgerService::class)->record(
+            $userId, (int) $ctoLeaveId, LeaveLedgerService::EARNED, (float) $credits,
+            Carbon::now()->toDateString(), 'overtime_requests', null, 'CTO from approved overtime'
+        );
     }
 
     public function deleteMyFiling($filingId)

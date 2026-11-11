@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('schedule_user_sections', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id')->index('schedule_user_sections_user_id_idx');
             $table->unsignedBigInteger('section_id')->index('schedule_user_sections_section_id_idx');

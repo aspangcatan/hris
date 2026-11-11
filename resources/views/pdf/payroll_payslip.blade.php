@@ -103,17 +103,12 @@
         $salaryGrade = !empty($employee->salary_grade)
             ? $employee->salary_grade . (!empty($employee->step) ? '-' . $employee->step : '')
             : '-';
-        $finalBasicPay = (float) ($employee->basic_salary ?? 0) - (float) ($employee->late_absent ?? 0);
-        $totalGrossPay = $finalBasicPay
-            + (float) ($employee->pera ?? 0)
-            + (float) ($employee->subsistence ?? 0)
-            + (float) ($employee->laundry ?? 0)
-            + (float) ($employee->hazard ?? 0)
-            + (float) ($employee->longevity ?? 0);
+        $finalBasicPay = (float) ($employee->basic_salary ?? 0) + (float) ($employee->salary_adjustment ?? 0) - (float) ($employee->late_absent ?? 0);
+        $totalGrossPay = (float) ($employee->gross_pay ?? 0);
     @endphp
 
     <div class="payslip">
-        <img class="letterhead" src="{{ url('img/letter_head_banner.png') }}"/>
+        @if(!empty($letterhead))<img class="letterhead" src="{{ $letterhead }}"/>@endif
         <div class="payslip-title">{{ strtoupper($payroll->title ?? 'PAYSLIP') }}</div>
 
         <table class="info-table">
@@ -133,6 +128,8 @@
             <tr><td>Laundry Allowance</td><td class="amount">{{ $fmt($employee->laundry ?? 0) }}</td></tr>
             <tr><td>Hazard Pay</td><td class="amount">{{ $fmt($employee->hazard ?? 0) }}</td></tr>
             <tr><td>Longevity Pay</td><td class="amount">{{ $fmt($employee->longevity ?? 0) }}</td></tr>
+            <tr><td>RATA</td><td class="amount">{{ $fmt($employee->rata ?? 0) }}</td></tr>
+            <tr><td>Cellphone Allowance</td><td class="amount">{{ $fmt($employee->cellphone_allowance ?? 0) }}</td></tr>
             <tr class="total-row"><td>TOTAL GROSS PAY</td><td class="amount">{{ $fmt($totalGrossPay) }}</td></tr>
         </table>
 

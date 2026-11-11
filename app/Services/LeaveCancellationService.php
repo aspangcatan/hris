@@ -446,6 +446,7 @@ class LeaveCancellationService
                         ->where('leave_id', $typeId)
                         ->increment('based_credit', $amount);
                 }
+                app(LeaveLedgerService::class)->recordLeaveDates((int) $userId, $cancelledDates, LeaveLedgerService::RESTORED);
 
                 // Mark cancelled dates as cancelled (preserve history)
                 DB::table('hris.leave_date_applied')

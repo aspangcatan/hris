@@ -43,6 +43,7 @@ class CutoffLeaveCreditsTest extends TestCase
 
     protected function tearDown(): void
     {
+        DB::table('hris.leave_credit_ledger')->where('employee_id', $this->userId)->delete();
         // These tables are MyISAM, so DatabaseTransactions rollback is a no-op — clean up explicitly.
         if ($this->masterId) {
             DB::table('hris.cutoff_summary_days')->where('cutoff_id', $this->masterId)->delete();
@@ -83,6 +84,7 @@ class CutoffLeaveCreditsTest extends TestCase
             ->delete();
 
         $masterId = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'status'       => 'finalized', // credits are posted from finalized cutoffs only
             'title'        => $title,
             'period_start' => $start,
             'period_end'   => $end,
@@ -113,42 +115,54 @@ class CutoffLeaveCreditsTest extends TestCase
         return $masterId;
     }
 
+    private function previewMonth(int $year, int $month)
+    {
+        return $this->withoutMiddleware()
+            ->getJson('/leave-credits-earned/preview?' . http_build_query(['year' => $year, 'month' => $month]));
+    }
+
+    private function postMonth(int $year, int $month, array $employees)
+    {
+        return $this->withoutMiddleware()->postJson('/leave-credits-earned/post', [
+            'year' => $year, 'month' => $month, 'employees' => $employees,
+        ]);
+    }
+
+    private function previewRow(int $year, int $month): ?array
+    {
+        $preview = $this->previewMonth($year, $month)->assertOk();
+
+        return collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
+    }
+
+    private function finalize(int $masterId): void
+    {
+        DB::table('hris.cutoff_summaries_master')->where('id', $masterId)->update(['status' => 'finalized']);
+    }
+
     /** @test */
-    public function preview_and_apply_compute_net_points_scaled_to_the_cutoffs_own_working_days()
+    public function late_and_undertime_no_longer_reduce_vl_credits()
     {
         $this->actAsAdmin();
 
-        // 18/22 present -> lookup key round((18/22)*30) = 25, not raw present (18).
-        $masterId = $this->seedCutoff('2027-06-01', '2027-06-30', 'June Test Cutoff', 18, 22, 75, 0);
+        // 18/22 present -> lookup key round((18/22)*30) = 25 (old formula: no LWOP column) -> 1.7.
+        $this->seedCutoff('2027-06-01', '2027-06-30', 'June Test Cutoff', 18, 22, 75, 0);
 
-        // 75 minutes = 1 hour (0.1) + 15 minutes (0.025) = 0.125 deduction.
-        $expectedPoints = 1.7;
-        $expectedDeduction = 0.125;
-        $expectedNet = 1.575;
-
-        $preview = $this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $masterId]));
-        $preview->assertOk();
-
-        $row = collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
+        $row = $this->previewRow(2027, 6);
         $this->assertNotNull($row, 'Expected a preview row for the test employee.');
         $this->assertEquals(18, $row['total_present']);
-        $this->assertEqualsWithDelta((float) $expectedPoints, (float) $row['earned_points'], 0.001);
-        $this->assertEqualsWithDelta((float) $expectedDeduction, (float) $row['deducted_points'], 0.001);
-        $this->assertEqualsWithDelta($expectedNet, (float) $row['net_points'], 0.001);
+        $this->assertSame('ready', $row['status']);
+        // 75 late minutes are charged to salary only (client decision 2026-11-11).
+        $this->assertEqualsWithDelta(1.7, (float) $row['vl_points'], 0.001);
+        $this->assertEqualsWithDelta(1.7, (float) $row['sl_points'], 0.001);
 
-        $apply = $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
-            'cutoff_id' => $masterId,
-            'employees' => [$this->userId],
-        ]);
-        $apply->assertOk();
+        $this->postMonth(2027, 6, [$this->userId])->assertOk();
 
-        // Fresh synthetic employee has no prior leave_credits row, so based_credit
-        // should equal the applied net figure exactly (not the gross figure).
         $vlCredit = DB::table('hris.leave_credits')
             ->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
-        $this->assertEqualsWithDelta($expectedNet, (float) $vlCredit, 0.001);
-        $this->assertNotEquals($expectedPoints, round((float) $vlCredit, 3), 'Applied credit must be net, not gross.');
+        $this->assertEqualsWithDelta(1.7, (float) $vlCredit, 0.001);
+        $this->assertEqualsWithDelta(0.0, (float) DB::table('credit_earned_logs')
+            ->where('user_id', $this->userId)->where('leave_type_id', 2)->value('deducted_points'), 0.001);
     }
 
     /** @test */
@@ -156,15 +170,14 @@ class CutoffLeaveCreditsTest extends TestCase
     {
         $this->actAsAdmin();
 
-        $masterId = $this->seedCutoff('2027-07-01', '2027-07-31', 'July Test Cutoff', 20, 22);
-        $payload = ['cutoff_id' => $masterId, 'employees' => [$this->userId]];
+        $this->seedCutoff('2027-07-01', '2027-07-31', 'July Test Cutoff', 20, 22);
 
-        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', $payload)->assertOk();
+        $this->postMonth(2027, 7, [$this->userId])->assertOk();
         $firstRunCredit = DB::table('hris.leave_credits')
             ->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
 
-        // Second Save: nothing left to credit -> refused with a clear message.
-        $second = $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', $payload);
+        // Second Post: nothing left to credit -> refused with a clear message.
+        $second = $this->postMonth(2027, 7, [$this->userId]);
         $second->assertStatus(422);
         $this->assertStringContainsString('already credited for July 2027', $second->json('message'));
         $secondRunCredit = DB::table('hris.leave_credits')
@@ -178,14 +191,14 @@ class CutoffLeaveCreditsTest extends TestCase
     {
         $this->actAsAdmin();
 
-        $june = $this->seedCutoff('2027-06-01', '2027-06-30', 'June Order Test', 22, 22);
+        $this->seedCutoff('2027-06-01', '2027-06-30', 'June Order Test', 22, 22);
         $juneMaster = $this->masterId;
-        $july = $this->seedCutoff('2027-07-01', '2027-07-31', 'July Order Test', 22, 22);
+        $this->seedCutoff('2027-07-01', '2027-07-31', 'July Order Test', 22, 22);
 
         try {
-            $apply = fn($id) => $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
-                'cutoff_id' => $id, 'employees' => [$this->userId],
-            ]);
+            $apply = fn($month) => $this->postMonth(2027, $month, [$this->userId]);
+            $june = 6;
+            $july = 7;
 
             $first = $apply($june);
             $first->assertOk();
@@ -203,6 +216,7 @@ class CutoffLeaveCreditsTest extends TestCase
             $this->assertSame(1, DB::table('credit_earned_logs')
                 ->where('user_id', $this->userId)->where('year', 2027)->where('month', 6)->where('leave_type_id', 2)->count());
         } finally {
+            DB::table('hris.leave_credit_ledger')->where('cutoff_id', $juneMaster)->delete();
             DB::table('hris.cutoff_summaries')->where('cutoff_id', $juneMaster)->delete();
             DB::table('hris.cutoff_summaries_master')->where('id', $juneMaster)->delete();
         }
@@ -213,17 +227,14 @@ class CutoffLeaveCreditsTest extends TestCase
     {
         $this->actAsAdmin();
 
-        $masterId = $this->seedCutoff('2027-08-01', '2027-08-31', 'Empty Attendance Test', 0, 22);
+        $this->seedCutoff('2027-08-01', '2027-08-31', 'Empty Attendance Test', 0, 22);
 
-        $preview = $this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $masterId]));
-        $preview->assertOk();
-        $this->assertSame(1, $preview->json('to_credit'));
+        $preview = $this->previewMonth(2027, 8)->assertOk();
+        $this->assertSame(0, $preview->json('ready'));
+        $this->assertSame('blocked', collect($preview->json('data'))->firstWhere('employee_id', $this->userId)['status']);
         $this->assertStringContainsString('has any attendance', (string) $preview->json('message'));
 
-        $apply = $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
-            'cutoff_id' => $masterId, 'employees' => [$this->userId],
-        ]);
+        $apply = $this->postMonth(2027, 8, [$this->userId]);
         $apply->assertStatus(422);
         $this->assertFalse(DB::table('credit_earned_logs')->where('user_id', $this->userId)->exists(),
             'An empty cutoff must not post zeros (that would lock the month).');
@@ -234,24 +245,17 @@ class CutoffLeaveCreditsTest extends TestCase
     {
         $this->actAsAdmin();
 
-        $masterId = $this->seedCutoff('2027-08-01', '2027-08-31', 'August Test Cutoff', 20, 22);
+        $this->seedCutoff('2027-08-01', '2027-08-31', 'August Test Cutoff', 20, 22);
         // employees is InnoDB, so DatabaseTransactions rolls this row back.
         DB::table('hris.employees')->insert(['user_id' => $this->userId, 'employee_type' => 'Job Order']);
 
-        $preview = $this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $masterId]));
-        $preview->assertOk();
         $this->assertNull(
-            collect($preview->json('data'))->firstWhere('employee_id', $this->userId),
+            $this->previewRow(2027, 8),
             'A Job Order employee must not appear in the earned-credits preview.'
         );
 
-        // Even if the client sends the JO employee, the server must not credit
-        // them - with no one else in the cutoff there's nothing to post.
-        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
-            'cutoff_id' => $masterId,
-            'employees' => [$this->userId],
-        ])->assertStatus(422);
+        // Even if the client sends the JO employee, the server must not credit them.
+        $this->postMonth(2027, 8, [$this->userId])->assertStatus(422);
 
         $this->assertFalse(
             DB::table('hris.leave_credits')->where('user_id', $this->userId)->exists(),
@@ -367,10 +371,8 @@ class CutoffLeaveCreditsTest extends TestCase
         $this->assertSame(4, (int) $summary->days_present, 'The rest-day visit is not a present day.');
         $this->assertSame(0, (int) $summary->days_absent);
 
-        $preview = $this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]));
-        $preview->assertOk();
-        $row = collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
+        $this->finalize($this->masterId);
+        $row = $this->previewRow(2027, 11);
         $this->assertNotNull($row);
 
         // 4 of 4 scheduled days -> lookup key 30 (full credit), not round(4/5*30) = 24.
@@ -420,7 +422,7 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
-    public function personal_pass_slip_minutes_are_deducted_from_vl_credits_but_not_payroll_undertime()
+    public function personal_pass_slips_and_late_minutes_do_not_reduce_vl_credits()
     {
         $this->actAsAdmin();
 
@@ -444,21 +446,18 @@ class CutoffLeaveCreditsTest extends TestCase
         );
         $this->masterId = (int) $summary->cutoff_id;
 
-        // Payroll reads late + undertime only: the slip is not salary undertime.
+        // The cutoff keeps the slip minutes in their own column (payroll adds them to late/UT).
         $this->assertSame(30, (int) $summary->late_minutes);
         $this->assertSame(0, (int) $summary->undertime_minutes);
         $this->assertSame(60, (int) $summary->approved_pass_slips_minutes);
 
-        $row = collect($this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]))
-            ->assertOk()->json('data'))->firstWhere('employee_id', $this->userId);
-
-        // VL deduction = 30 late + 60 slip = 90 minutes.
-        $this->assertSame(90, $row['total_late_undertime']);
-        $this->assertSame(30, $row['late_undertime_minutes']);
-        $this->assertSame(60, $row['pass_slip_minutes']);
-        $expected = app(\App\Services\MinuteConversionService::class)->computeDeduction(90);
-        $this->assertEqualsWithDelta((float) $expected, (float) $row['deducted_points'], 0.001);
+        // Leave credits are reduced by LWOP only (client decision 2026-11-11):
+        // the 30 late minutes and the 60-minute personal slip don't touch VL.
+        $this->finalize($this->masterId);
+        $row = $this->previewRow(2027, 12);
+        $full = (float) DB::table('monthly_earned_points')->where('lwop', 0)->value('points');
+        $this->assertEqualsWithDelta($full, (float) $row['vl_points'], 0.001);
+        $this->assertEqualsWithDelta($full, (float) $row['sl_points'], 0.001);
     }
 
     /** @test */
@@ -490,14 +489,15 @@ class CutoffLeaveCreditsTest extends TestCase
     }
 
     /** @test */
-    public function preview_rejects_a_nonexistent_cutoff_id()
+    public function preview_needs_a_valid_month_and_explains_a_month_without_cutoffs()
     {
         $this->actAsAdmin();
 
-        $response = $this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => 999999999]));
+        $this->withoutMiddleware()->getJson('/leave-credits-earned/preview?year=2027&month=13')->assertStatus(422);
 
-        $response->assertStatus(422);
+        $empty = $this->previewMonth(2099, 1)->assertOk();
+        $this->assertSame([], $empty->json('data'));
+        $this->assertStringContainsString('no cutoffs for January 2099', (string) $empty->json('message'));
     }
 
     /** @test */
@@ -512,25 +512,92 @@ class CutoffLeaveCreditsTest extends TestCase
         $this->withoutMiddleware()->get('/leave-credits-earned')
             ->assertOk()
             ->assertSee('Leave Credits Earned')
-            ->assertSee(route('leave_credits_earned.cutoffs'), false);
+            ->assertSee(route('leave_credits_earned.months'), false);
     }
 
     /** @test */
-    public function leave_credits_earned_page_lists_cutoffs_and_their_credited_count()
+    public function leave_credits_earned_page_lists_months_with_ready_and_credited_counts()
     {
         $this->actAsAdmin();
-        $masterId = $this->seedCutoff('2027-08-01', '2027-08-31', 'Sidebar Page Test Cutoff', 22, 22);
+        $this->seedCutoff('2027-08-01', '2027-08-31', 'Sidebar Page Test Cutoff', 22, 22);
 
-        $listed = fn() => collect($this->withoutMiddleware()->getJson('/leave-credits-earned/cutoffs')->assertOk()->json('data'))
-            ->firstWhere('id', $masterId);
-        $this->assertSame(['August 2027', 1, 0], [$listed()['month_label'], $listed()['employees'], $listed()['credited']]);
+        $listed = fn() => collect($this->withoutMiddleware()->getJson('/leave-credits-earned/months')->assertOk()->json('data'))
+            ->firstWhere('key', '2027-08');
+        $this->assertSame(['August 2027', 1, 0], [$listed()['label'], $listed()['ready'], $listed()['credited']]);
 
-        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
-            'cutoff_id' => $masterId,
-            'employees' => [$this->userId],
-        ])->assertOk();
+        $this->postMonth(2027, 8, [$this->userId])->assertOk();
 
-        $this->assertSame(1, $listed()['credited'], 'Posted employees show as credited.');
+        $this->assertSame([0, 1], [$listed()['ready'], $listed()['credited']], 'Posted employees show as credited.');
+    }
+
+    /** @test */
+    public function draft_cutoffs_are_left_out_of_the_batch_and_reported()
+    {
+        $this->actAsAdmin();
+        $masterId = $this->seedCutoff('2027-09-01', '2027-09-30', 'Draft Batch Test Cutoff', 22, 22);
+        DB::table('hris.cutoff_summaries_master')->where('id', $masterId)->update(['status' => 'draft']);
+
+        $preview = $this->previewMonth(2027, 9)->assertOk();
+        $this->assertSame([], $preview->json('data'));
+        $this->assertCount(1, $preview->json('draft_cutoffs'));
+        $this->assertStringContainsString('still drafts', (string) $preview->json('message'));
+        $this->postMonth(2027, 9, [$this->userId])->assertStatus(422);
+        $this->assertFalse(DB::table('credit_earned_logs')->where('user_id', $this->userId)->exists());
+    }
+
+    /** @test */
+    public function two_half_month_cutoffs_add_their_lwop_days_and_the_log_keeps_the_cutoff()
+    {
+        $this->actAsAdmin();
+        $first = $this->seedCutoff('2027-10-01', '2027-10-15', 'Half 1 Batch Test', 11, 11);
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $first)->update(['credit_without_pay_days' => 1.0]);
+        $second = $this->seedCutoff('2027-10-16', '2027-10-31', 'Half 2 Batch Test', 10, 10);
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $second)->update(['credit_without_pay_days' => 1.5]);
+
+        try {
+            $row = $this->previewRow(2027, 10);
+            $this->assertEquals(2.5, (float) $row['without_pay_days']);
+            $this->assertTrue($row['full_month']);
+            $this->assertSame(21, $row['total_present']);
+            $expected = (float) DB::table('monthly_earned_points')->where('lwop', 2.5)->value('points');
+            $this->assertEqualsWithDelta($expected, (float) $row['vl_points'], 0.001);
+
+            $this->postMonth(2027, 10, [$this->userId])->assertOk();
+
+            $log = DB::table('credit_earned_logs')->where('user_id', $this->userId)->where('leave_type_id', 2)->first();
+            $this->assertSame($second, (int) $log->cutoff_id, 'The month\'s latest cutoff.');
+            $this->assertEquals(2.5, (float) $log->lwop_days);
+            $this->assertSame($this->userId, (int) $log->posted_by);
+        } finally {
+            DB::table('hris.cutoff_summaries')->where('cutoff_id', $first)->delete();
+            DB::table('hris.cutoff_summaries_master')->where('id', $first)->delete();
+        }
+    }
+
+    /** @test */
+    public function a_half_month_alone_is_ready_but_marked_partial_and_overlapping_cutoffs_are_blocked()
+    {
+        $this->actAsAdmin();
+        $first = $this->seedCutoff('2027-11-01', '2027-11-15', 'Partial Batch Test', 11, 11);
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $first)->update(['credit_without_pay_days' => 0]);
+
+        $row = $this->previewRow(2027, 11);
+        $this->assertSame('ready', $row['status']);
+        $this->assertFalse($row['full_month']);
+
+        // A second finalized cutoff over the same days would count LWOP twice.
+        $overlap = $this->seedCutoff('2027-11-10', '2027-11-30', 'Overlap Batch Test', 15, 15);
+        DB::table('hris.cutoff_summaries')->where('cutoff_id', $overlap)->update(['credit_without_pay_days' => 0]);
+
+        try {
+            $row = $this->previewRow(2027, 11);
+            $this->assertSame('blocked', $row['status']);
+            $this->assertStringContainsString('overlapping', $row['reason']);
+            $this->postMonth(2027, 11, [$this->userId])->assertStatus(422);
+        } finally {
+            DB::table('hris.cutoff_summaries')->where('cutoff_id', $first)->delete();
+            DB::table('hris.cutoff_summaries_master')->where('id', $first)->delete();
+        }
     }
 
     /** Complete 08:00-17:00 logs on every non-holiday weekday from..to, except $skip. */
@@ -618,23 +685,18 @@ class CutoffLeaveCreditsTest extends TestCase
         $this->assertNotNull($summary->credit_without_pay_days, 'Column must be filled at generation.');
         $this->assertEquals(1.0, (float) $summary->credit_without_pay_days, 'Credits: the filed Friday only.');
 
-        $preview = $this->withoutMiddleware()
-            ->getJson('/cutoff-leave-credits-preview?' . http_build_query(['cutoff_id' => $this->masterId]));
-        $preview->assertOk();
-        $row = collect($preview->json('data'))->firstWhere('employee_id', $this->userId);
+        $this->finalize($this->masterId);
+        $row = $this->previewRow(2026, 6);
         $this->assertNotNull($row);
 
         // Table III: 1.00 day on LWOP -> 1.208.
         $expected = (float) DB::table('monthly_earned_points')->where('lwop', 1)->value('points');
         $this->assertEqualsWithDelta(1.208, $expected, 0.0005);
         $this->assertEquals(1.0, (float) $row['without_pay_days']);
-        $this->assertEqualsWithDelta($expected, (float) $row['earned_points'], 0.001);
-        $this->assertEqualsWithDelta(0.0, (float) $row['deducted_points'], 0.001);
+        $this->assertEqualsWithDelta($expected, (float) $row['vl_points'], 0.001);
+        $this->assertEqualsWithDelta($expected, (float) $row['sl_points'], 0.001);
 
-        $this->withoutMiddleware()->postJson('/cutoff-leave-credits-apply', [
-            'cutoff_id' => $this->masterId,
-            'employees' => [$this->userId],
-        ])->assertOk();
+        $this->postMonth(2026, 6, [$this->userId])->assertOk();
 
         $vl = DB::table('hris.leave_credits')->where('user_id', $this->userId)->where('leave_id', 2)->value('based_credit');
         $this->assertEqualsWithDelta($expected, (float) $vl, 0.001);

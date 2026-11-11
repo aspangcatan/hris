@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('temp_dtr_logs', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->integer('id', true);
             $table->integer('user_id');
             $table->integer('month');

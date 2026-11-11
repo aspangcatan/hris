@@ -529,13 +529,12 @@ class LeaveApprovalService
         $app = DB::table('hris.leave_applications')->where('id', $leaveId)->first(['id', 'user_id']);
 
         // Takes each part from the balance it was charged to (SL -> VL fallback included).
-        $creditsByType = LeaveDateCharges::byType(
-            DB::table('hris.leave_date_applied')
-                ->where('leave_application_id', $leaveId)
-                ->where('final_disapproved', 0)
-                ->where('status', '!=', 'cancelled')
-                ->get(LeaveDateCharges::COLUMNS)
-        );
+        $dates = DB::table('hris.leave_date_applied')
+            ->where('leave_application_id', $leaveId)
+            ->where('final_disapproved', 0)
+            ->where('status', '!=', 'cancelled')
+            ->get(LeaveDateCharges::COLUMNS);
+        $creditsByType = LeaveDateCharges::byType($dates);
 
         foreach ($creditsByType as $typeId => $needed) {
             if (!$typeId || $needed <= 0) continue;
@@ -556,6 +555,8 @@ class LeaveApprovalService
                 ->where('leave_id', $typeId)
                 ->decrement('based_credit', $needed);
         }
+
+        app(LeaveLedgerService::class)->recordLeaveDates((int) $app->user_id, $dates, LeaveLedgerService::CONSUMED);
     }
 
     private function restoreCredits(int $leaveId): void
@@ -579,6 +580,8 @@ class LeaveApprovalService
                 ->where('leave_id', $typeId)
                 ->increment('based_credit', $amount);
         }
+
+        app(LeaveLedgerService::class)->recordLeaveDates((int) $app->user_id, $dates, LeaveLedgerService::RESTORED);
     }
 
     /**
@@ -604,7 +607,7 @@ class LeaveApprovalService
 
         $dates = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $leaveId)
-            ->get(['id', 'leave_type_id', 'credits_deducted', 'fallback_leave_type_id', 'fallback_credits', 'final_disapproved']);
+            ->get(array_merge(LeaveDateCharges::COLUMNS, ['final_disapproved']));
 
         if ($role === 'SH') {
             foreach ($dates as $date) {
@@ -649,6 +652,10 @@ class LeaveApprovalService
                     $creditQuery->decrement('based_credit', $amount);
                 }
             }
+
+            app(LeaveLedgerService::class)->recordLeaveDates(
+                (int) $app->user_id, [$date], $willBeDisapproved ? LeaveLedgerService::RESTORED : LeaveLedgerService::CONSUMED
+            );
         }
     }
 
@@ -667,7 +674,7 @@ class LeaveApprovalService
         $disapprovedDates = DB::table('hris.leave_date_applied')
             ->where('leave_application_id', $leaveId)
             ->where('final_disapproved', 1)
-            ->get(['id', 'leave_type_id', 'credits_deducted', 'fallback_leave_type_id', 'fallback_credits']);
+            ->get(LeaveDateCharges::COLUMNS);
 
         foreach ($disapprovedDates as $date) {
             // Each part is taken again from the balance it was charged to (SL -> VL fallback included).
@@ -677,6 +684,7 @@ class LeaveApprovalService
                     ->where('leave_id', $typeId)
                     ->decrement('based_credit', $amount);
             }
+            app(LeaveLedgerService::class)->recordLeaveDates((int) $app->user_id, [$date], LeaveLedgerService::CONSUMED);
 
             DB::table('hris.leave_date_applied')
                 ->where('id', $date->id)

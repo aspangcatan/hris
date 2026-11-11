@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('permission_audit_logs', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('performer_id');
             $table->unsignedBigInteger('target_user_id')->nullable();

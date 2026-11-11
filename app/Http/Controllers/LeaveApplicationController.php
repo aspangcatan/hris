@@ -148,6 +148,9 @@ class LeaveApplicationController extends Controller
                             ->where('leave_id', $typeId)
                             ->increment('based_credit', $amount);
                     }
+                    app(\App\Services\LeaveLedgerService::class)->recordLeaveDates(
+                        (int) $model->user_id, $dates, \App\Services\LeaveLedgerService::RESTORED
+                    );
                 }
 
                 // Remove everything that belongs to the application, not just its row.

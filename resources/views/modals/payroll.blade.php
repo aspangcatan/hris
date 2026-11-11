@@ -1,69 +1,75 @@
 <style>
-    .payroll-modal-theme .modal-content {
-        border: 0;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
+    /* Payroll Settings modal: spacing only - colours and borders come from the theme. */
+    #payroll_settings_modal .payset-panel {
+        padding: 1rem 1.25rem 1.125rem;
     }
-
-    .payroll-modal-theme .modal-header {
-        background: linear-gradient(135deg, #0f766e, #0ea5a4);
-        color: #fff;
-        border: 0;
-    }
-
-    .payroll-modal-theme .modal-title {
+    #payroll_settings_modal .payset-panel-title {
+        font-size: 0.9375rem;
         font-weight: 700;
-        letter-spacing: 0.2px;
+        color: var(--primary, #00236f);
+        margin-bottom: 0.875rem;
     }
-
-    .payroll-modal-theme .btn-close {
-        filter: invert(1);
-        opacity: 0.9;
+    #payroll_settings_modal .payset-panel .table-responsive {
+        background: var(--surface, #fff);
+        border: 1px solid var(--line, #e6e8f2);
+        border-radius: 0.75rem;
     }
-
-    .payroll-modal-theme .modal-body {
-        background: #f8fafc;
+    #payroll_settings_modal .payset-panel .table {
+        margin-bottom: 0;
+    }
+    #payroll_settings_modal .payset-panel .table > :not(caption) > * > * {
+        padding: 0.625rem 0.75rem;
+    }
+    #payroll_settings_modal .payset-note {
+        margin-top: 0.625rem;
     }
 </style>
 
-<div class="modal fade payroll-modal-theme" id="payroll_settings_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade payroll-modal-theme" id="payroll_settings_modal" tabindex="-1" aria-labelledby="payrollSettingsLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <!-- Sticky Header -->
             <div class="modal-header sticky-top">
-                <h3 class="modal-title text-white">Payroll Settings</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
+                    <div class="modal-heading">
+                        <div class="modal-icon"><i class="bi bi-cash-stack"></i></div>
+                        <div>
+                            <h5 class="modal-title" id="payrollSettingsLabel">Payroll Settings</h5>
+                            <p class="modal-sub">Salary, and the earnings and deductions that apply to this employee.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- Scrollable Body -->
             <div class="modal-body" id="modal_salary_details"
                  style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
                 <div><!-- EMPLOYEE -->
-                    <div class="mb-4 border p-3 rounded shadow-sm">
-                        <h5 class="text-primary border-bottom pb-2">Employee Info</h5>
+                    <div class="payset-panel mb-3">
+                        <h5 class="payset-panel-title">Salary</h5>
                         <div class="row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">Salary Grade</label>
-                                <input type="number" class="form-control" placeholder="e.g. 11" id="salary_grade">
+                                <input type="number" class="form-control" placeholder="e.g. 15" id="salary_grade" min="1" step="1">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Steps</label>
-                                <input type="number" class="form-control" placeholder="e.g. 5" id="step">
+                                <input type="number" class="form-control" placeholder="e.g. 1" id="step" min="1" step="1">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Basic Salary</label>
-                                <input type="number" class="form-control" placeholder="₱" id="basic_salary">
+                                <input type="number" class="form-control" placeholder="₱ e.g. 42178.00" id="basic_salary" min="0" step="0.01">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label" for="salary_effective_date">Salary effective date</label>
+                                <input type="date" class="form-control" id="salary_effective_date" title="Only used when the salary changes. Leave blank for today.">
                             </div>
                         </div>
                     </div>
 
                     <!-- EARNINGS -->
-                    <div class="mb-4 border p-3 rounded shadow-sm">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
-                            <h5 class="text-primary mb-0">Earnings</h5>
+                    <div class="payset-panel mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <h5 class="payset-panel-title mb-0">Earnings</h5>
                             <span class="small text-muted">Global components apply by default unless overridden. Non-global components apply only if given an amount here.</span>
                         </div>
                         <div class="table-responsive">
@@ -83,15 +89,15 @@
                                 <tbody id="dynamic_components_earnings_body"></tbody>
                             </table>
                         </div>
-                        <div class="small text-muted">
+                        <div class="small text-muted payset-note">
                             Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee. Rate Override % only applies to percentage-based components and replaces the catalog's rate while still computing off basic salary.
                         </div>
                     </div>
 
                     <!-- DEDUCTIONS -->
-                    <div class="mb-4 border p-3 rounded shadow-sm">
-                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 border-bottom pb-2 mb-3">
-                            <h5 class="text-primary mb-0">Deductions</h5>
+                    <div class="payset-panel mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <h5 class="payset-panel-title mb-0">Deductions</h5>
                             <span class="small text-muted">Global components apply by default unless overridden. Non-global components apply only if given an amount here.</span>
                         </div>
                         <div class="table-responsive">
@@ -111,7 +117,7 @@
                                 <tbody id="dynamic_components_deductions_body"></tbody>
                             </table>
                         </div>
-                        <div class="small text-muted">
+                        <div class="small text-muted payset-note">
                             Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee. Rate Override % only applies to percentage-based components and replaces the catalog's rate while still computing off basic salary.
                         </div>
                     </div>
@@ -120,8 +126,8 @@
 
             <!-- Footer with Save Button -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success btn-edit" id="btn_save">Save Changes</button>
+                <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-modal-save" id="btn_save">Save Changes</button>
             </div>
         </div>
     </div>
@@ -136,8 +142,8 @@
 
             <!-- Sticky Header -->
             <div class="modal-header sticky-top">
-                <h3 class="modal-title text-white">Create Payroll</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <h3 class="modal-title">Create Payroll</h3>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
@@ -200,8 +206,8 @@
 
             <!-- Footer with Save Button -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success btn-edit" id="btn_save_payroll">Save Changes</button>
+                <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-modal-save" id="btn_save_payroll">Save Changes</button>
             </div>
         </div>
     </div>
@@ -214,8 +220,8 @@
 
             <!-- Sticky Header -->
             <div class="modal-header sticky-top">
-                <h3 class="modal-title text-white">Append Employees</h3>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                <h3 class="modal-title">Append Employees</h3>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
@@ -258,8 +264,8 @@
 
             <!-- Footer with Save Button -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success btn-edit" id="btn_save_employees">Save Changes</button>
+                <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-modal-save" id="btn_save_employees">Save Changes</button>
             </div>
         </div>
     </div>
@@ -272,8 +278,8 @@
 
             <!-- Sticky Header -->
             <div class="modal-header sticky-top">
-                <h3 class="modal-title text-white">Regular Payroll</h3>
-                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal"
+                <h3 class="modal-title">Regular Payroll</h3>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
@@ -290,10 +296,10 @@
 
             <!-- Optional Footer -->
             <div class="modal-footer">
-                <button class="btn btn-secondary btn-view" data-bs-dismiss="modal">
+                <button class="btn btn-modal-close" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i> Close
                 </button>
-                <button class="btn btn-success btn-edit" id="btn_export_regular">
+                <button class="btn btn-modal-save" id="btn_export_regular">
                     <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
                 </button>
             </div>
@@ -309,8 +315,8 @@
 
             <!-- Sticky Header -->
             <div class="modal-header sticky-top">
-                <h3 class="modal-title text-white">Job Order Payroll</h3>
-                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal"
+                <h3 class="modal-title">Job Order Payroll</h3>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
 
@@ -361,8 +367,8 @@
 
             <!-- Footer -->
             <div class="modal-footer">
-                <button class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                <button class="btn btn-success btn-edit" id="btn_export_jo">
+                <button class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                <button class="btn btn-modal-save" id="btn_export_jo">
                     <i class="bi bi-file-earmark-excel me-1"></i> Export to Excel
                 </button>
             </div>

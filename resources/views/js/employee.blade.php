@@ -253,6 +253,7 @@
                 return;
             }
 
+            params["effective_date"] = $("#salary_effective_date").val() || null;
             params["components"] = collectDynamicComponents();
 
             fetch('{{ route('savePayrollSettings') }}', {

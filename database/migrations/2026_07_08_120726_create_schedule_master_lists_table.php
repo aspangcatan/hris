@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('schedule_master_lists', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('label', 50);
             $table->string('code', 10);

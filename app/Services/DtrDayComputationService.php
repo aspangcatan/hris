@@ -745,6 +745,13 @@ class DtrDayComputationService
             $isAbsent = !($firstIn && $lastOut);
         }
 
+        $actualMinutes = null;
+        if ($firstIn && $lastOut) {
+            $actualMinutes = ($schedule && !$isOffSchedule)
+                ? $this->workedMinutesWithinSchedule($schedule, $currentDay, $firstIn, $lastOut)
+                : Carbon::parse($firstIn)->diffInMinutes(Carbon::parse($lastOut));
+        }
+
         return [
             'late_minutes' => $lateMinutes,
             'undertime_minutes' => $undertimeMinutes,
@@ -752,6 +759,12 @@ class DtrDayComputationService
             'is_holiday' => $isHoliday,
             'exemption_reason' => $exemptionReason,
             'pass_slip_minutes' => $passSlipMinutes,
+            'is_expected_work_date' => $isExpectedWorkDate,
+            'first_in' => $firstIn,
+            'last_out' => $lastOut,
+            'required_minutes' => $renderedMinutes,
+            'worked_minutes' => $actualMinutes,
+            'schedule_code' => $schedule ? (trim((string) ($schedule->code ?? '')) ?: null) : null,
         ];
     }
 }

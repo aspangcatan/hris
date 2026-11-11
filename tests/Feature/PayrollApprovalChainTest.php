@@ -110,13 +110,14 @@ class PayrollApprovalChainTest extends TestCase
     {
         DB::table('hris.cutoff_summaries_master')
             ->where('period_start', '2027-02-01')
-            ->where('period_end', '2027-02-15')
+            ->where('period_end', '2027-02-28')
             ->where('title', 'Assignatory Test Cutoff')
             ->delete();
         $this->masterId = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'status' => 'finalized', // payroll reads finalized cutoffs only
             'title' => 'Assignatory Test Cutoff',
             'period_start' => '2027-02-01',
-            'period_end' => '2027-02-15',
+            'period_end' => '2027-02-28',
             'generated_by' => $this->preparerId,
             'generated_at' => now(),
             'created_at' => now(),
@@ -126,7 +127,7 @@ class PayrollApprovalChainTest extends TestCase
         app(\App\Services\PayrollServices::class)->generateCutoffSummary(
             $this->preparerId,
             '2027-02-01',
-            '2027-02-15',
+            '2027-02-28',
             'Assignatory Test Cutoff',
             $this->preparerId
         );

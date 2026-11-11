@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('payroll_compensation_types', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('code', 100)->unique('payroll_comp_types_code_unique');
             $table->string('name');

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('cutoff_summaries', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('cutoff_id')->nullable()->index('hris_cutoff_summaries_cutoff_id_index');
             $table->integer('employee_id')->index();

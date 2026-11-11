@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('payroll_tax_rules', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('purpose', 150)->index('hris_payroll_tax_rules_purpose_index');
             $table->decimal('min_annual', 12)->default(0);

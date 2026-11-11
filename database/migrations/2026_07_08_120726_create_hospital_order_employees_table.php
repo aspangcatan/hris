@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('hospital_order_employees', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('ho_id');
             $table->integer('userid');

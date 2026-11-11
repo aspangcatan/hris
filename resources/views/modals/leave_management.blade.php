@@ -34,7 +34,8 @@
                         </select>
                         <label>Monthly Earned</label>
                     </div>
-                    <div class="form-floating mb-3">
+                    {{-- Hidden since 2026-11-11: earned credits are reduced by LWOP only (late/UT and personal pass slips are charged to salary). Kept so saving a leave type keeps its stored value. --}}
+                    <div class="form-floating mb-3 d-none">
                         <select class="form-control" id="deduct_tardiness">
                             <option value="0">No</option>
                             <option value="1">Yes</option>

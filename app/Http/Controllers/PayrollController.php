@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\DTRServices;
 use App\Services\PayrollServices;
 use App\Services\PermissionService;
-use Barryvdh\Snappy\Facades\SnappyPdf;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +66,7 @@ class PayrollController extends Controller
                 'salary_grade' => 'required|integer|min:1',
                 'step' => 'required|integer|min:1',
                 'basic_salary' => 'required|numeric|min:0',
+                'effective_date' => 'nullable|date',
             ]);
 
             $dynamicComponents = $request->input('components', null);
@@ -80,16 +81,27 @@ class PayrollController extends Controller
                 }
             }
 
-            DB::table('payroll_settings')->updateOrInsert(
-                ['userid' => $request->userid],
-                [
-                    'salary_grade' => $validatedData['salary_grade'],
-                    'step' => $validatedData['step'],
-                    'basic_salary' => $validatedData['basic_salary'],
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ]
-            );
+            DB::transaction(function () use ($request, $validatedData) {
+                DB::table('payroll_settings')->updateOrInsert(
+                    ['userid' => $request->userid],
+                    [
+                        'salary_grade' => $validatedData['salary_grade'],
+                        'step' => $validatedData['step'],
+                        'basic_salary' => $validatedData['basic_salary'],
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+
+                $this->payrollServices->recordSalaryChange(
+                    (int) $request->userid,
+                    (int) $validatedData['salary_grade'],
+                    (int) $validatedData['step'],
+                    (float) $validatedData['basic_salary'],
+                    $validatedData['effective_date'] ?? null,
+                    Auth::id()
+                );
+            });
 
             if ($dynamicComponents !== null) {
                 $this->syncDynamicComponents($request->userid, $dynamicComponents);
@@ -304,6 +316,19 @@ class PayrollController extends Controller
                     'cutoff_id' => ['The selected cutoff period does not exist.'],
                 ]);
             }
+            // Payroll reads a finalized cutoff only (a draft can still change).
+            if (strtolower((string) ($master->status ?? 'draft')) !== 'finalized') {
+                throw ValidationException::withMessages([
+                    'cutoff_id' => [$this->cutoffNotFinalizedMessage($master)],
+                ]);
+            }
+            // Payroll is always a whole month and pays the full monthly basic, so a
+            // shorter cutoff would overpay. Partial periods are not handled yet.
+            if (!$this->coversWholeMonth($master)) {
+                throw ValidationException::withMessages([
+                    'cutoff_id' => ["Payroll needs a whole-month cutoff. This one covers only {$master->period_start} to {$master->period_end}."],
+                ]);
+            }
 
             DB::table('hris.payrolls')->insert([
                 'cutoff_id'         => $master->id,
@@ -329,6 +354,22 @@ class PayrollController extends Controller
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    private function coversWholeMonth(object $master): bool
+    {
+        $start = \Carbon\Carbon::parse($master->period_start);
+
+        return $start->day === 1 && $start->copy()->endOfMonth()->toDateString() === \Carbon\Carbon::parse($master->period_end)->toDateString();
+    }
+
+    private function cutoffNotFinalizedMessage(object $master): string
+    {
+        $status = strtolower((string) ($master->status ?? 'draft')) ?: 'draft';
+
+        return $status === 'closed'
+            ? 'This cutoff is closed - its payroll was already released.'
+            : 'This cutoff is still a draft. Finalize it on the Cutoff Summary page before using it for payroll.';
     }
 
     public function getPayrollTaxRules()
@@ -583,48 +624,214 @@ class PayrollController extends Controller
         }
     }
 
+    /**
+     * Shared Create/Edit Cutoff input rules. A cutoff covers one calendar month
+     * at most (half-month ranges are fine), and only the previous month can be
+     * generated - the team generates last month's cutoff around the 10th of the
+     * next month. Resigned and retired employees are never included.
+     *
+     * @return array{0: array, 1: int[]} [validated input, left-out separated ids]
+     */
+    private function validateCutoffInput(Request $request): array
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:150',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'payroll_date' => 'nullable|date',
+            'remarks' => 'nullable|string|max:1000',
+            'employees' => 'required|array|min:1',
+            'employees.*' => 'required|integer',
+        ]);
+        $validated['title'] = trim($validated['title']);
+
+        $start = \Carbon\Carbon::parse($validated['start_date']);
+        $end = \Carbon\Carbon::parse($validated['end_date']);
+        if ($start->format('Y-m') !== $end->format('Y-m')) {
+            throw ValidationException::withMessages([
+                'end_date' => 'The start and end dates must be in the same month.',
+            ]);
+        }
+        $previousMonth = now()->startOfMonth()->subMonth();
+        if ($start->format('Y-m') !== $previousMonth->format('Y-m')) {
+            throw ValidationException::withMessages([
+                'start_date' => 'Cutoffs can only be generated for the previous month ('
+                    . $previousMonth->format('F Y') . ').',
+            ]);
+        }
+
+        // Separated before this cutoff starts, or with no separation date on file.
+        // Someone who left during or after the period stays in (early exit).
+        $separated = DB::table('hris.employees')
+            ->whereIn('user_id', $validated['employees'])
+            ->whereIn('employee_type', ['Resigned', 'Retired'])
+            ->where(function ($query) use ($validated) {
+                $query->whereNull('date_resigned')->orWhere('date_resigned', '<', $validated['start_date']);
+            })
+            ->pluck('user_id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+        $validated['employees'] = array_values(array_unique(array_diff(array_map('intval', $validated['employees']), $separated)));
+        if (empty($validated['employees'])) {
+            throw ValidationException::withMessages([
+                'employees' => 'All selected employees are resigned or retired. Select at least one active employee.',
+            ]);
+        }
+
+        return [$validated, $separated];
+    }
+
+    /** Payroll date, remarks, and whether the period is a whole month. */
+    private function cutoffPeriodSettings(array $validated): array
+    {
+        $isWholeMonth = $this->coversWholeMonth((object) ["period_start" => $validated["start_date"], "period_end" => $validated["end_date"]]);
+
+        return [
+            "payroll_date" => $validated["payroll_date"] ?? null,
+            "remarks" => isset($validated["remarks"]) ? trim($validated["remarks"]) : null,
+            "cutoff_type" => $isWholeMonth ? "whole_month" : "partial",
+        ];
+    }
+
+    private function cutoffSavedMessage(string $verb, int $count, array $separated): string
+    {
+        $message = "Cutoff summaries {$verb} for {$count}" . ($count === 1 ? ' employee.' : ' employees.');
+        if (!empty($separated)) {
+            $message .= ' ' . count($separated) . ' resigned/retired '
+                . (count($separated) === 1 ? 'employee was' : 'employees were') . ' left out.';
+        }
+
+        return $message;
+    }
+
+    private function cutoffValidationResponse(ValidationException $e)
+    {
+        return response()->json([
+            'success' => false,
+            // Show the actual reason (e.g. "previous month only") on the page.
+            'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    }
+
+    /** A draft cutoff and its employees, to fill the Create Cutoff modal for editing. */
+    public function editCutoffSummaries($cutoffId)
+    {
+        try {
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+            $master = DB::table($masterTable)->where('id', (int) $cutoffId)->first();
+            if (!$master) {
+                return response()->json(['success' => false, 'message' => 'Cutoff not found.'], 404);
+            }
+
+            $employees = DB::table($this->payrollServices->getCutoffSummaryTableName() . ' as cs')
+                ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+                ->leftJoin('tdh_user.designation as d', 'u.designation', '=', 'd.id')
+                ->leftJoin('hris.employees as e', 'e.user_id', '=', 'cs.employee_id')
+                ->where('cs.cutoff_id', $master->id)
+                ->orderBy('u.lname')
+                ->get(['cs.employee_id as user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix',
+                    'd.description as designation', 'e.employee_type']);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => (int) $master->id,
+                    'title' => $master->title,
+                    'period_start' => $master->period_start,
+                    'period_end' => $master->period_end,
+                    'payroll_date' => $master->payroll_date ?? null,
+                    'remarks' => $master->remarks ?? null,
+                    'status' => strtolower((string) ($master->status ?? 'draft')) ?: 'draft',
+                    'employees' => $employees,
+                ],
+            ]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Edit a DRAFT cutoff: new title/dates and employee list. Ticked employees
+     * are regenerated for the (possibly new) period; unticked ones are removed.
+     */
+    public function updateCutoffSummaries(Request $request, $cutoffId)
+    {
+        try {
+            $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
+            $table = $this->payrollServices->getCutoffSummaryTableName();
+            $master = DB::table($masterTable)->where('id', (int) $cutoffId)->first();
+            if (!$master) {
+                return response()->json(['success' => false, 'message' => 'Cutoff not found.'], 404);
+            }
+            if ((strtolower((string) ($master->status ?? 'draft')) ?: 'draft') !== 'draft') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only a draft cutoff can be edited. Reopen it first if it really has to change.',
+                ], 422);
+            }
+
+            [$validated, $separated] = $this->validateCutoffInput($request);
+
+            // Title + dates identify a cutoff; another one can't have the same.
+            $duplicate = DB::table($masterTable)
+                ->where('id', '<>', $master->id)
+                ->where('period_start', $validated['start_date'])
+                ->where('period_end', $validated['end_date'])
+                ->where('title', $validated['title'])
+                ->exists();
+            if ($duplicate) {
+                throw ValidationException::withMessages([
+                    'title' => 'Another cutoff already has this title and these dates. Use a different title.',
+                ]);
+            }
+
+            DB::transaction(function () use ($validated, $master, $masterTable, $table) {
+                DB::table($masterTable)->where('id', $master->id)->update([
+                    'title' => $validated['title'],
+                    'period_start' => $validated['start_date'],
+                    'period_end' => $validated['end_date'],
+                    'updated_at' => now(),
+                ] + $this->cutoffPeriodSettings($validated));
+
+                // Employees taken out of the cutoff.
+                $removed = DB::table($table)->where('cutoff_id', $master->id)
+                    ->whereNotIn('employee_id', $validated['employees'])->pluck('employee_id');
+                if ($removed->isNotEmpty()) {
+                    DB::table('hris.cutoff_summary_days')->where('cutoff_id', $master->id)
+                        ->whereIn('employee_id', $removed)->delete();
+                    DB::table($table)->where('cutoff_id', $master->id)
+                        ->whereIn('employee_id', $removed)->delete();
+                }
+
+                // Regenerate everyone kept or added for the saved period
+                // (generation finds this cutoff by its new title + dates).
+                foreach ($validated['employees'] as $employeeId) {
+                    $this->payrollServices->generateCutoffSummary(
+                        $employeeId,
+                        $validated['start_date'],
+                        $validated['end_date'],
+                        $validated['title'],
+                        Auth::id()
+                    );
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => $this->cutoffSavedMessage('updated', count($validated['employees']), $separated),
+            ]);
+        } catch (ValidationException $e) {
+            return $this->cutoffValidationResponse($e);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
     public function createCutoffSummaries(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'start_date' => 'required|date',
-                'end_date' => 'required|date|after_or_equal:start_date',
-                'employees' => 'required|array|min:1',
-                'employees.*' => 'required|integer',
-            ]);
-
-            // A cutoff covers one calendar month at most (half-month ranges are
-            // fine), and only the previous month can be generated - the team
-            // generates last month's cutoff around the 10th of the next month.
-            $start = \Carbon\Carbon::parse($validated['start_date']);
-            $end = \Carbon\Carbon::parse($validated['end_date']);
-            if ($start->format('Y-m') !== $end->format('Y-m')) {
-                throw ValidationException::withMessages([
-                    'end_date' => 'The start and end dates must be in the same month.',
-                ]);
-            }
-            $previousMonth = now()->startOfMonth()->subMonth();
-            if ($start->format('Y-m') !== $previousMonth->format('Y-m')) {
-                throw ValidationException::withMessages([
-                    'start_date' => 'Cutoffs can only be generated for the previous month ('
-                        . $previousMonth->format('F Y') . ').',
-                ]);
-            }
-
-            // Resigned and retired employees are never included in a cutoff.
-            $separated = DB::table('hris.employees')
-                ->whereIn('user_id', $validated['employees'])
-                ->whereIn('employee_type', ['Resigned', 'Retired'])
-                ->pluck('user_id')
-                ->map(fn($id) => (int) $id)
-                ->all();
-            $validated['employees'] = array_values(array_diff(array_map('intval', $validated['employees']), $separated));
-            if (empty($validated['employees'])) {
-                throw ValidationException::withMessages([
-                    'employees' => 'All selected employees are resigned or retired. Select at least one active employee.',
-                ]);
-            }
+            [$validated, $separated] = $this->validateCutoffInput($request);
 
             $table = $this->payrollServices->getCutoffSummaryTableName();
             $master = $this->payrollServices->getOrCreateCutoffMaster(
@@ -633,6 +840,19 @@ class PayrollController extends Controller
                 $validated['title'],
                 Auth::id()
             );
+            // Only a draft cutoff can be regenerated; a finalized one has to be
+            // reopened first, and a closed one never changes.
+            $status = strtolower((string) ($master->status ?? 'draft')) ?: 'draft';
+            if ($status !== 'draft') {
+                return response()->json([
+                    'success' => false,
+                    'message' => $status === 'closed'
+                        ? 'This cutoff is closed (its payroll was released) and can no longer be regenerated.'
+                        : ($status === 'finalized'
+                            ? 'This cutoff is finalized. Reopen it first if it really has to be regenerated.'
+                            : 'This cutoff is under review or being processed. Send it back to draft first.'),
+                ], 422);
+            }
             $locked = DB::table($table)
                 ->where('cutoff_id', $master->id)
                 ->whereIn('employee_id', $validated['employees'])
@@ -648,7 +868,10 @@ class PayrollController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($validated) {
+            DB::transaction(function () use ($validated, $master) {
+                DB::table($this->payrollServices->getCutoffSummaryMasterTableName())->where('id', $master->id)
+                    ->update($this->cutoffPeriodSettings($validated));
+
                 foreach ($validated['employees'] as $employeeId) {
                     $this->payrollServices->generateCutoffSummary(
                         $employeeId,
@@ -660,21 +883,12 @@ class PayrollController extends Controller
                 }
             });
 
-            $message = 'Cutoff summaries generated for ' . count($validated['employees'])
-                . (count($validated['employees']) === 1 ? ' employee.' : ' employees.');
-            if (!empty($separated)) {
-                $message .= ' ' . count($separated) . ' resigned/retired '
-                    . (count($separated) === 1 ? 'employee was' : 'employees were') . ' left out.';
-            }
-
-            return response()->json(['success' => true, 'message' => $message]);
-        } catch (ValidationException $e) {
             return response()->json([
-                'success' => false,
-                // Show the actual reason (e.g. "previous month only") on the page.
-                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
+                'success' => true,
+                'message' => $this->cutoffSavedMessage('generated', count($validated['employees']), $separated),
+            ]);
+        } catch (ValidationException $e) {
+            return $this->cutoffValidationResponse($e);
         } catch (\Exception $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
@@ -684,9 +898,15 @@ class PayrollController extends Controller
     {
         try {
             $table = $this->payrollServices->getCutoffSummaryMasterTableName();
-            $periods = DB::table($table)
-                ->select('id', 'period_start', 'period_end', 'title')
-                ->orderByDesc('period_start')
+            $summaryTable = $this->payrollServices->getCutoffSummaryTableName();
+            $periods = DB::table($table . ' as cm')
+                ->select('cm.id', 'cm.period_start', 'cm.period_end', 'cm.title', 'cm.status')
+                ->selectSub(
+                    DB::table($summaryTable . ' as cs')->selectRaw('COUNT(*)')->whereColumn('cs.cutoff_id', 'cm.id'),
+                    'employees'
+                )
+                ->orderByDesc('cm.period_start')
+                ->orderByDesc('cm.id')
                 ->get();
 
             return response()->json(['success' => true, 'data' => $periods]);
@@ -715,8 +935,15 @@ class PayrollController extends Controller
             $query = DB::table($table . ' as cs')
                 ->leftJoin($masterTable . ' as cm', 'cm.id', '=', 'cs.cutoff_id')
                 ->leftJoin('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+                ->leftJoin('hris.cutoff_employee_snapshots as ces', function ($join) {
+                    $join->on('ces.cutoff_id', '=', 'cs.cutoff_id')->on('ces.employee_id', '=', 'cs.employee_id');
+                })
                 ->select(
                     'cs.*',
+                    'ces.id as snapshot_id',
+                    'ces.payroll_eligible',
+                    'ces.credit_eligible',
+                    'ces.exclusion_reason',
                     'cm.title as remarks',
                     'cm.period_start',
                     'cm.period_end',
@@ -751,7 +978,13 @@ class PayrollController extends Controller
 
             $employees = DB::table($cutoffTable . ' as cs')
                 ->join('tdh_user.users as u', 'u.id', '=', 'cs.employee_id')
+                ->leftJoin('hris.cutoff_employee_snapshots as ces', function ($join) {
+                    $join->on('ces.cutoff_id', '=', 'cs.cutoff_id')->on('ces.employee_id', '=', 'cs.employee_id');
+                })
                 ->where('cs.cutoff_id', $payroll->cutoff_id)
+                ->where(function ($q) {
+                    $q->whereNull('ces.id')->orWhere('ces.payroll_eligible', 1);
+                })
                 ->orderBy('u.lname')
                 ->get(['cs.employee_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix']);
 
@@ -890,8 +1123,9 @@ class PayrollController extends Controller
                 ], 422);
             }
 
-            $cutoffStart = $cutoffMaster->period_start;
-            $cutoffEnd   = $cutoffMaster->period_end;
+            if (strtolower((string) ($cutoffMaster->status ?? 'draft')) !== 'finalized') {
+                return response()->json(['error' => $this->cutoffNotFinalizedMessage($cutoffMaster)], 422);
+            }
 
             $currentStatus = strtolower((string) ($period->status ?? 'draft'));
             if (in_array($currentStatus, ['for_approval', 'approved', 'released'], true)) {
@@ -909,6 +1143,18 @@ class PayrollController extends Controller
                 ->pluck('employee_id')
                 ->toArray();
 
+            // Excluded at snapshot time (no salary on file): can't be paid from this cutoff.
+            $ineligible = DB::table('hris.cutoff_employee_snapshots')
+                ->where('cutoff_id', $cutoffMaster->id)
+                ->whereIn('employee_id', $employeeIds)
+                ->where('payroll_eligible', 0)
+                ->pluck('employee_name');
+            if ($ineligible->isNotEmpty()) {
+                return response()->json([
+                    'error' => 'These employees have no salary in this cutoff and cannot be computed: ' . $ineligible->implode('; ') . '. Remove them, or add the salary and regenerate the cutoff.',
+                ], 422);
+            }
+
             $missing = array_diff($employeeIds, $existingCutoffs);
             if (!empty($missing)) {
                 return response()->json([
@@ -917,19 +1163,28 @@ class PayrollController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($validated, $period, $cutoffStart, $cutoffEnd, $employeeIds, $cutoffMaster) {
+            // The finalized rows of THIS cutoff (by cutoff_id - another cutoff
+            // can share the same dates). All of them exist: checked above.
+            $summaries = DB::table($cutoffTable)
+                ->where('cutoff_id', $cutoffMaster->id)
+                ->whereIn('employee_id', $employeeIds)
+                ->get()
+                ->keyBy('employee_id');
+
+            DB::transaction(function () use ($validated, $employeeIds, $cutoffMaster, $summaries) {
                 $this->payrollServices->deletePayrollEmployees($validated['payroll_id']);
                 DB::table('payroll_approvals')->where('payroll_id', $validated['payroll_id'])->delete();
 
                 foreach ($validated['employees'] as $employee) {
-                    $summary = $this->payrollServices->getOrCreateCutoffSummary(
-                        $employee['userid'],
-                        $cutoffStart,
-                        $cutoffEnd,
-                        Auth::id()
-                    );
+                    $summary = $summaries->get($employee['userid']);
 
-                    $totalLateUndertimeMinutes = ((int) ($summary->late_minutes ?? 0)) + ((int) ($summary->undertime_minutes ?? 0));
+                    // Late + undertime + personal pass slip minutes inside working
+                    // hours are all charged to salary (client decision 2026-11-11);
+                    // leave credits are reduced by LWOP only. Slip minutes never
+                    // overlap late/undertime (counted inside the worked span only).
+                    $totalLateUndertimeMinutes = ((int) ($summary->late_minutes ?? 0))
+                        + ((int) ($summary->undertime_minutes ?? 0))
+                        + ((int) ($summary->approved_pass_slips_minutes ?? 0));
                     $totalAbsentDays = (int) ($summary->days_absent ?? 0);
                     $totalWorkingDays = (int) ($summary->total_working_days ?? 0);
 
@@ -938,7 +1193,8 @@ class PayrollController extends Controller
                         $employee,
                         $totalLateUndertimeMinutes,
                         $totalAbsentDays,
-                        $totalWorkingDays
+                        $totalWorkingDays,
+                        (float) ($summary->lwop_days ?? 0)
                     );
                 }
 
@@ -1160,16 +1416,23 @@ class PayrollController extends Controller
                 return response()->json(['error' => 'Only approved payroll can be released.'], 422);
             }
 
-            DB::table('payrolls')
-                ->where('id', $validated['payroll_id'])
-                ->update([
-                    'status' => 'released',
-                    'reviewed_by' => Auth::id(),
-                    'released_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            $closed = DB::transaction(function () use ($validated, $payroll) {
+                DB::table('payrolls')
+                    ->where('id', $validated['payroll_id'])
+                    ->update([
+                        'status' => 'released',
+                        'reviewed_by' => Auth::id(),
+                        'released_at' => now(),
+                        'updated_at' => now(),
+                    ]);
 
-            return response()->json(['message' => 'Payroll released successfully.']);
+                // The cutoff closes once every payroll that uses it is released.
+                return $payroll->cutoff_id
+                    ? app(\App\Services\CutoffLifecycleService::class)->closeIfAllPayrollsReleased((int) $payroll->cutoff_id, (int) Auth::id())
+                    : false;
+            });
+
+            return response()->json(['message' => 'Payroll released successfully.' . ($closed ? ' Its cutoff is now closed.' : '')]);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed.',
@@ -1197,27 +1460,10 @@ class PayrollController extends Controller
         }
     }
 
+    /** Earning and deduction columns from the lines saved with the payroll (see PayrollServices::payrollComponentColumns). */
     private function getComponentBreakdown($employees)
     {
-        $components = DB::table('hris.payroll_components')
-            ->where('is_active', 1)
-            ->orderBy('sort_order')
-            ->get(['code', 'name', 'type']);
-
-        $componentAmounts = DB::table('hris.payroll_employee_components')
-            ->whereIn('payroll_employee_id', $employees->pluck('id'))
-            ->select('payroll_employee_id', 'code', 'amount')
-            ->get()
-            ->groupBy('payroll_employee_id')
-            ->map(function ($rows) {
-                return $rows->pluck('amount', 'code');
-            });
-
-        return [
-            'earning' => $components->where('type', 'earning')->values(),
-            'deduction' => $components->where('type', 'deduction')->values(),
-            'amounts' => $componentAmounts,
-        ];
+        return $this->payrollServices->payrollComponentColumns($employees);
     }
 
     public function export($payroll_id)
@@ -1232,10 +1478,22 @@ class PayrollController extends Controller
             return back()->with('error', 'No employees found for this payroll.');
         }
 
-        $exportPath = storage_path('app/exports/payroll.xlsx');
-        $this->payrollServices->exportRegularPayroll($employees, $exportPath, $payroll);
+        // The folder is created when missing, and every export gets its own file so two
+        // people exporting at the same time never overwrite each other's download.
+        $directory = storage_path('app' . DIRECTORY_SEPARATOR . 'exports');
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($directory);
+        $exportPath = $directory . DIRECTORY_SEPARATOR . 'payroll_' . $payroll->id . '_' . uniqid() . '.xlsx';
 
-        return response()->download($exportPath)->deleteFileAfterSend(true);
+        try {
+            $this->payrollServices->exportRegularPayroll($employees, $exportPath, $payroll);
+        } catch (\Throwable $exception) {
+            @unlink($exportPath);
+            return back()->with('error', 'Export failed: ' . $exception->getMessage());
+        }
+
+        $downloadName = 'payroll_' . trim(preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title), '_') . '.xlsx';
+
+        return response()->download($exportPath, $downloadName)->deleteFileAfterSend(true);
     }
 
     public function payslip($payroll_id)
@@ -1251,17 +1509,12 @@ class PayrollController extends Controller
                 return back()->with('error', 'No employees found for this payroll.');
             }
 
-            $pdf = SnappyPdf::loadView('pdf.payroll_payslip', [
+            // DomPDF, like the app's other PDFs: it runs inside PHP, with no program to install.
+            $pdf = Pdf::loadView('pdf.payroll_payslip', [
                 'payroll' => $payroll,
                 'employees' => $employees,
-            ])
-                ->setPaper('A4', 'portrait')
-                ->setOption('margin-top', 6)
-                ->setOption('margin-bottom', 6)
-                ->setOption('margin-left', 6)
-                ->setOption('margin-right', 6)
-                ->setOption('disable-javascript', true)
-                ->setOption('load-error-handling', 'ignore');
+                'letterhead' => $this->letterheadDataUri(),
+            ])->setPaper('a4', 'portrait');
 
             $safeTitle = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title);
             return $pdf->download('payslip_' . $safeTitle . '.pdf');
@@ -1285,27 +1538,33 @@ class PayrollController extends Controller
 
             $breakdown = $this->getComponentBreakdown($employees);
 
-            $pdf = SnappyPdf::loadView('pdf.payroll_summary', [
+            // Landscape A4 at least, wider when the payroll has many earning/deduction columns
+            // (sizes in points; 72 points = 1 inch).
+            $columns = count($breakdown['earning']) + count($breakdown['deduction']);
+            $width = max(842, 260 + ($columns + 3) * 72);
+
+            $pdf = Pdf::loadView('pdf.payroll_summary', [
                 'payroll' => $payroll,
                 'employees' => $employees,
                 'earningComponents' => $breakdown['earning'],
                 'deductionComponents' => $breakdown['deduction'],
                 'componentAmounts' => $breakdown['amounts'],
-            ])
-                ->setOption('page-width', '1000mm')
-                ->setOption('page-height', '210mm')
-                ->setOption('margin-top', 6)
-                ->setOption('margin-bottom', 6)
-                ->setOption('margin-left', 6)
-                ->setOption('margin-right', 6)
-                ->setOption('disable-javascript', true)
-                ->setOption('load-error-handling', 'ignore');
+                'letterhead' => $this->letterheadDataUri(),
+            ])->setPaper([0, 0, $width, 595.28]);
 
             $safeTitle = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title);
             return $pdf->download('summary_' . $safeTitle . '.pdf');
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }
+    }
+
+    /** The letterhead embedded in the page, so the PDF never has to fetch it over the web. */
+    private function letterheadDataUri(): ?string
+    {
+        $path = public_path('img' . DIRECTORY_SEPARATOR . 'letter_head_banner.png');
+
+        return is_file($path) ? 'data:image/png;base64,' . base64_encode(file_get_contents($path)) : null;
     }
 
     private function canAssignPayroll($payroll)

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('leave_balance_snapshot_details', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('snapshot_id')->index('leave_balance_snapshot_details_snapshot_id_foreign');
             $table->integer('user_id');

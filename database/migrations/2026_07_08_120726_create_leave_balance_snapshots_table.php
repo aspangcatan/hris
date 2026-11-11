@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('leave_balance_snapshots', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('year');
             $table->tinyInteger('quarter');

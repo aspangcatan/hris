@@ -1,41 +1,12 @@
 @extends('master')
 @section('content')
-    <style>
-        .payroll-modal-theme .modal-content {
-            border: 0;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
-        }
-
-        .payroll-modal-theme .modal-header {
-            background: linear-gradient(135deg, #0f766e, #0ea5a4);
-            color: #fff;
-            border: 0;
-        }
-
-        .payroll-modal-theme .modal-title {
-            font-weight: 700;
-            letter-spacing: 0.2px;
-        }
-
-        .payroll-modal-theme .btn-close {
-            filter: invert(1);
-            opacity: 0.9;
-        }
-
-        .payroll-modal-theme .modal-body {
-            background: #f8fafc;
-        }
-    </style>
     <div class="page-head">
         <div>
             <h1>Earnings &amp; Deductions</h1>
             <p class="page-sub">Manage all payroll components. Mark a component Global to apply it to every employee by default; leave it non-global to assign it per-employee instead.</p>
         </div>
-        <button class="btn btn-success btn-edit" id="btn_add_component">
-            <i class="bi bi-plus-circle me-1"></i>
-            Add Component
+        <button type="button" class="btn btn-primary" id="btn_add_component">
+            <i class="bi bi-plus-lg me-1"></i> Add component
         </button>
     </div>
 
@@ -78,7 +49,7 @@
                             <tr>
                                 <th style="width: 14%;">Code</th>
                                 <th>Name</th>
-                                <th style="width: 9%;">Taxable</th>
+                                <th style="width: 9%;" title="Taken off the income that withholding tax is computed on">Before tax</th>
                                 <th style="width: 9%;">Global</th>
                                 <th style="width: 14%;">Default</th>
                                 <th style="width: 10%;">Active</th>
@@ -94,14 +65,19 @@
         </div>
     </div>
 
-    <div class="modal fade payroll-modal-theme" id="component_modal" tabindex="-1" aria-labelledby="componentModalLabel"
+    <div class="modal fade" id="component_modal" tabindex="-1" aria-labelledby="componentModalLabel"
          aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header sticky-top">
-                    <h4 class="modal-title text-white" id="componentModalLabel">Add Component</h4>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+                    <div class="modal-heading">
+                        <div class="modal-icon"><i class="bi bi-sliders"></i></div>
+                        <div>
+                            <h5 class="modal-title" id="componentModalLabel">Add Component</h5>
+                            <p class="modal-sub">An earning or deduction, with its default amount or formula.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
                     <div class="row g-3">
@@ -170,8 +146,8 @@
                     <p class="text-muted small mt-1 mb-0">Global components are auto-applied to every employee at the default amount/formula above. Leave unchecked for components that vary per employee (loan balances, contribution tiers, etc.) — those are assigned individually from the employee's Payroll tab.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-success btn-edit" id="btn_save_component">Save Component</button>
+                    <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-modal-save" id="btn_save_component">Save component</button>
                 </div>
             </div>
         </div>
@@ -302,6 +278,15 @@
             $("#component_rate_wrap").toggleClass("d-none", !isPercentage);
         }
 
+        // On a deduction this flag means it comes off taxable income before withholding tax.
+        function updateTaxableLabel() {
+            const isDeduction = $("#component_type").val() === "deduction";
+            $("label[for='component_taxable']")
+                .text(isDeduction ? "Before tax" : "Taxable")
+                .attr("title", isDeduction ? "Taken off the income that withholding tax is computed on" : "");
+        }
+        $(document).on("change", "#component_type", updateTaxableLabel);
+
         function openComponentModal(component = null) {
             editMode = !!component;
             editCode = component ? component.code : "";
@@ -309,6 +294,7 @@
             $("#component_code").val(component ? component.code : "").prop("disabled", editMode);
             $("#component_name").val(component ? component.name : "");
             $("#component_type").val(component ? component.type : "earning");
+            updateTaxableLabel();
             $("#component_default").val(component ? (component.default_amount ?? 0) : "0.00");
             $("#component_taxable").prop("checked", !!(component && component.taxable));
             $("#component_active").prop("checked", component ? !!component.is_active : true);

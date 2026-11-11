@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('leave_cancellation_approvals', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('leave_cancellation_id')->index('leave_cancellation_approvals_leave_cancellation_id_foreign');
             $table->unsignedBigInteger('approver_id');

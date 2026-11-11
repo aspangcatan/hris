@@ -1,98 +1,16 @@
 @extends('master')
 @section('content')
-    <style>
-        .assignatory-board {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 1.5rem;
-            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
-        }
-
-        .assignatory-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            flex-wrap: wrap;
-        }
-
-        .assignatory-head h4 {
-            margin: 0;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .assignatory-head span {
-            font-size: 0.9rem;
-            color: #64748b;
-        }
-
-        .assignatory-table-shell {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #fff;
-        }
-
-        .assignatory-table-shell table {
-            margin-bottom: 0;
-        }
-
-        .assignatory-table-shell table thead th {
-            background: #f8fafc;
-            color: #0f172a;
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .assignatory-table-shell table tbody td {
-            color: #1e293b;
-            font-weight: 500;
-            vertical-align: middle;
-        }
-
-        .payroll-modal-theme .modal-content {
-            border: 0;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 24px 50px rgba(15, 23, 42, 0.2);
-        }
-
-        .payroll-modal-theme .modal-header {
-            background: linear-gradient(135deg, #0f766e, #0ea5a4);
-            color: #fff;
-            border: 0;
-        }
-
-        .payroll-modal-theme .modal-title {
-            font-weight: 700;
-            letter-spacing: 0.2px;
-        }
-
-        .payroll-modal-theme .btn-close {
-            filter: invert(1);
-            opacity: 0.9;
-        }
-
-        .payroll-modal-theme .modal-body {
-            background: #f8fafc;
-        }
-    </style>
+    <div class="page-head">
+        <div>
+            <h1>Payroll Assignatories</h1>
+            <p class="page-sub">The approval phases a payroll goes through after it is submitted, in order, and who approves each one.</p>
+        </div>
+        <button type="button" class="btn btn-primary" id="btn_add_assignatory">
+            <i class="bi bi-plus-lg me-1"></i> Add phase
+        </button>
+    </div>
 
     <div class="assignatory-board">
-        <div class="assignatory-head">
-            <div>
-                <h4>Payroll Assignatories</h4>
-                <span>Configure how many approval phases a payroll goes through after submission, and who approves each phase.</span>
-            </div>
-            <button class="btn btn-success btn-edit" id="btn_add_assignatory">
-                <i class="bi bi-plus-circle me-1"></i>
-                Add Phase
-            </button>
-        </div>
 
         <div class="table-responsive assignatory-table-shell">
             <table class="table align-middle">
@@ -110,14 +28,19 @@
         </div>
     </div>
 
-    <div class="modal fade payroll-modal-theme" id="assignatory_modal" tabindex="-1" aria-labelledby="assignatoryModalLabel"
+    <div class="modal fade" id="assignatory_modal" tabindex="-1" aria-labelledby="assignatoryModalLabel"
          aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header sticky-top">
-                    <h4 class="modal-title text-white" id="assignatoryModalLabel">Add Phase</h4>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
+                    <div class="modal-heading">
+                        <div class="modal-icon"><i class="bi bi-person-check"></i></div>
+                        <div>
+                            <h5 class="modal-title" id="assignatoryModalLabel">Add Phase</h5>
+                            <p class="modal-sub">One approval step and the person who acts on it.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 1.5rem;">
                     <input type="hidden" id="assignatory_id">
@@ -143,8 +66,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-view" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-success btn-edit" id="btn_save_assignatory">Save Phase</button>
+                    <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-modal-save" id="btn_save_assignatory">Save phase</button>
                 </div>
             </div>
         </div>

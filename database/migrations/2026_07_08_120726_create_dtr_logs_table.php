@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('dtr_logs', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('userid');
             $table->string('status', 10);

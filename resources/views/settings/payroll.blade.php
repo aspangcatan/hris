@@ -1,94 +1,43 @@
 @extends('master')
 @section('content')
     <style>
-        .payroll-board {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            padding: 1.5rem;
-            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
-        }
-
-        .payroll-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            margin-bottom: 1.25rem;
-            flex-wrap: wrap;
-        }
-
-        .payroll-head-title h4 {
-            margin: 0;
-            font-weight: 700;
-            color: #0f172a;
-        }
-
-        .payroll-head-title span {
-            font-size: 0.9rem;
-            color: #64748b;
-        }
-
+        /* Spacing only - colours, borders and table styling come from the theme. */
         .payroll-filter {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
             padding: 1rem;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
         }
-
-        .payroll-filter .form-control {
-            border-radius: 12px;
-            border: 1px solid #d8e1ee;
-            background: #fff;
+        .payroll-filter .btn {
+            min-height: 100%;
         }
-
-        .payroll-table-shell {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            overflow: hidden;
-            background: #fff;
-        }
-
-        .payroll-table-shell table {
+        .payroll-table-shell .table {
             margin-bottom: 0;
         }
-
-        .payroll-table-shell table thead th {
-            background: #f8fafc;
-            color: #0f172a;
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .payroll-table-shell table tbody td {
-            color: #1e293b;
-            font-weight: 500;
-            vertical-align: middle;
+        .payroll-employee-photo {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
         }
     </style>
+    <div class="page-head">
+        <div>
+            <h1>Payroll Settings</h1>
+            <p class="page-sub">Each employee's salary grade, step and basic salary, and which earnings and deductions apply to them.</p>
+        </div>
+    </div>
 
     <div class="payroll-board">
-        <div class="payroll-head">
-            <div class="payroll-head-title">
-                <h4>Payroll Settings</h4>
-                <span>Configure employee payroll details and overrides.</span>
-            </div>
-        </div>
 
         <div class="payroll-filter">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <input class="form-control" placeholder="Search by firstname" id="search_fname"/>
+            <div class="row g-2 align-items-stretch">
+                <div class="col-md-5">
+                    <input class="form-control" placeholder="Search by first name" id="search_fname"/>
                 </div>
-                <div class="col-md-4">
-                    <input type="text" class="form-control" placeholder="Search by lastname" id="search_lname"/>
+                <div class="col-md-5">
+                    <input type="text" class="form-control" placeholder="Search by last name" id="search_lname"/>
                 </div>
-                <div class="col-md-4">
-                    <button class="btn btn-action btn-view w-100" id="btn_search">
-                        <i class="bi bi-search"></i>
-                        Search
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary w-100 h-100" id="btn_search">
+                        <i class="bi bi-search me-1"></i> Search
                     </button>
                 </div>
             </div>
@@ -187,6 +136,7 @@
                     return;
                 }
 
+                params["effective_date"] = $("#salary_effective_date").val() || null;
                 params["components"] = collectDynamicComponents();
 
                 fetch('{{ route('savePayrollSettings') }}', {
@@ -214,7 +164,7 @@
 
         function editEmployee(id) {
             employee_id = id;
-            $("#modal_salary_details input[id]").val("0.00"); // Reset fixed inputs
+            $("#modal_salary_details input[id]").val(""); // Reset fixed inputs (placeholders show what to enter)
             renderDynamicComponents([]);
             $("#payroll_settings_modal").modal("show");
 
@@ -445,7 +395,7 @@
                         const tr = `
                     <tr id='employee_` + it.user_id + `'>
                         <td>
-                            <img src="` + image + `" style="width: 50px;height: 50px"/>
+                            <img src="` + image + `" alt="" class="rounded-circle payroll-employee-photo" onerror="this.onerror=null;this.src='assets/img/logo.png';"/>
                         </td>
                         <td>` + it.fname + `</td>
                         <td>` + mname + `</td>
@@ -454,11 +404,11 @@
                         <td>` + it.designation + `</td>
                         <td>` + it.section + `</td>
                         <td>
-                            <button type='button' class="btn btn-sm" style="background: transparent" onClick="editEmployee(` + it.user_id + `)">
-                                <i class="bi bi-pencil-fill text-success"></i>
+                            <button type='button' class="btn btn-action btn-edit" title="Edit payroll settings" onClick="editEmployee(` + it.user_id + `)">
+                                <i class="bi bi-pencil-square"></i>
                             </button>
                         </td>
-                    <tr>`;
+                    </tr>`;
                         $("#employee_list").append(tr);
                     }
                 }).catch(err => {

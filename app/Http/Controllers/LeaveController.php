@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\LeaveFile;
+use App\Services\LeaveLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -69,15 +70,26 @@ class LeaveController extends Controller
                 'based_credit' => 'required|numeric|min:0',
             ]);
 
-            DB::table('leave_credits')->updateOrInsert(
-                [
-                    'user_id' => $request->employee_id,
-                    'leave_id' => $request->leave_id,
-                ],
-                [
-                    'based_credit' => $request->based_credit
-                ]
-            );
+            DB::transaction(function () use ($request) {
+                $before = (float) DB::table('leave_credits')
+                    ->where('user_id', $request->employee_id)->where('leave_id', $request->leave_id)
+                    ->lockForUpdate()->value('based_credit');
+
+                DB::table('leave_credits')->updateOrInsert(
+                    [
+                        'user_id' => $request->employee_id,
+                        'leave_id' => $request->leave_id,
+                    ],
+                    [
+                        'based_credit' => $request->based_credit
+                    ]
+                );
+
+                app(LeaveLedgerService::class)->record(
+                    (int) $request->employee_id, (int) $request->leave_id, LeaveLedgerService::ADJUSTMENT,
+                    round((float) $request->based_credit - $before, 3), now()->toDateString(), 'manual_base_credit', null, 'Base credit edited'
+                );
+            });
 
             return response()->json(['message' => "Base Credit is updated"]);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -90,15 +102,26 @@ class LeaveController extends Controller
     public function insertUpdateUsedCredit(Request $request)
     {
         try {
-            DB::table('leave_credits')->updateOrInsert(
-                [
-                    'user_id' => $request->employee_id,
-                    'leave_id' => $request->leave_id,
-                ],
-                [
-                    'used_credit' => $request->used_credit,
-                ]
-            );
+            DB::transaction(function () use ($request) {
+                $before = (float) DB::table('leave_credits')
+                    ->where('user_id', $request->employee_id)->where('leave_id', $request->leave_id)
+                    ->lockForUpdate()->value('used_credit');
+
+                DB::table('leave_credits')->updateOrInsert(
+                    [
+                        'user_id' => $request->employee_id,
+                        'leave_id' => $request->leave_id,
+                    ],
+                    [
+                        'used_credit' => $request->used_credit,
+                    ]
+                );
+
+                app(LeaveLedgerService::class)->record(
+                    (int) $request->employee_id, (int) $request->leave_id, LeaveLedgerService::ADJUSTMENT,
+                    round($before - (float) $request->used_credit, 3), now()->toDateString(), 'manual_used_credit', null, 'Used credit edited'
+                );
+            });
 
             return response()->json(['message' => "Used Credit is updated"]);
         } catch (\Exception $exception) {

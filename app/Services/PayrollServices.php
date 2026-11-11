@@ -23,95 +23,98 @@ class PayrollServices
         ])));
     }
 
+    /**
+     * The earning and deduction columns of a payroll, taken from the lines saved
+     * with it (payroll_employee_components) and named as saved - not from today's
+     * Earnings & Deductions settings. So a payroll always shows exactly what it was
+     * computed with: a component deactivated later still shows, one added later does
+     * not, and adjustments and prior-period lines get their own columns.
+     * Withholding tax has its own fixed column, so it is left out here.
+     *
+     * @return array{earning: \Illuminate\Support\Collection, deduction: \Illuminate\Support\Collection, amounts: \Illuminate\Support\Collection}
+     */
+    public function payrollComponentColumns($payrollEmployees): array
+    {
+        $ids = collect($payrollEmployees)->pluck('id');
+        $lines = DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', $ids)
+            ->get(['payroll_employee_id', 'code', 'name', 'type', 'amount']);
+
+        $sortOrder = DB::table('hris.payroll_components')->pluck('sort_order', 'code');
+        $position = function (string $code) use ($sortOrder): array {
+            if ($code === 'SALARY_ADJUSTMENT') {
+                return [0, 0, $code, 0];                                // next to basic pay
+            }
+            if (strpos($code, 'PRIOR_PERIOD_') === 0) {
+                return [3, 0, $code, 0];                                // last
+            }
+            $base = preg_replace('/_ADJUSTMENT$/', '', $code);
+            if ($sortOrder->has($base)) {
+                return [1, (int) $sortOrder[$base], $base, $code === $base ? 0 : 1]; // an adjustment follows its component
+            }
+
+            return [2, 0, $code, 0];
+        };
+
+        $columns = $lines->where('code', '<>', 'WITHHOLDING_TAX')
+            ->groupBy('code')
+            ->map(fn($group, $code) => (object) [
+                'code' => $code,
+                'name' => $group->first()->name ?: $code,
+                'type' => $group->first()->type,
+            ])
+            ->sortBy(fn($column) => $position($column->code))
+            ->values();
+
+        return [
+            'earning' => $columns->where('type', 'earning')->values(),
+            'deduction' => $columns->where('type', 'deduction')->values(),
+            'amounts' => $lines->groupBy('payroll_employee_id')
+                ->map(fn($rows) => $rows->groupBy('code')->map(fn($same) => round($same->sum('amount'), 2))),
+        ];
+    }
+
     public function exportRegularPayroll($payrollEmployees, $exportPath, $payroll = null)
     {
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Payroll Summary');
 
-        // Define column mapping according to your desired order
+        $breakdown = $this->payrollComponentColumns($payrollEmployees);
+        $amount = fn($item, $code) => (float) (($breakdown['amounts']->get($item->id) ?? collect())[$code] ?? 0);
+
+        // [header, value, kind]: kind is text, plain (centred number) or money (summed in the totals row).
         $columns = [
-            'No.' => null,
-            'NAME' => 'name',
-            'FAMILY NAME' => 'lname',
-            'FIRST NAME' => 'fname',
-            'MIDDLE NAME' => 'mname',
-            'SUFFIX' => 'suffix',
-            'MI' => 'mi',
-            'STAT' => 'stat',
-            'DIVISION' => 'division',
-            'DESIGNATION' => 'designation',
-            'zz' => 'zz',
-            'SG' => 'sg',
-            'Step' => 'step',
-            'SG B' => 'sg_b',
-            'SSL 6 BASIC PAY' => 'basic_salary',
-            'BASIC PAY ADJ' => 'salary_adjustment',
-            'BASIC PAY LWOP' => 'late_absent',
-            'FINAL BASIC PAY' => 'final_basic_pay',
-            'PERA' => 'pera',
-            'RATA' => 'rata',
-            'SUBSISTENCE' => 'subsistence',
-            'LAUNDRY' => 'laundry',
-            'HAZARD' => 'hazard',
-            'LONGEVITY' => 'longevity',
-            'QUARTERS ALLOWANCE' => 'quarters_allowance',
-            'CELLPHONE ALLOWANCE' => 'cellphone_allowance',
-            'GROSS PAY' => 'gross_pay',
-            'WITHHOLDING TAX' => 'withholding_tax',
-            'WITHHOLDING TAX (adjustment)' => 'withholding_adjustment',
-            'GSIS PS' => 'gsis_ps',
-            'GSIS GS' => 'gsis_gs',
-            'GSIS EC' => 'gsis_ec',
-            'HDMF' => 'hdmf',
-            'PHIC' => 'phic',
-            'PAGIBIG CAL' => 'pagibig_cal',
-            'PAGIBIG MPL' => 'pagibig_mpl',
-            'PAG-IBIG MP2' => 'pagibig_mp2',
-            'PAG-IBIG MP2 2ND ACCOUNT' => 'pagibig_mp2_2nd',
-            'PAG-IBIG MP2 3RD ACCOUNT' => 'pagibig_mp2_3rd',
-            'GSIS CONSO LOAN' => 'gsis_consoloan',
-            'GSIS EMERGENCY LOAN' => 'gsis_emergency_loan',
-            'GSIS EDUCATIONAL LOAN' => 'gsis_educational_loan',
-            'GSIS POLICY LOAN' => 'gsis_policy_loan',
-            'GSIS OPT_LIFE LOAN' => 'gsis_opt_life_loan',
-            'GSIS GFAL' => 'gsis_gfal',
-            'GSIS MPL' => 'gsis_mpl',
-            'GSIS CPL' => 'gsis_cpl',
-            'GSIS MPL Lite' => 'gsis_mpl_lite',
-            'CFI COOP' => 'cfi_coop',
-            '1ST VALLEY BANK' => 'first_valley_bank',
-            'TDHEA' => 'tdhea',
-            'DBP LOAN' => 'dbp_loan',
-            'UCPB LOAN' => 'ucpb_loan',
-            'MEDS PAYABLE' => 'meds_payable',
-            'PHIC CONTRI ADJ' => 'phic_contri_adj',
-            'PHIC REFUND FROM E.O.' => 'phic_refund_eo',
-            'HAZARD PAY ADJ' => 'hazard_adjustment',
-            'ADJ PERA' => 'pera_adjustment',
-            'ADJ SUBSISTENCE' => 'subsistence_adjustment',
-            'ADJ LAUNDRY' => 'laundry_adjustment',
-            'SSS DEDUCTION' => 'sss_deduction',
-            'SSS ADJUSTMENT' => 'sss_adjustment',
-            'GSIS PS LWOP (2%)' => 'gsis_ps_lwop',
-            'GSIS GS LWOP (2%)' => 'gsis_gs_lwop',
-            'GSIS PLREG REFUND' => 'gsis_plreg_refund',
-            'GSIS MPL REFUND' => 'gsis_mpl_refund',
-            'GSIS EMERGENCY REFUND' => 'gsis_emergency_refund',
-            'GSIS CONSOLOAN REFUND' => 'gsis_consoloan_refund',
-            'SUBSISTENCE DEDUCTION FROM LEAVE' => 'subsistence_deduction_leave',
-            '2nd half adjustment for resigned employee' => 'resigned_adjustment',
-            'TOTAL DEDUCTION' => 'deductions',
-            'NET PAY' => 'net_pay',
-            '1ST HALF 10TH' => 'first_half_10th',
-            '2ND HALF 25TH' => 'second_half_25th',
+            ['No.', null, 'plain'],
+            ['NAME', fn($item) => $this->formatEmployeeName($item), 'text'],
+            ['FAMILY NAME', fn($item) => $item->lname ?? '', 'text'],
+            ['FIRST NAME', fn($item) => $item->fname ?? '', 'text'],
+            ['MIDDLE NAME', fn($item) => $item->mname ?? '', 'text'],
+            ['SUFFIX', fn($item) => $item->suffix ?? '', 'text'],
+            ['MI', fn($item) => !empty($item->mname) ? strtoupper(substr($item->mname, 0, 1)) . '.' : '', 'text'],
+            ['DIVISION', fn($item) => $item->division ?? '', 'text'],
+            ['DESIGNATION', fn($item) => $item->designation ?? '', 'text'],
+            ['zz', fn($item) => $this->generateAcronym($item->designation ?? ''), 'text'],
+            ['SG', fn($item) => $item->salary_grade ?? '', 'plain'],
+            ['Step', fn($item) => $item->step ?? '', 'plain'],
+            ['BASIC PAY', fn($item) => (float) $item->basic_salary, 'money'],
+            ['LATE / ABSENT / LWOP', fn($item) => (float) $item->late_absent, 'money'],
         ];
+        foreach ($breakdown['earning'] as $component) {
+            $columns[] = [strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
+        }
+        $columns[] = ['GROSS PAY', fn($item) => (float) $item->gross_pay, 'money'];
+        $columns[] = ['WITHHOLDING TAX', fn($item) => $amount($item, 'WITHHOLDING_TAX'), 'money'];
+        foreach ($breakdown['deduction'] as $component) {
+            $columns[] = [strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
+        }
+        $columns[] = ['TOTAL DEDUCTION', fn($item) => (float) $item->deductions, 'money'];
+        $columns[] = ['NET PAY', fn($item) => (float) $item->net_pay, 'money'];
+        $columns[] = ['1ST HALF 10TH', fn($item) => (float) $item->first_half_10th, 'money'];
+        $columns[] = ['2ND HALF 25TH', fn($item) => (float) $item->second_half_25th, 'money'];
 
-        $textColumns = ['NAME', 'FAMILY NAME', 'FIRST NAME', 'MIDDLE NAME', 'SUFFIX', 'MI', 'STAT', 'DIVISION', 'DESIGNATION', 'zz'];
-        $plainNumberColumns = ['No.', 'SG', 'Step', 'SG B'];
-
-        $columnCount = count($columns);
-        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($columnCount);
+        $letter = fn(int $index) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+        $lastColLetter = $letter(count($columns) - 1);
 
         $titleRow = 1;
         $periodRow = 2;
@@ -132,51 +135,28 @@ class PayrollServices
             $sheet->getStyle("A{$periodRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
         }
 
-        $headerColIndex = 0;
-        foreach (array_keys($columns) as $header) {
-            $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($headerColIndex + 1) . $headerRow;
-            $sheet->setCellValue($cell, $header);
-            $headerColIndex++;
+        foreach ($columns as $index => [$header]) {
+            $sheet->setCellValue($letter($index) . $headerRow, $header);
         }
 
         $row = $dataStartRow;
-
-        foreach ($payrollEmployees as $index => $item) {
-            $colIndex = 0;
-            foreach ($columns as $header => $field) {
-                $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1) . $row;
-
-                if ($field === null) {
-                    // Auto number column
-                    $sheet->setCellValue($cell, $index + 1);
-                } elseif ($header === 'NAME') {
-                    $sheet->setCellValue($cell, $this->formatEmployeeName($item));
-                } elseif ($header === 'zz') {
-                    // Generate acronym for designation
-                    $sheet->setCellValue($cell, $this->generateAcronym($item->designation ?? ''));
-                } else {
-                    $sheet->setCellValue($cell, $item->$field ?? 0);
-                }
-
-                $colIndex++;
+        foreach (collect($payrollEmployees)->values() as $number => $item) {
+            foreach ($columns as $index => [, $value]) {
+                $sheet->setCellValue($letter($index) . $row, $value === null ? $number + 1 : $value($item));
             }
-
             $row++;
         }
 
         $lastDataRow = $row - 1;
         $totalsRow = $row;
-
         $sheet->setCellValue("A{$totalsRow}", 'TOTAL (' . count($payrollEmployees) . ' employees)');
-        $sheet->mergeCells("A{$totalsRow}:J{$totalsRow}");
-
-        $colIndex = 0;
-        foreach ($columns as $header => $field) {
-            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
-            if ($colIndex >= 10 && !in_array($header, $textColumns, true) && !in_array($header, $plainNumberColumns, true)) {
-                $sheet->setCellValue("{$colLetter}{$totalsRow}", "=SUM({$colLetter}{$dataStartRow}:{$colLetter}{$lastDataRow})");
+        $firstMoney = collect($columns)->search(fn($column) => $column[2] === 'money');
+        $sheet->mergeCells("A{$totalsRow}:" . $letter(max(0, $firstMoney - 1)) . $totalsRow);
+        foreach ($columns as $index => [, , $kind]) {
+            if ($kind === 'money' && $lastDataRow >= $dataStartRow) {
+                $col = $letter($index);
+                $sheet->setCellValue("{$col}{$totalsRow}", "=SUM({$col}{$dataStartRow}:{$col}{$lastDataRow})");
             }
-            $colIndex++;
         }
 
         // Header styling
@@ -196,27 +176,22 @@ class PayrollServices
             ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         // Per-column alignment, number format, and auto width
-        $colIndex = 0;
-        foreach ($columns as $header => $field) {
-            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
-            $columnRange = "{$colLetter}{$dataStartRow}:{$colLetter}{$lastDataRow}";
-
-            if (in_array($header, $textColumns, true)) {
-                $sheet->getStyle($columnRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
-            } elseif (in_array($header, $plainNumberColumns, true)) {
-                $sheet->getStyle($columnRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        foreach ($columns as $index => [, , $kind]) {
+            $col = $letter($index);
+            $range = "{$col}{$dataStartRow}:{$col}{$totalsRow}";
+            if ($kind === 'text') {
+                $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+            } elseif ($kind === 'plain') {
+                $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
             } else {
-                $sheet->getStyle($columnRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
-                $sheet->getStyle($columnRange)->getNumberFormat()->setFormatCode('#,##0.00');
+                $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle($range)->getNumberFormat()->setFormatCode('#,##0.00');
             }
-
-            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
-            $colIndex++;
+            $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
         $sheet->freezePane("A{$dataStartRow}");
 
-        // Save to export path
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $writer->save($exportPath);
     }
@@ -286,11 +261,16 @@ class PayrollServices
 
     public function getPayrollEmployee($payroll_id)
     {
+        // Position, office and grade as they were in the cutoff, when it has a snapshot.
         $list = DB::table('hris.payroll_employees as e')
             ->join('tdh_user.users as u', 'u.id', '=', 'e.employee_id')
-            ->join('tdh_user.designation as de', 'u.designation', '=', 'de.id')
-            ->join('tdh_user.division as d', 'd.id', '=', 'u.division')
-            ->join('tdh_user.section as s', 's.id', '=', 'u.section')
+            ->join('hris.payrolls as p', 'p.id', '=', 'e.payroll_id')
+            ->leftJoin('hris.cutoff_employee_snapshots as ces', function ($join) {
+                $join->on('ces.cutoff_id', '=', 'p.cutoff_id')->on('ces.employee_id', '=', 'e.employee_id');
+            })
+            ->leftJoin('tdh_user.designation as de', 'u.designation', '=', 'de.id')
+            ->leftJoin('tdh_user.division as d', 'd.id', '=', DB::raw('COALESCE(ces.division_id, u.division)'))
+            ->leftJoin('tdh_user.section as s', 's.id', '=', DB::raw('COALESCE(ces.section_id, u.section)'))
             ->leftJoin('hris.payroll_settings as ps', 'ps.userid', '=', 'e.employee_id')
             ->where('e.payroll_id', '=', $payroll_id)
             ->select(
@@ -301,9 +281,9 @@ class PayrollServices
                 'u.suffix',
                 'd.code as division',
                 's.code as section',
-                'de.description as designation',
-                'ps.salary_grade',
-                'ps.step'
+                DB::raw('COALESCE(ces.position, de.description) AS designation'),
+                DB::raw('COALESCE(ces.salary_grade, ps.salary_grade) AS salary_grade'),
+                DB::raw('COALESCE(ces.salary_step, ps.step) AS step')
             )
             ->get();
 
@@ -335,13 +315,16 @@ class PayrollServices
         return $list;
     }
 
-    private function computeWithholdingTax($annualGross, $purpose)
+    /** @param \Illuminate\Support\Collection|null $snapshotRules tax rules saved with the cutoff; null reads the live table */
+    private function computeWithholdingTax($annualGross, $purpose, $snapshotRules = null)
     {
-        $rules = DB::table('hris.payroll_tax_rules')
-            ->where('is_active', 1)
-            ->where('purpose', $purpose)
-            ->orderBy('min_annual')
-            ->get();
+        $rules = $snapshotRules !== null
+            ? $snapshotRules->where('purpose', $purpose)->sortBy(fn($rule) => (float) $rule->min_annual)->values()
+            : DB::table('hris.payroll_tax_rules')
+                ->where('is_active', 1)
+                ->where('purpose', $purpose)
+                ->orderBy('min_annual')
+                ->get();
 
         if ($rules->isEmpty()) {
             return 0;
@@ -638,45 +621,197 @@ class PayrollServices
         return $start->diffInDays($end) + 1;
     }
 
-    public function savePayrollEmployee($payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays, $totalWorkingDays)
+    /**
+     * Working days in a month for the daily rate (CSC: daily rate = monthly
+     * salary / 22). Fixed so a half-month or partial cutoff doesn't change the
+     * value of one day (audit H1).
+     */
+    public const WORKING_DAYS_PER_MONTH = 22;
+
+    /** Used only if no default computation exists in Pay Computations. */
+    public const STANDARD_HOURS_PER_DAY = 8;
+
+    /** The default computation from Pay Computations settings. */
+    public function defaultComputation(): object
+    {
+        return DB::table('hris.pay_computations')->where('is_default', 1)->first()
+            ?? (object) [
+                'id' => null,
+                'name' => null,
+                'working_days_per_month' => self::WORKING_DAYS_PER_MONTH,
+                'standard_hours_per_day' => self::STANDARD_HOURS_PER_DAY,
+            ];
+    }
+
+    /**
+     * Daily Base = basic / working days; Hourly = Daily Base / standard hours;
+     * Minute = Hourly / 60. Within a computation these are the same for every
+     * schedule; only the scheduled daily rate (Hourly x that day's hours) differs.
+     * Leaving the divisors out uses the default computation.
+     *
+     * @return array{daily: float, hourly: float, minute: float}
+     */
+    public function payRates(float $basicSalary, ?float $workingDays = null, ?float $standardHours = null): array
+    {
+        if (!$workingDays || !$standardHours) {
+            $default = $this->defaultComputation();
+            $workingDays = $workingDays ?: (float) $default->working_days_per_month;
+            $standardHours = $standardHours ?: (float) $default->standard_hours_per_day;
+        }
+        $daily = $basicSalary / $workingDays;
+        $hourly = $daily / $standardHours;
+
+        return ['daily' => $daily, 'hourly' => $hourly, 'minute' => $hourly / 60];
+    }
+
+    /**
+     * What to charge for absences, LWOP and late/undertime/pass-slip minutes. Each
+     * day counts at its own scheduled length and its own shift's rate. The saved
+     * day rows are used when they agree with the totals; otherwise (older cutoffs)
+     * a day is a standard day at $minuteRate.
+     *
+     * @return array{absent_minutes: int, lwop_minutes: int, absent_amount: float, lwop_amount: float, other_amount: float}
+     */
+    public function scheduledCharges($cutoffId, int $employeeId, float $absentDays, float $lwopDays, int $otherMinutes, float $minuteRate, float $basicSalary): array
+    {
+        $standard = (int) round((float) $this->defaultComputation()->standard_hours_per_day * 60);
+        $lwopDays = max(0.0, $lwopDays);
+        $absentMinutes = (int) round($absentDays * $standard);
+        $lwopMinutes = (int) round($lwopDays * $standard);
+        $charges = [
+            'absent_minutes' => $absentMinutes,
+            'lwop_minutes' => $lwopMinutes,
+            'absent_amount' => $absentMinutes * $minuteRate,
+            'lwop_amount' => $lwopMinutes * $minuteRate,
+            'other_amount' => $otherMinutes * $minuteRate,
+        ];
+        if (!$cutoffId || ($absentDays <= 0 && $lwopDays <= 0 && $otherMinutes <= 0)) {
+            return $charges;
+        }
+
+        $days = DB::table('hris.cutoff_summary_days')
+            ->where('cutoff_id', $cutoffId)
+            ->where('employee_id', $employeeId)
+            ->where(function ($query) {
+                $query->where('is_absent', 1)->orWhere('lwop_fraction', '>', 0)
+                    ->orWhere('late_minutes', '>', 0)->orWhere('undertime_minutes', '>', 0)->orWhere('pass_slip_minutes', '>', 0);
+            })
+            ->get(['is_absent', 'lwop_fraction', 'required_minutes', 'late_minutes', 'undertime_minutes', 'pass_slip_minutes', 'minute_rate', 'pay_computation_id']);
+
+        $computations = DB::table('hris.pay_computations')->get()->keyBy('id');
+        $rateOf = function ($day) use ($computations, $minuteRate, $basicSalary) {
+            if ($day->minute_rate !== null) {
+                return (float) $day->minute_rate;
+            }
+            $computation = $computations->get($day->pay_computation_id);
+
+            return $computation
+                ? $this->payRates($basicSalary, (float) $computation->working_days_per_month, (float) $computation->standard_hours_per_day)['minute']
+                : $minuteRate;
+        };
+        $minutesOf = fn($day) => (int) $day->required_minutes > 0 ? (int) $day->required_minutes : $standard;
+
+        $absent = $days->where('is_absent', 1);
+        if ($absent->count() === (int) round($absentDays)) {
+            $charges['absent_minutes'] = (int) $absent->sum($minutesOf);
+            $charges['absent_amount'] = $absent->sum(fn($day) => $minutesOf($day) * $rateOf($day));
+        }
+
+        $lwop = $days->filter(fn($day) => (float) $day->lwop_fraction > 0);
+        if (abs($lwop->sum(fn($day) => (float) $day->lwop_fraction) - $lwopDays) < 0.0005) {
+            $minutes = fn($day) => round((float) $day->lwop_fraction * $minutesOf($day));
+            $charges['lwop_minutes'] = (int) $lwop->sum($minutes);
+            $charges['lwop_amount'] = $lwop->sum(fn($day) => $minutes($day) * $rateOf($day));
+        }
+
+        $other = fn($day) => (int) $day->late_minutes + (int) $day->undertime_minutes + (int) $day->pass_slip_minutes;
+        if ((int) $days->sum($other) === $otherMinutes) {
+            $charges['other_amount'] = $days->sum(fn($day) => $other($day) * $rateOf($day));
+        }
+
+        return $charges;
+    }
+
+    /**
+     * $totalWorkingDays is no longer used for the rate (kept for callers).
+     * $lwopDays: approved LWOP days in the cutoff (partial days as fractions) -
+     * LWOP dates are not counted in days_absent, so they're deducted here
+     * (audit C1). Late/undertime is charged to salary only (client decision
+     * 2026-11-11).
+     */
+    public function savePayrollEmployee($payroll_id, $employee, $totalLateUndertimeMinutes, $totalAbsentDays, $totalWorkingDays, $lwopDays = 0.0)
     {
         $period = $this->getPayrollPeriod($payroll_id);
         $periodStart = $period->cutoff_start_date ?? $period->start_date ?? null;
         $periodEnd = $period->cutoff_end_date ?? $period->end_date ?? null;
 
-        $salary = DB::table('hris.payroll_settings')
-            ->where('userid', '=', $employee["userid"])
-            ->first();
+        // A cutoff with a snapshot supplies the salary, components, tax rules and
+        // pay divisor as they were; older cutoffs read the live tables.
+        $snapshot = $this->payrollSnapshot($period->cutoff_id ?? null, (int) $employee['userid']);
+
+        if ($snapshot) {
+            $basic_salary = (float) $snapshot['employee']->monthly_salary;
+            $divisor = $snapshot['divisor'];
+            $division = (int) ($snapshot['employee']->division_id ?? 0);
+            $section = (int) ($snapshot['employee']->section_id ?? 0);
+        } else {
+            $salary = DB::table('hris.payroll_settings')
+                ->where('userid', '=', $employee["userid"])
+                ->first();
+            $office = DB::table('tdh_user.users')->where('id', $employee['userid'])->first(['division', 'section']);
+            $basic_salary = $salary->basic_salary ?? 0.00;
+            $divisor = null; // the default computation
+            $division = (int) ($office->division ?? 0);
+            $section = (int) ($office->section ?? 0);
+        }
 
         // ---- Basic Salary & Rates ----
-        $basic_salary = $salary->basic_salary ?? 0.00;
-        $totalWorkingDays = max((int) $totalWorkingDays, 1);
-        $daily_rate = $basic_salary / $totalWorkingDays;
-        $hourly_rate = $daily_rate / 8;
-        $minute_rate = $hourly_rate / 60;
+        // The rates saved with the cutoff, when it has them.
+        $minute_rate = ($snapshot && $snapshot['employee']->minute_rate !== null)
+            ? (float) $snapshot['employee']->minute_rate
+            : $this->payRates((float) $basic_salary, $divisor ? (float) $divisor : null)['minute'];
+        $charges = $this->scheduledCharges(
+            $period->cutoff_id ?? null,
+            (int) $employee['userid'],
+            (float) $totalAbsentDays,
+            (float) $lwopDays,
+            (int) $totalLateUndertimeMinutes,
+            $minute_rate,
+            (float) $basic_salary
+        );
 
-        $lateUndertimeDeduction = $totalLateUndertimeMinutes * $minute_rate;
-        $absentDeduction = $totalAbsentDays * $daily_rate;
-        $totalTardinessDeductions = $lateUndertimeDeduction + $absentDeduction;
+        $lateUndertimeDeduction = $charges['other_amount'];
+        $absentDeduction = $charges['absent_amount'];
+        $lwopDeduction = $charges['lwop_amount'];
+        // A month with more than 22 work days could otherwise charge more than the salary.
+        $totalTardinessDeductions = min((float) $basic_salary, $lateUndertimeDeduction + $absentDeduction + $lwopDeduction);
 
-        $dynamicComponents = $this->getEmployeeDynamicComponents($employee["userid"], $periodStart, $periodEnd, (float) $basic_salary);
+        $dynamicComponents = $snapshot
+            ? $snapshot['components']
+            : $this->getEmployeeDynamicComponents($employee["userid"], $periodStart, $periodEnd, (float) $basic_salary);
         $computedComponents = $this->getComputedComponents($employee, $totalTardinessDeductions);
         $allComponents = $dynamicComponents->merge($computedComponents);
         $dynamicEarnings = $allComponents->where('type', 'earning')->sum('amount');
         $dynamicDeductions = $allComponents->where('type', 'deduction')->sum('amount');
 
-        // ---- Gross Pay (before tardiness deduction) ----
-        $gross_pay = ($basic_salary + $dynamicEarnings);
+        // ---- Gross Pay: every earning, taxable or not, less tardiness ----
+        $gross_pay = ($basic_salary + $dynamicEarnings) - $totalTardinessDeductions;
         $taxableEarnings = $allComponents
             ->where('type', 'earning')
             ->where('taxable', true)
             ->sum('amount');
-        $taxableGrossPay = ($basic_salary + $taxableEarnings) - $totalTardinessDeductions;
+        // A deduction marked "Before tax" on Payroll Components (the taxable flag)
+        // comes off the income that withholding tax is computed on.
+        $beforeTaxDeductions = $allComponents
+            ->where('type', 'deduction')
+            ->where('taxable', true)
+            ->sum('amount');
+        $taxableGrossPay = ($basic_salary + $taxableEarnings) - $totalTardinessDeductions - $beforeTaxDeductions;
 
         // ---- Withholding Tax ----
         $taxPurpose = $period->tax_purpose ?? 'Payroll Monthly Salary';
         $annualGross = $taxableGrossPay * 12;
-        $withholding_tax = $this->computeWithholdingTax($annualGross, $taxPurpose) / 12;
+        $withholding_tax = $this->computeWithholdingTax($annualGross, $taxPurpose, $snapshot['tax_rules'] ?? null) / 12;
 
         // ---- Final Deductions ----
         $withholdingComponent = (object) [
@@ -692,19 +827,20 @@ class PayrollServices
         $total_deductions = $dynamicDeductions;
 
         // ---- Net Pay ----
-        $net_pay = $taxableGrossPay - $total_deductions;
-        $first_half_10th = $net_pay / 2;
-        $second_half_25th = $net_pay / 2;
+        // Paid in two halves; the second takes any odd centavo so they add up exactly.
+        $net_pay = round($gross_pay - $total_deductions, 2);
+        $first_half_10th = round($net_pay / 2, 2);
+        $second_half_25th = round($net_pay - $first_half_10th, 2);
         // ---- Insert ----
         $payrollEmployeeId = DB::table('hris.payroll_employees')->insertGetId([
             'payroll_id' => $payroll_id,
             'employee_id' => $employee['userid'],
-            'division' => 1,
-            'section' => 2,
+            'division' => $division,
+            'section' => $section,
             'basic_salary' => $basic_salary,
             'other_earnings' => $dynamicEarnings,
             'late_absent' => $totalTardinessDeductions,
-            'gross_pay' => $taxableGrossPay,
+            'gross_pay' => $gross_pay,
             'other_deductions' => $dynamicDeductions,
 
             // Split pay
@@ -724,6 +860,33 @@ class PayrollServices
         return $payrollEmployeeId;
     }
 
+    /** The saved pay inputs of one employee in a cutoff, or null if the cutoff has no snapshot for them. */
+    private function payrollSnapshot($cutoffId, int $employeeId): ?array
+    {
+        if (!$cutoffId) {
+            return null;
+        }
+        $employee = DB::table('hris.cutoff_employee_snapshots')
+            ->where('cutoff_id', $cutoffId)->where('employee_id', $employeeId)->first();
+        if (!$employee) {
+            return null;
+        }
+
+        $configs = DB::table('hris.cutoff_config_snapshots')
+            ->where('cutoff_id', $cutoffId)->whereIn('config_key', ['tax_rules', 'pay_divisor'])
+            ->pluck('payload', 'config_key');
+        $divisor = json_decode($configs['pay_divisor'] ?? '{}', true);
+
+        return [
+            'employee' => $employee,
+            'divisor' => (int) ($divisor['working_days_per_month'] ?? self::WORKING_DAYS_PER_MONTH),
+            'tax_rules' => collect(json_decode($configs['tax_rules'] ?? '[]')),
+            'components' => DB::table('hris.cutoff_payroll_components')
+                ->where('cutoff_id', $cutoffId)->where('employee_id', $employeeId)
+                ->get(['payroll_component_id', 'code', 'name', 'type', 'taxable', 'amount']),
+        ];
+    }
+
     public function deletePayrollEmployees($payroll_id)
     {
         return DB::table('hris.payroll_employees')
@@ -738,7 +901,7 @@ class PayrollServices
             ->count();
     }
 
-    private function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd, float $basicSalary)
+    public function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd, float $basicSalary)
     {
         $globalRows = DB::table('hris.payroll_components as pc')
             ->leftJoin('hris.employee_payroll_components as epc', function ($join) use ($userId) {
@@ -807,9 +970,18 @@ class PayrollServices
                 'pc.type',
                 'pc.taxable',
                 'epc.amount_override',
-                'epc.amount'
+                'epc.amount',
+                'epc.effective_from',
+                'epc.effective_to'
             )
             ->get()
+            ->filter(function ($row) use ($periodStart, $periodEnd) {
+                if ($periodStart && $row->effective_to && $row->effective_to < $periodStart) {
+                    return false;
+                }
+
+                return !($periodEnd && $row->effective_from && $row->effective_from > $periodEnd);
+            })
             ->map(function ($row) {
                 $amount = $row->amount_override !== null ? $row->amount_override : $row->amount;
                 return (object) [
@@ -1098,14 +1270,22 @@ class PayrollServices
 
     private function persistCutoffSummaryDays($cutoffId, $employeeId, $startDate, $endDate): void
     {
-        $daily = app(DTRServices::class)->getDailyBreakdown($employeeId, $startDate, $endDate);
+        $dtrService = app(DTRServices::class);
+        $daily = $dtrService->getDailyBreakdown($employeeId, $startDate, $endDate);
+        $lwop = $dtrService->getLwopDaysByRange($employeeId, $startDate, $endDate);
+        $logIds = $dtrService->getLogIdsByDate($employeeId, $startDate, $endDate);
+        $default = $this->defaultComputation();
+        $standardMinutes = (int) round((float) $default->standard_hours_per_day * 60);
+        $shiftComputations = DB::table('hris.schedule_master_lists')->whereNotNull('pay_computation_id')->pluck('pay_computation_id', 'code');
 
         DB::table('hris.cutoff_summary_days')
             ->where('cutoff_id', $cutoffId)
             ->where('employee_id', $employeeId)
             ->delete();
 
-        $rows = $daily->map(function ($day, $date) use ($cutoffId, $employeeId) {
+        $rows = $daily->map(function ($day, $date) use ($cutoffId, $employeeId, $lwop, $logIds, $default, $standardMinutes, $shiftComputations) {
+            $lwopFraction = (float) ($lwop[$date]['days'] ?? 0);
+
             return [
                 'cutoff_id' => $cutoffId,
                 'employee_id' => $employeeId,
@@ -1115,6 +1295,20 @@ class PayrollServices
                 'is_absent' => $day['is_absent'] ? 1 : 0,
                 'is_holiday' => $day['is_holiday'] ? 1 : 0,
                 'exemption_reason' => $day['exemption_reason'],
+                'attendance_status' => $this->attendanceStatus($day, $lwopFraction),
+                'time_in' => $day['first_in'] ?? null,
+                'time_out' => $day['last_out'] ?? null,
+                'rendered_minutes' => $day['worked_minutes'] ?? null,
+                // An unplotted work day has no shift to measure, so it is a standard day.
+                'required_minutes' => ($day['required_minutes'] ?? 0)
+                    ?: ((!empty($day['is_expected_work_date']) && empty($day['schedule_code'])) ? $standardMinutes : 0),
+                'pay_computation_id' => $shiftComputations[$day['schedule_code'] ?? ''] ?? $default->id,
+                'schedule_code' => $day['schedule_code'] ?? null,
+                'pass_slip_minutes' => $day['pass_slip_minutes'] ?? 0,
+                'is_paid' => ($day['is_absent'] || $lwopFraction >= 1.0) ? 0 : 1,
+                'is_lwop' => $lwopFraction > 0 ? 1 : 0,
+                'lwop_fraction' => $lwopFraction,
+                'source_log_ids' => $logIds[$date] ?? null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -1123,6 +1317,65 @@ class PayrollServices
         if (!empty($rows)) {
             DB::table('hris.cutoff_summary_days')->insert($rows);
         }
+    }
+
+    private function attendanceStatus(array $day, float $lwopFraction): string
+    {
+        if ($lwopFraction >= 1.0) {
+            return 'lwop';
+        }
+        if ($lwopFraction > 0) {
+            return 'partial_lwop';
+        }
+        if ($day['is_absent']) {
+            return 'absent';
+        }
+        if (!empty($day['exemption_reason'])) {
+            return $day['exemption_reason'];
+        }
+
+        return empty($day['is_expected_work_date']) ? 'rest_day' : 'present';
+    }
+
+    /**
+     * Records a salary change in employee_salary_history, effective on $effectiveDate
+     * (today when not given). Nothing is written if the pay on that date is unchanged.
+     */
+    public function recordSalaryChange(int $userId, int $grade, int $step, float $basicSalary, ?string $effectiveDate, ?int $changedBy): void
+    {
+        $date = $effectiveDate ? Carbon::parse($effectiveDate)->toDateString() : now()->toDateString();
+        $table = 'hris.employee_salary_history';
+        $history = DB::table($table)->where('userid', $userId)->lockForUpdate()->get();
+
+        $previous = $history->filter(fn($h) => !$h->effective_from || $h->effective_from <= $date)
+            ->sortBy(fn($h) => (string) $h->effective_from)->last();
+        if ($previous && (int) $previous->salary_grade === $grade && (int) $previous->step === $step
+            && abs((float) $previous->basic_salary - $basicSalary) < 0.005) {
+            return;
+        }
+
+        $values = ['salary_grade' => $grade, 'step' => $step, 'basic_salary' => $basicSalary, 'changed_by' => $changedBy, 'updated_at' => now()];
+        if ($previous && $previous->effective_from === $date) {
+            DB::table($table)->where('id', $previous->id)->update($values);
+            return;
+        }
+
+        $next = $history->filter(fn($h) => $h->effective_from && $h->effective_from > $date)
+            ->sortBy(fn($h) => (string) $h->effective_from)->first();
+        if ($previous) {
+            DB::table($table)->where('id', $previous->id)->update([
+                'effective_to' => Carbon::parse($date)->subDay()->toDateString(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        DB::table($table)->insert($values + [
+            'userid' => $userId,
+            'effective_from' => $date,
+            'effective_to' => $next ? Carbon::parse($next->effective_from)->subDay()->toDateString() : null,
+            'source' => 'payroll_settings',
+            'created_at' => now(),
+        ]);
     }
 
     public function generateCutoffSummary($employeeId, $startDate, $endDate, $title = null, $generatedBy = null)

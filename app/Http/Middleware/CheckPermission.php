@@ -19,7 +19,13 @@ class CheckPermission
                 : redirect()->route('login');
         }
 
-        if (!$this->permissions->can(Auth::id(), $code)) {
+        // "a|b" passes with either permission.
+        $allowed = false;
+        foreach (explode('|', $code) as $candidate) {
+            $allowed = $allowed || $this->permissions->can(Auth::id(), $candidate);
+        }
+
+        if (!$allowed) {
             return $request->expectsJson()
                 ? response()->json(['error' => 'Unauthorized'], 403)
                 : redirect()->route('profile')->with('error', 'You do not have permission to access that page.');

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('employee_payroll_components', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('payroll_component_id')->index();
             $table->integer('userid')->index();

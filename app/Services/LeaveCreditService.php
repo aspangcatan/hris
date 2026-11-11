@@ -21,7 +21,7 @@ class LeaveCreditService
      *        number. Otherwise (cutoffs generated before the column existed) the older
      *        present / work days x 30 scaling is used, read as 30 - present LWOP days.
      */
-    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month = null, $year = null, $lwopDays = null)
+    public function computeEarnedCredits($totalPresent, $totalLateUndertime, $totalWorkingDays = null, $month = null, $year = null, $lwopDays = null, ?array $pointsTable = null)
     {
         try {
             if ($lwopDays !== null) {
@@ -42,7 +42,7 @@ class LeaveCreditService
                 $lookupLwop = (float) (30 - $lookupPresent);
             }
 
-            $monthly_points_earned = $this->earnedPointsForLwop($lookupLwop);
+            $monthly_points_earned = $this->earnedPointsForLwop($lookupLwop, $pointsTable);
             $lateUndertimeDeductions = $this->minuteConversionService->computeDeduction($totalLateUndertime);
 
             return [
@@ -63,12 +63,17 @@ class LeaveCreditService
      * days on leave without pay - 0 = 1.250, 0.5 = 1.229 ... 30 = 0.000. A value
      * between two rows (e.g. 0.4 day from 4 hours of a 10-hour shift) is
      * interpolated between them; 30 or more days earn the 30-day row (0.000).
+     *
+     * @param array|null $pointsTable rows of ['lwop' =>, 'points' =>] saved with a cutoff
+     *        snapshot; when null the live table is read (cutoffs without a snapshot).
      */
-    public function earnedPointsForLwop(float $lwopDays): float
+    public function earnedPointsForLwop(float $lwopDays, ?array $pointsTable = null): float
     {
-        $rows = DB::table('monthly_earned_points')->orderBy('lwop')->get(['lwop', 'points'])
-            ->map(fn($r) => [(float) $r->lwop, (float) $r->points])
-            ->all();
+        $rows = $pointsTable !== null
+            ? array_map(fn($r) => [(float) $r['lwop'], (float) $r['points']], $pointsTable)
+            : DB::table('monthly_earned_points')->orderBy('lwop')->get(['lwop', 'points'])
+                ->map(fn($r) => [(float) $r->lwop, (float) $r->points])
+                ->all();
         if (empty($rows)) {
             return 0.0;
         }
@@ -118,8 +123,13 @@ class LeaveCreditService
      * Returns how many leave types were actually credited (0 = the month was
      * already credited for this employee, nothing changed).
      */
-    public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes, $earnedPoints, $deductionPoints): int
+    /**
+     * $meta (optional): ['cutoff_id' => int, 'lwop_days' => float, 'posted_by' => int],
+     * stored on each credit_earned_logs row.
+     */
+    public function updateEarnedCredits($userid, $year, $month, $totalPresent, $totalLateUndertimeMinutes, $earnedPoints, $deductionPoints, array $meta = []): int
     {
+        $logMeta = array_intersect_key($meta, array_flip(['cutoff_id', 'lwop_days', 'posted_by']));
         $leaveTypes = DB::table('hris.leave_types')
             ->where('status', 'active')
             ->where('monthly_earned', 1)
@@ -135,7 +145,7 @@ class LeaveCreditService
             $typeDeduction = (int) ($leaveType->deduct_tardiness ?? 0) === 1 ? $deductionPoints : 0;
             $creditedPoints = round($earnedPoints - $typeDeduction, 3);
 
-            DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent, &$posted) {
+            DB::transaction(function () use ($userid, $leaveType, $creditedPoints, $date_updated, $month, $year, $totalLateUndertimeMinutes, $typeDeduction, $totalPresent, $logMeta, &$posted) {
                 // Lock the employee's credit rows (the same rows a leave filing locks), then check
                 // "already processed this month?" under that lock - so a double-clicked Apply
                 // cannot credit the month twice.
@@ -157,7 +167,7 @@ class LeaveCreditService
                 $credit = DB::table('hris.leave_credits')
                     ->where('user_id', $userid)
                     ->where('leave_id', $leaveType->id)
-                    ->first(['id', 'last_updated_month']);
+                    ->first(['id', 'last_updated_month', 'based_credit', 'used_credit']);
 
                 if ($credit && $credit->last_updated_month === $date_updated) {
                     return; // older postings made before every month was logged
@@ -178,7 +188,7 @@ class LeaveCreditService
                     ]);
                 }
 
-                DB::table('credit_earned_logs')->insert([
+                $logId = DB::table('credit_earned_logs')->insertGetId(array_merge([
                     'user_id' => $userid,
                     'month' => $month,
                     'year' => $year,
@@ -189,6 +199,26 @@ class LeaveCreditService
                     'total_present' => $totalPresent,
                     'created_at' => now(),
                     'updated_at' => now(),
+                ], $logMeta));
+
+                // The permanent record of this posting; leave_credits must reconcile against it.
+                $beginning = $credit ? round((float) $credit->based_credit - (float) $credit->used_credit, 3) : 0.0;
+                DB::table('hris.leave_credit_ledger')->insert([
+                    'employee_id' => $userid,
+                    'leave_type_id' => $leaveType->id,
+                    'cutoff_id' => $logMeta['cutoff_id'] ?? null,
+                    'transaction_type' => 'earned',
+                    'source_type' => LeaveLedgerService::SOURCE_EARNED_POSTING,
+                    'source_id' => $logId,
+                    'beginning_balance' => $beginning,
+                    'earned_credits' => $creditedPoints,
+                    'ending_balance' => round($beginning + $creditedPoints, 3),
+                    'computation_reference' => isset($logMeta['lwop_days']) ? 'Table III: ' . (float) $logMeta['lwop_days'] . ' LWOP day(s)' : null,
+                    'effective_date' => Carbon::create($year, $month, 1)->endOfMonth()->toDateString(),
+                    'transaction_date' => now(),
+                    'finalized_by' => $logMeta['posted_by'] ?? null,
+                    'finalized_at' => now(),
+                    'created_at' => now(),
                 ]);
 
                 $posted++;

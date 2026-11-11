@@ -428,6 +428,7 @@ class LeaveApplicationService
             // Insert dates with leave_type_id, status, and per-date charges. For LWOP every
             // charge is 0, so the downstream credit-restore logic is a natural no-op.
             $this->insertDateRows($appId, $dates, $plan['rows']);
+            $this->recordCharges($appId);
 
             // Approval chain - a head's own step goes to the head above (see OrgHierarchyService)
             DB::table('leave_application_approvals')->insert(
@@ -474,11 +475,10 @@ class LeaveApplicationService
             // Credits this application currently holds, per leave type. They are given back
             // before the new dates are deducted. For LWOP every credits_deducted is 0.
             // (Includes any part of a sick leave date that was charged to VL.)
-            $oldCreditsByType = LeaveDateCharges::byType(
-                DB::table('hris.leave_date_applied')
-                    ->where('leave_application_id', $appId)
-                    ->get(LeaveDateCharges::COLUMNS)
-            );
+            $oldDates = DB::table('hris.leave_date_applied')
+                ->where('leave_application_id', $appId)
+                ->get(LeaveDateCharges::COLUMNS);
+            $oldCreditsByType = LeaveDateCharges::byType($oldDates);
 
             // Validate everything BEFORE writing anything, so a rejected edit leaves the
             // application and its credits exactly as they were (even on a non-transactional engine).
@@ -512,6 +512,7 @@ class LeaveApplicationService
                     ->where('leave_id', $typeId)
                     ->increment('based_credit', $amount);
             }
+            app(LeaveLedgerService::class)->recordLeaveDates((int) Auth::id(), $oldDates, LeaveLedgerService::RESTORED);
 
             DB::table('leave_details')->where('leave_application_id', $appId)->delete();
             DB::table('leave_date_applied')->where('leave_application_id', $appId)->delete();
@@ -537,6 +538,7 @@ class LeaveApplicationService
 
             // Insert new dates
             $this->insertDateRows($appId, $dates, $plan['rows']);
+            $this->recordCharges($appId);
 
             DB::table('leave_applications')->where('id', $appId)->update([
                 'commutation'         => $data['commutation'] ?? null,
@@ -686,6 +688,16 @@ class LeaveApplicationService
                 ->where('leave_id', $typeId)
                 ->decrement('based_credit', $amount);
         }
+    }
+
+    /** Ledger entries for the charges just deducted, one per leave date. */
+    private function recordCharges(int $appId): void
+    {
+        app(LeaveLedgerService::class)->recordLeaveDates(
+            (int) Auth::id(),
+            DB::table('leave_date_applied')->where('leave_application_id', $appId)->get(LeaveDateCharges::COLUMNS),
+            LeaveLedgerService::CONSUMED
+        );
     }
 
     private function insertDateRows(int $appId, array $dates, array $planRows): void

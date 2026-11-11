@@ -69,6 +69,7 @@ class PayrollComponentAdjustmentTest extends TestCase
             ->delete();
 
         $id = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'status' => 'finalized', // payroll reads finalized cutoffs only
             'title'        => $title,
             'period_start' => $start,
             'period_end'   => $end,

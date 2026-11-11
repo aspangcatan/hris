@@ -81,11 +81,12 @@
     $amountFor = fn ($employee, $code) => (float) (($componentAmounts->get($employee->id) ?? collect())[$code] ?? 0);
 
     $totalBasic = $employees->sum('basic_salary');
+    $totalLateAbsent = $employees->sum('late_absent');
     $totalWithholding = $employees->sum('withholding_tax');
     $totalNetPay = $employees->sum('net_pay');
 @endphp
 
-<img class="letterhead" src="{{ url('img/letter_head_banner.png') }}"/>
+@if(!empty($letterhead))<img class="letterhead" src="{{ $letterhead }}"/>@endif
 <div class="summary-title">PAYROLL SUMMARY — {{ strtoupper($payroll->title ?? '') }}</div>
 <div class="summary-period">
     {{ date('M d, Y', strtotime($payroll->start_date)) }} to {{ date('M d, Y', strtotime($payroll->end_date)) }}
@@ -97,8 +98,9 @@
         <th rowspan="2">Name</th>
         <th rowspan="2">Designation</th>
         <th rowspan="2">Basic Pay</th>
-        <th class="col-group-earnings" colspan="{{ $earningComponents->count() }}">Earnings</th>
-        <th class="col-group-deductions" colspan="{{ $deductionComponents->count() }}">Deductions</th>
+        <th rowspan="2">Late / Absent / LWOP</th>
+        @if($earningComponents->count())<th class="col-group-earnings" colspan="{{ $earningComponents->count() }}">Earnings</th>@endif
+        @if($deductionComponents->count())<th class="col-group-deductions" colspan="{{ $deductionComponents->count() }}">Deductions</th>@endif
         <th rowspan="2">Withholding<br>Tax</th>
         <th rowspan="2">Net Pay</th>
     </tr>
@@ -125,6 +127,7 @@
             <td class="col-name">{{ $employeeName }}</td>
             <td class="col-name">{{ strtoupper($employee->designation ?? '') }}</td>
             <td class="amount">{{ $fmt($employee->basic_salary ?? 0) }}</td>
+            <td class="amount">{{ $fmt($employee->late_absent ?? 0) }}</td>
             @foreach($earningComponents as $component)
                 <td class="amount">{{ $fmt($amountFor($employee, $component->code)) }}</td>
             @endforeach
@@ -138,6 +141,7 @@
     <tr class="totals-row">
         <td colspan="2">TOTAL ({{ $employees->count() }} employees)</td>
         <td class="amount">{{ $fmt($totalBasic) }}</td>
+        <td class="amount">{{ $fmt($totalLateAbsent) }}</td>
         @foreach($earningComponents as $component)
             <td class="amount">{{ $fmt($employees->sum(fn ($employee) => $amountFor($employee, $component->code))) }}</td>
         @endforeach

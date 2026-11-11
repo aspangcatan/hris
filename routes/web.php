@@ -286,17 +286,36 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/payroll-assignatories/search-users', [\App\Http\Controllers\PayrollController::class, 'searchPayrollAssignatoryUsers'])->name('searchPayrollAssignatoryUsers')->middleware('permission:payroll.settings');
     Route::get('/cutoff-summaries/manage', function () {
         return view('settings.cutoff_summaries');
-    })->name('cutoff_summaries')->middleware('permission:payroll.settings');
-    Route::get('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaries'])->name('getCutoffSummaries')->middleware('permission:payroll.settings');
+    })->name('cutoff_summaries')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
+    Route::get('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaries'])->name('getCutoffSummaries')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
     Route::post('/cutoff-summaries', [\App\Http\Controllers\PayrollController::class, 'createCutoffSummaries'])->name('createCutoffSummaries')->middleware('permission:payroll.settings');
-    Route::get('/cutoff-periods', [\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
-    Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview')->middleware('permission:payroll.settings');
+    Route::get('/cutoff-summaries/{cutoff_id}/edit', [\App\Http\Controllers\PayrollController::class, 'editCutoffSummaries'])->name('editCutoffSummaries')->middleware('permission:payroll.settings');
+    Route::put('/cutoff-summaries/{cutoff_id}', [\App\Http\Controllers\PayrollController::class, 'updateCutoffSummaries'])->name('updateCutoffSummaries')->middleware('permission:payroll.settings');
+    Route::get('/cutoff-summaries/{cutoff_id}/status',[\App\Http\Controllers\CutoffLifecycleController::class, 'status'])->name('cutoff_lifecycle.status')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
+    Route::post('/cutoff-summaries/{cutoff_id}/finalize', [\App\Http\Controllers\CutoffLifecycleController::class, 'finalize'])->name('cutoff_lifecycle.finalize')->middleware('permission:cutoff.finalize');
+    Route::post('/cutoff-summaries/{cutoff_id}/reopen', [\App\Http\Controllers\CutoffLifecycleController::class, 'reopen'])->name('cutoff_lifecycle.reopen')->middleware('permission:cutoff.reopen');
+    Route::get('/cutoff-summaries/{cutoff_id}/employees/{employee_id}/snapshot', [\App\Http\Controllers\CutoffLifecycleController::class, 'employeeSnapshot'])->name('cutoff_lifecycle.employee')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
+    Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshot'])->name('cutoff_lifecycle.generate')->middleware('permission:payroll.settings');
+    Route::post('/cutoff-summaries/{cutoff_id}/return-to-draft', [\App\Http\Controllers\CutoffLifecycleController::class, 'returnToDraft'])->name('cutoff_lifecycle.return')->middleware('permission:payroll.settings');
+    Route::get('/cutoff-periods',[\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
+    Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
     Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
-    Route::get('/cutoff-leave-credits-preview', [\App\Http\Controllers\CreditController::class, 'previewCutoffLeaveCredits'])->name('previewCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
-    Route::post('/cutoff-leave-credits-apply', [\App\Http\Controllers\CreditController::class, 'applyCutoffLeaveCredits'])->name('applyCutoffLeaveCredits')->middleware('permission:leave.manage_credits');
-    // Leave Credits Earned page (sidebar): pick a generated cutoff, compute, post.
+    // Pay Computations (sidebar): the named rate formulas, set per shift.
+    Route::get('/pay-computations', [\App\Http\Controllers\PayComputationController::class, 'page'])->name('pay_computations')->middleware('permission:payroll.settings');
+    Route::get('/pay-computations/list', [\App\Http\Controllers\PayComputationController::class, 'index'])->name('pay_computations.list')->middleware('permission:payroll.settings');
+    Route::post('/pay-computations', [\App\Http\Controllers\PayComputationController::class, 'save'])->name('pay_computations.save')->middleware('permission:payroll.settings');
+    Route::post('/pay-computations/assign-shift', [\App\Http\Controllers\PayComputationController::class, 'assignShift'])->name('pay_computations.assign')->middleware('permission:payroll.settings');
+    Route::delete('/pay-computations/{id}', [\App\Http\Controllers\PayComputationController::class, 'destroy'])->name('pay_computations.delete')->middleware('permission:payroll.settings');
+    // Opening Leave Balances (sidebar): the starting point of the leave ledger.
+    Route::get('/leave-opening-balances', [\App\Http\Controllers\LeaveOpeningBalanceController::class, 'page'])->name('leave_opening_balances')->middleware('permission:leave.certify_opening');
+    Route::get('/leave-opening-balances/preview', [\App\Http\Controllers\LeaveOpeningBalanceController::class, 'preview'])->name('leave_opening_balances.preview')->middleware('permission:leave.certify_opening');
+    Route::post('/leave-opening-balances/certify', [\App\Http\Controllers\LeaveOpeningBalanceController::class, 'certify'])->name('leave_opening_balances.certify')->middleware('permission:leave.certify_opening');
+    Route::get('/leave-opening-balances/reconcile', [\App\Http\Controllers\LeaveOpeningBalanceController::class, 'reconcile'])->name('leave_opening_balances.reconcile')->middleware('permission:leave.certify_opening');
+    // Leave Credits Earned page (sidebar): monthly batch from finalized cutoffs, HR reviews and posts.
     Route::get('/leave-credits-earned', [\App\Http\Controllers\CreditController::class, 'leaveCreditsEarnedPage'])->name('leave_credits_earned')->middleware('permission:leave.manage_credits');
-    Route::get('/leave-credits-earned/cutoffs', [\App\Http\Controllers\CreditController::class, 'leaveCreditCutoffs'])->name('leave_credits_earned.cutoffs')->middleware('permission:leave.manage_credits');
+    Route::get('/leave-credits-earned/months', [\App\Http\Controllers\CreditController::class, 'leaveCreditMonths'])->name('leave_credits_earned.months')->middleware('permission:leave.manage_credits');
+    Route::get('/leave-credits-earned/preview', [\App\Http\Controllers\CreditController::class, 'previewMonthLeaveCredits'])->name('leave_credits_earned.preview')->middleware('permission:leave.manage_credits');
+    Route::post('/leave-credits-earned/post', [\App\Http\Controllers\CreditController::class, 'postMonthLeaveCredits'])->name('leave_credits_earned.post')->middleware('permission:leave.manage_credits');
 
     //PAYROLL
     Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');

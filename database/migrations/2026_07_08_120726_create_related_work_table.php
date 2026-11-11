@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('related_work', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('work_id');
             $table->string('duration');

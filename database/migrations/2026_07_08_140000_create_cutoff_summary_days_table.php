@@ -9,6 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('cutoff_summary_days', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('cutoff_id');
             $table->integer('employee_id');

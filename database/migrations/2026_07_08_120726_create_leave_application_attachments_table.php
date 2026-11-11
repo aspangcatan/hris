@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('leave_application_attachments', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('leave_application_id')->index('leave_application_attachments_leave_application_id_foreign');
             $table->string('file_path');

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('promotion_work_experience', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('user_id');
             $table->string('position_applied', 150);

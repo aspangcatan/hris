@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('minute_conversions', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('minute');
             $table->decimal('points_deduction', 10, 3);

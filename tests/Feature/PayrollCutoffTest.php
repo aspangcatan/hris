@@ -46,7 +46,7 @@ class PayrollCutoffTest extends TestCase
 
     private function seedCutoffMaster(
         string $start = '2026-06-01',
-        string $end   = '2026-06-15',
+        string $end   = '2026-06-30',
         string $title = 'Test Cutoff'
     ): int {
         // Remove any stale record from a previous failed run before inserting
@@ -57,6 +57,7 @@ class PayrollCutoffTest extends TestCase
             ->delete();
 
         $id = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'status' => 'finalized', // payroll reads finalized cutoffs only
             'title'        => $title,
             'period_start' => $start,
             'period_end'   => $end,
@@ -116,7 +117,7 @@ class PayrollCutoffTest extends TestCase
     /** @test */
     public function save_payroll_with_valid_cutoff_id_stores_cutoff_id_and_derives_dates()
     {
-        $masterId = $this->seedCutoffMaster('2026-06-01', '2026-06-15', 'June 1st Half');
+        $masterId = $this->seedCutoffMaster('2026-06-01', '2026-06-30', 'June 1st Half');
         $this->actAsUser();
 
         $response = $this->withoutMiddleware()->postJson('/save_payroll', [
@@ -137,9 +138,9 @@ class PayrollCutoffTest extends TestCase
         $this->assertNotNull($payroll);
         $this->assertEquals($masterId, (int) $payroll->cutoff_id);
         $this->assertEquals('2026-06-01', $payroll->start_date);
-        $this->assertEquals('2026-06-15', $payroll->end_date);
+        $this->assertEquals('2026-06-30', $payroll->end_date);
         $this->assertEquals('2026-06-01', $payroll->cutoff_start_date);
-        $this->assertEquals('2026-06-15', $payroll->cutoff_end_date);
+        $this->assertEquals('2026-06-30', $payroll->cutoff_end_date);
         $this->assertEquals('June 1st Half', $payroll->cutoff_title);
     }
 
@@ -166,7 +167,7 @@ class PayrollCutoffTest extends TestCase
     /** @test */
     public function get_payroll_list_includes_cutoff_label()
     {
-        $masterId  = $this->seedCutoffMaster('2026-06-01', '2026-06-15', 'June 1st Half');
+        $masterId  = $this->seedCutoffMaster('2026-06-01', '2026-06-30', 'June 1st Half');
         $payrollId = $this->seedPayrollWithCutoff($masterId);
         $this->actAsUser();
 
@@ -267,12 +268,12 @@ class PayrollCutoffTest extends TestCase
             'level'   => 'admin',
         ]);
 
-        $masterId = $this->seedCutoffMaster('2027-01-01', '2027-01-15', 'Smoke Test Cutoff');
+        $masterId = $this->seedCutoffMaster('2027-01-01', '2027-01-31', 'Smoke Test Cutoff');
 
         app(\App\Services\PayrollServices::class)->generateCutoffSummary(
             $this->userId,
             '2027-01-01',
-            '2027-01-15',
+            '2027-01-31',
             'Smoke Test Cutoff',
             $this->userId
         );

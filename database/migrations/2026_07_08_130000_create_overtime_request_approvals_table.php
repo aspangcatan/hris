@@ -17,6 +17,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('overtime_request_approvals', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedBigInteger('overtime_request_id');
             $table->integer('approver_id')->nullable();

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('cutoff_summaries_master', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('title', 150)->nullable();
             $table->date('period_start');

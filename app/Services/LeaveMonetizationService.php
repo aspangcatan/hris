@@ -127,6 +127,11 @@ class LeaveMonetizationService
                 'updated_at'       => now(),
             ]);
 
+            app(LeaveLedgerService::class)->record(
+                (int) $userId, (int) $leaveTypeId, LeaveLedgerService::MONETIZED, -$creditsNeeded,
+                now()->toDateString(), 'leave_monetizations', (int) $monetizationId
+            );
+
             // Build SH → DH → HR approval chain
             $user = Auth::user();
             DB::table('leave_monetization_approvals')->insert([
@@ -163,6 +168,10 @@ class LeaveMonetizationService
                     ->where('user_id', $record->user_id)
                     ->where('leave_id', $record->leave_type_id)
                     ->increment('based_credit', $record->credits_deducted);
+                app(LeaveLedgerService::class)->record(
+                    (int) $record->user_id, (int) $record->leave_type_id, LeaveLedgerService::RESTORED, (float) $record->credits_deducted,
+                    now()->toDateString(), 'leave_monetizations', (int) $id
+                );
             }
 
             DB::table('leave_monetization_approvals')->where('leave_monetization_id', $id)->delete();
@@ -371,6 +380,10 @@ class LeaveMonetizationService
                     ->where('user_id', $record->user_id)
                     ->where('leave_id', $record->leave_type_id)
                     ->increment('based_credit', $record->credits_deducted);
+                app(LeaveLedgerService::class)->record(
+                    (int) $record->user_id, (int) $record->leave_type_id, LeaveLedgerService::RESTORED, (float) $record->credits_deducted,
+                    now()->toDateString(), 'leave_monetizations', (int) $monetizationId
+                );
 
                 DB::table('leave_monetizations')
                     ->where('id', $monetizationId)

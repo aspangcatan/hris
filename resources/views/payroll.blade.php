@@ -578,9 +578,9 @@
                     <th rowspan="2">SG</th>
                     <th rowspan="2">Step</th>
                     <th rowspan="2" class="text-end">Basic Pay</th>
-                    <th rowspan="2" class="text-end">Late/Absent Deduction</th>
-                    <th colspan="${earningComponents.length}">Earnings</th>
-                    <th colspan="${deductionComponents.length}">Deductions</th>
+                    <th rowspan="2" class="text-end">Late / Absent / LWOP</th>
+                    ${earningComponents.length ? `<th colspan="${earningComponents.length}">Earnings</th>` : ""}
+                    ${deductionComponents.length ? `<th colspan="${deductionComponents.length}">Deductions</th>` : ""}
                     <th rowspan="2" class="text-end">Withholding Tax</th>
                     <th rowspan="2" class="text-end fw-bold">Total Deduction</th>
                     <th rowspan="2" class="text-end fw-bold">Net Pay</th>
@@ -775,11 +775,23 @@
                     }
                     const $select = $("#cutoff_period");
                     $select.empty().append("<option value=''>— Select a cutoff period —</option>");
+                    // Only finalized cutoffs can be used; drafts show greyed out so
+                    // HR knows to finalize them first, closed ones are hidden.
                     (data.data || []).forEach((item) => {
+                        const status = (item.status || "draft").toLowerCase();
+                        if (status === "closed") {
+                            return;
+                        }
                         const title = item.title || `Cutoff ${item.period_start} - ${item.period_end}`;
+                        const isDraft = status !== "finalized";
+                        // Payroll is always a whole month.
+                        const [year, month, day] = item.period_start.split("-").map(Number);
+                        const lastDay = new Date(year, month, 0).getDate();
+                        const wholeMonth = day === 1 && item.period_end === `${item.period_start.slice(0, 8)}${String(lastDay).padStart(2, "0")}`;
+                        const note = isDraft ? " - not finalized yet" : (wholeMonth ? "" : " - not a whole month");
                         $select.append(
-                            `<option value="${item.id}" data-start="${item.period_start}" data-end="${item.period_end}" data-title="${title}">` +
-                            `${title} (${item.period_start} to ${item.period_end})</option>`
+                            `<option value="${item.id}" data-start="${item.period_start}" data-end="${item.period_end}" data-title="${title}"${note ? " disabled" : ""}>` +
+                            `${title} (${item.period_start} to ${item.period_end})${note}</option>`
                         );
                     });
                 })

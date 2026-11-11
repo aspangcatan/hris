@@ -16,7 +16,6 @@
         {key: 'default_credit', type: 'number', step: '0.001', min: '0', nullable: true},
         {key: 'min_monetize_days', type: 'number', step: '1', min: '0', nullable: true},
         {key: 'min_retained_days', type: 'number', step: '1', min: '0', nullable: true},
-        {key: 'deduct_tardiness', type: 'select', options: [['0', 'No'], ['1', 'Yes']]},
         {key: 'deduction_unit', type: 'select', options: [['hours', 'Hours'], ['days', 'Days']]},
     ];
 

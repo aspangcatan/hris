@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('pass_slips', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('user_id')->nullable();
             $table->date('slip_date')->nullable();

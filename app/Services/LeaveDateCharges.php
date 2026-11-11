@@ -13,7 +13,7 @@ namespace App\Services;
 class LeaveDateCharges
 {
     /** Columns a query must select for byType() to work. */
-    public const COLUMNS = ['leave_type_id', 'credits_deducted', 'fallback_leave_type_id', 'fallback_credits'];
+    public const COLUMNS = ['id', 'date_applied', 'leave_type_id', 'credits_deducted', 'fallback_leave_type_id', 'fallback_credits'];
 
     /**
      * @param  iterable<object> $rows leave_date_applied rows (with COLUMNS selected)

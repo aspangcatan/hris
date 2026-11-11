@@ -358,6 +358,7 @@ class PayrollComponentRateOverrideTest extends TestCase
         $this->excludeOtherGlobalComponentsForTestUser();
 
         $masterId = DB::table('hris.cutoff_summaries_master')->insertGetId([
+            'status' => 'finalized', // payroll reads finalized cutoffs only
             'title' => 'Rate Override Test Cutoff',
             'period_start' => '2027-10-01',
             'period_end' => '2027-10-15',

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('day_conversions', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('days_present');
             $table->decimal('days_on_leave_without_pay', 5, 3);

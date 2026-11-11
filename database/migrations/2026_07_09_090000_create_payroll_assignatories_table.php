@@ -9,6 +9,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('payroll_assignatories', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->unsignedTinyInteger('order_no');
             $table->string('label');

@@ -245,7 +245,7 @@
         @endif
 
         {{-- PAYROLL MANAGEMENT --}}
-        @if(false)
+        @if(true)
         @if(permission_check('payroll.view') || permission_check('payroll.settings') || permission_check('payroll.manage'))
             <li class="nav-heading">Payroll Management</li>
             @permission('payroll.view')
@@ -258,7 +258,7 @@
             @endpermission
             @permission('payroll.settings')
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('payroll') ? '' : 'collapsed' }}"
+                <a class="nav-link {{ request()->routeIs('payroll_settings') ? '' : 'collapsed' }}"
                     href="{{ route('payroll_settings') }}">
                     <i class="bi bi-list-check"></i>
                     <span>Payroll Settings</span>
@@ -280,6 +280,15 @@
                     href="{{ route('payroll_tax_rules') }}">
                     <i class="bi bi-percent"></i>
                     <span>Taxation</span>
+                </a>
+            </li>
+            @endpermission
+            @permission('payroll.settings')
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('pay_computations') ? '' : 'collapsed' }}"
+                    href="{{ route('pay_computations') }}">
+                    <i class="bi bi-calculator"></i>
+                    <span>Pay Computations</span>
                 </a>
             </li>
             @endpermission
@@ -359,13 +368,22 @@
                 </a>
             </li>
             @endpermission
-            {{-- Same permission as the page itself (routes: cutoff_summaries = payroll.settings). --}}
-            @permission('payroll.settings')
+            {{-- Same permissions as the page itself (route: cutoff_summaries). --}}
+            @if(permission_check('payroll.settings') || permission_check('cutoff.finalize') || permission_check('cutoff.reopen'))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('cutoff_summaries') ? '' : 'collapsed' }}"
                     href="{{ route('cutoff_summaries') }}">
                     <i class="bi bi-calendar-range"></i>
                     <span>Cutoff Summary</span>
+                </a>
+            </li>
+            @endif
+            @permission('leave.certify_opening')
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('leave_opening_balances') ? '' : 'collapsed' }}"
+                    href="{{ route('leave_opening_balances') }}">
+                    <i class="bi bi-patch-check"></i>
+                    <span>Opening Leave Balances</span>
                 </a>
             </li>
             @endpermission

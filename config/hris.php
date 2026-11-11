@@ -47,4 +47,17 @@ return [
 
     'dtr_raw_timelog_editing_enabled' => env('DTR_RAW_TIMELOG_EDITING_ENABLED', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cutoff Snapshots
+    |--------------------------------------------------------------------------
+    |
+    | When on, a draft cutoff must have its snapshot generated and go through
+    | For Review before it can be finalized. When off, cutoffs finalize
+    | straight from draft, as they did before snapshots existed.
+    |
+    */
+
+    'cutoff_snapshots_enabled' => env('CUTOFF_SNAPSHOTS_ENABLED', false),
+
 ];

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('overtime_requests', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->integer('userid');
             $table->date('ot_date');

@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('monthly_earned_points', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->decimal('present', 6);
             $table->decimal('points', 5, 3);

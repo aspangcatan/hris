@@ -14,6 +14,7 @@ return new class extends Migration
     public function up()
     {
         Schema::create('access_level_permissions', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('level', 191);
             $table->unsignedBigInteger('permission_id')->index('access_level_permissions_permission_id_foreign');

@@ -263,6 +263,11 @@ class LeaveBulkCreditController extends Controller
                             $balanceAfter = $creditsToAdd;
                         }
 
+                        app(\App\Services\LeaveLedgerService::class)->record(
+                            (int) $userId, $leaveTypeId, \App\Services\LeaveLedgerService::ADJUSTMENT, $creditsToAdd,
+                            now()->toDateString(), 'leave_credit_batches', (int) $batchId
+                        );
+
                         $batchItems[] = [
                             'batch_id'         => $batchId,
                             'user_id'          => $userId,
