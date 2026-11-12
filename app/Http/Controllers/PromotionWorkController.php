@@ -14,15 +14,20 @@ class PromotionWorkController extends Controller
     public function store(Request $request)
     {
         try {
-            $work = PromotionWork::where('id', $request->id)->first();
-            if (!$work) {
+            $work = PromotionWork::where('id', $request->id)->where('user_id', Auth::id())->first();
+            $is_new = !$work;
+            if ($is_new) {
                 $work = new PromotionWork;
                 $work->user_id = Auth::id();
             }
             $work->position_applied = $request->position_applied;
             $work->date_applied = $request->date_applied;
             $work->save();
-            return response(['code' => 200, 'message' => 'New item added']);
+            return response([
+                'code' => 200,
+                'message' => $is_new ? 'Application saved' : 'Application updated',
+                'id' => $work->id,
+            ]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -37,21 +42,48 @@ class PromotionWorkController extends Controller
                 if ($search != "") {
                     $query->where('position_applied', 'LIKE', '%' . $search . '%');
                 }
-            })->get();
+            })
+                ->select('promotion_work_experience.*')
+                ->selectSub(
+                    RelatedWork::selectRaw('COUNT(*)')->whereColumn('related_work.work_id', 'promotion_work_experience.id'),
+                    'related_count'
+                )
+                ->orderBy('date_applied', 'desc')
+                ->get();
             return response(['code' => 200, 'results' => $results]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
     }
 
+    /** Deletes one related work experience entry. */
     public function delete(Request $request)
     {
         try {
             $work = RelatedWork::find($request->id);
-            if ($work) {
+            if ($work && $this->ownsApplication($work->work_id)) {
+                $this->deleteRelatedChildren($work->id);
                 $work->forceDelete();
             }
-            return response(['code' => 200, 'message' => 'Item deleted']);
+            return response(['code' => 200, 'message' => 'Work experience removed']);
+        } catch (\Exception $exception) {
+            return response(['code' => 500, 'message' => $exception->getMessage()]);
+        }
+    }
+
+    /** Deletes a whole position application, including its related work experience. */
+    public function deletePosition(Request $request)
+    {
+        try {
+            $work = PromotionWork::where('id', $request->id)->where('user_id', Auth::id())->first();
+            if ($work) {
+                foreach (RelatedWork::where('work_id', $work->id)->get() as $related) {
+                    $this->deleteRelatedChildren($related->id);
+                    $related->forceDelete();
+                }
+                $work->delete();
+            }
+            return response(['code' => 200, 'message' => 'Application deleted']);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -60,9 +92,13 @@ class PromotionWorkController extends Controller
     public function insertRelatedWork(Request $request)
     {
         try {
+            if (!$this->ownsApplication($request->work_id)) {
+                return response(['code' => 500, 'message' => 'Application not found']);
+            }
 
-            $related_work = RelatedWork::where('id', $request->id)->first();
-            if (!$related_work) {
+            $related_work = RelatedWork::where('id', $request->id)->where('work_id', $request->work_id)->first();
+            $is_new = !$related_work;
+            if ($is_new) {
                 $related_work = new RelatedWork();
                 $related_work->work_id = $request->work_id;
             }
@@ -73,38 +109,28 @@ class PromotionWorkController extends Controller
             $related_work->agency = $request->agency;
             $related_work->save();
 
-            if ($request->id == 0) {
-                $related_work_id = $related_work->id;
-            } else {
-                $related_work_id = $request->id;
+            $related_work_id = $related_work->id;
+
+            // Always replace the lists so removing every item actually clears them.
+            $this->deleteRelatedChildren($related_work_id);
+            foreach ($this->cleanList($request->accomplishments) as $a) {
+                $item = new RelatedAccomplishment;
+                $item->related_id = $related_work_id;
+                $item->description = $a;
+                $item->save();
+            }
+            foreach ($this->cleanList($request->duties) as $d) {
+                $item = new RelatedDuties;
+                $item->related_id = $related_work_id;
+                $item->description = $d;
+                $item->save();
             }
 
-            $accomplishment = $request->accomplishments;
-            $duties = $request->duties;
-
-            if (count($accomplishment) > 0) {
-                $accomplishment_del = RelatedAccomplishment::where('related_id',$related_work_id);
-                $accomplishment_del->forceDelete();
-                foreach ($accomplishment as $a) {
-                    $accomplishment = new RelatedAccomplishment;
-                    $accomplishment->related_id = $related_work_id;
-                    $accomplishment->description = $a;
-                    $accomplishment->save();
-                }
-            }
-
-            if (count($duties) > 0) {
-                $duties_del = RelatedDuties::where('related_id',$related_work_id);
-                $duties_del->forceDelete();
-                foreach ($duties as $a) {
-                    $duties = new RelatedDuties;
-                    $duties->related_id = $related_work_id;
-                    $duties->description = $a;
-                    $duties->save();
-                }
-            }
-
-            return response(['code' => 200, 'message' => 'New item added', 'id']);
+            return response([
+                'code' => 200,
+                'message' => $is_new ? 'Work experience added' : 'Work experience updated',
+                'id' => $related_work_id,
+            ]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
@@ -113,18 +139,38 @@ class PromotionWorkController extends Controller
     public function getRelatedWork(Request $request)
     {
         try {
-            $results = RelatedWork::where('work_id', $request->work_id)->get();
+            if (!$this->ownsApplication($request->work_id)) {
+                return response(['code' => 200, 'results' => []]);
+            }
+            $results = RelatedWork::where('work_id', $request->work_id)->orderBy('id')->get();
 
             for ($i = 0; $i < count($results); $i++) {
-                $related_accomplishment = RelatedAccomplishment::where('related_id', $results[$i]->id)->get(['description']);
-                $results[$i]->accomplishment = $related_accomplishment;
-
-                $related_duties = RelatedDuties::where('related_id', $results[$i]->id)->get(['description']);
-                $results[$i]->duties = $related_duties;
+                $results[$i]->accomplishment = RelatedAccomplishment::where('related_id', $results[$i]->id)->get(['description']);
+                $results[$i]->duties = RelatedDuties::where('related_id', $results[$i]->id)->get(['description']);
             }
             return response(['code' => 200, 'results' => $results]);
         } catch (\Exception $exception) {
             return response(['code' => 500, 'message' => $exception->getMessage()]);
         }
+    }
+
+    private function ownsApplication($work_id): bool
+    {
+        return PromotionWork::where('id', $work_id)->where('user_id', Auth::id())->exists();
+    }
+
+    private function deleteRelatedChildren($related_id): void
+    {
+        RelatedAccomplishment::where('related_id', $related_id)->delete();
+        RelatedDuties::where('related_id', $related_id)->delete();
+    }
+
+    private function cleanList($items): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->map(function ($v) { return trim((string) $v); })
+            ->filter(function ($v) { return $v !== ''; })
+            ->values()
+            ->all();
     }
 }

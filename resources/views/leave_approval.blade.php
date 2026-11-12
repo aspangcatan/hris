@@ -117,7 +117,7 @@
                         <div class="col-md-4">
                             <div class="form-floating">
                                 <input type="text" class="form-control form-control-sm" id="search_employee"
-                                       placeholder="Search employee">
+                                       placeholder="">
                                 <label for="search_employee">Search Employee</label>
                             </div>
                         </div>
@@ -174,7 +174,7 @@
                         <div class="col-md-4">
                             <div class="form-floating">
                                 <input type="text" class="form-control form-control-sm" id="search_employee_monetization"
-                                       placeholder="Search employee">
+                                       placeholder="">
                                 <label for="search_employee_monetization">Search Employee</label>
                             </div>
                         </div>

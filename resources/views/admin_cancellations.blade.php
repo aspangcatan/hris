@@ -25,7 +25,7 @@
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
                 <div class="form-floating">
-                    <input type="text" class="form-control form-control-sm" id="adm_search_employee" placeholder="Search employee">
+                    <input type="text" class="form-control form-control-sm" id="adm_search_employee" placeholder="">
                     <label>Search Employee</label>
                 </div>
             </div>

@@ -444,6 +444,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_promotion_work', [\App\Http\Controllers\PromotionWorkController::class, 'show'])->name('getPromotionWork')->middleware('permission:promotion.manage');
     Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork')->middleware('permission:promotion.manage');
     Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied')->middleware('permission:promotion.manage');
+    Route::delete('/delete_promotion_position', [\App\Http\Controllers\PromotionWorkController::class, 'deletePosition'])->name('deletePromotionPosition')->middleware('permission:promotion.manage');
 #LEAVE CREDITS MANAGEMENT
     Route::post('/insert_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'insertUpdateCredits'])->name('insertUpdateCredits')->middleware('permission:leave.manage_credits');
     Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits')->middleware('permission:leave.manage_credits');

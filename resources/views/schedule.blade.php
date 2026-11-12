@@ -175,7 +175,7 @@
                 @endif
                 <div class="col-md-2">
                     <div class="form-floating">
-                        <input type="text" class="form-control form-control-sm" id="employee_search_filter" placeholder="Search employee">
+                        <input type="text" class="form-control form-control-sm" id="employee_search_filter" placeholder="">
                         <label for="employee_search_filter">Search Employee</label>
                     </div>
                 </div>
