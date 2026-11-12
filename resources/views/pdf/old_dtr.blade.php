@@ -93,24 +93,45 @@
         }
 
         @if(($pdfEngine ?? 'snappy') === 'dompdf')
-        /* dompdf: wkhtmltopdf's margin options don't exist here, so set them on the page. */
-        @page { margin: 5mm; }
+        /* dompdf: wkhtmltopdf's margin options don't exist here, so set the 5mm margin
+           ourselves. dompdf 2.x turns @page margins into a margin on <html>, which the
+           html/body margin:0 rule above would cancel, so put it on <html> directly and
+           zero @page so newer dompdf versions don't apply it twice. */
+        @page { margin: 0; }
+        html { margin: 5mm; }
 
         /* dompdf mishandles height:100% rows inside the fixed-height sheet (it emits
            blank pages), so let rows size to their content. */
         table.employee-sheet > tbody > tr,
         table.employee-sheet > tbody > tr > td { height: auto; }
 
-        /* wkhtmltopdf's smart shrinking scales these down; dompdf doesn't, so size them
-           to fit the column directly. */
+        /* Matched to measurements of the wkhtmltopdf output. wkhtmltopdf draws its text
+           about 11% narrower than dompdf at the same size, so text that wraps uses a
+           ~0.89x size here to keep the same line breaks; titles keep their size. The page
+           renders in quirks mode under wkhtmltopdf, where tables don't inherit font size
+           (hence the 16px-based signature names). */
         body { line-height: 1.15; }
-        table.logs td { padding-top: 1px; padding-bottom: 1px; line-height: 1.15; }
-        .dtr-hdr { font-size: 12px !important; white-space: nowrap; }
-        .dtr-gap-reg { margin-left: 18px !important; }
-        .dtr-gap-sat { margin-left: 108px !important; }
-        .dtr-foot { font-size: 11.5px !important; }
-        .dtr-cert { font-size: 10.5px !important; }
-        .dtr-ul { font-size: 11px !important; top: 46px !important; }
+        .form-title { font-size: 12px; }
+        .dtr-title { font-size: 13.5px; padding-top: 8px !important; }
+        .employee-name { font-size: 11.2px; margin-top: 4px; }
+        .dtr-namecap { font-size: 12px !important; }
+        .dtr-hdr { font-size: 10.7px !important; margin-top: 2px !important; white-space: nowrap; }
+        .dtr-month { margin-top: 2px !important; }
+        .dtr-gap-reg { margin-left: 20.5px !important; }
+        .dtr-gap-sat { margin-left: 102px !important; }
+        .dtr-logs { margin-top: 5px !important; margin-bottom: 8px !important; }
+        table.logs td { font-size: 9px; line-height: 1; padding-top: 2px; padding-bottom: 2px; }
+        /* Fixed columns at wkhtmltopdf's proportions; auto layout grows the table past its box. */
+        table.dtr-logs { table-layout: fixed; width: 100%; }
+        table.dtr-logs tr.header td { font-size: 10px !important; }
+        table.dtr-logs td.dtr-time { font-size: 10.3px !important; }
+        .dtr-total { font-size: 9.3px !important; }
+        .dtr-cert { font-size: 10px !important; }
+        .dtr-ul { font-size: 11.2px !important; top: 38px !important; }
+        table.dtr-sign { margin-top: 15px !important; }
+        table.dtr-sign tr { border-top-width: 15px !important; }
+        table.dtr-sign td { font-size: 12.6px; }
+        .dtr-foot { font-size: 10.7px !important; }
         @endif
 
     </style>
@@ -156,17 +177,17 @@
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
                         <tr>
-                            <td style="width: 10%"><img src="{{ ($pdfEngine ?? 'snappy') === 'dompdf' ? public_path('img/logo.png') : url('img/logo.png') }}" width="75"/></td>
+                            <td style="width: 10%"><img src="{{ ($pdfEngine ?? 'snappy') === 'dompdf' ? public_path('img/logo_print.jpg') : url('img/logo.png') }}" width="75"/></td>
                             <td style="width: 13%"></td>
                             <td style="vertical-align: top;width: 50%">
-                                <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
+                                <div class="form-header dtr-title" style="padding-top: 15px">DAILY TIME RECORD</div>
                                 <div class="employee-name">{{ $employee['name'] }}</div>
-                                <div style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
+                                <div class="dtr-namecap" style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
                             </td>
                             <td></td>
                         </tr>
                     </table>
-                    <div class="dtr-hdr" style="margin-top: 15px;font-size: 14px">For the month of:
+                    <div class="dtr-hdr dtr-month" style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
                     <div class="dtr-hdr" style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
                             class="dtr-gap-reg" style="margin-left: 25px">Reg. days
@@ -185,7 +206,7 @@
                     <div class="dtr-hdr" style="font-size: 14px"><span>departure</span> <span class="dtr-gap-sat" style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
-                <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
+                <table class="logs dtr-logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
                         <td colspan="2">A.M</td>
@@ -208,7 +229,7 @@
                             </td>
 
                             <!-- AM Arrival -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -217,7 +238,7 @@
                             </td>
 
                             <!-- AM Departure -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -226,7 +247,7 @@
                             </td>
 
                             <!-- PM Arrival -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -235,7 +256,7 @@
                             </td>
 
                             <!-- PM Departure -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -271,7 +292,7 @@
                     
                     <tr>
                         <td style="border: none" colspan="4"></td>
-                        <td style="border: none">TOTAL</td>
+                        <td class="dtr-total" style="border: none">TOTAL</td>
                         <td style="font-weight: bold">
                             @if(!$noAutomation)
                             {{ max($tableTotalHours, 0) }}
@@ -288,14 +309,14 @@
                 <div class="dtr-cert" style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
                     @if(!$noAutomation && $employee['division'] == '2')
                     <div class="dtr-ul" style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
-                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
+                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                     </div>
                     @endif
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>
-                    <table style="margin-top: 20px">
+                    <table class="dtr-sign" style="margin-top: 20px">
                         <tr>
                             <td style="width: 18%"></td>
                             <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center"> {{ $employee['name'] }} </td>
@@ -314,7 +335,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 12.5px">In Charge</td>
+                            <td class="dtr-foot" style="text-align: center;font-size: 12.5px">In Charge</td>
                             <td></td>
                         </tr>
                     </table>
@@ -326,17 +347,17 @@
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
                         <tr>
-                            <td style="width: 10%"><img src="{{ ($pdfEngine ?? 'snappy') === 'dompdf' ? public_path('img/logo.png') : url('img/logo.png') }}" width="75"/></td>
+                            <td style="width: 10%"><img src="{{ ($pdfEngine ?? 'snappy') === 'dompdf' ? public_path('img/logo_print.jpg') : url('img/logo.png') }}" width="75"/></td>
                             <td style="width: 13%"></td>
                             <td style="vertical-align: top;width: 50%">
-                                <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
+                                <div class="form-header dtr-title" style="padding-top: 15px">DAILY TIME RECORD</div>
                                 <div class="employee-name">{{ $employee['name'] }}</div>
-                                <div style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
+                                <div class="dtr-namecap" style="text-align: center;font-weight: bold;font-size: 13px">(Name)</div>
                             </td>
                             <td></td>
                         </tr>
                     </table>
-                    <div class="dtr-hdr" style="margin-top: 15px;font-size: 14px">For the month of:
+                    <div class="dtr-hdr dtr-month" style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
                     <div class="dtr-hdr" style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
                             class="dtr-gap-reg" style="margin-left: 25px">Reg. days
@@ -355,7 +376,7 @@
                     <div class="dtr-hdr" style="font-size: 14px"><span>departure</span> <span class="dtr-gap-sat" style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
-                <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
+                <table class="logs dtr-logs" style="margin-top: 10px;margin-bottom: 10px">
                     <tr class="header">
                         <td style="width: 8%;border-left: none;font-size: 12px" rowspan="2">DAY</td>
                         <td colspan="2">A.M</td>
@@ -378,7 +399,7 @@
                             </td>
 
                             <!-- AM Arrival -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_am']))
                                     {{ $dtr['date_timein_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -387,7 +408,7 @@
                             </td>
 
                             <!-- AM Departure -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_am']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_am']))
                                     {{ $dtr['date_timeout_am'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -396,7 +417,7 @@
                             </td>
 
                             <!-- PM Arrival -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timein_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timein_pm']))
                                     {{ $dtr['date_timein_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -405,7 +426,7 @@
                             </td>
 
                             <!-- PM Departure -->
-                            <td style="font-size: 11px">
+                            <td class="dtr-time" style="font-size: 11px">
                                 @if(!empty($dtr['date_timeout_pm']) && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $dtr['date_timeout_pm']))
                                     {{ $dtr['date_timeout_pm'] }}
                                 @elseif($dtr['isEmpty'] && $dtr['isInsideCutoff'] && $showDayNames)
@@ -439,7 +460,7 @@
                     
                     <tr>
                         <td style="border: none" colspan="4"></td>
-                        <td style="border: none">TOTAL</td>
+                        <td class="dtr-total" style="border: none">TOTAL</td>
                         <td style="font-weight: bold">
                             @if(!$noAutomation)
                             {{ max($tableTotalHours, 0) }}
@@ -456,14 +477,14 @@
                 <div class="dtr-cert" style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
                     @if(!$noAutomation && $employee['division'] == '2')
                     <div class="dtr-ul" style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: start;">
-                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
+                        <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                     </div>
                     @endif
                     <div style="margin-top: 5px">I CERTIFY on my honor that the above is a true and correct report</div>
                     <div>of the hours of work performed, record which was made daily at the</div>
                     <div>time of arrival in and departure from office.</div>
-                    <table style="margin-top: 20px">
+                    <table class="dtr-sign" style="margin-top: 20px">
                         <tr>
                             <td style="width: 18%"></td>
                             <td style="border-bottom: 1px solid black;font-weight: bold;text-align: center"> {{ $employee['name'] }} </td>
