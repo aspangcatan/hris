@@ -179,7 +179,7 @@ Route::group(['middleware' => 'auth'], function () {
 
     Route::get('/promotion_applied', function () {
         return view('promotion_work_applied');
-    })->name('promotion_applied')->middleware('permission:promotion.manage');
+    })->name('promotion_applied');
 
     Route::get('/credit_management', function () {
         return view('credit_management');
@@ -439,12 +439,12 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/delete_spouse_liabilities', [\App\Http\Controllers\SalnController::class, 'deleteSpouseLiabilities'])->name('deleteSpouseLiabilities');
     Route::delete('/delete_spouse_business_interest', [\App\Http\Controllers\SalnController::class, 'deleteSpouseBusinessInterest'])->name('deleteSpouseBusinessInterest');
 #PROMOTION WORK EXPERIENCE
-    Route::post('/insert_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'store'])->name('insertPositionApplied')->middleware('permission:promotion.manage');
-    Route::post('/insert_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'insertRelatedWork'])->name('insertRelatedWork')->middleware('permission:promotion.manage');
-    Route::get('/get_promotion_work', [\App\Http\Controllers\PromotionWorkController::class, 'show'])->name('getPromotionWork')->middleware('permission:promotion.manage');
-    Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork')->middleware('permission:promotion.manage');
-    Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied')->middleware('permission:promotion.manage');
-    Route::delete('/delete_promotion_position', [\App\Http\Controllers\PromotionWorkController::class, 'deletePosition'])->name('deletePromotionPosition')->middleware('permission:promotion.manage');
+    Route::post('/insert_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'store'])->name('insertPositionApplied');
+    Route::post('/insert_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'insertRelatedWork'])->name('insertRelatedWork');
+    Route::get('/get_promotion_work', [\App\Http\Controllers\PromotionWorkController::class, 'show'])->name('getPromotionWork');
+    Route::get('/get_related_work', [\App\Http\Controllers\PromotionWorkController::class, 'getRelatedWork'])->name('getRelatedWork');
+    Route::delete('/delete_position_applied', [\App\Http\Controllers\PromotionWorkController::class, 'delete'])->name('deletePositionApplied');
+    Route::delete('/delete_promotion_position', [\App\Http\Controllers\PromotionWorkController::class, 'deletePosition'])->name('deletePromotionPosition');
 #LEAVE CREDITS MANAGEMENT
     Route::post('/insert_leave_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'insertUpdateCredits'])->name('insertUpdateCredits')->middleware('permission:leave.manage_credits');
     Route::post('/bulk_update_credits', [\App\Http\Controllers\LeaveCreditsController::class, 'bulkUpdateCredits'])->name('bulkUpdateCredits')->middleware('permission:leave.manage_credits');

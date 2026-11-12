@@ -572,6 +572,10 @@ class PrintController extends Controller
 
     public function printWorkExperience(Request $request)
     {
+        // Users may only print their own applications.
+        $owns = \App\Models\PromotionWork::where('id', $request->work_id)->where('user_id', Auth::id())->exists();
+        abort_unless($owns, 404);
+
         try {
             $related_work = RelatedWork::where('work_id', $request->work_id)->get();
             for ($i = 0; $i < count($related_work); $i++) {

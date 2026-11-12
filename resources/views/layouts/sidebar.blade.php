@@ -8,6 +8,12 @@
                 <span>PDS</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('promotion_applied') ? '' : 'collapsed' }}" href="{{ route('promotion_applied') }}">
+                <i class="bi bi-award"></i>
+                <span>Position Applied</span>
+            </a>
+        </li>
         @permission('saln.view_own')
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('saln') ? '' : 'collapsed' }}" href="{{ route('saln') }}">
@@ -232,9 +238,8 @@
                 @endpermission
             @endif
         {{-- HR MANAGEMENT --}}
-        @if(permission_check('employee.view') || permission_check('promotion.manage'))
-        <li class="nav-heading">HR Management</li>
         @permission('employee.view')
+        <li class="nav-heading">HR Management</li>
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('employee') ? '' : 'collapsed' }}" href="{{ route('employee') }}">
                 <i class="bi bi-person-badge"></i>
@@ -242,15 +247,6 @@
             </a>
         </li>
         @endpermission
-        @permission('promotion.manage')
-        <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('promotion_applied') ? '' : 'collapsed' }}" href="{{ route('promotion_applied') }}">
-                <i class="bi bi-award"></i>
-                <span>Position Applied</span>
-            </a>
-        </li>
-        @endpermission
-        @endif
 
         {{-- PAYROLL MANAGEMENT (hidden for now: change false to true to show it again) --}}
         @if(false)

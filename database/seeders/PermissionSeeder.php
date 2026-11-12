@@ -42,7 +42,6 @@ class PermissionSeeder extends Seeder
             ['module' => 'schedule',       'code' => 'schedule.access',         'description' => 'Assign which sections each schedule manager handles'],
             ['module' => 'calendar',       'code' => 'calendar.manage',         'description' => 'Add/edit/delete holidays in the calendar'],
             ['module' => 'hospital_order', 'code' => 'hospital_order.create',   'description' => 'Create hospital orders'],
-            ['module' => 'promotion',      'code' => 'promotion.manage',        'description' => 'Record positions applied for promotion'],
         ];
 
         foreach ($catalog as $p) {
@@ -57,7 +56,6 @@ class PermissionSeeder extends Seeder
         $levelDefaults = [
             'admin' => array_column($catalog, 'code'),
             'hr' => [
-                'promotion.manage',
                 'dtr.view_own','dtr.view_others','dtr.print',
                 'employee.view','employee.edit',
                 'leave.file','leave.approve','leave.approve_hr','leave.manage_credits','leave.manage_types',
@@ -71,7 +69,6 @@ class PermissionSeeder extends Seeder
                 'reorientation.check','reorientation.manage','reorientation.answers',
             ],
             'hrh' => [
-                'promotion.manage',
                 'dtr.view_own','dtr.view_others','dtr.print',
                 'employee.view','employee.edit',
                 'leave.file','leave.approve','leave.approve_hr','leave.manage_credits','leave.manage_types',
