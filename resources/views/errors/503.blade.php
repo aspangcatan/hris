@@ -1,202 +1,283 @@
-{{-- resources/views/errors/503.blade.php --}}
+{{-- resources/views/errors/503.blade.php
+     Shown while the app is in maintenance mode (php artisan down) or on any 503.
+     Self-contained on purpose: no layout, session, auth or database calls, so it
+     renders even when those are unavailable. --}}
+@php
+    $retryAfter = isset($exception) && method_exists($exception, 'getHeaders')
+        ? ($exception->getHeaders()['Retry-After'] ?? null)
+        : null;
+    $refreshSeconds = is_numeric($retryAfter) ? max(30, min((int) $retryAfter, 600)) : 60;
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>An error occurred</title>
+    <meta name="robots" content="noindex">
+    <title>Under Maintenance · HRIS</title>
+    <link rel="icon" href="{{ asset('assets/img/favicon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #00236f;
+            --primary-container: #1e3a8a;
+            --primary-fixed: #dce1ff;
+            --primary-soft: #eef0ff;
+            --secondary: #006a61;
+            --secondary-container: #86f2e4;
+            --on-secondary-container: #00504a;
+            --warning-container: #ffdcbe;
+            --on-warning-container: #7a4100;
+            --background: #f5f6fc;
+            --surface: #ffffff;
+            --surface-low: #f2f3ff;
+            --on-surface: #131b2e;
+            --on-surface-variant: #444651;
+            --outline: #757682;
+            --line: #e6e8f2;
+            --radius: 0.875rem;
+            --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            --font-head: 'Plus Jakarta Sans', var(--font-body);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { height: 100%; }
+
         body {
-            background-color: #f3f4f6;
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
-            padding: 2rem;
-            color: #1f2937;
-        }
-        .error-card {
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            max-width: 1200px;
-            margin: 0 auto 1.5rem auto;
-            padding: 1.5rem;
-            position: relative;
-        }
-        .meta-right {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            font-size: 0.75rem;
-            color: #9ca3af;
-            font-family: monospace;
-        }
-        .badge {
-            background-color: #fee2e2;
-            color: #991b1b;
-            font-size: 0.75rem;
-            font-family: monospace;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            display: inline-block;
-            font-weight: bold;
-        }
-        .error-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-top: 1rem;
-            margin-bottom: 0;
-            font-family: monospace;
-            color: #111827;
-        }
-        .split-container {
-            display: flex;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            max-width: 1200px;
-            margin: 0 auto;
-            min-height: 520px;
-            border: 1px solid #e5e7eb;
-        }
-        .sidebar {
-            width: 30%;
-            border-right: 1px solid #e5e7eb;
-            font-size: 0.85rem;
-            background-color: #f9fafb;
-        }
-        .sidebar-item {
-            padding: 1rem;
-            border-bottom: 1px solid #e5e7eb;
-            font-family: monospace;
-            color: #4b5563;
-            cursor: default;
-        }
-        .sidebar-item.active {
-            background-color: #ef4444;
-            color: white;
-        }
-        .sidebar-item.vendor {
-            color: #9ca3af;
-            background-color: #f3f4f6;
-            font-size: 0.8rem;
-            padding: 0.5rem 1rem;
-        }
-        .code-section {
-            width: 70%;
-            padding: 1.5rem;
-            background-color: #ffffff;
-            font-family: monospace;
-            position: relative;
-        }
-        .file-path {
-            color: #6b7280;
-            font-size: 0.85rem;
-            text-align: right;
-            margin-bottom: 1rem;
-        }
-        .code-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
+            font-family: var(--font-body);
+            font-size: 0.9375rem;
             line-height: 1.6;
+            color: var(--on-surface);
+            background:
+                radial-gradient(circle at 12% 8%, rgba(30, 58, 138, 0.10), transparent 42%),
+                radial-gradient(circle at 88% 92%, rgba(0, 106, 97, 0.10), transparent 40%),
+                var(--background);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        .line-num {
-            color: #9ca3af;
-            width: 30px;
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.25rem 1.5rem;
+        }
+        .topbar img { height: 40px; width: auto; }
+        .brand-name {
+            font-family: var(--font-head);
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: var(--primary);
+            line-height: 1.1;
+        }
+        .brand-sub { display: block; font-size: 0.75rem; color: var(--outline); }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 1rem 2rem;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 560px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.08);
+            padding: 2.5rem 2.25rem 2rem;
+            text-align: center;
+        }
+
+        .illustration {
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 1.25rem;
+            border-radius: 24px;
+            background: var(--primary-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .illustration svg { width: 52px; height: 52px; }
+        .gear { transform-origin: 50% 50%; animation: spin 8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--on-warning-container);
+            background: var(--warning-container);
+            border-radius: 999px;
+            padding: 0.3rem 0.8rem;
+        }
+        .chip-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: currentColor;
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse { 50% { opacity: 0.3; } }
+
+        h1 {
+            font-family: var(--font-head);
+            font-weight: 800;
+            font-size: 1.75rem;
+            line-height: 1.25;
+            color: var(--primary);
+            margin: 1rem 0 0.5rem;
+        }
+
+        .lead {
+            color: var(--on-surface-variant);
+            margin: 0 auto 1.5rem;
+            max-width: 430px;
+        }
+
+        .info {
             text-align: left;
-            vertical-align: top;
-            user-select: none;
+            background: var(--surface-low);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 1rem 1.15rem;
+            margin-bottom: 1.5rem;
         }
-        .line-content {
-            padding-left: 1rem;
-            white-space: pre;
-            color: #374151;
+        .info-title {
+            font-family: var(--font-head);
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--on-surface);
+            margin-bottom: 0.4rem;
         }
-        .line-error {
-            background-color: #fee2e2;
-            border-left: 4px solid #ef4444;
+        .info ul { margin: 0; padding-left: 1.15rem; color: var(--on-surface-variant); font-size: 0.875rem; }
+        .info li + li { margin-top: 0.25rem; }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.65rem;
         }
-        .line-error .line-num {
-            padding-left: 4px;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #fff;
+            background: var(--primary);
+            border: 0;
+            border-radius: 10px;
+            padding: 0.7rem 1.5rem;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
         }
-        .keyword { color: #d946ef; }
-        .string { color: #059669; }
-        .comment { color: #9ca3af; }
-        .variable { color: #2563eb; }
+        .btn:hover { background: var(--primary-container); }
+        .btn:active { transform: translateY(1px); }
+        .btn:focus-visible { outline: 3px solid var(--primary-fixed); outline-offset: 2px; }
+        .btn svg { width: 16px; height: 16px; }
+
+        .countdown { font-size: 0.8rem; color: var(--outline); }
+        .countdown strong { color: var(--on-surface-variant); font-variant-numeric: tabular-nums; }
+
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--outline);
+            padding: 0 1rem 1.5rem;
+        }
+
+        @media (max-width: 480px) {
+            .card { padding: 2rem 1.25rem 1.5rem; border-radius: 16px; }
+            h1 { font-size: 1.45rem; }
+            .topbar { padding: 1rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .gear, .chip-dot { animation: none; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Top Exception Box -->
-    <div class="error-card">
-        <div class="meta-right">PHP 8.2.10 · Laravel 10.24.0</div>
-        <div class="badge">ErrorException</div>
-        <div class="error-title">
-            Undefined variable $activeUserConfig in processing pipeline cluster.
+<header class="topbar">
+    <img src="{{ asset('assets/img/logo.png') }}" alt="Cebu South Medical Center logo">
+    <div>
+        <div class="brand-name">HRIS</div>
+        <span class="brand-sub">Human Resources</span>
+    </div>
+</header>
+
+<main>
+    <div class="card" role="main">
+        <div class="illustration" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00236f" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <g class="gear">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </g>
+            </svg>
+        </div>
+
+        <span class="chip"><span class="chip-dot"></span> Scheduled maintenance</span>
+
+        <h1>We'll be back shortly</h1>
+        <p class="lead">
+            HRIS is temporarily unavailable while we apply updates and improvements.
+            This usually only takes a few minutes.
+        </p>
+
+        <div class="info">
+            <div class="info-title">While you wait</div>
+            <ul>
+                <li>Your records, leave applications and DTR entries are safe. Nothing is lost.</li>
+                <li>If you were in the middle of filing something, please submit it again once the system is back.</li>            </ul>
+        </div>
+
+        <div class="actions">
+            <button type="button" class="btn" onclick="window.location.reload()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>
+                </svg>
+                Try again
+            </button>
+            <div class="countdown" aria-live="polite">
+                Checking again automatically in <strong id="countdown">{{ $refreshSeconds }}</strong>s
+            </div>
         </div>
     </div>
+</main>
 
-    <!-- Main Code Simulation Box -->
-    <div class="split-container">
-        <!-- Left Sidebar (Simulated Stack Trace) -->
-        <div class="sidebar">
-            <div class="sidebar-item vendor">? Expand vendor frames</div>
-            <div class="sidebar-item vendor">5 vendor frames ?</div>
-            
-            <div class="sidebar-item active">
-                app/Http/Controllers/DashboardController.php:14
-                <br><span style="font-size: 0.75rem; opacity: 0.85;">index</span>
-            </div>
-            
-            <div class="sidebar-item">
-                app/Http/Middleware/VerifyCsrfToken.php:41
-                <br><span style="font-size: 0.75rem; color: #9ca3af;">handle</span>
-            </div>
-            
-            <div class="sidebar-item vendor">22 vendor frames ?</div>
-            
-            <div class="sidebar-item">
-                public/index.php:52
-                <br><span style="font-size: 0.75rem; color: #9ca3af;">require</span>
-            </div>
-        </div>
+<footer>
+    &copy; {{ date('Y') }} Cebu South Medical Center · Human Resource Information System
+</footer>
 
-        <!-- Right Code View (Simulated Code File) -->
-        <div class="code-section">
-            <div class="file-path">app/Http/Controllers/DashboardController.php : line 14</div>
-            
-            <table class="code-table">
-                <tr>
-                    <td class="line-num">11</td>
-                    <td class="line-content">    <span class="keyword">public function</span> <span class="string">index</span>() {</td>
-                </tr>
-                <tr>
-                    <td class="line-num">12</td>
-                    <td class="line-content">        <span class="variable">$metrics</span> = Metrics::getRuntimeData();</td>
-                </tr>
-                <tr>
-                    <td class="line-num">13</td>
-                    <td class="line-content">        </td>
-                </tr>
-                <tr class="line-error">
-                    <td class="line-num">14</td>
-                    <td class="line-content">        <span class="keyword">if</span> (<span class="variable">$activeUserConfig</span>-&gt;hasActiveSession()) {</td>
-                </tr>
-                <tr>
-                    <td class="line-num">15</td>
-                    <td class="line-content">            <span class="comment">// Process stream handshake sequence</span></td>
-                </tr>
-                <tr>
-                    <td class="line-num">16</td>
-                    <td class="line-content">            <span class="variable">$this</span>-&gt;dispatchQueueEngine(<span class="variable">$metrics</span>);</td>
-                </tr>
-                <tr>
-                    <td class="line-num">17</td>
-                    <td class="line-content">        }</td>
-                </tr>
-            </table>
-        </div>
-    </div>
-
+<script>
+    (function () {
+        var remaining = {{ $refreshSeconds }};
+        var el = document.getElementById('countdown');
+        var timer = setInterval(function () {
+            remaining -= 1;
+            if (el) el.textContent = Math.max(remaining, 0);
+            if (remaining <= 0) {
+                clearInterval(timer);
+                window.location.reload();
+            }
+        }, 1000);
+    })();
+</script>
 </body>
 </html>
