@@ -165,7 +165,7 @@
 
     <div class="reo-section">
         <div class="reo-section-title">
-            <h5>Post Test</h5>
+            <h5>Reflection</h5>
             <span id="reo_status_badge"></span>
         </div>
         <div id="reo_remarks"></div>

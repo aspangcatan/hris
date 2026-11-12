@@ -514,9 +514,10 @@ class PrintController extends Controller
         }
 
         return view('print.leave_form', [
-            'applicantSignature'     => $leave_application->applicant_signature ?: null,
-            'shSignature'            => $sectionHeadApproval->signature ?? null,
-            'dhSignature'            => $divisionHeadApproval->signature ?? null,
+            // Stored as a data URL or a file path (config/signatures.php); the view always gets a data URL.
+            'applicantSignature'     => app(\App\Services\SignatureStorage::class)->toDataUrl($leave_application->applicant_signature ?? null),
+            'shSignature'            => app(\App\Services\SignatureStorage::class)->toDataUrl($sectionHeadApproval->signature ?? null),
+            'dhSignature'            => app(\App\Services\SignatureStorage::class)->toDataUrl($divisionHeadApproval->signature ?? null),
             'leaveApplication'       => $leave_application,
             'leaveDetails'           => $leaveDetails,
             'selectedLeaveIds'       => $selectedLeaveIds,

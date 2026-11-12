@@ -286,6 +286,11 @@ class LeaveApprovalService
             }
             $myApproval = $this->findUserApprovedStep($leaveId);
 
+            $oldSignature = DB::table('hris.leave_application_approvals')
+                ->where('leave_application_id', $leaveId)
+                ->where('role', $myApproval->role)
+                ->value('signature');
+
             DB::table('hris.leave_application_approvals')
                 ->where('leave_application_id', $leaveId)
                 ->where('role', $myApproval->role)
@@ -296,6 +301,9 @@ class LeaveApprovalService
                     'signature'   => null,
                     'updated_at'  => Carbon::now(),
                 ]);
+
+            // File mode: the withdrawn signature's file is no longer referenced.
+            app(SignatureStorage::class)->delete($oldSignature);
 
             // Revert application status if it was fully approved (HR undid their step)
             DB::table('hris.leave_applications')
@@ -436,7 +444,7 @@ class LeaveApprovalService
                 'updated_at'  => Carbon::now(),
             ];
             if ($requiresSignature) {
-                $approvalUpdate['signature'] = $signature;
+                $approvalUpdate['signature'] = app(SignatureStorage::class)->store($signature, 'leave');
             }
 
             DB::table('hris.leave_application_approvals')

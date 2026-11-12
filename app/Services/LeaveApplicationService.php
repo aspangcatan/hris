@@ -399,7 +399,7 @@ class LeaveApplicationService
                 'user_id'             => Auth::id(),
                 'commutation'         => $data['commutation'] ?? null,
                 'attachment'          => $data['attachment'] ?? null,
-                'applicant_signature' => $data['applicant_signature'],
+                'applicant_signature' => app(SignatureStorage::class)->store($data['applicant_signature'], 'leave'),
                 'status'              => 'pending',
                 'is_lwop'             => $isLwop,
                 'created_at'          => now(),
@@ -540,12 +540,21 @@ class LeaveApplicationService
             $this->insertDateRows($appId, $dates, $plan['rows']);
             $this->recordCharges($appId);
 
+            $signatures   = app(SignatureStorage::class);
+            $oldSignature = DB::table('leave_applications')->where('id', $appId)->value('applicant_signature');
+            $newSignature = $signatures->store($data['applicant_signature'], 'leave');
+
             DB::table('leave_applications')->where('id', $appId)->update([
                 'commutation'         => $data['commutation'] ?? null,
-                'applicant_signature' => $data['applicant_signature'],
+                'applicant_signature' => $newSignature,
                 'is_lwop'             => $isLwop,
                 'updated_at'          => now(),
             ]);
+
+            // File mode: the replaced signature's file is no longer referenced.
+            if ($oldSignature !== $newSignature) {
+                $signatures->delete($oldSignature);
+            }
         });
     }
 
