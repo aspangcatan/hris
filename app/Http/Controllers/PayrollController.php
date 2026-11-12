@@ -626,9 +626,11 @@ class PayrollController extends Controller
 
     /**
      * Shared Create/Edit Cutoff input rules. A cutoff covers one calendar month
-     * at most (half-month ranges are fine), and only the previous month can be
-     * generated - the team generates last month's cutoff around the 10th of the
-     * next month. Resigned and retired employees are never included.
+     * at most (half-month ranges are fine), and only the last two closed months
+     * can be generated: payroll for a month is computed from the DTR of the
+     * month before it (October pay uses September's cutoff, made in November),
+     * so HR may pick last month or the one before it. Resigned and retired
+     * employees are never included.
      *
      * @return array{0: array, 1: int[]} [validated input, left-out separated ids]
      */
@@ -653,10 +655,11 @@ class PayrollController extends Controller
             ]);
         }
         $previousMonth = now()->startOfMonth()->subMonth();
-        if ($start->format('Y-m') !== $previousMonth->format('Y-m')) {
+        $earliestMonth = $previousMonth->copy()->subMonth();
+        if (!in_array($start->format('Y-m'), [$earliestMonth->format('Y-m'), $previousMonth->format('Y-m')], true)) {
             throw ValidationException::withMessages([
-                'start_date' => 'Cutoffs can only be generated for the previous month ('
-                    . $previousMonth->format('F Y') . ').',
+                'start_date' => 'Cutoffs can only be generated for the previous two months ('
+                    . $earliestMonth->format('F Y') . ' or ' . $previousMonth->format('F Y') . ').',
             ]);
         }
 
@@ -679,6 +682,20 @@ class PayrollController extends Controller
         }
 
         return [$validated, $separated];
+    }
+
+    /**
+     * The employees this request should generate: the "batch" sent by the page
+     * (limited to the validated, non-separated employees), or all of them.
+     */
+    private function cutoffBatch(Request $request, array $employees): array
+    {
+        $batch = $request->input('batch');
+        if (!is_array($batch)) {
+            return $employees;
+        }
+
+        return array_values(array_intersect($employees, array_map('intval', $batch)));
     }
 
     /** Payroll date, remarks, and whether the period is a whole month. */
@@ -786,7 +803,10 @@ class PayrollController extends Controller
                 ]);
             }
 
-            DB::transaction(function () use ($validated, $master, $masterTable, $table) {
+            $batch = $this->cutoffBatch($request, $validated['employees']);
+            @set_time_limit(300);
+
+            DB::transaction(function () use ($validated, $master, $masterTable, $table, $batch) {
                 DB::table($masterTable)->where('id', $master->id)->update([
                     'title' => $validated['title'],
                     'period_start' => $validated['start_date'],
@@ -806,7 +826,8 @@ class PayrollController extends Controller
 
                 // Regenerate everyone kept or added for the saved period
                 // (generation finds this cutoff by its new title + dates).
-                foreach ($validated['employees'] as $employeeId) {
+                // The page sends large cutoffs in batches; each request generates its batch only.
+                foreach ($batch as $employeeId) {
                     $this->payrollServices->generateCutoffSummary(
                         $employeeId,
                         $validated['start_date'],
@@ -820,6 +841,8 @@ class PayrollController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $this->cutoffSavedMessage('updated', count($validated['employees']), $separated),
+                'processed' => count($batch),
+                'cutoff_id' => (int) $master->id,
             ]);
         } catch (ValidationException $e) {
             return $this->cutoffValidationResponse($e);
@@ -868,11 +891,15 @@ class PayrollController extends Controller
                 ], 422);
             }
 
-            DB::transaction(function () use ($validated, $master) {
+            $batch = $this->cutoffBatch($request, $validated['employees']);
+            @set_time_limit(300);
+
+            DB::transaction(function () use ($validated, $master, $batch) {
                 DB::table($this->payrollServices->getCutoffSummaryMasterTableName())->where('id', $master->id)
                     ->update($this->cutoffPeriodSettings($validated));
 
-                foreach ($validated['employees'] as $employeeId) {
+                // The page sends large cutoffs in batches; each request generates its batch only.
+                foreach ($batch as $employeeId) {
                     $this->payrollServices->generateCutoffSummary(
                         $employeeId,
                         $validated['start_date'],
@@ -886,6 +913,8 @@ class PayrollController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $this->cutoffSavedMessage('generated', count($validated['employees']), $separated),
+                'processed' => count($batch),
+                'cutoff_id' => (int) $master->id,
             ]);
         } catch (ValidationException $e) {
             return $this->cutoffValidationResponse($e);
@@ -961,6 +990,21 @@ class PayrollController extends Controller
             $results = $query->orderBy('u.lname')->get();
 
             return response()->json(['success' => true, 'data' => $results]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    /** Earnings and deductions set for one employee, as a reference before entering adjustments. */
+    public function getEmployeeComponentReference($payroll_id, $employee_id)
+    {
+        try {
+            $payroll = $this->payrollServices->getPayrollPeriod($payroll_id);
+            if (!$payroll) {
+                return response()->json(['success' => false, 'message' => 'Payroll not found.'], 404);
+            }
+
+            return response()->json(['success' => true] + $this->payrollServices->employeeComponentReference($payroll_id, (int) $employee_id));
         } catch (\Exception $exception) {
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
@@ -1518,42 +1562,6 @@ class PayrollController extends Controller
 
             $safeTitle = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title);
             return $pdf->download('payslip_' . $safeTitle . '.pdf');
-        } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 500);
-        }
-    }
-
-    public function payrollSummary($payroll_id)
-    {
-        try {
-            $payroll = $this->payrollServices->getPayrollPeriod($payroll_id);
-            if (!$payroll) {
-                return back()->with('error', 'Payroll not found.');
-            }
-
-            $employees = $this->payrollServices->getPayrollEmployee($payroll_id);
-            if ($employees->isEmpty()) {
-                return back()->with('error', 'No employees found for this payroll.');
-            }
-
-            $breakdown = $this->getComponentBreakdown($employees);
-
-            // Landscape A4 at least, wider when the payroll has many earning/deduction columns
-            // (sizes in points; 72 points = 1 inch).
-            $columns = count($breakdown['earning']) + count($breakdown['deduction']);
-            $width = max(842, 260 + ($columns + 3) * 72);
-
-            $pdf = Pdf::loadView('pdf.payroll_summary', [
-                'payroll' => $payroll,
-                'employees' => $employees,
-                'earningComponents' => $breakdown['earning'],
-                'deductionComponents' => $breakdown['deduction'],
-                'componentAmounts' => $breakdown['amounts'],
-                'letterhead' => $this->letterheadDataUri(),
-            ])->setPaper([0, 0, $width, 595.28]);
-
-            $safeTitle = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $payroll->title);
-            return $pdf->download('summary_' . $safeTitle . '.pdf');
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);
         }

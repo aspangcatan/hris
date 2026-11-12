@@ -100,6 +100,70 @@ class CutoffLifecycleController extends Controller
         }
     }
 
+    // Snapshot in batches: the page calls start, then batch for each slice of
+    // employees (showing progress), then finish. See CutoffSnapshotService.
+
+    public function generateSnapshotStart($cutoffId)
+    {
+        try {
+            if (!$this->lifecycle->find((int) $cutoffId)) {
+                return response()->json(['success' => false, 'message' => 'Cutoff not found.'], 404);
+            }
+            $employeeIds = $this->snapshots->startBatches((int) $cutoffId, (int) Auth::id());
+
+            return response()->json(['success' => true, 'employee_ids' => $employeeIds]);
+        } catch (ValidationException $e) {
+            return $this->validationError($e);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function generateSnapshotBatch(Request $request, $cutoffId)
+    {
+        try {
+            $request->validate(['employee_ids' => 'required|array|min:1|max:200', 'employee_ids.*' => 'integer']);
+            @set_time_limit(300);
+            $processed = $this->snapshots->processBatch((int) $cutoffId, (int) Auth::id(), $request->input('employee_ids'));
+
+            return response()->json(['success' => true, 'processed' => $processed]);
+        } catch (ValidationException $e) {
+            return $this->validationError($e);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    public function generateSnapshotFinish($cutoffId)
+    {
+        try {
+            $report = $this->snapshots->finishBatches((int) $cutoffId, (int) Auth::id());
+            $issues = count($report['exceptions']);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Snapshot generated for {$report['processed']} employee(s), with {$issues} item(s) to review.",
+                'report' => $report,
+            ]);
+        } catch (ValidationException $e) {
+            return $this->validationError($e);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
+    /** The page lost a batch (network error, closed early): put the cutoff back to draft. */
+    public function generateSnapshotAbandon(Request $request, $cutoffId)
+    {
+        try {
+            $this->snapshots->abandonBatches((int) $cutoffId, (int) Auth::id(), (string) $request->input('reason', 'Stopped before finishing.'));
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $exception) {
+            return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+        }
+    }
+
     public function returnToDraft($cutoffId)
     {
         try {

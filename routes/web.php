@@ -296,10 +296,17 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/cutoff-summaries/{cutoff_id}/reopen', [\App\Http\Controllers\CutoffLifecycleController::class, 'reopen'])->name('cutoff_lifecycle.reopen')->middleware('permission:cutoff.reopen');
     Route::get('/cutoff-summaries/{cutoff_id}/employees/{employee_id}/snapshot', [\App\Http\Controllers\CutoffLifecycleController::class, 'employeeSnapshot'])->name('cutoff_lifecycle.employee')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
     Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshot'])->name('cutoff_lifecycle.generate')->middleware('permission:payroll.settings');
+    Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot/start', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshotStart'])->name('cutoff_lifecycle.generate_start')->middleware('permission:payroll.settings');
+    Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot/batch', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshotBatch'])->name('cutoff_lifecycle.generate_batch')->middleware('permission:payroll.settings');
+    Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot/finish', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshotFinish'])->name('cutoff_lifecycle.generate_finish')->middleware('permission:payroll.settings');
+    Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot/abandon', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshotAbandon'])->name('cutoff_lifecycle.generate_abandon')->middleware('permission:payroll.settings');
     Route::post('/cutoff-summaries/{cutoff_id}/return-to-draft', [\App\Http\Controllers\CutoffLifecycleController::class, 'returnToDraft'])->name('cutoff_lifecycle.return')->middleware('permission:payroll.settings');
     Route::get('/cutoff-periods',[\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
     Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
     Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
+    Route::get('/payroll/{payroll_id}/employees/{employee_id}/components', [\App\Http\Controllers\PayrollController::class, 'getEmployeeComponentReference'])
+        ->name('getEmployeeComponentReference')->whereNumber('payroll_id')->whereNumber('employee_id')
+        ->middleware('permission:payroll.view|payroll.manage|payroll.settings');
     // Pay Computations (sidebar): the named rate formulas, set per shift.
     Route::get('/pay-computations', [\App\Http\Controllers\PayComputationController::class, 'page'])->name('pay_computations')->middleware('permission:payroll.settings');
     Route::get('/pay-computations/list', [\App\Http\Controllers\PayComputationController::class, 'index'])->name('pay_computations.list')->middleware('permission:payroll.settings');
@@ -328,7 +335,6 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/get_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'getPayrollEmployee'])->name('getPayrollEmployee');
     Route::get('/payroll/export/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'export'])->name('exportPayroll');
     Route::get('/payroll/payslip/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payslip'])->name('payrollPayslip');
-    Route::get('/payroll/summary/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payrollSummary'])->name('payrollSummary');
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE

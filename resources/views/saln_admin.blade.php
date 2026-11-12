@@ -146,9 +146,15 @@
     <div class="modal fade" id="employee_history_modal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Filing History: <span id="target_emp_name"></span></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <div class="modal-header">
+                    <div class="modal-heading">
+                        <div class="modal-icon"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <h5 class="modal-title">Filing History: <span id="target_emp_name"></span></h5>
+                            <p class="modal-sub">Every SALN this employee has filed.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div id="history_list_container">

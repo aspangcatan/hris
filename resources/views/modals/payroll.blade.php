@@ -244,7 +244,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="border rounded p-2" style="height: 55vh; overflow-y: auto;">
+                <style>
+                    /* Every adjustment box wide enough to show its amount; many columns scroll sideways. */
+                    #append_employee_modal .employee-adjustment { min-width: 6.5rem; }
+                    #append_employee_modal #adjustment_columns_row th { min-width: 7rem; }
+                </style>
+                <div class="border rounded p-2" style="height: 55vh; overflow: auto;">
                     <div>
                         <table class="table table-sm table-bordered align-middle">
                             <thead class="table-light text-center" id="employee_list_head">
@@ -266,6 +271,42 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-modal-save" id="btn_save_employees">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Read-only reference opened from Append Employees: what this employee's payroll starts from --}}
+<style>
+    #employee_components_modal { z-index: 1065; }
+    .modal-backdrop.employee-components-backdrop { z-index: 1060; }
+    #employee_components_modal .ec-summary { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+    #employee_components_modal .ec-stat { flex: 1 1 140px; background: var(--surface, #fff); border: 1px solid var(--line, #e2e8f0); border-radius: 12px; padding: .6rem .85rem; }
+    #employee_components_modal .ec-stat small { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--outline, #64748b); }
+    #employee_components_modal .ec-stat strong { font-size: 1.05rem; }
+    #employee_components_modal .ec-table { background: var(--surface, #fff); border: 1px solid var(--line, #e2e8f0); border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
+    #employee_components_modal .ec-table table { margin: 0; font-size: .875rem; }
+    #employee_components_modal .ec-table thead th { background: var(--surface-low, #f8fafc); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
+    #employee_components_modal .ec-table tfoot td { font-weight: 700; background: var(--surface-low, #f8fafc); }
+</style>
+<div class="modal fade" id="employee_components_modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-heading">
+                    <div class="modal-icon"><i class="bi bi-list-columns-reverse"></i></div>
+                    <div>
+                        <h5 class="modal-title" id="ec_employee_name">Earnings &amp; Deductions</h5>
+                        <p class="modal-sub" id="ec_source">What this employee's payroll starts from.</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="ec_body">
+                <div class="text-center text-muted py-4">Loading...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

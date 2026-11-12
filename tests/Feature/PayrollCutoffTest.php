@@ -242,9 +242,8 @@ class PayrollCutoffTest extends TestCase
             $payslipResponse->assertOk();
             $this->assertStringContainsString('application/pdf', $payslipResponse->headers->get('Content-Type'));
 
-            $summaryResponse = $this->withoutMiddleware()->get('/payroll/summary/' . $payrollId);
-            $summaryResponse->assertOk();
-            $this->assertStringContainsString('application/pdf', $summaryResponse->headers->get('Content-Type'));
+            // The PDF summary was removed (Export to Excel in the payroll View replaces it).
+            $this->withoutMiddleware()->get('/payroll/summary/' . $payrollId)->assertNotFound();
         } finally {
             DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->delete();
             DB::table('tdh_user.users')->where('id', $this->userId)->delete();

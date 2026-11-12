@@ -60,7 +60,8 @@ class PayrollServices
             ->groupBy('code')
             ->map(fn($group, $code) => (object) [
                 'code' => $code,
-                'name' => $group->first()->name ?: $code,
+                // Lines saved before the label was added carry the raw code as their name.
+                'name' => $code === 'SALARY_ADJUSTMENT' ? 'Basic Pay Adjustment' : ($group->first()->name ?: $code),
                 'type' => $group->first()->type,
             ])
             ->sortBy(fn($column) => $position($column->code))
@@ -887,8 +888,52 @@ class PayrollServices
         ];
     }
 
+    /**
+     * Read-only reference for the Append Employees screen: the basic salary and the
+     * earnings/deductions this employee's payroll will start from, read the same
+     * way savePayrollEmployee does (the cutoff's snapshot when it has one, else the
+     * live settings). Withholding tax and tardiness are computed later, so not listed.
+     */
+    public function employeeComponentReference($payrollId, int $employeeId): array
+    {
+        $period = $this->getPayrollPeriod($payrollId);
+        $periodStart = $period->cutoff_start_date ?? $period->start_date ?? null;
+        $periodEnd = $period->cutoff_end_date ?? $period->end_date ?? null;
+        $snapshot = $this->payrollSnapshot($period->cutoff_id ?? null, $employeeId);
+
+        if ($snapshot) {
+            $basic = (float) $snapshot['employee']->monthly_salary;
+            $components = $snapshot['components'];
+        } else {
+            $basic = (float) (DB::table('hris.payroll_settings')->where('userid', $employeeId)->value('basic_salary') ?? 0);
+            $components = $this->getEmployeeDynamicComponents($employeeId, $periodStart, $periodEnd, $basic);
+        }
+
+        $order = DB::table('hris.payroll_components')->pluck('sort_order', 'code');
+        $rows = collect($components)->map(fn($c) => [
+            'code' => $c->code,
+            'name' => $c->name,
+            'type' => $c->type,
+            'taxable' => (bool) $c->taxable,
+            'amount' => round((float) $c->amount, 2),
+        ])->sortBy(fn($c) => [$order[$c['code']] ?? 999, $c['name']])->values();
+
+        return [
+            'source' => $snapshot ? 'snapshot' : 'live',
+            'basic_salary' => round($basic, 2),
+            'earnings' => $rows->where('type', 'earning')->values(),
+            'deductions' => $rows->where('type', 'deduction')->values(),
+            'total_earnings' => round($rows->where('type', 'earning')->sum('amount'), 2),
+            'total_deductions' => round($rows->where('type', 'deduction')->sum('amount'), 2),
+        ];
+    }
+
     public function deletePayrollEmployees($payroll_id)
     {
+        // Their earning/deduction lines too (no foreign key removes them), or they are left orphaned.
+        $ids = DB::table('hris.payroll_employees')->where('payroll_id', '=', $payroll_id)->pluck('id');
+        DB::table('hris.payroll_employee_components')->whereIn('payroll_employee_id', $ids)->delete();
+
         return DB::table('hris.payroll_employees')
             ->where('payroll_id', '=', $payroll_id)
             ->delete();
@@ -1120,7 +1165,7 @@ class PayrollServices
             $components[] = (object) [
                 'payroll_component_id' => null,
                 'code' => 'SALARY_ADJUSTMENT',
-                'name' => 'SALARY_ADJUSTMENT',
+                'name' => 'Basic Pay Adjustment',
                 'type' => 'earning',
                 'taxable' => false,
                 'amount' => $salaryAdjustment,

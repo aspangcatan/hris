@@ -37,18 +37,17 @@
     </div>
 </div>
 
-<div class="modal fade" id="edit_promotion_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
+<div class="modal fade premium-modal" id="edit_promotion_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-center">
-                <div class="p-3 w-100 text-center">
-                    <i class="bi bi-person-workspace text-white" style="font-size: 80px;"></i>
+            <div class="modal-header">
+                <div class="modal-hero">
+                    <i class="bi bi-person-workspace text-white" style="font-size:2.2rem"></i>
                 </div>
-                <div class="modal-title-text">Work Information</div>
             </div>
             <div class="modal-body">
-                <div class="modal-title-text"></div>
+                <div class="modal-title-text">Work Information</div>
                 <div class="mt-3 text-secondary">
                     <div class="row">
                         <div class="col-md-6">
@@ -106,7 +105,7 @@
                 </div>
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <button class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal">Close</button>
-                    <button class="btn btn-success btn-modal-save" id="btn_save_related">SAVE</button>
+                    <button class="btn btn-modal-save" id="btn_save_related">Save</button>
                 </div>
             </div>
         </div>

@@ -319,7 +319,7 @@
                             <span class="cutoff-step-no">1</span>
                             <div>
                                 <div class="cutoff-step-title">Period</div>
-                                <div class="cutoff-step-sub" id="cutoff_period_hint">Dates within last month only.</div>
+                                <div class="cutoff-step-sub" id="cutoff_period_hint">Dates within the last two months only.</div>
                             </div>
                         </div>
                         <div class="row g-3">
@@ -346,7 +346,7 @@
                             <div class="col-12">
                                 <div class="cutoff-period-note">
                                     <i class="bi bi-info-circle"></i>
-                                    <span>Prefilled with the whole of last month. Change the dates for a half-month or an early exit.</span>
+                                    <span>Prefilled with the whole of last month. Change the dates to pick the month before, a half-month or an early exit.</span>
                                 </div>
                             </div>
                         </div>
@@ -633,12 +633,122 @@
         </div>
     </div>
 
+    {{-- Progress of a long run (cutoff generation / snapshot), sent to the server in batches --}}
+    <div class="modal fade cutoff-modal cutoff-stacked-modal" id="cutoff_progress_modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-heading">
+                        <div class="modal-icon"><i class="bi bi-hourglass-split"></i></div>
+                        <div>
+                            <h5 class="modal-title" id="cutoff_progress_title">Generating...</h5>
+                            <p class="modal-sub">Keep this page open until it finishes.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span id="cutoff_progress_step">Starting...</span>
+                        <span class="fw-semibold" id="cutoff_progress_count">0 / 0</span>
+                    </div>
+                    <div class="progress" style="height: 12px;" role="progressbar" aria-label="Progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="cutoff_progress_bar" style="width: 0%"></div>
+                    </div>
+                    <div class="small text-muted mt-2" id="cutoff_progress_eta"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @stop
 
 @section('js')
     <script>
         let cutoffPeriods = [];
         let currentCutoffDetail = {id: null, start: null, end: null, title: null};
+
+        // -------------------------------------------------------------------
+        // Long runs go to the server in batches, so no single request can time
+        // out (about 0.5-0.9 s per employee). HR keeps the page open meanwhile.
+        // -------------------------------------------------------------------
+        const CUTOFF_BATCH_SIZE = 25;
+        let cutoffRunActive = false;
+
+        window.addEventListener("beforeunload", function (e) {
+            if (cutoffRunActive) {
+                e.preventDefault();
+                e.returnValue = "";
+            }
+        });
+
+        async function cutoffPostJson(url, method, body) {
+            const res = await fetch(url, {
+                method: method || "POST",
+                headers: {"Content-Type": "application/json", "Accept": "application/json", "X-CSRF-TOKEN": "{{ csrf_token() }}"},
+                body: JSON.stringify(body || {}),
+            });
+            const isJson = (res.headers.get("content-type") || "").includes("application/json");
+            const data = isJson ? await res.json() : null;
+            if (!res.ok || !data || data.success === false) {
+                const message = (data && (data.message || data.error))
+                    || (res.status === 403 ? "You do not have permission to do this." : "")
+                    || (res.status === 504 || res.status === 524 ? "The server took too long to answer." : "")
+                    || `Request failed (${res.status}).`;
+                const err = new Error(message);
+                err.data = data;
+                throw err;
+            }
+            return data;
+        }
+
+        function cutoffChunks(items, size) {
+            const chunks = [];
+            for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+            return chunks;
+        }
+
+        function showCutoffProgress(title, total) {
+            cutoffRunActive = true;
+            $("#cutoff_progress_title").text(title);
+            updateCutoffProgress(0, total, "Starting...", null);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("cutoff_progress_modal")).show();
+        }
+
+        function updateCutoffProgress(done, total, step, startedAt) {
+            const pct = total ? Math.round(done / total * 100) : 0;
+            $("#cutoff_progress_bar").css("width", pct + "%").text(pct >= 8 ? pct + "%" : "");
+            $("#cutoff_progress_count").text(`${done} / ${total}`);
+            $("#cutoff_progress_step").text(step);
+            let eta = "";
+            if (startedAt && done > 0 && done < total) {
+                const secondsLeft = Math.round((Date.now() - startedAt) / done * (total - done) / 1000);
+                eta = secondsLeft >= 60 ? `About ${Math.ceil(secondsLeft / 60)} minute(s) left` : `About ${secondsLeft} second(s) left`;
+            }
+            $("#cutoff_progress_eta").text(eta);
+        }
+
+        function hideCutoffProgress() {
+            cutoffRunActive = false;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("cutoff_progress_modal")).hide();
+        }
+
+        /** Sends ids in batches; send(batch) returns how many it processed. Throws with .done on failure. */
+        async function runCutoffBatches(ids, label, send) {
+            const startedAt = Date.now();
+            let done = 0;
+            for (const batch of cutoffChunks(ids, CUTOFF_BATCH_SIZE)) {
+                updateCutoffProgress(done, ids.length, label, startedAt);
+                try {
+                    const processed = await send(batch);
+                    done += Number.isFinite(processed) ? Math.min(processed, batch.length) : batch.length;
+                } catch (err) {
+                    err.done = done;
+                    throw err;
+                }
+            }
+            updateCutoffProgress(ids.length, ids.length, label, startedAt);
+            return done;
+        }
         $(document).ready(function () {
             loadCutoffPeriods();
 
@@ -1101,8 +1211,18 @@
             const endDate = $("#cutoff_modal_end_date").val();
             const selected = selectedEmployeeIds();
 
+            // A typed date that doesn't exist (e.g. 09/31) leaves the input empty but "badInput".
+            const invalidDate = [["#cutoff_modal_start_date", "Start date"], ["#cutoff_modal_end_date", "End date"]]
+                .find(([selector]) => $(selector)[0]?.validity?.badInput);
+            if (invalidDate) {
+                showCutoffFeedback(`${invalidDate[1]} is not a real date. Check the day, for example September has only 30 days.`, "danger");
+                $(invalidDate[0]).trigger("focus");
+                return;
+            }
+
             if (!title || !startDate || !endDate) {
-                showCutoffFeedback("Please fill in title, start date, and end date.", "danger");
+                const missing = [[!title, "title"], [!startDate, "start date"], [!endDate, "end date"]].filter(([m]) => m).map(([, n]) => n);
+                showCutoffFeedback(`Please fill in the ${missing.join(", ")}.`, "danger");
                 return;
             }
 
@@ -1120,67 +1240,50 @@
             submitCutoff(selected);
         }
 
-        function submitCutoff(selected) {
-            const title = ($("#cutoff_title").val() || "").trim();
-            const startDate = $("#cutoff_modal_start_date").val();
-            const endDate = $("#cutoff_modal_end_date").val();
+        async function submitCutoff(selected) {
+            const isEdit = !!editingCutoffId;
+            const payload = {
+                title: ($("#cutoff_title").val() || "").trim(),
+                start_date: $("#cutoff_modal_start_date").val(),
+                end_date: $("#cutoff_modal_end_date").val(),
+                payroll_date: $("#cutoff_payroll_date").val() || null,
+                remarks: ($("#cutoff_remarks").val() || "").trim() || null,
+                employees: selected,
+            };
+            const saveUrl = isEdit ? `{{ url('/cutoff-summaries') }}/${editingCutoffId}` : "{{ route('createCutoffSummaries') }}";
 
-            showCutoffFeedback(editingCutoffId ? "Saving and regenerating, please wait..." : "Generating cutoff summaries, please wait...", "info");
+            resetCutoffFeedback();
             const $saveBtn = $("#btn_save_cutoff");
             $saveBtn.prop("disabled", true).html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>'
-                + (editingCutoffId ? "Saving..." : "Generating..."));
+                + (isEdit ? "Saving..." : "Generating..."));
+            showCutoffProgress(isEdit ? "Saving and regenerating cutoff" : "Generating cutoff", selected.length);
 
-            const saveUrl = editingCutoffId
-                ? `{{ url('/cutoff-summaries') }}/${editingCutoffId}`
-                : '{{ route('createCutoffSummaries') }}';
-            fetch(saveUrl, {
-                method: editingCutoffId ? "PUT" : "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    title: title,
-                    start_date: startDate,
-                    end_date: endDate,
-                    payroll_date: $("#cutoff_payroll_date").val() || null,
-                    remarks: ($("#cutoff_remarks").val() || "").trim() || null,
-                    employees: selected
-                })
-            })
-                .then(async res => {
-                    const contentType = res.headers.get("content-type") || "";
-                    const isJson = contentType.includes("application/json");
-                    const payload = isJson ? await res.json() : await res.text();
-                    if (!res.ok) {
-                        const message = isJson
-                            ? (payload.message || (res.status === 403 ? "You do not have permission to generate cutoffs." : payload.error) || "Request failed.")
-                            : (payload || "Request failed.");
-                        throw new Error(message);
-                    }
-                    return payload;
-                })
-                .then(data => {
-                    if (data.success) {
-                        showCutoffFeedback(data.message || "Cutoff generated.", "success");
-                        toastr.success(data.message || "Cutoff generated.", "Information");
-                        resetCreateCutoffForm();
-                        $("#create_cutoff_modal").modal("hide");
-                        loadCutoffPeriods();
-                    } else {
-                        showCutoffFeedback(data.message || "Failed to generate cutoff.", "danger");
-                        toastr.error(data.message || "Failed to generate cutoff.", "Error");
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    const message = err?.message || "Failed to generate cutoff.";
-                    showCutoffFeedback(message, "danger");
-                    toastr.error(message, "Error");
-                })
-                .finally(() => {
-                    $saveBtn.prop("disabled", false).html(cutoffSaveLabel());
+            // Every batch sends the full list (for validation and, when editing, removals)
+            // plus the slice to generate now.
+            let lastMessage = null;
+            try {
+                await runCutoffBatches(selected, "Generating employee summaries", async batch => {
+                    const data = await cutoffPostJson(saveUrl, isEdit ? "PUT" : "POST", Object.assign({}, payload, {batch: batch}));
+                    lastMessage = data.message;
+                    return data.processed;
                 });
+                hideCutoffProgress();
+                toastr.success(lastMessage || "Cutoff generated.", "Information");
+                resetCreateCutoffForm();
+                $("#create_cutoff_modal").modal("hide");
+                loadCutoffPeriods();
+            } catch (err) {
+                console.error(err);
+                hideCutoffProgress();
+                const done = err.done || 0;
+                const message = (err.message || "Failed to generate cutoff.")
+                    + (done > 0 ? ` Stopped after ${done} of ${selected.length} employees; those are saved. Click ${isEdit ? "Save changes" : "Generate cutoff"} again to finish.` : "");
+                showCutoffFeedback(message, "danger");
+                toastr.error(message, "Error");
+                if (done > 0) loadCutoffPeriods();
+            } finally {
+                $saveBtn.prop("disabled", false).html(cutoffSaveLabel());
+            }
         }
 
         function showCutoffFeedback(message, type) {
@@ -1200,20 +1303,23 @@
             $("#cutoff_remarks").val("");
             $("#cutoff_modal_start_date").val("");
             $("#cutoff_modal_end_date").val("");
-            // Only last month can be generated (the server enforces this too).
+            // Last month or the month before it can be generated (the server enforces this too):
+            // a month's payroll uses the DTR of the month before it.
             const today = new Date();
             const pad = n => String(n).padStart(2, "0");
+            const firstEarliest = new Date(today.getFullYear(), today.getMonth() - 2, 1);
             const firstPrev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             const lastPrev = new Date(today.getFullYear(), today.getMonth(), 0);
             const toIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
             $("#cutoff_modal_start_date, #cutoff_modal_end_date")
-                .attr("min", toIso(firstPrev))
+                .attr("min", toIso(firstEarliest))
                 .attr("max", toIso(lastPrev));
             // Prefill the whole of last month (1st to last day).
             $("#cutoff_modal_start_date").val(toIso(firstPrev));
             $("#cutoff_modal_end_date").val(toIso(lastPrev));
             const monthLabel = firstPrev.toLocaleDateString("en-US", {month: "long", year: "numeric"});
-            $("#cutoff_period_hint").text(`Only ${monthLabel} can be generated (last month). Half-month ranges are fine.`);
+            const earliestLabel = firstEarliest.toLocaleDateString("en-US", {month: "long", year: "numeric"});
+            $("#cutoff_period_hint").text(`${earliestLabel} or ${monthLabel} can be generated. Half-month ranges are fine.`);
             $("#cutoff_title").attr("placeholder", `e.g. ${monthLabel.split(" ")[0]} 1-${lastPrev.getDate()}, ${firstPrev.getFullYear()}`);
             $("#cutoff_search_name").val("");
             buildCutoffTypeOptions([]);
@@ -1612,8 +1718,43 @@
         });
 
         $("#btn_generate_snapshot").click(function () {
-            postCutoffLifecycle("generate-snapshot", {}, $(this), "Generating...", null);
+            generateSnapshotInBatches($(this));
         });
+
+        /** start -> batches of employees (with progress) -> finish; a failure puts the cutoff back to draft. */
+        async function generateSnapshotInBatches($button) {
+            const cutoffId = currentCutoffDetail.id;
+            if (!cutoffId) return;
+            const base = `{{ url('/cutoff-summaries') }}/${cutoffId}/generate-snapshot`;
+            let started = false;
+
+            setButtonLoading($button, true, "Generating...");
+            showCutoffProgress("Generating snapshot", 0);
+            try {
+                const start = await cutoffPostJson(`${base}/start`);
+                started = true;
+                const ids = start.employee_ids || [];
+                await runCutoffBatches(ids, "Copying attendance, leave and pay", async batch => {
+                    const data = await cutoffPostJson(`${base}/batch`, "POST", {employee_ids: batch});
+                    return data.processed;
+                });
+                updateCutoffProgress(ids.length, ids.length, "Finishing...", null);
+                const finish = await cutoffPostJson(`${base}/finish`);
+                hideCutoffProgress();
+                toastr.success(finish.message, "Information");
+            } catch (err) {
+                console.error(err);
+                hideCutoffProgress();
+                if (started) {
+                    cutoffPostJson(`${base}/abandon`, "POST", {reason: err.message || "Stopped."}).catch(() => {});
+                }
+                toastr.error((err.message || "Snapshot generation failed.") + (started ? " The cutoff is back to draft; generate the snapshot again." : ""), "Error");
+            } finally {
+                setButtonLoading($button, false, "Generating...");
+                loadCutoffStatus(cutoffId);
+                loadCutoffPeriods();
+            }
+        }
 
         $("#btn_return_draft").click(function () {
             postCutoffLifecycle("return-to-draft", {}, $(this), "Sending back...", null);

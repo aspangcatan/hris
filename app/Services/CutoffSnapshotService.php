@@ -68,6 +68,116 @@ class CutoffSnapshotService
         return $this->report($cutoffId);
     }
 
+    // -----------------------------------------------------------------------
+    // Generation in batches, driven by the page (no request runs long enough to
+    // time out): start -> batch, batch, ... -> finish. While it runs the cutoff
+    // is "processing"; each batch refreshes processing_started_at, so only an
+    // abandoned run (page closed) goes stale and can be started again after
+    // CutoffLifecycleService::STALE_PROCESSING_MINUTES.
+    // -----------------------------------------------------------------------
+
+    /** Draft -> processing; clears the old snapshot and saves the rule versions. Returns the employees to process. */
+    public function startBatches(int $cutoffId, int $userId): array
+    {
+        $employeeIds = $this->cutoffEmployeeIds($cutoffId);
+        if (empty($employeeIds)) {
+            throw ValidationException::withMessages(['cutoff_id' => 'This cutoff has no employees yet. Add employees first.']);
+        }
+
+        $this->lifecycle->beginProcessing($cutoffId, $userId);
+        try {
+            DB::transaction(function () use ($cutoffId) {
+                $master = $this->lifecycle->find($cutoffId);
+                $this->prepare($cutoffId, (string) $master->period_start, (string) $master->period_end);
+            });
+        } catch (\Throwable $exception) {
+            $this->lifecycle->failProcessing($cutoffId, $userId, 'Snapshot generation failed: ' . $exception->getMessage());
+            throw $exception;
+        }
+
+        return $employeeIds;
+    }
+
+    /** One batch of employees, in its own transaction. Returns how many were processed. */
+    public function processBatch(int $cutoffId, int $userId, array $employeeIds): int
+    {
+        $this->assertProcessing($cutoffId);
+        $employeeIds = array_values(array_intersect($this->cutoffEmployeeIds($cutoffId), array_map('intval', $employeeIds)));
+        if (empty($employeeIds)) {
+            return 0;
+        }
+
+        try {
+            DB::transaction(function () use ($cutoffId, $userId, $employeeIds) {
+                // A batch sent twice replaces its own rows instead of duplicating them.
+                foreach (self::SNAPSHOT_TABLES as $table) {
+                    if ($table !== 'hris.cutoff_config_snapshots') {
+                        DB::table($table)->where('cutoff_id', $cutoffId)->whereIn('employee_id', $employeeIds)->delete();
+                    }
+                }
+                $this->buildEmployees($cutoffId, $userId, $employeeIds, $this->savedPointsTable($cutoffId));
+                DB::table($this->payrollServices->getCutoffSummaryMasterTableName())
+                    ->where('id', $cutoffId)->update(['processing_started_at' => now()]);
+            });
+        } catch (\Throwable $exception) {
+            $this->lifecycle->failProcessing($cutoffId, $userId, 'Snapshot generation failed: ' . $exception->getMessage());
+            throw $exception;
+        }
+
+        return count($employeeIds);
+    }
+
+    /** Processing -> for review, once every employee of the cutoff has a snapshot. */
+    public function finishBatches(int $cutoffId, int $userId): array
+    {
+        $this->assertProcessing($cutoffId);
+        $done = DB::table('hris.cutoff_employee_snapshots')->where('cutoff_id', $cutoffId)->pluck('employee_id')
+            ->map(fn($id) => (int) $id)->all();
+        $missing = array_diff($this->cutoffEmployeeIds($cutoffId), $done);
+        if (!empty($missing)) {
+            $this->lifecycle->failProcessing($cutoffId, $userId, count($missing) . ' employee(s) were not processed.');
+            throw ValidationException::withMessages(['cutoff_id' => count($missing) . ' employee(s) were not processed. Generate the snapshot again.']);
+        }
+
+        DB::transaction(fn() => $this->lifecycle->finishProcessing($cutoffId, $userId, self::VERSION));
+
+        return $this->report($cutoffId);
+    }
+
+    /** Puts a run the page gave up on (a failed request) back to draft. */
+    public function abandonBatches(int $cutoffId, int $userId, string $reason): void
+    {
+        $master = $this->lifecycle->find($cutoffId);
+        if ($master && strtolower((string) $master->status) === CutoffLifecycleService::PROCESSING) {
+            $this->lifecycle->failProcessing($cutoffId, $userId, 'Snapshot generation stopped: ' . mb_substr($reason, 0, 900));
+        }
+    }
+
+    private function cutoffEmployeeIds(int $cutoffId): array
+    {
+        return DB::table($this->payrollServices->getCutoffSummaryTableName())->where('cutoff_id', $cutoffId)
+            ->orderBy('employee_id')->pluck('employee_id')->map(fn($id) => (int) $id)->all();
+    }
+
+    private function assertProcessing(int $cutoffId): void
+    {
+        $master = $this->lifecycle->find($cutoffId);
+        if (!$master || strtolower((string) $master->status) !== CutoffLifecycleService::PROCESSING) {
+            throw ValidationException::withMessages(['cutoff_id' => 'This cutoff is not being generated. Start the snapshot again.']);
+        }
+    }
+
+    /** Table III as saved for this cutoff by prepare(). */
+    private function savedPointsTable(int $cutoffId): array
+    {
+        $payload = DB::table('hris.cutoff_config_snapshots')->where(['cutoff_id' => $cutoffId, 'config_key' => 'table_iii'])->value('payload');
+        if ($payload === null) {
+            throw ValidationException::withMessages(['cutoff_id' => 'The rule settings of this run are missing. Start the snapshot again.']);
+        }
+
+        return json_decode($payload, true) ?: [];
+    }
+
     /** Counts, excluded employees and exceptions of the cutoff's snapshot. */
     public function report(int $cutoffId): array
     {
@@ -132,19 +242,29 @@ class CutoffSnapshotService
     private function build(int $cutoffId, int $userId): void
     {
         $master = $this->lifecycle->find($cutoffId);
-        $start = (string) $master->period_start;
-        $end = (string) $master->period_end;
-        $summaryTable = $this->payrollServices->getCutoffSummaryTableName();
-        $employeeIds = DB::table($summaryTable)->where('cutoff_id', $cutoffId)->pluck('employee_id')
-            ->map(fn($id) => (int) $id)->all();
+        $pointsTable = $this->prepare($cutoffId, (string) $master->period_start, (string) $master->period_end);
+        $this->buildEmployees($cutoffId, $userId, $this->cutoffEmployeeIds($cutoffId), $pointsTable);
+    }
 
+    /** Clears the cutoff's snapshot, frees its included late changes and saves the rule versions. Returns Table III. */
+    private function prepare(int $cutoffId, string $start, string $end): array
+    {
         foreach (self::SNAPSHOT_TABLES as $table) {
             DB::table($table)->where('cutoff_id', $cutoffId)->delete();
         }
-        $adjustments = app(CutoffAdjustmentService::class);
-        $adjustments->release($cutoffId);
+        app(CutoffAdjustmentService::class)->release($cutoffId);
 
-        $pointsTable = $this->captureConfig($cutoffId, $start, $end);
+        return $this->captureConfig($cutoffId, $start, $end);
+    }
+
+    /** Snapshot rows for the given employees of the cutoff. */
+    private function buildEmployees(int $cutoffId, int $userId, array $employeeIds, array $pointsTable): void
+    {
+        $master = $this->lifecycle->find($cutoffId);
+        $start = (string) $master->period_start;
+        $end = (string) $master->period_end;
+        $summaryTable = $this->payrollServices->getCutoffSummaryTableName();
+        $adjustments = app(CutoffAdjustmentService::class);
 
         $people = $this->loadPeople($employeeIds);
         $salaries = DB::table('hris.employee_salary_history')->whereIn('userid', $employeeIds)->get()->groupBy('userid');

@@ -8,7 +8,7 @@
                 <div class="modal-hero" style="flex:1">
                     <i class="bi bi-calendar-plus text-white" style="font-size:2.2rem"></i>
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2" data-bs-dismiss="modal" aria-label="Close" style="opacity:.8"></button>
+                <button type="button" class="btn-close me-2" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <iframe title="Leave Application" class="w-100" style="min-height: 700px;max-height: 700px"

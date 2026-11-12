@@ -10,13 +10,22 @@
         </button>
     </div>
 
-    <div class="row g-3">
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h5 class="fw-bold card-title mb-0">Earnings</h5>
-                    </div>
+    <div class="card">
+        <div class="card-body">
+            <ul class="nav nav-tabs mb-3" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab_earnings" role="tab">
+                        Earnings <span class="badge bg-secondary ms-1" id="earnings_count">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button type="button" class="nav-link" data-bs-toggle="tab" data-bs-target="#tab_deductions" role="tab">
+                        Deductions <span class="badge bg-secondary ms-1" id="deductions_count">0</span>
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tab_earnings" role="tabpanel">
                     <div class="table-responsive">
                         <table class="table align-middle">
                             <thead>
@@ -35,14 +44,7 @@
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <h5 class="fw-bold card-title mb-0">Deductions</h5>
-                    </div>
+                <div class="tab-pane fade" id="tab_deductions" role="tabpanel">
                     <div class="table-responsive">
                         <table class="table align-middle">
                             <thead>
@@ -224,6 +226,8 @@
             const $deductions = $("#deductions_table_body");
             $earnings.empty();
             $deductions.empty();
+            $("#earnings_count").text(earnings.length);
+            $("#deductions_count").text(deductions.length);
 
             if (!earnings.length) {
                 $earnings.append("<tr><td colspan='8' class='text-muted text-center py-3'>No earnings configured.</td></tr>");

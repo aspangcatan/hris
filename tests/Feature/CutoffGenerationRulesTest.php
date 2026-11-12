@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 /**
  * Rules on the "Generate Cutoff" feature: payroll.settings permission,
- * previous month only, one month span, resigned/retired left out, and the
+ * previous two months only, one month span, resigned/retired left out, and the
  * details modal reading rows by cutoff ID.
  */
 class CutoffGenerationRulesTest extends TestCase
@@ -98,15 +98,21 @@ class CutoffGenerationRulesTest extends TestCase
     }
 
     /** @test */
-    public function only_the_previous_month_can_be_generated()
+    public function only_the_previous_two_months_can_be_generated()
     {
         $this->grantPayrollSettings();
 
+        // Two months back is allowed: a month's payroll uses the DTR of the month before it.
         $twoMonthsAgo = now()->startOfMonth()->subMonths(2);
         $this->generate($twoMonthsAgo->toDateString(), $twoMonthsAgo->copy()->endOfMonth()->toDateString(), [$this->userId])
+            ->assertOk()
+            ->assertJsonFragment(['success' => true]);
+
+        $threeMonthsAgo = now()->startOfMonth()->subMonths(3);
+        $this->generate($threeMonthsAgo->toDateString(), $threeMonthsAgo->copy()->endOfMonth()->toDateString(), [$this->userId])
             ->assertStatus(422)
             ->assertJsonFragment(['success' => false])
-            ->assertSee('previous month', false);
+            ->assertSee('previous two months', false);
 
         $thisMonth = now()->startOfMonth();
         $this->generate($thisMonth->toDateString(), $thisMonth->copy()->addDays(5)->toDateString(), [$this->userId])

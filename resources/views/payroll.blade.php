@@ -341,7 +341,13 @@
 
                         const row = `
                     <tr data-name="${fullName.toLowerCase()}" data-userid="${emp.employee_id}">
-                        <td class="text-center">${fullName}</td>
+                        <td class="text-start text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2 btn-employee-components"
+                                    data-userid="${emp.employee_id}" data-name="${$('<div>').text(fullName).html()}"
+                                    title="View earnings and deductions set for this employee">
+                                <i class="bi bi-list-columns-reverse"></i>
+                            </button>${$('<div>').text(fullName).html()}
+                        </td>
                         <td>
                             <input class="form-control text-center employee-adjustment" type="number"
                                    data-code="__SALARY__" value="${emp.salary_adjustment ?? 0}" />
@@ -358,6 +364,64 @@
                     console.error("Error fetching cutoff employees:", err);
                     toastr.error("Failed to load employees for this cutoff.", "Error");
                 });
+        }
+
+        // ---- Earnings & deductions reference (Append Employees) ----
+        const ROUTE_EMPLOYEE_COMPONENTS = "{{ url('/payroll') }}";
+
+        $(document).on("click", ".btn-employee-components", function () {
+            openEmployeeComponents($(this).data("userid"), $(this).data("name"));
+        });
+
+        $(document).on("shown.bs.modal", "#employee_components_modal", function () {
+            $(".modal-backdrop").last().addClass("employee-components-backdrop");
+        });
+
+        async function openEmployeeComponents(employeeId, name) {
+            const esc = v => $('<div>').text(v == null ? '' : String(v)).html();
+            const money = v => formatCurrency(v || 0);
+            $("#ec_employee_name").text(name || "Earnings & Deductions");
+            $("#ec_source").text("What this employee's payroll starts from.");
+            $("#ec_body").html('<div class="text-center text-muted py-4">Loading...</div>');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("employee_components_modal")).show();
+
+            try {
+                const res = await fetch(`${ROUTE_EMPLOYEE_COMPONENTS}/${payroll_id}/employees/${employeeId}/components`, {headers: {"Accept": "application/json"}});
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || "Could not load the components.");
+
+                $("#ec_source").text(data.source === "snapshot"
+                    ? "As saved in this payroll's cutoff snapshot."
+                    : "From the employee's current Payroll Settings (this cutoff has no snapshot).");
+
+                const table = (title, rows, total, flagLabel) => `
+                    <div class="ec-table">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>${title}</th><th class="text-center" style="width:22%">${flagLabel}</th><th class="text-end" style="width:25%">Amount</th></tr></thead>
+                            <tbody>${rows.length ? rows.map(r => `
+                                <tr>
+                                    <td>${esc(r.name)} <span class="text-muted small">${esc(r.code)}</span></td>
+                                    <td class="text-center">${r.taxable ? '<i class="bi bi-check-lg text-success"></i>' : '<span class="text-muted">—</span>'}</td>
+                                    <td class="text-end">${money(r.amount)}</td>
+                                </tr>`).join("") : `<tr><td colspan="3" class="text-center text-muted py-3">None set.</td></tr>`}
+                            </tbody>
+                            <tfoot><tr><td colspan="2">Total ${title.toLowerCase()}</td><td class="text-end">${money(total)}</td></tr></tfoot>
+                        </table>
+                    </div>`;
+
+                $("#ec_body").html(`
+                    <div class="ec-summary">
+                        <div class="ec-stat"><small>Basic salary</small><strong>${money(data.basic_salary)}</strong></div>
+                        <div class="ec-stat"><small>Earnings</small><strong class="text-success">${money(data.total_earnings)}</strong></div>
+                        <div class="ec-stat"><small>Deductions</small><strong class="text-danger">${money(data.total_deductions)}</strong></div>
+                    </div>
+                    ${table("Earnings", data.earnings || [], data.total_earnings, "Taxable")}
+                    ${table("Deductions", data.deductions || [], data.total_deductions, "Before tax")}
+                    <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>Withholding tax and late/absence deductions are computed when the payroll is generated, so they are not listed here.</div>
+                `);
+            } catch (err) {
+                $("#ec_body").html(`<div class="alert alert-danger mb-0">${esc(err.message || "Could not load the components.")}</div>`);
+            }
         }
 
         function renderAdjustmentColumnHeaders(columns) {
@@ -500,9 +564,6 @@
             window.location.href = "{{ url('/payroll/payslip') }}/" + id;
         }
 
-        function downloadSummary(id) {
-            window.location.href = "{{ url('/payroll/summary') }}/" + id;
-        }
 
         function viewPayroll(id, type) {
             payroll_id = id;
@@ -717,7 +778,6 @@
                         }
                         if (item.can_generate_payslip) {
                             actions.push(`<li><a class="dropdown-item" href="#" onclick="downloadPayslip(${item.id})">Download Payslip</a></li>`);
-                            actions.push(`<li><a class="dropdown-item" href="#" onclick="downloadSummary(${item.id})">Print Summary</a></li>`);
                         }
 
                         if (actions.length === 0) {

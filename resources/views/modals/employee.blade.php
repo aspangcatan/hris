@@ -151,11 +151,14 @@
                                                 Leave Credits
                                             </button>
                                         </li>
+                                        {{-- Payroll tab hidden: pay setup is managed on Payroll Settings (/payroll_settings). --}}
+                                        @if(false)
                                         <li class="nav-item">
                                             <button class="nav-link" data-bs-toggle="tab" data-bs-target="#payroll">
                                                 Payroll
                                             </button>
                                         </li>
+                                        @endif
                                     </ul>
                                     <div class="tab-content pt-2">
                                         <div class="tab-pane fade pt-3" id="personal_information">

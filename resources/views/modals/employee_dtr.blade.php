@@ -1,52 +1,7 @@
 @php($rawLogManagers = in_array(strtolower((string) session('access_rights')), ['admin', 'it', 'dh'], true))
 
 <style>
-    .dtr-modal-theme .modal-content {
-        border: 0;
-        border-radius: 22px;
-        overflow: hidden;
-        box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
-    }
-
-    .dtr-modal-theme .modal-header {
-        background: linear-gradient(135deg, #0f7b7a, #0b6b77);
-        color: #fff;
-        border: 0;
-        padding: 1.1rem 1.5rem;
-        justify-content: center;
-        position: relative;
-    }
-
-    .dtr-modal-theme .modal-header .btn-close {
-        position: absolute;
-        right: 1rem;
-        top: 1rem;
-        filter: invert(1);
-        opacity: 0.9;
-    }
-
-    .dtr-modal-theme .modal-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.18);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .dtr-modal-theme .modal-title {
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        margin-top: 0.7rem;
-    }
-
-    .dtr-modal-theme .modal-body {
-        background: #f8fafc;
-        padding: 1.6rem;
-    }
-
+    /* Header, body and buttons come from the app theme (modal-heading / btn-modal-*). */
     .dtr-card {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -134,13 +89,14 @@
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="text-center">
-                    <div class="modal-icon">
-                        <i class="bi bi-clock-history fs-3"></i>
+                <div class="modal-heading">
+                    <div class="modal-icon"><i class="bi bi-clock-history"></i></div>
+                    <div>
+                        <h5 class="modal-title">Daily Time Record Viewer</h5>
+                        <p class="modal-sub">Time logs for the selected month.</p>
                     </div>
-                    <h5 class="modal-title text-white fs-1">Daily Time Record Viewer</h5>
                 </div>
-                <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="dtr-card dtr-controls mb-4">
@@ -307,12 +263,14 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="text-center w-100">
-                    <div class="modal-icon">
-                        <i class="bi bi-plus-circle fs-3"></i>
+                <div class="modal-heading">
+                    <div class="modal-icon"><i class="bi bi-plus-circle"></i></div>
+                    <div>
+                        <h5 class="modal-title">Add Time Log</h5>
+                        <p class="modal-sub">A missing IN or OUT punch for one day.</p>
                     </div>
-                    <h5 class="modal-title text-white fs-1">Add Time Log</h5>
                 </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="dtr-card">
@@ -337,8 +295,7 @@
 
                 <div class="dtr-footer-actions">
                     <button type="button" class="btn btn-secondary btn-modal-close" data-bs-dismiss="modal" aria-label="Close">Close</button>
-                    <button type="button" class="btn btn-success" id="btn_save_log" title="Submit Log">
-                        <i class="bi bi-check2-circle"></i>
+                    <button type="button" class="btn btn-modal-save" id="btn_save_log" title="Submit Log">
                         Save Changes
                     </button>
                 </div>

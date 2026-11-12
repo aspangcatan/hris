@@ -63,23 +63,6 @@
             margin-bottom: .35rem;
         }
 
-        #scheduleAccessModal .modal-content {
-            border: 0;
-            border-radius: 18px;
-            overflow: hidden;
-            box-shadow: 0 24px 40px rgba(18, 27, 44, 0.2);
-        }
-
-        #scheduleAccessModal .modal-header {
-            border-bottom: 1px solid #e5ebf3;
-            background: #f8fafc;
-        }
-
-        #scheduleAccessModal .modal-title {
-            color: #1b2a41;
-            font-weight: 700;
-        }
-
         #scheduleAccessModal .modal-toolbar {
             display: grid;
             grid-template-columns: minmax(220px, 320px) auto;
@@ -215,11 +198,14 @@
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <div>
-                            <h5 class="modal-title mb-1">Assign Sections</h5>
-                            <div class="text-muted small" id="modal_manager_label"></div>
+                        <div class="modal-heading">
+                            <div class="modal-icon"><i class="bi bi-diagram-3"></i></div>
+                            <div>
+                                <h5 class="modal-title">Assign Sections</h5>
+                                <p class="modal-sub" id="modal_manager_label"></p>
+                            </div>
                         </div>
-                        <button type="button" class="btn-close fs-1" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="modal-toolbar mb-3">
@@ -240,11 +226,8 @@
                         <div class="section-box" id="modal_section_list"></div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-light" data-bs-dismiss="modal" type="button">Cancel</button>
-                        <button class="btn btn-action btn-edit btn-toolbar-action" id="btn_save_modal_sections" type="button">
-                            <i class="bi bi-save2"></i>
-                            <span>Save Sections</span>
-                        </button>
+                        <button class="btn btn-modal-close" data-bs-dismiss="modal" type="button">Cancel</button>
+                        <button class="btn btn-modal-save" id="btn_save_modal_sections" type="button">Save Sections</button>
                     </div>
                 </div>
             </div>

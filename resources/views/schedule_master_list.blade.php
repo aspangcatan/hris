@@ -69,15 +69,6 @@
             border-color: #0f766e;
             color: #fff;
         }
-
-        #scheduleMasterModal .modal-content {
-            border-radius: 16px;
-        }
-
-        #scheduleMasterModal .modal-header {
-            background: #0f766e;
-            color: #fff;
-        }
     </style>
 
     <div class="schedule-board">
@@ -119,8 +110,14 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title text-white fs-3" id="schedule_master_modal_title">Add Schedule Master</h5>
-                    <button type="button" class="btn-close btn-close-white fs-2" data-bs-dismiss="modal"></button>
+                    <div class="modal-heading">
+                        <div class="modal-icon"><i class="bi bi-clock"></i></div>
+                        <div>
+                            <h5 class="modal-title" id="schedule_master_modal_title">Add Schedule Master</h5>
+                            <p class="modal-sub">A shift's time-in, time-out and break window.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="schedule_master_id">
@@ -167,7 +164,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-success btn-view" id="btn_save_schedule_master" type="button">Save</button>
+                    <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-modal-save" id="btn_save_schedule_master" type="button">Save</button>
                 </div>
             </div>
         </div>
