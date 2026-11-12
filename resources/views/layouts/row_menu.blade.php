@@ -2,7 +2,9 @@
     Row action menu: in any table on any page, when the last cell of a row holds two or more
     buttons, they are moved into a "⋮" dropdown. The original buttons are MOVED (not copied),
     so their click handlers, data attributes and modal toggles keep working. Rows that pages
-    add later with JavaScript are handled too (MutationObserver).
+    add later with JavaScript are handled too (MutationObserver). When the actions sit in separate
+    cells at the end of the row (e.g. Edit | Delete under a colspan="2" header), those cells are
+    merged into the last one first.
 
     Opt out for one table or cell: add data-row-menu="off" to it.
 --}}
@@ -83,10 +85,37 @@
             });
         }
 
+        // A cell that holds nothing but action buttons (no other text, no form fields).
+        function isButtonOnlyCell(cell) {
+            if (!cell || cell.tagName !== 'TD') return false;
+            if (cell.querySelector('.dropdown, .dropstart, .dropend, .dropup, input, select, textarea')) return false;
+            const buttons = cell.querySelectorAll(ACTION_SELECTOR);
+            if (!buttons.length) return false;
+            let text = cell.textContent;
+            buttons.forEach(b => { text = text.replace(b.textContent, ''); });
+            return !text.trim();
+        }
+
+        // Some tables put each action in its own cell (Edit | Delete under one colspan header).
+        // Pull the buttons of those neighbouring button-only cells into the last cell, and widen
+        // the last cell by their colspan so the columns still line up with the header.
+        function absorbButtonCells(cell) {
+            if (!isButtonOnlyCell(cell)) return;
+            let prev = cell.previousElementSibling;
+            while (isButtonOnlyCell(prev) && !prev.closest('[data-row-menu="off"]')) {
+                const before = prev.previousElementSibling;
+                Array.from(prev.childNodes).reverse().forEach(node => cell.insertBefore(node, cell.firstChild));
+                cell.colSpan = cell.colSpan + prev.colSpan;
+                prev.remove();
+                prev = before;
+            }
+        }
+
         function convertCell(cell) {
             if (cell.dataset.rowMenu === 'done' || cell.closest('[data-row-menu="off"]')) return;
             if (cell.querySelector('.dropdown, .dropstart, .dropend, .dropup, input, select, textarea')) return;
 
+            if (cell.querySelectorAll(ACTION_SELECTOR).length === 1) absorbButtonCells(cell);
             const buttons = Array.from(cell.querySelectorAll(ACTION_SELECTOR));
             if (buttons.length < 2) return;
             cell.dataset.rowMenu = 'done';
