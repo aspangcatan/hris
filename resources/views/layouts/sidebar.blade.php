@@ -252,8 +252,8 @@
         @endpermission
         @endif
 
-        {{-- PAYROLL MANAGEMENT --}}
-        @if(true)
+        {{-- PAYROLL MANAGEMENT (hidden for now: change false to true to show it again) --}}
+        @if(false)
         @if(permission_check('payroll.view') || permission_check('payroll.settings') || permission_check('payroll.manage'))
             <li class="nav-heading">Payroll Management</li>
             @permission('payroll.view')
