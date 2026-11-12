@@ -1120,7 +1120,20 @@ class DTRController extends Controller
             }
 
 
-            $pdf = SnappyPdf::loadView('pdf.old_dtr', ['employees' => $dtrData])
+            // DTR_PDF_ENGINE in .env picks the renderer (config/pdf.php).
+            if (strtolower((string) config('pdf.dtr_engine', 'snappy')) === 'dompdf') {
+                return \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.old_dtr', [
+                    'employees' => $dtrData,
+                    'pdfEngine' => 'dompdf',
+                ])
+                    ->setPaper('A4', 'portrait')
+                    // Keep 96: any other dpi makes dompdf emit blank pages for this layout.
+                    // Sizing differences are handled in the template's dompdf-only CSS.
+                    ->setOption('dpi', 96)
+                    ->stream('DTR.pdf', ['Attachment' => false]);
+            }
+
+            $pdf = SnappyPdf::loadView('pdf.old_dtr', ['employees' => $dtrData, 'pdfEngine' => 'snappy'])
                 ->setPaper('A4', 'portrait')
                 ->setOption('margin-top', 5)
                 ->setOption('margin-bottom', 5)

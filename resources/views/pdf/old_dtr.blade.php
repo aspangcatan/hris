@@ -92,6 +92,27 @@
             transform: translateX(-50%);
         }
 
+        @if(($pdfEngine ?? 'snappy') === 'dompdf')
+        /* dompdf: wkhtmltopdf's margin options don't exist here, so set them on the page. */
+        @page { margin: 5mm; }
+
+        /* dompdf mishandles height:100% rows inside the fixed-height sheet (it emits
+           blank pages), so let rows size to their content. */
+        table.employee-sheet > tbody > tr,
+        table.employee-sheet > tbody > tr > td { height: auto; }
+
+        /* wkhtmltopdf's smart shrinking scales these down; dompdf doesn't, so size them
+           to fit the column directly. */
+        body { line-height: 1.15; }
+        table.logs td { padding-top: 1px; padding-bottom: 1px; line-height: 1.15; }
+        .dtr-hdr { font-size: 12px !important; white-space: nowrap; }
+        .dtr-gap-reg { margin-left: 18px !important; }
+        .dtr-gap-sat { margin-left: 108px !important; }
+        .dtr-foot { font-size: 11.5px !important; }
+        .dtr-cert { font-size: 10.5px !important; }
+        .dtr-ul { font-size: 11px !important; top: 46px !important; }
+        @endif
+
     </style>
 </head>
 <body>
@@ -135,7 +156,7 @@
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
                         <tr>
-                            <td style="width: 10%"><img src="{{ url('img/logo.png') }}" width="75"/></td>
+                            <td style="width: 10%"><img src="{{ ($pdfEngine ?? 'snappy') === 'dompdf' ? public_path('img/logo.png') : url('img/logo.png') }}" width="75"/></td>
                             <td style="width: 13%"></td>
                             <td style="vertical-align: top;width: 50%">
                                 <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
@@ -145,10 +166,10 @@
                             <td></td>
                         </tr>
                     </table>
-                    <div style="margin-top: 15px;font-size: 14px">For the month of:
+                    <div class="dtr-hdr" style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
-                    <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
-                            style="margin-left: 25px">Reg. days
+                    <div class="dtr-hdr" style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
+                            class="dtr-gap-reg" style="margin-left: 25px">Reg. days
                             @if(!empty($employee['reg_days_am']))
                                 <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold; line-height: 1.1;">{!! nl2br(e($formatRegDays($employee['reg_days_am']))) !!}</span>
                             @else
@@ -161,7 +182,7 @@
                                 _____
                             @endif
                             PM</span></div>
-                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays _______________</span>
+                    <div class="dtr-hdr" style="font-size: 14px"><span>departure</span> <span class="dtr-gap-sat" style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
@@ -264,9 +285,9 @@
                     </tr>
                     
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
+                <div class="dtr-cert" style="border-top: 1px solid black;padding: 6.5px;font-size: 11.5px; position: relative;">
                     @if(!$noAutomation && $employee['division'] == '2')
-                    <div style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
+                    <div class="dtr-ul" style="position: absolute; right: 30px; top: 50px; font-weight: bold; font-size: 12px; text-align: start;">
                         <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
                     </div>
@@ -282,7 +303,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 12.5px">Verified as to the prescribed office hours
+                            <td class="dtr-foot" style="text-align: center;font-size: 12.5px">Verified as to the prescribed office hours
                             </td>
                             <td></td>
                         </tr>
@@ -305,7 +326,7 @@
                     <div class="form-title">Civil Service Form 48</div>
                     <table style="width: 100%">
                         <tr>
-                            <td style="width: 10%"><img src="{{ url('img/logo.png') }}" width="75"/></td>
+                            <td style="width: 10%"><img src="{{ ($pdfEngine ?? 'snappy') === 'dompdf' ? public_path('img/logo.png') : url('img/logo.png') }}" width="75"/></td>
                             <td style="width: 13%"></td>
                             <td style="vertical-align: top;width: 50%">
                                 <div class="form-header" style="padding-top: 15px">DAILY TIME RECORD</div>
@@ -315,10 +336,10 @@
                             <td></td>
                         </tr>
                     </table>
-                    <div style="margin-top: 15px;font-size: 14px">For the month of:
+                    <div class="dtr-hdr" style="margin-top: 15px;font-size: 14px">For the month of:
                         <strong>{{ $employee['date'] }}</strong></div>
-                    <div style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
-                            style="margin-left: 25px">Reg. days
+                    <div class="dtr-hdr" style="margin-top: 5px;font-size: 14px"><span>Official hours of arrival and</span> <span
+                            class="dtr-gap-reg" style="margin-left: 25px">Reg. days
                             @if(!empty($employee['reg_days_am']))
                                 <span style="display:inline-block; min-width: 40px; text-align: center; border-bottom: 1px solid black; font-weight: bold; line-height: 1.1;">{!! nl2br(e($formatRegDays($employee['reg_days_am']))) !!}</span>
                             @else
@@ -331,7 +352,7 @@
                                 _____
                             @endif
                             PM</span></div>
-                    <div style="font-size: 14px"><span>departure</span> <span style="margin-left: 132px">Saturdays _______________</span>
+                    <div class="dtr-hdr" style="font-size: 14px"><span>departure</span> <span class="dtr-gap-sat" style="margin-left: 132px">Saturdays _______________</span>
                     </div>
                 </div>
                 <table class="logs" style="margin-top: 10px;margin-bottom: 10px">
@@ -432,9 +453,9 @@
                     </tr>
                     
                 </table>
-                <div style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
+                <div class="dtr-cert" style="border-top: 1px solid black;padding: 6.5px;font-size: 12px; position: relative;">
                     @if(!$noAutomation && $employee['division'] == '2')
-                    <div style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: start;">
+                    <div class="dtr-ul" style="position: absolute; right: 20px; top: 50px; font-weight: bold; font-size: 11.5px; text-align: start;">
                         <div>U - {{ $employee['undertime_count'] }} ({{ $formatDuration($employee['undertime_total_minutes'] ?? 0) }})</div>
                         <div>L - {{ $employee['late_count'] }} ({{ $formatDuration($employee['late_total_minutes'] ?? 0) }})</div>
                     </div>
@@ -450,7 +471,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
+                            <td class="dtr-foot" style="text-align: center;font-size: 14px">Verified as to the prescribed office hours
                             </td>
                             <td></td>
                         </tr>
@@ -461,7 +482,7 @@
                         </tr>
                         <tr>
                             <td></td>
-                            <td style="text-align: center;font-size: 14px">In Charge</td>
+                            <td class="dtr-foot" style="text-align: center;font-size: 14px">In Charge</td>
                             <td></td>
                         </tr>
                     </table>
