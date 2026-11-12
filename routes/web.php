@@ -612,9 +612,16 @@ Route::group(['middleware' => 'auth'], function () {
     Route::get('/reorientation/employee-modules', [\App\Http\Controllers\ReorientationController::class, 'getEmployeeModules'])
         ->name('reorientation.employee_modules')->middleware('permission:reorientation.check');
     Route::get('/reorientation/employee-submission', [\App\Http\Controllers\ReorientationController::class, 'getEmployeeSubmission'])
-        ->name('reorientation.employee_submission')->middleware('permission:reorientation.check');
+        ->name('reorientation.employee_submission')->middleware('permission:reorientation.check|reorientation.answers');
     Route::post('/reorientation/check', [\App\Http\Controllers\ReorientationController::class, 'checkSubmission'])
         ->name('reorientation.check')->middleware('permission:reorientation.check');
+
+    Route::get('/reorientation/answers', [\App\Http\Controllers\ReorientationController::class, 'answersPage'])
+        ->name('reorientation.answers')->middleware('permission:reorientation.answers');
+    Route::get('/reorientation/answers/list', [\App\Http\Controllers\ReorientationController::class, 'getAnswerList'])
+        ->name('reorientation.answers.list')->middleware('permission:reorientation.answers');
+    Route::post('/reorientation/answers/check', [\App\Http\Controllers\ReorientationController::class, 'checkSubmissionsBulk'])
+        ->name('reorientation.answers.check')->middleware('permission:reorientation.answers');
 });
 
     // SALN List View Example

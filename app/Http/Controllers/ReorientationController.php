@@ -202,4 +202,75 @@ class ReorientationController extends Controller
             return response()->json(['error' => $e->getMessage()], 422);
         }
     }
+
+    // -----------------------------------------------------------------------
+    // Reorientation Answers page (HR)
+    // -----------------------------------------------------------------------
+
+    public function answersPage()
+    {
+        return view('reorientation_answers', ['modules' => $this->service->modules()]);
+    }
+
+    public function getAnswerList(Request $request)
+    {
+        $moduleNo = (int) $request->input('module_no');
+        $status   = (string) $request->input('status', 'submitted');
+
+        if (!$this->service->isValidModule($moduleNo)) {
+            return response()->json(['error' => 'Invalid module.'], 422);
+        }
+        if (!in_array($status, ['not_started', 'submitted', 'passed', 'failed'], true)) {
+            return response()->json(['error' => 'Invalid status.'], 422);
+        }
+
+        $paginator = $this->service->getAnswerList($moduleNo, $status, trim((string) $request->input('search', '')));
+
+        return response()->json([
+            'data'       => $paginator->items(),
+            'counts'     => $this->service->getAnswerCounts(),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+            ],
+        ]);
+    }
+
+    public function checkSubmissionsBulk(Request $request)
+    {
+        try {
+            $request->validate([
+                'module_no'        => 'required|integer',
+                'submission_ids'   => 'required|array|min:1',
+                'submission_ids.*' => 'integer',
+                'status'           => 'required|in:passed,failed',
+                'remarks'          => 'nullable|string|max:5000',
+            ]);
+
+            $moduleNo = (int) $request->input('module_no');
+            if (!$this->service->isValidModule($moduleNo)) {
+                throw new \Exception('Invalid module.');
+            }
+
+            $remarks = trim((string) $request->input('remarks'));
+            if ($request->input('status') === 'failed' && $remarks === '') {
+                throw new \Exception('Please add remarks so the employees know what to improve.');
+            }
+
+            $count = $this->service->checkSubmissions(
+                $moduleNo,
+                $request->input('submission_ids'),
+                $request->input('status'),
+                $remarks !== '' ? $remarks : null
+            );
+
+            return response()->json(['message' => $count . ' post test(s) marked as ' . $request->input('status') . '.']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => collect($e->errors())->flatten()->first()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+    }
 }

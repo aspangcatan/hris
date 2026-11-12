@@ -2,13 +2,13 @@
     "arial narrow": {
         "bold": "C:\\wamp64\\projects\\hris\\storage\\fonts\/arial_narrow_bold_cdbd30ecbf4e8d162f2984ace61b6eea",
         "900": "C:\\wamp64\\projects\\hris\\storage\\fonts\/arial_narrow_900_cdbd30ecbf4e8d162f2984ace61b6eea",
-        "800": "C:\\wamp64\\projects\\hris\\storage\\fonts\/arial_narrow_800_cdbd30ecbf4e8d162f2984ace61b6eea",
-        "500": "arial_narrow_500_cdbd30ecbf4e8d162f2984ace61b6eea"
+        "800": "arial_narrow_800_91a182bd05d8d014d9fb825047c5c631",
+        "500": "C:\\wamp64\\server\\hris\\storage\\fonts\/arial_narrow_500_cdbd30ecbf4e8d162f2984ace61b6eea"
     },
     "arial black": {
         "900": "C:\\wamp64\\projects\\hris\\storage\\fonts\/arial_black_900_40814e55bba8bf591a13a3652909d246",
         "200": "C:\\wamp64\\projects\\hris\\storage\\fonts\/arial_black_200_40814e55bba8bf591a13a3652909d246",
-        "800": "arial_black_800_34affb7512935e9a8eb666b790def3bc"
+        "800": "arial_black_800_3ad919c858ed25f2ec207b607c335827"
     },
     "title": {
         "900": "title_900_40814e55bba8bf591a13a3652909d246"

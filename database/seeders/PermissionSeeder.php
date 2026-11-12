@@ -38,6 +38,7 @@ class PermissionSeeder extends Seeder
             ['module' => 'reports',        'code' => 'reports.quarterly_leave', 'description' => 'Access quarterly leave balance reports'],
             ['module' => 'reorientation',  'code' => 'reorientation.check',     'description' => 'Check employee re-orientation post tests'],
             ['module' => 'reorientation',  'code' => 'reorientation.manage',    'description' => 'Manage re-orientation post test questions'],
+            ['module' => 'reorientation',  'code' => 'reorientation.answers',   'description' => 'Open the Reorientation Answers page and mark post tests passed or failed'],
             ['module' => 'schedule',       'code' => 'schedule.access',         'description' => 'Assign which sections each schedule manager handles'],
             ['module' => 'calendar',       'code' => 'calendar.manage',         'description' => 'Add/edit/delete holidays in the calendar'],
             ['module' => 'hospital_order', 'code' => 'hospital_order.create',   'description' => 'Create hospital orders'],
@@ -67,7 +68,7 @@ class PermissionSeeder extends Seeder
                 'saln.view_own','saln.admin',
                 'hospital_order.file','hospital_order.approve',
                 'reports.quarterly_leave',
-                'reorientation.check','reorientation.manage',
+                'reorientation.check','reorientation.manage','reorientation.answers',
             ],
             'hrh' => [
                 'promotion.manage',

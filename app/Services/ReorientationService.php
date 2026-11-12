@@ -315,4 +315,105 @@ class ReorientationService
             throw new \Exception('Submission not found.');
         }
     }
+
+    // -----------------------------------------------------------------------
+    // Reorientation Answers page (HR)
+    // -----------------------------------------------------------------------
+
+    // Active employees (tdh_user.users status 1 or JO) in hris.employees
+    private function activeEmployeesQuery()
+    {
+        return DB::table('hris.employees as e')
+            ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
+            ->whereIn('u.status', ['1', 'JO']);
+    }
+
+    // Employees for one module filtered by status. "not_started" lists active
+    // employees with no submission for that module yet.
+    public function getAnswerList(int $moduleNo, string $status, string $search = '', int $perPage = 25)
+    {
+        $query = DB::table('hris.employees as e')
+            ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
+            ->leftJoin('tdh_user.section as s', 'u.section', '=', 's.id')
+            ->leftJoin('hris.reorientation_submissions as rs', function ($join) use ($moduleNo) {
+                $join->on('rs.user_id', '=', 'e.user_id')->where('rs.module_no', '=', $moduleNo);
+            })
+            ->leftJoin('tdh_user.users as c', 'rs.checked_by', '=', 'c.id');
+
+        if ($status === 'not_started') {
+            $query->whereNull('rs.id')->whereIn('u.status', ['1', 'JO']);
+        } else {
+            $query->where('rs.status', $status);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('u.fname', 'LIKE', "%{$search}%")
+                  ->orWhere('u.lname', 'LIKE', "%{$search}%")
+                  ->orWhereRaw("CONCAT(u.fname, ' ', u.lname) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        // Pending: oldest submission first so HR checks in the order received
+        if ($status === 'submitted') {
+            $query->orderBy('rs.submitted_at');
+        }
+        $query->orderBy('u.lname')->orderBy('u.fname');
+
+        return $query->paginate($perPage, [
+            'e.user_id', 'u.fname', 'u.mname', 'u.lname', 'u.suffix', 's.description as section',
+            'rs.id as submission_id', 'rs.status', 'rs.attempt_no', 'rs.remarks',
+            'rs.submitted_at', 'rs.checked_at', 'c.fname as checker_fname', 'c.lname as checker_lname',
+        ]);
+    }
+
+    // Per-module count of each status, for the tab and filter badges
+    public function getAnswerCounts(): array
+    {
+        $rows = DB::table('hris.reorientation_submissions')
+            ->select('module_no', 'status', DB::raw('COUNT(*) as total'))
+            ->groupBy('module_no', 'status')
+            ->get();
+
+        $submittedActive = $this->activeEmployeesQuery()
+            ->join('hris.reorientation_submissions as rs', 'rs.user_id', '=', 'e.user_id')
+            ->select('rs.module_no', DB::raw('COUNT(*) as total'))
+            ->groupBy('rs.module_no')
+            ->pluck('total', 'module_no');
+
+        $activeTotal = $this->activeEmployeesQuery()->count();
+
+        $counts = [];
+        foreach (array_keys($this->modules()) as $no) {
+            $byStatus = $rows->where('module_no', $no)->pluck('total', 'status');
+            $counts[$no] = [
+                'not_started' => $activeTotal - (int) ($submittedActive[$no] ?? 0),
+                'submitted'   => (int) ($byStatus['submitted'] ?? 0),
+                'passed'      => (int) ($byStatus['passed'] ?? 0),
+                'failed'      => (int) ($byStatus['failed'] ?? 0),
+            ];
+        }
+
+        return $counts;
+    }
+
+    // Marks several submissions of one module at once. Returns how many were updated.
+    public function checkSubmissions(int $moduleNo, array $submissionIds, string $status, ?string $remarks): int
+    {
+        $ids = array_values(array_unique(array_map('intval', $submissionIds)));
+        if (!$ids) {
+            throw new \Exception('Please select at least one employee.');
+        }
+
+        return DB::table('hris.reorientation_submissions')
+            ->whereIn('id', $ids)
+            ->where('module_no', $moduleNo)
+            ->update([
+                'status'     => $status,
+                'remarks'    => $remarks,
+                'checked_by' => Auth::id(),
+                'checked_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
 }

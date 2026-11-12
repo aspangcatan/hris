@@ -31,6 +31,14 @@
                 <span>Re-Orientation</span>
             </a>
         </li>
+        @permission('reorientation.answers')
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('reorientation.answers') ? '' : 'collapsed' }}" href="{{ route('reorientation.answers') }}">
+                <i class="bi bi-ui-checks"></i>
+                <span>Reorientation Answers</span>
+            </a>
+        </li>
+        @endpermission
 
         {{-- DTR MANAGEMENT --}}
         <li class="nav-heading">DTR Management</li>

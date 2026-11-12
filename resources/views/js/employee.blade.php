@@ -12,7 +12,6 @@
 @include('js.service_record')
 @include('js.service_record_upload')
 @include('js.leave_credits')
-@include('js.employee_reorientation')
 <script>
     const CAN_MANAGE_LEAVE_CREDITS = @json(permission_check('leave.manage_credits'));
 
@@ -590,9 +589,6 @@
                     break;
                 case "#payroll":
                     getPayrollSettings(employee_id);
-                    break;
-                case "#reorientation":
-                    getReorientation(employee_id);
                     break;
             }
         });
