@@ -948,8 +948,14 @@ class DTRController extends Controller
                         }
                     }
 
-                    if (!$data['isInsideCutoff'])
+                    // Days outside the printed half (1st: 1-15, 2nd: 16-end) stay blank:
+                    // no OFF/HOLIDAY label, no schedule, no marker.
+                    if (!$data['isInsideCutoff']) {
+                        $data['off_label'] = '';
+                        $data['planned_schedule'] = '';
+                        $data['day_marker'] = '';
                         return $data;
+                    }
 
                     // Get logs of the day
                     $dayLogs = $logs->filter(
