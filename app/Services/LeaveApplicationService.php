@@ -383,7 +383,7 @@ class LeaveApplicationService
 
             $leaveTypes = DB::table('leave_types')
                 ->whereIn('id', $leaveIds)
-                ->get(['id', 'description', 'days_prior', 'status', 'deduction_unit'])
+                ->get(['id', 'description', 'days_prior', 'status', 'deduction_unit', 'fallback_to_vl'])
                 ->keyBy('id');
 
             $this->assertValidFiling($leaveIds, $leaveTypes, $dates, $appId ?? null);
@@ -494,7 +494,7 @@ class LeaveApplicationService
 
             $leaveTypes = DB::table('leave_types')
                 ->whereIn('id', $leaveIds)
-                ->get(['id', 'description', 'days_prior', 'status', 'deduction_unit'])
+                ->get(['id', 'description', 'days_prior', 'status', 'deduction_unit', 'fallback_to_vl'])
                 ->keyBy('id');
 
             $this->assertValidFiling($leaveIds, $leaveTypes, $dates, $appId ?? null);
@@ -562,11 +562,13 @@ class LeaveApplicationService
      * What each date charges, and to which balance, plus the total per balance - after
      * checking every balance covers it. Throws with a user-facing message if not.
      *
-     * Sick leave falls back to vacation leave when SL runs out (CSC MC No. 41, s. 1998,
-     * Sec. 56: "When an employee had already exhausted his sick leave credits, he can use
-     * his vacation leave credits but not vice versa."). Dates are charged in date order,
-     * so the earliest days use SL first; a date can be split (e.g. 0.5 SL + 0.5 VL). If VL
-     * can't cover the rest either, nothing is filed - the employee files it as LWOP.
+     * Types flagged fallback_to_vl in Leave Settings fall back to vacation leave when their
+     * own balance runs out (client decision 2026-11-18; for Sick Leave this is CSC MC No. 41,
+     * s. 1998, Sec. 56: "When an employee had already exhausted his sick leave credits, he
+     * can use his vacation leave credits but not vice versa."). Dates are charged in date
+     * order, so the earliest days use the type's own credits first; a date can be split
+     * (e.g. 0.5 SL + 0.5 VL). If VL can't cover the rest either, nothing is filed - the
+     * employee files it as LWOP.
      *
      * @param  array<int, array{date_applied: string, hours: int, leave_type_id: int}> $dates
      * @param  array<int, float> $giveBack credits this application already holds (edit only)
@@ -574,11 +576,20 @@ class LeaveApplicationService
      */
     private function planCharges(array $dates, $leaveTypes, bool $isLwop, array $giveBack = []): array
     {
-        // Day-based types are filed per whole day (8) or half day (4) only.
+        // Day-based types are filed per whole day or half day only: 8 / 4 hours, or 10 / 5 on a
+        // compressed schedule date (client rule 2026-11-18: 10 hours = whole day, 5 = half day).
         foreach ($dates as $d) {
             $type = $leaveTypes[(int) $d['leave_type_id']] ?? null;
-            if ($this->isDayBased($type) && !in_array((int) $d['hours'], [4, 8], true)) {
+            $allowed = !empty($d['is_compressed']) ? [5, 10] : [4, 8];
+            if ($this->isDayBased($type) && !in_array((int) $d['hours'], $allowed, true)) {
                 throw new \Exception("{$type->description} is filed per day: choose Whole day or Half day for each date.");
+            }
+            $date = Carbon::parse($d['date_applied'])->format('m/d/Y');
+            if (!$this->isDayBased($type) && !empty($d['is_compressed']) && !in_array((int) $d['hours'], [5, 10], true)) {
+                throw new \Exception("{$date} is marked as a compressed schedule: choose 10 hours (whole day) or 5 hours (half day).");
+            }
+            if (!$this->isCompressed($d) && (int) $d['hours'] === 5) {
+                throw new \Exception("{$date}: 5 hours is only for compressed schedule dates.");
             }
         }
 
@@ -590,9 +601,12 @@ class LeaveApplicationService
             return ['rows' => $rows, 'byType' => []];
         }
 
-        $codes = DB::table('leave_types')->whereIn('code', ['SL', 'VL'])->pluck('id', 'code');
-        $slId = isset($codes['SL']) ? (int) $codes['SL'] : null;
-        $vlId = isset($codes['VL']) ? (int) $codes['VL'] : null;
+        $vlId = DB::table('leave_types')->where('code', 'VL')->value('id');
+        $vlId = $vlId ? (int) $vlId : null;
+        // Types that borrow from VL when short (Leave Settings "If short, charge the rest to VL").
+        // VL itself never falls back.
+        $fallsBack = fn(int $typeId) => $vlId && $typeId !== $vlId
+            && (int) ($leaveTypes[$typeId]->fallback_to_vl ?? 0) === 1;
 
         $available = function (int $typeId) use ($giveBack): ?float {
             $credit = DB::table('leave_credits')
@@ -611,23 +625,29 @@ class LeaveApplicationService
         $order = array_keys($dates);
         usort($order, fn($a, $b) => strcmp((string) $dates[$a]['date_applied'], (string) $dates[$b]['date_applied']));
 
-        $slAvailable = $slId ? $available($slId) : null;
-        $slLeft = max(0.0, (float) ($slAvailable ?? 0));
-        $slNeeded = 0.0;
+        // Per fallback type: balance it started with, what is left, and what the filing needs.
+        $ownAvailable = [];
+        $ownLeft = [];
+        $ownNeeded = [];
         $fallbackTotal = 0.0;
         $byType = [];
 
         foreach ($order as $i) {
             $typeId = (int) $dates[$i]['leave_type_id'];
-            $credits = $this->creditsForDate($leaveTypes[$typeId] ?? null, (int) $dates[$i]['hours']);
+            $credits = $this->creditsForDate($leaveTypes[$typeId] ?? null, (int) $dates[$i]['hours'], $this->isCompressed($dates[$i]));
             $own = $credits;
             $fallback = 0.0;
 
-            if ($slId && $vlId && $typeId === $slId) {
-                $slNeeded += $credits;
-                $own = round(min($credits, $slLeft), 3);
+            if ($fallsBack($typeId)) {
+                if (!array_key_exists($typeId, $ownAvailable)) {
+                    $ownAvailable[$typeId] = $available($typeId);
+                    $ownLeft[$typeId] = max(0.0, (float) ($ownAvailable[$typeId] ?? 0));
+                    $ownNeeded[$typeId] = 0.0;
+                }
+                $ownNeeded[$typeId] = round($ownNeeded[$typeId] + $credits, 3);
+                $own = round(min($credits, $ownLeft[$typeId]), 3);
                 $fallback = round($credits - $own, 3);
-                $slLeft = round($slLeft - $own, 3);
+                $ownLeft[$typeId] = round($ownLeft[$typeId] - $own, 3);
             }
 
             $rows[$i] = [
@@ -649,10 +669,14 @@ class LeaveApplicationService
             $have = $available($typeId);
 
             if ($typeId === $vlId && $fallbackTotal > 0 && ($have === null || $have < $needed)) {
-                $sl = number_format((float) ($slAvailable ?? 0), 3);
+                $short = collect($ownNeeded)
+                    ->filter(fn($need, $id) => $need > (float) max(0.0, $ownAvailable[$id] ?? 0))
+                    ->map(fn($need, $id) => $description((int) $id) . ': you have ' . number_format((float) max(0.0, $ownAvailable[$id] ?? 0), 3)
+                        . ', this leave needs ' . number_format($need, 3))
+                    ->implode('; ');
                 $vl = number_format((float) ($have ?? 0), 3);
                 throw new \Exception(
-                    "Not enough Sick Leave credits: you have {$sl}, this leave needs " . number_format($slNeeded, 3) . '. '
+                    "Not enough credits ({$short}). "
                     . 'The rest would be charged to Vacation Leave, but your Vacation Leave balance (' . $vl . ') '
                     . 'cannot cover ' . number_format($needed, 3) . '. File the remaining days as leave without pay.'
                 );
@@ -675,14 +699,27 @@ class LeaveApplicationService
     }
 
     /**
+     * A date filed on a compressed (10-hour) schedule: 10 hours = whole day, 5 = half day.
+     * Day-based types on a compressed date are stored the same way (credits stay 1.000 / 0.500).
+     */
+    private function isCompressed(array $date): bool
+    {
+        return !empty($date['is_compressed']) && in_array((int) $date['hours'], [5, 10], true);
+    }
+
+    /**
      * Credits one filed date costs. Hour-based types use the CSC conversion (8 hours = 1.000,
      * 10 hours = 1.250); day-based types cost 1.000 per whole day (stored as 8) and 0.500 per
-     * half day (stored as 4), whatever the employee's shift length.
+     * half day (stored as 4), whatever the employee's shift length. A compressed schedule
+     * date (client rule 2026-11-18) costs 1.000 for 10 hours and 0.500 for 5 hours.
      */
-    private function creditsForDate($leaveType, int $hours): float
+    private function creditsForDate($leaveType, int $hours, bool $compressed = false): float
     {
         if ($this->isDayBased($leaveType)) {
             return $hours >= 8 ? 1.0 : 0.5;
+        }
+        if ($compressed) {
+            return $hours >= 10 ? 1.0 : 0.5;
         }
 
         return $this->minuteConversionService->computeDeduction($hours * 60);
@@ -718,6 +755,7 @@ class LeaveApplicationService
                 'leave_type_id'          => $d['leave_type_id'],
                 'date_applied'           => $d['date_applied'],
                 'hours'                  => $d['hours'],
+                'is_compressed'          => $this->isCompressed($d) ? 1 : 0,
                 'status'                 => 'active',
                 'credits_deducted'       => $planRows[$i]['credits_deducted'],
                 'fallback_leave_type_id' => $planRows[$i]['fallback_leave_type_id'],
@@ -795,6 +833,7 @@ class LeaveApplicationService
                 'lda.id',
                 'lda.date_applied',
                 'lda.hours',
+                'lda.is_compressed',
                 'lda.leave_type_id',
                 'lda.status',
                 'lt.description as leave_type_name',

@@ -539,7 +539,7 @@ class CutoffSnapshotService
             ->whereBetween('lda.date_applied', [$start, $end])
             ->orderBy('lda.date_applied')
             ->get([
-                'lda.id as date_id', 'lda.leave_application_id', 'lda.leave_type_id', 'lda.date_applied', 'lda.hours', 'lda.status as date_status',
+                'lda.id as date_id', 'lda.leave_application_id', 'lda.leave_type_id', 'lda.date_applied', 'lda.hours', 'lda.is_compressed', 'lda.status as date_status',
                 'lda.final_disapproved', 'lda.credits_deducted', 'lda.fallback_leave_type_id', 'lda.fallback_credits',
                 'la.user_id', 'la.status as application_status', 'la.is_lwop',
                 'lt.code as type_code', 'lt.description as type_name', 'lt.deduction_unit',
@@ -631,6 +631,9 @@ class CutoffSnapshotService
         $hours = (int) $row->hours;
         if (strtolower((string) $row->deduction_unit) === 'days') {
             return $hours >= 8 ? 1.0 : 0.5;
+        }
+        if ((int) ($row->is_compressed ?? 0) === 1) {
+            return $hours >= 10 ? 1.0 : 0.5; // compressed schedule date: 10 hrs whole, 5 hrs half
         }
         $required = (int) ($day->required_minutes ?? 0);
 

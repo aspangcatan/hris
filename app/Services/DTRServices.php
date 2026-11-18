@@ -436,12 +436,17 @@ class DTRServices
             ->where('lda.status', 'active')
             ->where('lda.final_disapproved', 0) // DH-disapproved dates are not paid leave (audit H3)
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
-            ->get(['lda.date_applied', 'lda.hours', 'lt.deduction_unit']);
+            ->get(['lda.date_applied', 'lda.hours', 'lda.is_compressed', 'lt.deduction_unit']);
 
         foreach ($rows as $row) {
             $date = Carbon::parse($row->date_applied)->toDateString();
             if (strtolower((string) $row->deduction_unit) === 'days') {
                 $entries[$date] = (int) $row->hours >= 8 ? true : ['fraction' => 0.5];
+                continue;
+            }
+            // Compressed schedule date: 10 hrs covers the whole day, 5 hrs half of it.
+            if ((int) ($row->is_compressed ?? 0) === 1) {
+                $entries[$date] = (int) $row->hours >= 10 ? true : ['fraction' => 0.5];
                 continue;
             }
             $previous = is_array($entries[$date] ?? null) ? (int) ($entries[$date]['hours'] ?? 0) : 0;
@@ -504,7 +509,7 @@ class DTRServices
             ->where('lda.status', 'active') // cancelled dates no longer count as LWOP
             ->where('lda.final_disapproved', 0) // DH-disapproved dates are not LWOP
             ->whereBetween('lda.date_applied', [$startDate, $endDate])
-            ->get(['lda.date_applied', 'lda.hours']);
+            ->get(['lda.date_applied', 'lda.hours', 'lda.is_compressed']);
 
         if ($rows->isEmpty()) {
             return ['whole' => [], 'partial' => []];
@@ -521,12 +526,16 @@ class DTRServices
         ));
 
         $hoursByDate = [];
+        $compressedDates = [];
         foreach ($rows as $row) {
             $date = Carbon::parse($row->date_applied)->toDateString();
             if (!isset($workDates[$date])) {
                 continue;
             }
             $hoursByDate[$date] = ($hoursByDate[$date] ?? 0) + (int) $row->hours;
+            if ((int) ($row->is_compressed ?? 0) === 1) {
+                $compressedDates[$date] = true;
+            }
         }
 
         $schedules = $this->mapSchedulesWithBreaks($plotted)->all();
@@ -534,8 +543,13 @@ class DTRServices
         $partial = [];
         $wholeDays = [];
         foreach ($hoursByDate as $date => $hours) {
-            $scheduledMinutes = $this->scheduledWorkMinutes($schedules[$date] ?? null);
-            $days = $scheduledMinutes > 0 ? min(1.0, round(($hours * 60) / $scheduledMinutes, 3)) : 1.0;
+            if (isset($compressedDates[$date])) {
+                // Compressed schedule date (client rule 2026-11-18): 10 hrs = 1 day, 5 hrs = half.
+                $days = $hours >= 10 ? 1.0 : 0.5;
+            } else {
+                $scheduledMinutes = $this->scheduledWorkMinutes($schedules[$date] ?? null);
+                $days = $scheduledMinutes > 0 ? min(1.0, round(($hours * 60) / $scheduledMinutes, 3)) : 1.0;
+            }
 
             if ($days >= 1.0) {
                 $wholeDays[] = $date;

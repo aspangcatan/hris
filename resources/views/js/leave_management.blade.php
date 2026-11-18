@@ -17,6 +17,7 @@
         {key: 'min_monetize_days', type: 'number', step: '1', min: '0', nullable: true},
         {key: 'min_retained_days', type: 'number', step: '1', min: '0', nullable: true},
         {key: 'deduction_unit', type: 'select', options: [['hours', 'Hours'], ['days', 'Days']]},
+        {key: 'fallback_to_vl', type: 'select', options: [['0', 'No'], ['1', 'Yes']]},
     ];
 
     $(document).ready(function () {
@@ -53,6 +54,7 @@
         $("#monthly_earned").val(val(item?.monthly_earned, item ? "0" : "1"));
         $("#deduct_tardiness").val(val(item?.deduct_tardiness, "0"));
         $("#deduction_unit").val(item?.deduction_unit === "days" ? "days" : "hours");
+        $("#fallback_to_vl").val(val(item?.fallback_to_vl, "0"));
         $("#monetizable").val(val(item?.monetizable, "0"));
         $("#days_prior").val(val(item?.days_prior, "0"));
         $("#commutation").val(val(item?.commutation, "0"));
@@ -82,6 +84,7 @@
             monthly_earned: $("#monthly_earned").val(),
             deduct_tardiness: $("#deduct_tardiness").val(),
             deduction_unit: $("#deduction_unit").val(),
+            fallback_to_vl: $("#fallback_to_vl").val(),
             monetizable: $("#monetizable").val(),
             days_prior: $("#days_prior").val(),
             commutation: $("#commutation").val(),

@@ -81,6 +81,7 @@
                     <th>Min. Monetize Days</th>
                     <th>Min. Retained Days</th>
                     <th>Deduct by</th>
+                    <th title="If short, charge the rest to VL">Short → VL</th>
                     <th colspan="2" style="width: 4%"></th>
                 </tr>
                 </thead>

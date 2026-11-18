@@ -52,6 +52,14 @@
                         <div class="form-text">Hours for VL, SL, CTO (a 10-hour day deducts 1.250). Days for leaves granted per day, such as Wellness or Special Privilege (filed as whole or half days, whatever the shift length).</div>
                     </div>
                     <div class="form-floating mb-3">
+                        <select class="form-control" id="fallback_to_vl">
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                        <label>If short, charge the rest to VL</label>
+                        <div class="form-text">Yes = when this leave's balance can't cover a filing, the rest is charged to Vacation Leave (CSC rule for Sick Leave). If Vacation Leave can't cover it either, the filing is refused. Has no effect on Vacation Leave itself.</div>
+                    </div>
+                    <div class="form-floating mb-3">
                         <select class="form-control" id="monetizable">
                             <option value="0">No</option>
                             <option value="1">Yes</option>

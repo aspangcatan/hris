@@ -245,7 +245,7 @@
         // Refresh detail sections, date minimums, commutation, and attachment visibility on date-row leave type change
         $(document).on('change', ".date-leave-type", function () {
             // Day-based types (Wellness, SPL...) are filed as Whole day / Half day, not hours.
-            syncHoursSelect($(this).closest('tr').find("select[name='leave_hours[]']"), $(this).val());
+            syncDateRow($(this).closest('tr'));
             refreshDetailsVisibility();
             updateDateInputMins();
             refreshCommutationVisibility();
@@ -339,9 +339,10 @@
             const leaveTypeId = parseInt($(this).find('.date-leave-type').val()) || null;
             const date        = $(this).find("input[type='date']").val();
             const hours       = $(this).find("select[name='leave_hours[]']").val();
+            const compressed  = isCompressedRow($(this)) ? 1 : 0;
             if (!leaveTypeId) allHaveLeaveType = false;
             if (date && hours) {
-                date_applied_array.push({ date_applied: date, hours: parseInt(hours), leave_type_id: leaveTypeId });
+                date_applied_array.push({ date_applied: date, hours: parseInt(hours), is_compressed: compressed, leave_type_id: leaveTypeId });
             }
         });
 
@@ -475,26 +476,31 @@
         const isLwop = $('#is_lwop_flag').val() === '1';
         if (!isLwop) {
             // Credits needed per balance (day-based types: 1.000 per whole day, 0.500 per half
-            // day). When Sick Leave runs out, the rest is charged to Vacation Leave
-            // (CSC MC 41 s. 1998, Sec. 56) - the server applies the same rules.
+            // day). When a type set to fall back runs out, the rest is charged to Vacation Leave
+            // (Sick Leave: CSC MC 41 s. 1998, Sec. 56) - the server applies the same rules.
             const milli = v => Math.round(v * 1000);
             const neededPerType = {};
+            const compressedTypes = new Set(); // types with a compressed date: show days, not hours
             date_applied_array.forEach(d => {
                 if (!d.leave_type_id) return;
-                neededPerType[d.leave_type_id] = (neededPerType[d.leave_type_id] || 0) + creditsForDate(d.leave_type_id, d.hours);
+                neededPerType[d.leave_type_id] = (neededPerType[d.leave_type_id] || 0) + creditsForDate(d.leave_type_id, d.hours, d.is_compressed);
+                if (d.is_compressed) compressedTypes.add(d.leave_type_id);
             });
-            const sl = LEAVE_TYPES.find(t => t.code === 'SL');
+            // Types set to "If short, charge the rest to VL" in Leave Settings (Sick Leave by CSC rule).
             const vl = LEAVE_TYPES.find(t => t.code === 'VL');
-            let slFallback = 0;
-            let slBalance = 0;
-            if (sl && vl && neededPerType[sl.id] !== undefined) {
-                slBalance = Math.max(0, parseFloat(sl.balance) || 0);
-                if (milli(neededPerType[sl.id]) > milli(slBalance)) {
-                    slFallback = neededPerType[sl.id] - slBalance;
-                    neededPerType[sl.id] = slBalance;
-                    neededPerType[vl.id] = (neededPerType[vl.id] || 0) + slFallback;
+            const fallbacks = []; // [{ lt, balance, fallback }]
+            if (vl) {
+                for (const lt of LEAVE_TYPES) {
+                    if (lt.id === vl.id || !lt.fallback_to_vl || neededPerType[lt.id] === undefined) continue;
+                    const balance = Math.max(0, parseFloat(lt.balance) || 0);
+                    if (milli(neededPerType[lt.id]) <= milli(balance)) continue;
+                    const fallback = neededPerType[lt.id] - balance;
+                    neededPerType[lt.id] = balance;
+                    neededPerType[vl.id] = (neededPerType[vl.id] || 0) + fallback;
+                    fallbacks.push({ lt, balance, fallback });
                 }
             }
+            const shortList = fallbacks.map(f => `${f.lt.description}: ${f.balance.toFixed(3)} day(s)`).join(', ');
 
             for (const [typeId, needed] of Object.entries(neededPerType)) {
                 const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
@@ -503,13 +509,13 @@
                 if (milli(needed) <= milli(balance)) continue;
 
                 is_valid = false;
-                if (vl && lt.id === vl.id && slFallback > 0) {
+                if (vl && lt.id === vl.id && fallbacks.length > 0) {
                     toastr.error(
-                        `Not enough Sick Leave credits (${slBalance.toFixed(3)} day(s)). The rest would be charged to Vacation Leave, ` +
+                        `Not enough credits (${shortList}). The rest would be charged to Vacation Leave, ` +
                         `but your Vacation Leave balance (${balance.toFixed(3)}) cannot cover ${needed.toFixed(3)}. File the remaining days as leave without pay.`,
                         "Insufficient Balance"
                     );
-                } else if (isDayBasedType(lt.id)) {
+                } else if (isDayBasedType(lt.id) || compressedTypes.has(lt.id)) {
                     toastr.error(
                         `Insufficient ${lt.description} credits. You have ${balance.toFixed(3)} day(s) available but are filing ${needed.toFixed(3)} day(s).`,
                         "Insufficient Balance"
@@ -524,11 +530,11 @@
                 }
             }
 
-            if (is_valid && slFallback > 0) {
-                toastr.info(
-                    `Your Sick Leave balance covers ${slBalance.toFixed(3)} day(s). The remaining ${slFallback.toFixed(3)} day(s) will be charged to Vacation Leave.`,
-                    "Sick Leave ran out"
-                );
+            if (is_valid) {
+                fallbacks.forEach(f => toastr.info(
+                    `Your ${f.lt.description} balance covers ${f.balance.toFixed(3)} day(s). The remaining ${f.fallback.toFixed(3)} day(s) will be charged to Vacation Leave.`,
+                    `${f.lt.description} is not enough`
+                ));
             }
         }
 
@@ -539,7 +545,7 @@
         if (isLwop) {
             const creditsByType = {};
             date_applied_array.forEach(d => {
-                if (d.leave_type_id) creditsByType[d.leave_type_id] = (creditsByType[d.leave_type_id] || 0) + creditsForDate(d.leave_type_id, d.hours);
+                if (d.leave_type_id) creditsByType[d.leave_type_id] = (creditsByType[d.leave_type_id] || 0) + creditsForDate(d.leave_type_id, d.hours, d.is_compressed);
             });
             const withBalance = Object.entries(creditsByType).map(([typeId, needed]) => {
                 const lt = LEAVE_TYPES.find(t => t.id === parseInt(typeId, 10));
@@ -834,29 +840,83 @@
         return !!lt && lt.deduction_unit === 'days';
     }
 
-    function creditsForDate(typeId, hours) {
-        const h = parseInt(hours, 10) || 0;
-        return isDayBasedType(typeId) ? (h >= 8 ? 1 : 0.5) : h * CREDIT_PER_HOUR;
+    // ---- Compressed work week dates (client rule 2026-11-18) ---------------------------------
+    // The filer marks a date's Schedule as Compressed; it is then filed as 10 hours (whole day,
+    // 1.000) or 5 hours (half day, 0.500) instead of the minute table (10 hours = 1.250).
+    // Day-based types stay Whole day / Half day (1.000 / 0.500); on a compressed date they are
+    // stored as 10 / 5 hours instead of 8 / 4.
+    function hoursMode(typeId, compressed) {
+        if (isDayBasedType(typeId)) return compressed ? 'days_compressed' : 'days';
+        return compressed ? 'compressed' : 'hours';
     }
 
-    function hoursOptionsHtml(dayBased, selected) {
-        if (dayBased) {
-            const sel = parseInt(selected, 10) === 4 ? 4 : 8;
-            return `<option value="8" ${sel === 8 ? 'selected' : ''}>Whole day</option>`
-                 + `<option value="4" ${sel === 4 ? 'selected' : ''}>Half day</option>`;
+    function creditsForDate(typeId, hours, compressed) {
+        const h = parseInt(hours, 10) || 0;
+        switch (hoursMode(typeId, !!compressed)) {
+            case 'days':
+            case 'days_compressed': return h >= 8 ? 1 : 0.5;
+            case 'compressed':      return h >= 10 ? 1 : 0.5;
+            default:                return h * CREDIT_PER_HOUR;
+        }
+    }
+
+    function hoursOptionsHtml(mode, selected) {
+        if (mode === 'days' || mode === 'days_compressed') {
+            const [whole, half] = mode === 'days' ? [8, 4] : [10, 5];
+            const sel = [4, 5].includes(parseInt(selected, 10)) ? half : whole;
+            return `<option value="${whole}" ${sel === whole ? 'selected' : ''}>Whole day</option>`
+                 + `<option value="${half}" ${sel === half ? 'selected' : ''}>Half day</option>`;
+        }
+        if (mode === 'compressed') {
+            const sel = parseInt(selected, 10) === 5 ? 5 : 10;
+            return `<option value="10" ${sel === 10 ? 'selected' : ''}>10</option>`
+                 + `<option value="5" ${sel === 5 ? 'selected' : ''}>5</option>`;
         }
         const sel = HOUR_OPTIONS.includes(parseInt(selected, 10)) ? parseInt(selected, 10) : 8;
         return HOUR_OPTIONS.map(h => `<option value="${h}" ${h === sel ? 'selected' : ''}>${h}</option>`).join('');
     }
 
-    // Rebuilds an hours <select> for the chosen leave type, keeping the current value when it still fits.
-    function syncHoursSelect($select, typeId, selected) {
+    // Rebuilds an hours <select> for the chosen leave type / schedule, keeping the current value when it still fits.
+    function syncHoursSelect($select, typeId, selected, compressed) {
         if (!$select || !$select.length) return;
-        const dayBased = isDayBasedType(typeId);
-        if (($select.data('mode') || 'hours') === (dayBased ? 'days' : 'hours') && selected === undefined) return;
-        $select.html(hoursOptionsHtml(dayBased, selected !== undefined ? selected : $select.val()));
-        $select.data('mode', dayBased ? 'days' : 'hours');
+        const mode = hoursMode(typeId, !!compressed);
+        if (($select.data('mode') || 'hours') === mode && selected === undefined) return;
+        $select.html(hoursOptionsHtml(mode, selected !== undefined ? selected : $select.val()));
+        $select.data('mode', mode);
     }
+
+    // Schedule <select> + hours <select> of one date row (or the range panel).
+    function syncScheduleAndHours($compressed, $hours, typeId, selected) {
+        syncHoursSelect($hours, typeId, selected, $compressed.val() === '1');
+    }
+
+    function syncDateRow($row, selected) {
+        syncScheduleAndHours(
+            $row.find('.date-compressed'),
+            $row.find("select[name='leave_hours[]']"),
+            $row.find('.date-leave-type').val(),
+            selected
+        );
+    }
+
+    function isCompressedRow($row) {
+        return $row.find('.date-compressed').val() === '1';
+    }
+
+    function compressedSelectHtml(compressed) {
+        return `<select class="form-control form-control-sm date-compressed" name="leave_compressed[]">
+                    <option value="0" ${compressed ? '' : 'selected'}>Regular</option>
+                    <option value="1" ${compressed ? 'selected' : ''}>Compressed</option>
+                </select>`;
+    }
+
+    $(document).on('change', '.date-compressed', function () {
+        syncDateRow($(this).closest('tr'));
+    });
+
+    $(document).on('change', '#range_compressed', function () {
+        syncScheduleAndHours($(this), $("#range_hours"), $("#range_leave_type").val());
+    });
 
     function addRow(selectedLeaveTypeId) {
         const minDate = minDateForType(LEAVE_TYPES.find(t => t.id === selectedLeaveTypeId));
@@ -870,6 +930,7 @@
                 </select>
             </td>
             <td><input type="date" class="form-control form-control-sm" name="leave_dates[]" ${minDate ? `min="${minDate}"` : ''}></td>
+            <td>${compressedSelectHtml(false)}</td>
             <td>
                 <select class="form-control form-control-sm" name="leave_hours[]">
                     <option value="4">4</option>
@@ -884,7 +945,7 @@
         </tr>
         `);
         if (selectedLeaveTypeId) {
-            syncHoursSelect($("#dates_table_body tr:last select[name='leave_hours[]']"), selectedLeaveTypeId);
+            syncDateRow($("#dates_table_body tr:last"));
         }
     }
 
@@ -934,7 +995,7 @@
     }
 
     $(document).on('change', '#range_leave_type', function () {
-        syncHoursSelect($("#range_hours"), $(this).val());
+        syncScheduleAndHours($("#range_compressed"), $("#range_hours"), $(this).val());
         const minDate = getRangeMinDate();
         setDateMin($("#range_start_date"), minDate);
         if (minDate && $("#range_start_date").val() && $("#range_start_date").val() < minDate) $("#range_start_date").val('');
@@ -949,6 +1010,7 @@
         const startVal = $("#range_start_date").val();
         const endVal = $("#range_end_date").val();
         const hours = $("#range_hours").val();
+        const rangeCompressed = $("#range_compressed").val() === '1';
 
         if (!leaveTypeId) { toastr.error("Please select a leave type for the range", "Required"); return; }
         if (!startVal || !endVal) { toastr.error("Please specify both a start and end date", "Required"); return; }
@@ -973,7 +1035,8 @@
                 addRow(leaveTypeId);
                 const $row = $("#dates_table_body tr:last");
                 $row.find("input[type='date']").val(iso);
-                $row.find("select[name='leave_hours[]']").val(hours);
+                $row.find('.date-compressed').val(rangeCompressed ? '1' : '0');
+                syncDateRow($row, hours);
                 added++;
             }
 
@@ -1040,7 +1103,7 @@
                     </div>
                 `);
 
-                LEAVE_TYPES.push({ id: it.id, description: it.description, code: it.code, balance: it.balance, days_prior: it.days_prior ?? 0, commutation: it.commutation ?? 0, deduction_unit: it.deduction_unit || 'hours' });
+                LEAVE_TYPES.push({ id: it.id, description: it.description, code: it.code, balance: it.balance, days_prior: it.days_prior ?? 0, commutation: it.commutation ?? 0, deduction_unit: it.deduction_unit || 'hours', fallback_to_vl: parseInt(it.fallback_to_vl, 10) === 1 });
             });
 
             return data;
@@ -1225,6 +1288,7 @@
                             </select>
                         </td>
                         <td><input type="date" class="form-control form-control-sm" name="leave_dates[]"></td>
+                        <td>${compressedSelectHtml(!!d.is_compressed)}</td>
                         <td>
                             <select class="form-control form-control-sm" name="leave_hours[]">
                                 <option value="4"  ${d.duration == 4  ? 'selected' : ''}>4</option>
@@ -1241,8 +1305,8 @@
                 $("#dates_table_body").append($row);
                 // Set date AFTER appending — bypasses browser min-constraint clearing
                 $row.find('input[name="leave_dates[]"]').val(dateValue);
-                // Day-based types show Whole day / Half day instead of hours
-                syncHoursSelect($row.find("select[name='leave_hours[]']"), d.leave_type_id, d.duration);
+                // Day-based types show Whole day / Half day; compressed dates 10 / 5 hours
+                syncDateRow($row, d.duration);
             });
 
             // Enable detail groups based on the pre-filled date row types

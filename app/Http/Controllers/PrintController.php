@@ -484,10 +484,11 @@ class PrintController extends Controller
             ->where('status', '!=', 'cancelled')
             ->where('final_disapproved', 0)
             ->orderBy('date_applied', 'ASC')
-            ->get(['date_applied', 'hours']);
+            ->get(['date_applied', 'hours', 'is_compressed']);
 
         $totalHours = $dates_applied->sum('hours');
-        $totalDays  = $totalHours / 8;
+        // A compressed schedule date is one day per 10 hours (5 hrs = half day); others 8 hours.
+        $totalDays  = round($dates_applied->sum(fn($d) => (int) $d->hours / ((int) $d->is_compressed === 1 ? 10 : 8)), 3);
 
         $fullName = trim(implode(' ', array_filter([
             strtoupper($leave_application->lname ?? ''),

@@ -64,53 +64,73 @@
                     <section class="lv-card">
                         <div class="lf-card-top">
                             <h6 class="lv-card-title mb-0"><i class="bi bi-calendar3"></i> Dates Applied for Leave</h6>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleDateRangePanel()">
-                                    <i class="bi bi-calendar-range me-1"></i>Add Date Range
-                                </button>
-                                <button type="button" class="btn btn-sm btn-primary" onclick="addRow()">
-                                    <i class="bi bi-plus-lg me-1"></i>Add Date
-                                </button>
-                            </div>
                         </div>
 
-                        {{-- Filing guide. Hour-based leaves are deducted by the hours filed (8 hours = 1.000),
-                             so the hours must match the filer's schedule; day-based leaves (Leave Settings >
-                             Deduct by = Days) are filed as whole/half days. The day-based list is read from
-                             leave_types so it follows Leave Settings. --}}
+                        {{-- Filing guide, in the order the filer fills a row: Schedule, Duration, then what
+                             happens when credits are short. Leaves are deducted by the hours filed (8 hours =
+                             1.000) unless the date is Compressed (10 / 5 hours = 1.000 / 0.500). Both lists below
+                             follow Leave Settings: the per-day block only shows when a type is set to Deduct by =
+                             Days (none on production), and "Not enough credits" says "any leave" once every type
+                             other than VL is set to "If short, charge the rest to VL". --}}
                         @php
-                            $dayBasedLeaveNames = \Illuminate\Support\Facades\DB::table('hris.leave_types')
+                            $guideTypes = \Illuminate\Support\Facades\DB::table('hris.leave_types')
                                 ->where('status', 'active')
-                                ->where('deduction_unit', 'days')
                                 ->orderBy('description')
-                                ->pluck('description');
+                                ->get(['code', 'description', 'deduction_unit', 'fallback_to_vl']);
+                            $dayBasedLeaveNames = $guideTypes->where('deduction_unit', 'days')->pluck('description');
+                            $nonVlTypes = $guideTypes->where('code', '<>', 'VL');
+                            $fallbackLeaveNames = $nonVlTypes->where('fallback_to_vl', 1)->pluck('description');
+                            $allFallBack = $nonVlTypes->isNotEmpty() && $fallbackLeaveNames->count() === $nonVlTypes->count();
                         @endphp
                         <div class="alert alert-info d-flex gap-2 align-items-start py-2 px-3 mb-3 small" role="note" id="leave_hours_notice">
                             <i class="bi bi-info-circle-fill mt-1"></i>
                             <div class="d-flex flex-column gap-2">
                                 <div>
-                                    <strong>Vacation, Sick and other leaves counted in hours:</strong>
-                                    select the hours that match your schedule on each day (8 hours = 1.000 day).
+                                    <strong>1. Schedule</strong> &mdash; the schedule you work on that date:
                                     <ul class="mb-0 mt-1 ps-3">
-                                        <li>8-hour schedule: <strong>8</strong> (deducts 1.000)</li>
-                                        <li>10-hour schedule, e.g. compressed work week: <strong>10</strong> (deducts 1.250)</li>
-                                        <li>12-hour shift: <strong>12</strong> (deducts 1.500)</li>
-                                        <li>Half of an 8-hour day: <strong>4</strong> (deducts 0.500)</li>
+                                        <li><strong>Regular</strong>: your usual schedule (8-hour day, 12-hour shift, etc.).</li>
+                                        <li><strong>Compressed</strong>: a 10-hour compressed work week day.
+                                            Approvers check this against your work schedule; a wrong choice may be disapproved.</li>
                                     </ul>
-                                    <div class="mt-1">If you file fewer hours than your schedule, the hours not covered count as undertime.</div>
                                 </div>
-                                @if($dayBasedLeaveNames->isNotEmpty())
-                                    <div>
-                                        <strong>Leaves counted per day:</strong>
-                                        choose <strong>Whole day</strong> (deducts 1.000) or <strong>Half day</strong> (deducts 0.500), whatever your schedule.
-                                        <div class="text-muted mt-1">{{ $dayBasedLeaveNames->implode(', ') }}</div>
-                                    </div>
-                                @endif
                                 <div>
-                                    <strong>Sick Leave:</strong> if your Sick Leave credits run out, the rest is charged to Vacation Leave.
-                                    If Vacation Leave can't cover it either, file the remaining days as leave without pay.
+                                    <strong>2. Duration (hours)</strong> &mdash; the hours of that day you will be on leave:
+                                    <ul class="mb-0 mt-1 ps-3">
+                                        <li><strong>Regular</strong>: <strong>8</strong> = 1.000 day &middot; <strong>4</strong> = 0.500 &middot;
+                                            <strong>10</strong> = 1.250 &middot; <strong>12</strong> = 1.500.
+                                            Match the hours of your schedule; hours not covered count as undertime.</li>
+                                        <li><strong>Compressed</strong>: <strong>10</strong> = whole day (1.000) &middot; <strong>5</strong> = half day (0.500).</li>
+                                        @if($dayBasedLeaveNames->isNotEmpty())
+                                            <li><strong>{{ $dayBasedLeaveNames->implode(', ') }}</strong>: counted per day &mdash;
+                                                <strong>Whole day</strong> = 1.000 &middot; <strong>Half day</strong> = 0.500, whatever your schedule.</li>
+                                        @endif
+                                    </ul>
+                                </div>
+                                <div>
+                                    <strong>3. Not enough credits</strong>
+                                    <ul class="mb-0 mt-1 ps-3">
+                                        @if($fallbackLeaveNames->isNotEmpty())
+                                            <li>{!! $allFallBack ? 'Any leave other than Vacation Leave' : '<strong>' . e($fallbackLeaveNames->implode(', ')) . '</strong>' !!}:
+                                                if your balance can't cover all the dates, it is used first (earliest dates) and the rest is
+                                                charged to <strong>Vacation Leave</strong>. This only applies while you still have some balance;
+                                                a leave with a zero balance can't be selected.</li>
+                                            <li>If Vacation Leave can't cover the rest either, the filing is refused: file the remaining days as leave without pay.</li>
+                                            <li>{{ $allFallBack ? 'Vacation Leave' : 'Vacation Leave and other leaves' }}: your balance must cover all the dates.</li>
+                                        @else
+                                            <li>Your balance must cover all the dates; otherwise file the remaining days as leave without pay.</li>
+                                        @endif
+                                    </ul>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="d-flex flex-wrap justify-content-end gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleDateRangePanel()">
+                                <i class="bi bi-calendar-range me-1"></i>Add Date Range
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addRow()">
+                                <i class="bi bi-plus-lg me-1"></i>Add Date
+                            </button>
                         </div>
 
                         <div id="date_range_panel" class="lf-range d-none">
@@ -119,13 +139,20 @@
                                     <label class="form-label" for="range_leave_type">Leave type</label>
                                     <select class="form-select" id="range_leave_type"></select>
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6 col-md-2">
                                     <label class="form-label" for="range_start_date">Start date</label>
                                     <input type="date" class="form-control" id="range_start_date">
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6 col-md-2">
                                     <label class="form-label" for="range_end_date">End date</label>
                                     <input type="date" class="form-control" id="range_end_date">
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label class="form-label" for="range_compressed">Schedule</label>
+                                    <select class="form-select" id="range_compressed">
+                                        <option value="0" selected>Regular</option>
+                                        <option value="1">Compressed</option>
+                                    </select>
                                 </div>
                                 <div class="col-6 col-md-2">
                                     <label class="form-label" for="range_hours">Hours / day</label>
@@ -149,10 +176,11 @@
                             <table class="table lv-table lf-dates mb-0" id="dates_table">
                                 <thead>
                                 <tr>
-                                    <th style="width: 38%;">Leave type</th>
-                                    <th style="width: 28%;">Date</th>
-                                    <th style="width: 20%;">Duration (hrs)</th>
-                                    <th style="width: 14%;" class="text-end">Action</th>
+                                    <th style="width: 32%;">Leave type</th>
+                                    <th style="width: 22%;">Date</th>
+                                    <th style="width: 17%;">Schedule</th>
+                                    <th style="width: 17%;">Duration (hrs)</th>
+                                    <th style="width: 12%;" class="text-end">Action</th>
                                 </tr>
                                 </thead>
                                 <tbody id="dates_table_body"></tbody>
@@ -436,7 +464,12 @@
     // Duration cell: day-based types (Wellness, SPL...) show "1 day" / "Half day", others hours.
     function formatLeaveDuration(d) {
         if (d.deduction_unit === 'days') {
-            return Number(d.duration) >= 8 ? '1 day' : 'Half day';
+            const day = Number(d.duration) >= 8 ? '1 day' : 'Half day';
+            return d.is_compressed ? `${day}<div class="small text-muted">Compressed (${d.duration} hrs)</div>` : day;
+        }
+        if (d.is_compressed) {
+            const day = Number(d.duration) >= 10 ? '1 day' : 'Half day';
+            return `${d.duration} hrs<div class="small text-muted">Compressed (${day})</div>`;
         }
         return `${d.duration} hrs`;
     }

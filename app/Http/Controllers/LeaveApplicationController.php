@@ -265,7 +265,8 @@ class LeaveApplicationController extends Controller
                 'commutation'               => 'nullable|string|in:Requested,Not Requested',
                 'dates'                     => 'required|array|min:1',
                 'dates.*.date_applied'      => 'required|date_format:Y-m-d',
-                'dates.*.hours'             => 'required|integer|in:4,8,10,12,16,24',
+                'dates.*.hours'             => 'required|integer|in:4,5,8,10,12,16,24',
+                'dates.*.is_compressed'     => 'nullable|boolean',
                 'dates.*.leave_type_id'     => 'required|integer',
                 'applicant_signature'       => 'required|string',
                 'is_lwop'                   => 'nullable|boolean',
@@ -475,6 +476,8 @@ class LeaveApplicationController extends Controller
                 'id'                    => $d->id,
                 'date'                  => $d->date_applied,
                 'duration'              => $d->hours,
+                // compressed schedule date: 10 hrs = whole day (1.000), 5 hrs = half day (0.500)
+                'is_compressed'         => (bool) ($d->is_compressed ?? false),
                 // 'days' = filed per day (8 = whole day, 4 = half day), not by hours
                 'deduction_unit'        => $d->deduction_unit ?? 'hours',
                 'work_schedule'         => $schedules[\Carbon\Carbon::parse($d->date_applied)->toDateString()] ?? null,
@@ -595,7 +598,8 @@ class LeaveApplicationController extends Controller
                 'commutation'                => 'nullable|string|in:Requested,Not Requested',
                 'dates'                      => 'required|array|min:1',
                 'dates.*.date_applied'       => 'required|date_format:Y-m-d',
-                'dates.*.hours'              => 'required|integer|in:4,8,10,12,16,24',
+                'dates.*.hours'              => 'required|integer|in:4,5,8,10,12,16,24',
+                'dates.*.is_compressed'      => 'nullable|boolean',
                 'dates.*.leave_type_id'      => 'required|integer',
                 'applicant_signature'        => 'required|string',
                 'is_lwop'                    => 'sometimes|boolean',

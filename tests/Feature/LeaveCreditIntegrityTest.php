@@ -73,7 +73,7 @@ class LeaveCreditIntegrityTest extends TestCase
     {
         // The test leave type must not linger: active types appear in employees' dropdowns.
         (new static('cleanup'))->createApplication();
-        DB::table('hris.leave_types')->whereIn('code', ['CRITEST', 'CRIMAT', 'CRIOFF'])->delete();
+        DB::table('hris.leave_types')->whereIn('code', ['CRITEST', 'CRIMAT', 'CRIOFF', 'CRIFB', 'CRINFB'])->delete();
         parent::tearDownAfterClass();
     }
 
@@ -446,13 +446,55 @@ class LeaveCreditIntegrityTest extends TestCase
             $this->fileSick($slId, ['2027-03-01', '2027-03-02']); // needs 2.0, only 1.5 in total
             $this->fail('Expected the filing to be refused');
         } catch (\Exception $e) {
-            $this->assertStringContainsString('Not enough Sick Leave credits', $e->getMessage());
+            $this->assertStringContainsString('Not enough credits (Sick Leave: you have 1.000', $e->getMessage());
             $this->assertStringContainsString('leave without pay', $e->getMessage());
         }
 
         $this->assertEquals(1.0, $this->typeBalance($slId));
         $this->assertEquals(0.5, $this->typeBalance($vlId));
         $this->assertSame(0, DB::table('hris.leave_applications')->where('user_id', $this->employeeId)->count());
+    }
+
+    /** @test */
+    public function any_type_set_to_fall_back_borrows_the_shortfall_from_vacation_leave(): void
+    {
+        [, $vlId] = $this->slVl(0.0, 5.0);
+        $typeId = $this->makeType('CRIFB', 'Cri Fallback Leave');
+        DB::table('hris.leave_types')->where('id', $typeId)->update(['fallback_to_vl' => 1]);
+        DB::table('hris.leave_credits')->where('user_id', $this->employeeId)->where('leave_id', $typeId)->update(['based_credit' => 1.875]);
+
+        $appId = app(LeaveApplicationService::class)->insertLeaveApplication([
+            'commutation' => 'Not Requested',
+            'dates' => [
+                ['date_applied' => '2027-03-01', 'hours' => 8, 'leave_type_id' => $typeId],
+                ['date_applied' => '2027-03-02', 'hours' => 8, 'leave_type_id' => $typeId],
+            ],
+            'applicant_signature' => $this->sig,
+        ])['app_id'];
+
+        $this->assertEquals(0.0, $this->typeBalance($typeId));
+        $this->assertEquals(4.875, $this->typeBalance($vlId), 'the 0.125 shortfall comes from VL');
+        $rows = DB::table('hris.leave_date_applied')->where('leave_application_id', $appId)->orderBy('date_applied')
+            ->get(['credits_deducted', 'fallback_leave_type_id', 'fallback_credits']);
+        $this->assertEquals([1.0, 0.875], $rows->pluck('credits_deducted')->map(fn($v) => (float) $v)->all());
+        $this->assertEquals([0.0, 0.125], $rows->pluck('fallback_credits')->map(fn($v) => (float) $v)->all());
+        $this->assertEquals([null, $vlId], $rows->pluck('fallback_leave_type_id')->map(fn($v) => $v === null ? null : (int) $v)->all());
+    }
+
+    /** @test */
+    public function a_type_not_set_to_fall_back_is_refused_when_short(): void
+    {
+        [, $vlId] = $this->slVl(0.0, 5.0);
+        $typeId = $this->makeType('CRINFB', 'Cri No Fallback Leave');
+        DB::table('hris.leave_credits')->where('user_id', $this->employeeId)->where('leave_id', $typeId)->update(['based_credit' => 0.5]);
+
+        try {
+            $this->fileType($typeId);
+            $this->fail('Expected the filing to be refused');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('Insufficient Cri No Fallback Leave', $e->getMessage());
+        }
+        $this->assertEquals(5.0, $this->typeBalance($vlId), 'VL untouched');
     }
 
     /** @test */

@@ -149,7 +149,7 @@ class LeaveController extends Controller
             }
 
             // Fetch all active leave types
-            $leave_types = DB::table('leave_types')->where('status', 'active')->get(['id', 'description', 'code', 'days_prior', 'commutation', 'deduction_unit']);
+            $leave_types = DB::table('leave_types')->where('status', 'active')->get(['id', 'description', 'code', 'days_prior', 'commutation', 'deduction_unit', 'fallback_to_vl']);
 
             // Initialize leave credits array
             $leave_credits = [];
@@ -182,6 +182,7 @@ class LeaveController extends Controller
                     'days_prior'   => (int) ($type->days_prior ?? 0),
                     'commutation'  => (int) ($type->commutation ?? 0),
                     'deduction_unit' => $type->deduction_unit ?? 'hours',
+                    'fallback_to_vl' => (int) ($type->fallback_to_vl ?? 0),
                     'balance'      => number_format($computed_balance, 3),
                 ];
             }
@@ -220,6 +221,7 @@ class LeaveController extends Controller
                 'monthly_earned' => $request->monthly_earned ?? 1,
                 'deduct_tardiness' => $request->deduct_tardiness ?? 0,
                 'deduction_unit' => in_array($request->deduction_unit, ['hours', 'days'], true) ? $request->deduction_unit : 'hours',
+                'fallback_to_vl' => (int) (bool) $request->fallback_to_vl,
                 'monetizable'    => $request->monetizable ?? 0,
                 'days_prior'         => $request->days_prior ?? 0,
                 'commutation'        => $request->commutation ?? 0,
