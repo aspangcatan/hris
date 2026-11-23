@@ -322,6 +322,9 @@ class PayrollController extends Controller
                 'rate_type'    => 'nullable|string|max:50',
                 'remarks'      => 'nullable|string',
                 'tax_purpose'  => 'nullable|string|max:150',
+                // The period paid, set on the form; the DTR still comes from the cutoff.
+                'start_date'   => 'nullable|required_with:end_date|date_format:Y-m-d',
+                'end_date'     => 'nullable|required_with:start_date|date_format:Y-m-d|after_or_equal:start_date',
             ]);
 
             $masterTable = $this->payrollServices->getCutoffSummaryMasterTableName();
@@ -349,8 +352,9 @@ class PayrollController extends Controller
             DB::table('hris.payrolls')->insert([
                 'cutoff_id'         => $master->id,
                 'title'             => $validated['title'],
-                'start_date'        => $master->period_start,
-                'end_date'          => $master->period_end,
+                // The period paid (e.g. October, from the September cutoff); the cutoff's own when not set.
+                'start_date'        => $validated['start_date'] ?? $master->period_start,
+                'end_date'          => $validated['end_date'] ?? $master->period_end,
                 'cutoff_start_date' => $master->period_start,
                 'cutoff_end_date'   => $master->period_end,
                 'cutoff_title'      => $master->title,

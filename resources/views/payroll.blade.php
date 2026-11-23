@@ -247,6 +247,8 @@
                 const rate_type    = $("#rate_type").val();
                 const remarks      = $("#remarks").val().trim();
                 const tax_purpose  = $("#tax_purpose").val().trim();
+                const start_date   = $("#start_date").val();
+                const end_date     = $("#end_date").val();
 
                 if (!title) {
                     toastr.error("Payroll title is required.", "Validation");
@@ -254,6 +256,10 @@
                 }
                 if (!cutoff_id) {
                     toastr.error("Please select a cutoff period.", "Validation");
+                    return;
+                }
+                if (!start_date || !end_date || end_date < start_date) {
+                    toastr.error("Enter a valid Start Date and End Date for the period paid.", "Validation");
                     return;
                 }
 
@@ -270,6 +276,8 @@
                         rate_type:    rate_type,
                         remarks:      remarks || null,
                         tax_purpose:  tax_purpose || null,
+                        start_date:   start_date,
+                        end_date:     end_date,
                     })
                 })
                     .then(res => res.json())

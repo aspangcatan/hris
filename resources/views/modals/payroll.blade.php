@@ -190,14 +190,17 @@
                         </select>
                     </div>
 
-                    <!-- Payroll Period (auto-filled from cutoff, read-only) -->
+                    <!-- Period paid: filled from the cutoff, editable (e.g. an October payroll from the September cutoff's DTR) -->
                     <div class="col-md-6">
-                        <label class="form-label">Period Start</label>
-                        <input type="date" class="form-control" id="start_date" readonly>
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Period End</label>
-                        <input type="date" class="form-control" id="end_date" readonly>
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date">
+                    </div>
+                    <div class="col-md-12">
+                        <div class="small text-muted">The period this payroll pays. Filled from the cutoff; change it when paying a different month than the cutoff's DTR (e.g. October payroll from the September cutoff).</div>
                     </div>
                     <div class="col-md-6">
                         <label for="payroll_type" class="form-label">Type</label>
