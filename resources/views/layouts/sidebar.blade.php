@@ -248,8 +248,7 @@
         </li>
         @endpermission
 
-        {{-- PAYROLL MANAGEMENT (hidden for now: change false to true to show it again) --}}
-        @if(false)
+        {{-- PAYROLL MANAGEMENT --}}
         @if(permission_check('payroll.view') || permission_check('payroll.settings') || permission_check('payroll.manage'))
             <li class="nav-heading">Payroll Management</li>
             @permission('payroll.view')
@@ -269,7 +268,8 @@
                 </a>
             </li>
             @endpermission
-            @permission('payroll.manage')
+            {{-- Same permission as the page (route: payroll_components). --}}
+            @permission('payroll.settings')
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('payroll_components') ? '' : 'collapsed' }}"
                     href="{{ route('payroll_components') }}">
@@ -306,7 +306,6 @@
             </li>
             @endpermission
             {{-- Cutoff Summary is shown under Settings (next to Leave Credits Earned). --}}
-        @endif
         @endif
 
         {{-- REPORTS (hidden for now) --}}
