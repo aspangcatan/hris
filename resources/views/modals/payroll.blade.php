@@ -350,6 +350,13 @@
 
             <!-- Scrollable Body -->
             <div class="modal-body p-3">
+                <div class="d-flex flex-wrap justify-content-between gap-2 small mb-2">
+                    <span class="text-muted">
+                        Columns follow the computation; <span class="payroll-subtotal px-1">shaded</span> columns are subtotals of the ones before them.
+                        Hover a <span class="payroll-note">dotted</span> amount to see how it was computed.
+                    </span>
+                    <span class="fw-semibold" id="regular_payroll_flagged"></span>
+                </div>
                 <div class="table-responsive shadow-sm rounded">
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light" id="regular_payroll_thead"></thead>

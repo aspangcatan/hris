@@ -1516,12 +1516,19 @@ class PayrollController extends Controller
         try {
             $employees = $this->payrollServices->getPayrollEmployee($request->payroll_id);
             $breakdown = $this->getComponentBreakdown($employees);
+            $payroll = $this->payrollServices->getPayrollPeriod($request->payroll_id);
+            $review = $payroll ? $this->payrollServices->payrollReview($payroll, $employees)
+                : ['mandatoryComponents' => [], 'otherDeductionComponents' => [], 'review' => []];
 
             return response()->json([
                 'employees' => $employees,
                 'earningComponents' => $breakdown['earning'],
                 'deductionComponents' => $breakdown['deduction'],
                 'componentAmounts' => $breakdown['amounts'],
+                // Checking aids: deductions grouped mandatory / other, subtotals, working, checks.
+                'mandatoryComponents' => $review['mandatoryComponents'],
+                'otherDeductionComponents' => $review['otherDeductionComponents'],
+                'review' => $review['review'],
             ]);
         } catch (\Exception $exception) {
             return response()->json(['error' => $exception->getMessage()], 500);

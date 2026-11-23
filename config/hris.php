@@ -60,4 +60,17 @@ return [
 
     'cutoff_snapshots_enabled' => env('CUTOFF_SNAPSHOTS_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Payroll net take-home pay floor
+    |--------------------------------------------------------------------------
+    |
+    | The Regular Payroll view warns when an employee's net pay is below this
+    | (the GAA general provision on net take-home pay - verify the current
+    | amount). A warning only; nothing is blocked.
+    |
+    */
+
+    'payroll_net_pay_floor' => (float) env('PAYROLL_NET_PAY_FLOOR', 5000),
+
 ];

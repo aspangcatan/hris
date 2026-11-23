@@ -75,6 +75,20 @@
             font-weight: 500;
             vertical-align: middle;
         }
+
+        /* Regular Payroll review: subtotal columns and amounts with a computation note. */
+        #regular_payroll_modal .payroll-subtotal {
+            background-color: #eef2ff !important;
+            font-weight: 700;
+        }
+        #regular_payroll_modal .payroll-note {
+            text-decoration: underline dotted #64748b;
+            text-underline-offset: 3px;
+            cursor: help;
+        }
+        #regular_payroll_modal .payroll-check {
+            cursor: help;
+        }
     </style>
 
     <div class="payroll-board">
@@ -632,96 +646,137 @@
             return (row && row[code]) || 0;
         }
 
-        function renderRegularPayrollHeader(earningComponents, deductionComponents) {
-            const earningHeaders = earningComponents.map(c => `<th class="text-end">${c.name}</th>`).join('');
-            const deductionHeaders = deductionComponents.map(c => `<th class="text-end">${c.name}</th>`).join('');
+        function escapeAttr(text) {
+            return String(text ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
 
-            const headerHtml = `
-                <tr class="text-center align-middle">
-                    <th rowspan="2">No.</th>
-                    <th rowspan="2">Family Name</th>
-                    <th rowspan="2">First Name</th>
-                    <th rowspan="2">Middle Name</th>
-                    <th rowspan="2">Suffix</th>
-                    <th rowspan="2">Designation</th>
-                    <th rowspan="2">SG</th>
-                    <th rowspan="2">Step</th>
-                    <th rowspan="2" class="text-end">Basic Pay</th>
-                    <th rowspan="2" class="text-end">Late / Absent / LWOP</th>
-                    ${earningComponents.length ? `<th colspan="${earningComponents.length}">Earnings</th>` : ""}
-                    ${deductionComponents.length ? `<th colspan="${deductionComponents.length}">Deductions</th>` : ""}
-                    <th rowspan="2" class="text-end">Withholding Tax</th>
-                    <th rowspan="2" class="text-end fw-bold">Total Deduction</th>
-                    <th rowspan="2" class="text-end fw-bold">Net Pay</th>
-                    <th rowspan="2" class="text-end">1st Half 10th</th>
-                    <th rowspan="2" class="text-end">2nd Half 25th</th>
-                </tr>
-                <tr class="text-center align-middle">
-                    ${earningHeaders}
-                    ${deductionHeaders}
-                </tr>`;
-            $("#regular_payroll_thead").html(headerHtml);
+        /**
+         * Regular Payroll columns in computation order, each subtotal right after the
+         * amounts it adds up, so a reviewer can check every step by eye:
+         * Basic - Late/Absent = Basic Earned; + earnings = Gross; mandatory (before
+         * tax) -> Taxable Income -> Withholding Tax; + other deductions = Total
+         * Deduction; Gross - Total Deduction = Net = 10th + 25th.
+         * kind: text | money (totalled) | subtotal (totalled, highlighted) | check
+         */
+        function regularPayrollColumns(payload) {
+            const { earningComponents, mandatoryComponents, otherDeductionComponents, componentAmounts } = payload;
+            const review = item => (payload.review || {})[item.id] || {};
+            const amount = code => item => componentAmountFor(componentAmounts, item.id, code);
+            const num = v => parseFloat(v || 0);
 
-            const totalColspan = 10; // No. through Late/Absent Deduction
-            const footerHtml = `
-                <tr>
-                    <td colspan="${totalColspan}" class="text-end">TOTAL:</td>
-                    ${earningComponents.map(() => '<td></td>').join('')}
-                    ${deductionComponents.map(() => '<td></td>').join('')}
-                    <td class="text-end" id="total_withholding">0.00</td>
-                    <td class="text-end" id="total_deduction">0.00</td>
-                    <td class="text-end" id="total_net">0.00</td>
-                    <td colspan="2"></td>
-                </tr>`;
-            $("#regular_payroll_tfoot").html(footerHtml);
+            const columns = [
+                {group: null, header: "No.", kind: "text", value: (item, i) => i + 1},
+                {group: null, header: "Family Name", kind: "text", value: item => item.lname},
+                {group: null, header: "First Name", kind: "text", value: item => item.fname},
+                {group: null, header: "Middle Name", kind: "text", value: item => item.mname ?? ""},
+                {group: null, header: "Suffix", kind: "text", value: item => item.suffix ?? ""},
+                {group: null, header: "Designation", kind: "text", value: item => item.designation ?? ""},
+                {group: null, header: "SG", kind: "text", value: item => item.salary_grade ?? ""},
+                {group: null, header: "Step", kind: "text", value: item => item.step ?? ""},
+                {group: "Basic", header: "Basic Pay", kind: "money", value: item => num(item.basic_salary)},
+                {group: "Basic", header: "Less: Late / Absent / LWOP", kind: "money", value: item => num(item.late_absent),
+                    note: item => (review(item).notes || {}).late_absent},
+                {group: "Basic", header: "Basic Earned", kind: "subtotal", value: item => num(review(item).basic_earned),
+                    note: () => "Basic Pay − Late / Absent / LWOP"},
+            ];
+            earningComponents.forEach(c => columns.push({
+                group: "Earnings", header: c.name, kind: "money", value: amount(c.code),
+                note: item => ((review(item).notes || {}).components || {})[c.code],
+            }));
+            columns.push({group: null, header: "GROSS PAY", kind: "subtotal", value: item => num(item.gross_pay),
+                note: () => "Basic Earned + all earnings"});
+            mandatoryComponents.forEach(c => columns.push({
+                group: "Mandatory Deductions (before tax)", header: c.name, kind: "money", value: amount(c.code),
+            }));
+            columns.push({group: null, header: "Taxable Income", kind: "subtotal", value: item => num(review(item).taxable_income),
+                note: () => "Basic Earned + taxable earnings − mandatory deductions"});
+            columns.push({group: null, header: "Withholding Tax", kind: "money", value: item => num(item.withholding_tax),
+                note: item => (review(item).notes || {}).withholding_tax});
+            otherDeductionComponents.forEach(c => columns.push({
+                group: "Loans & Other Deductions", header: c.name, kind: "money", value: amount(c.code),
+            }));
+            columns.push(
+                {group: null, header: "TOTAL DEDUCTION", kind: "subtotal", value: item => num(item.deductions),
+                    note: () => "Mandatory + Withholding Tax + loans & other deductions"},
+                {group: null, header: "NET PAY", kind: "subtotal", net: true, value: item => num(item.net_pay),
+                    note: () => "Gross Pay − Total Deduction"},
+                {group: "Pay Dates", header: "1st Half 10th", kind: "money", value: item => num(item.first_half_10th)},
+                {group: "Pay Dates", header: "2nd Half 25th", kind: "money", value: item => num(item.second_half_25th)},
+                {group: null, header: "Check", kind: "check", value: item => review(item)},
+            );
+            return columns;
+        }
+
+        function checkCell(review) {
+            const checks = review.checks || {};
+            const failed = [];
+            if (checks.net_balanced === false) failed.push("Gross Pay − Total Deduction does not equal Net Pay.");
+            if (checks.halves_balanced === false) failed.push("10th + 25th does not equal Net Pay.");
+            const warnings = review.warnings || [];
+            if (failed.length) {
+                return `<span class="badge bg-danger" title="${escapeAttr(failed.concat(warnings).join("\n"))}"><i class="bi bi-x-circle"></i> Mismatch</span>`;
+            }
+            if (warnings.length) {
+                return `<span class="badge bg-warning text-dark payroll-check" title="${escapeAttr(warnings.join("\n"))}"><i class="bi bi-exclamation-triangle"></i> ${warnings.length}</span>`;
+            }
+            return `<span class="badge bg-success" title="Gross − Deductions = Net, and 10th + 25th = Net"><i class="bi bi-check2"></i></span>`;
         }
 
         function populateRegularRows(tbody, payload) {
-            const { employees, earningComponents, deductionComponents, componentAmounts } = payload;
-            renderRegularPayrollHeader(earningComponents, deductionComponents);
+            payload.mandatoryComponents = payload.mandatoryComponents || [];
+            payload.otherDeductionComponents = payload.otherDeductionComponents || payload.deductionComponents || [];
+            const columns = regularPayrollColumns(payload);
 
-            let totalWithholding = 0;
-            let totalDeduction = 0;
-            let totalNet = 0;
+            // Header: group row (consecutive columns of a group share one cell), then column names.
+            let groupRow = "", nameRow = "";
+            for (let i = 0; i < columns.length;) {
+                const group = columns[i].group;
+                let span = 1;
+                while (group && i + span < columns.length && columns[i + span].group === group) span++;
+                if (group) {
+                    groupRow += `<th colspan="${span}" class="text-center">${group}</th>`;
+                    for (let j = i; j < i + span; j++) {
+                        nameRow += `<th class="${columns[j].kind === "text" ? "" : "text-end"} ${columns[j].kind === "subtotal" ? "payroll-subtotal" : ""}">${columns[j].header}</th>`;
+                    }
+                } else {
+                    const col = columns[i];
+                    groupRow += `<th rowspan="2" class="${col.kind === "text" || col.kind === "check" ? "" : "text-end"} ${col.kind === "subtotal" ? "payroll-subtotal" : ""}">${col.header}</th>`;
+                }
+                i += span;
+            }
+            $("#regular_payroll_thead").html(`<tr class="align-middle">${groupRow}</tr><tr class="align-middle">${nameRow}</tr>`);
 
-            employees.forEach((item, index) => {
-                totalWithholding += parseFloat(item.withholding_tax || 0);
-                totalDeduction += parseFloat(item.deductions || 0);
-                totalNet += parseFloat(item.net_pay || 0);
-
-                const earningCells = earningComponents.map(c =>
-                    `<td>${formatCurrency(componentAmountFor(componentAmounts, item.id, c.code))}</td>`
-                ).join('');
-                const deductionCells = deductionComponents.map(c =>
-                    `<td>${formatCurrency(componentAmountFor(componentAmounts, item.id, c.code))}</td>`
-                ).join('');
-
-                const row = `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${item.lname}</td>
-                            <td>${item.fname}</td>
-                            <td>${item.mname ?? ''}</td>
-                            <td>${item.suffix ?? ''}</td>
-                            <td>${item.designation ?? ''}</td>
-                            <td>${item.salary_grade ?? ''}</td>
-                            <td>${item.step ?? ''}</td>
-                            <td>${formatCurrency(item.basic_salary)}</td>
-                            <td>${formatCurrency(item.late_absent)}</td>
-                            ${earningCells}
-                            ${deductionCells}
-                            <td>${formatCurrency(item.withholding_tax ?? "0.00")}</td>
-                            <td class="fw-bold">${formatCurrency(item.deductions ?? "0.00")}</td>
-                            <td class="text-danger fw-bold">${formatCurrency(item.net_pay)}</td>
-                            <td>${formatCurrency(item.first_half_10th ?? "0.00")}</td>
-                            <td>${formatCurrency(item.second_half_25th ?? "0.00")}</td>
-                        </tr>`;
-                tbody.append(row);
+            // Rows, keeping a total for every money column.
+            const totals = columns.map(() => 0);
+            let flagged = 0;
+            payload.employees.forEach((item, index) => {
+                const cells = columns.map((col, c) => {
+                    const value = col.value(item, index);
+                    if (col.kind === "text") return `<td>${value}</td>`;
+                    if (col.kind === "check") {
+                        if ((value.warnings || []).length || (value.checks || {}).net_balanced === false || (value.checks || {}).halves_balanced === false) flagged++;
+                        return `<td class="text-center">${checkCell(value)}</td>`;
+                    }
+                    totals[c] += value;
+                    const note = col.note ? col.note(item) : null;
+                    const classes = ["text-end", col.kind === "subtotal" ? "payroll-subtotal" : "", col.net ? "text-danger" : "", note ? "payroll-note" : ""].join(" ");
+                    return `<td class="${classes}" ${note ? `title="${escapeAttr(note)}"` : ""}>${formatCurrency(value)}</td>`;
+                });
+                tbody.append(`<tr>${cells.join("")}</tr>`);
             });
 
-            $("#total_withholding").text(formatCurrency(totalWithholding));
-            $("#total_deduction").text(formatCurrency(totalDeduction));
-            $("#total_net").text(formatCurrency(totalNet));
+            // Footer: TOTAL label over the text columns, then every money column's total.
+            const textCount = columns.findIndex(col => col.kind !== "text");
+            const footer = columns.slice(textCount).map((col, k) => {
+                const c = textCount + k;
+                if (col.kind === "check") return `<td></td>`;
+                return `<td class="text-end ${col.kind === "subtotal" ? "payroll-subtotal" : ""}">${formatCurrency(totals[c])}</td>`;
+            }).join("");
+            $("#regular_payroll_tfoot").html(`<tr><td colspan="${textCount}" class="text-end">TOTAL (${payload.employees.length}):</td>${footer}</tr>`);
+
+            $("#regular_payroll_flagged").text(flagged
+                ? `${flagged} employee(s) flagged for double-checking — hover the ⚠ badge to see why.`
+                : "All rows balance and no warnings.").toggleClass("text-warning", flagged > 0);
         }
 
         function populateJobOrderRows(tbody, payload) {

@@ -85,6 +85,192 @@ class PayrollServices
         ];
     }
 
+    /**
+     * Checking aids for the Regular Payroll view, from the saved payroll lines and
+     * the cutoff snapshot (nothing is recomputed from the DTR):
+     *  - deduction columns split into mandatory (before-tax lines: GSIS PS,
+     *    PhilHealth, Pag-IBIG...) and other; every active before-tax deduction in
+     *    the catalog gets a column even when nobody has it, so a missing
+     *    contribution shows as 0;
+     *  - per employee: Basic Earned, Gross, mandatory total, Taxable Income, the
+     *    working behind Late/Absent, the tax and zero allowances, row checks and
+     *    warnings.
+     *
+     * @return array{mandatoryComponents: \Illuminate\Support\Collection, otherDeductionComponents: \Illuminate\Support\Collection, review: array}
+     */
+    public function payrollReview($payroll, $payrollEmployees): array
+    {
+        $employees = collect($payrollEmployees);
+        $lines = DB::table('hris.payroll_employee_components')
+            ->whereIn('payroll_employee_id', $employees->pluck('id'))
+            ->get(['payroll_employee_id', 'code', 'name', 'type', 'taxable', 'amount'])
+            ->groupBy('payroll_employee_id');
+        $catalog = DB::table('hris.payroll_components')->get()->keyBy('code');
+
+        // Deduction columns, grouped by the before-tax flag saved on the lines.
+        $deductions = $lines->flatten(1)->where('type', 'deduction')->where('code', '<>', 'WITHHOLDING_TAX');
+        $beforeTaxCodes = $deductions->where('taxable', 1)->pluck('code')
+            ->merge($catalog->where('type', 'deduction')->where('taxable', 1)->where('is_active', 1)->keys())
+            ->unique();
+        $columnOf = fn($code) => (object) [
+            'code' => $code,
+            'name' => optional($deductions->firstWhere('code', $code))->name ?? optional($catalog->get($code))->name ?? $code,
+            'type' => 'deduction',
+        ];
+        $order = fn($column) => [(int) optional($catalog->get(preg_replace('/_ADJUSTMENT$/', '', $column->code)))->sort_order, $column->code];
+        $mandatory = $beforeTaxCodes->map($columnOf)->sortBy($order)->values();
+        $other = $deductions->pluck('code')->unique()->diff($beforeTaxCodes)->map($columnOf)->sortBy($order)->values();
+
+        // Cutoff data behind the amounts.
+        $cutoffId = $payroll->cutoff_id ?? null;
+        $summaries = $cutoffId ? DB::table($this->resolveCutoffSummaryTable())->where('cutoff_id', $cutoffId)
+            ->whereIn('employee_id', $employees->pluck('employee_id'))->get()->keyBy('employee_id') : collect();
+        $snapshots = $cutoffId ? DB::table('hris.cutoff_employee_snapshots')->where('cutoff_id', $cutoffId)
+            ->whereIn('employee_id', $employees->pluck('employee_id'))->get()->keyBy('employee_id') : collect();
+        $taxRules = $cutoffId ? DB::table('hris.cutoff_config_snapshots')->where(['cutoff_id' => $cutoffId, 'config_key' => 'tax_rules'])->value('payload') : null;
+        $taxRules = $taxRules !== null ? collect(json_decode($taxRules)) : null;
+        $purpose = $payroll->tax_purpose ?? 'Payroll Monthly Salary';
+
+        // Current settings, only to explain a zero allowance.
+        $settings = DB::table('hris.employee_payroll_components')->whereIn('userid', $employees->pluck('employee_id'))
+            ->get()->groupBy('userid');
+        $types = DB::table('hris.employees')->whereIn('user_id', $employees->pluck('employee_id'))->pluck('employee_type', 'user_id');
+        $earningCodes = $lines->flatten(1)->where('type', 'earning')->pluck('code')->unique();
+        $floor = (float) config('hris.payroll_net_pay_floor', 5000);
+        $money = fn($value) => number_format((float) $value, 2);
+
+        $review = [];
+        foreach ($employees as $employee) {
+            $own = $lines->get($employee->id, collect());
+            $amounts = $own->groupBy('code')->map(fn($same) => round($same->sum('amount'), 2));
+            $basic = (float) $employee->basic_salary;
+            $lateAbsent = (float) $employee->late_absent;
+            $mandatoryTotal = round($own->where('type', 'deduction')->where('taxable', 1)->sum('amount'), 2);
+            $taxableEarnings = $own->where('type', 'earning')->where('taxable', 1)->sum('amount');
+            $taxable = round($basic + $taxableEarnings - $lateAbsent - $mandatoryTotal, 2);
+            $tax = (float) ($amounts['WITHHOLDING_TAX'] ?? 0);
+            $summary = $summaries->get($employee->employee_id);
+            $snapshot = $snapshots->get($employee->employee_id);
+
+            $notes = ['components' => []];
+            $warnings = [];
+
+            // Late / absent / LWOP working.
+            if ($summary) {
+                $rate = $snapshot && $snapshot->minute_rate !== null ? (float) $snapshot->minute_rate : null;
+                $parts = [];
+                if ((int) $summary->days_absent > 0) {
+                    $parts[] = "Absent {$summary->days_absent} day(s)" . ($summary->scheduled_absent_minutes ? " ({$summary->scheduled_absent_minutes} min)" : '');
+                }
+                if ((float) $summary->lwop_days > 0) {
+                    $parts[] = 'LWOP ' . sprintf('%g', (float) $summary->lwop_days) . ' day(s)' . ($summary->scheduled_lwop_minutes ? " ({$summary->scheduled_lwop_minutes} min)" : '');
+                }
+                foreach (['late_minutes' => 'Late', 'undertime_minutes' => 'Undertime', 'approved_pass_slips_minutes' => 'Personal pass slip'] as $field => $label) {
+                    if ((int) ($summary->$field ?? 0) > 0) {
+                        $parts[] = "{$label} {$summary->$field} min";
+                    }
+                }
+                $notes['late_absent'] = empty($parts)
+                    ? 'No absence, LWOP, late, undertime or pass slip in the cutoff.'
+                    : implode(' · ', $parts) . ($rate ? ' — each minute at ₱' . number_format($rate, 5) . ' (day = shift length)' : '');
+                if ((int) $summary->days_absent > 0) {
+                    $warnings[] = "{$summary->days_absent} absent day(s) with no leave filed are charged to pay.";
+                }
+            }
+
+            $notes['withholding_tax'] = $this->describeWithholdingTax($taxable, $purpose, $taxRules);
+
+            // Allowances that came out 0 or are missing for this employee.
+            foreach ($earningCodes as $code) {
+                if (abs((float) ($amounts[$code] ?? 0)) >= 0.005 || preg_match('/_(ADJUSTMENT|LEAVE_REDUCTION)$/', $code)) {
+                    continue;
+                }
+                $component = $catalog->get($code);
+                $setting = collect($settings->get($employee->employee_id))->firstWhere('payroll_component_id', optional($component)->id);
+                if ($setting && $setting->is_excluded) {
+                    $reason = 'Excluded in Payroll Settings';
+                } elseif ($setting && $setting->amount_override !== null && (float) $setting->amount_override == 0.0) {
+                    $reason = 'Set to 0 in Payroll Settings';
+                } elseif ($setting && $setting->rate_percent_override !== null && (float) $setting->rate_percent_override == 0.0) {
+                    $reason = 'Rate overridden to 0% in Payroll Settings';
+                } elseif ($component && $component->permanent_only && ($types[$employee->employee_id] ?? null) !== 'Permanent') {
+                    $reason = 'Permanent employees only (employee type: ' . ($types[$employee->employee_id] ?? 'blank') . ')';
+                } elseif ($component && !$component->is_global) {
+                    $reason = 'Not assigned to this employee';
+                } else {
+                    $reason = 'No amount in this cutoff';
+                }
+                $notes['components'][$code] = $reason;
+                $warnings[] = (optional($component)->name ? "{$component->name} ({$code})" : $code) . " is 0: {$reason}.";
+            }
+
+            if ($mandatoryTotal <= 0) {
+                $warnings[] = 'No mandatory contributions (GSIS / PhilHealth / Pag-IBIG) encoded.';
+            }
+            if ((float) $employee->net_pay < $floor) {
+                $warnings[] = 'Net pay ₱' . $money($employee->net_pay) . ' is below ₱' . $money($floor) . '.';
+            }
+
+            $review[$employee->id] = [
+                'basic_earned' => round($basic - $lateAbsent, 2),
+                'gross_pay' => round((float) $employee->gross_pay, 2),
+                'mandatory_total' => $mandatoryTotal,
+                'taxable_income' => $taxable,
+                'other_deductions_total' => round((float) $employee->deductions - $mandatoryTotal - $tax, 2),
+                'checks' => [
+                    'net_balanced' => abs(round((float) $employee->gross_pay - (float) $employee->deductions, 2) - (float) $employee->net_pay) < 0.015,
+                    'halves_balanced' => abs((float) $employee->first_half_10th + (float) $employee->second_half_25th - (float) $employee->net_pay) < 0.015,
+                ],
+                'notes' => $notes,
+                'warnings' => $warnings,
+            ];
+        }
+
+        return ['mandatoryComponents' => $mandatory, 'otherDeductionComponents' => $other, 'review' => $review];
+    }
+
+    /** The bracket and formula a withholding tax came from, for the view's tooltip. */
+    private function describeWithholdingTax(float $taxable, string $purpose, $snapshotRules = null): string
+    {
+        $rules = $snapshotRules !== null
+            ? collect($snapshotRules)->where('purpose', $purpose)->sortBy(fn($rule) => (float) $rule->min_annual)->values()
+            : DB::table('hris.payroll_tax_rules')->where('is_active', 1)->where('purpose', $purpose)->orderBy('min_annual')->get();
+        if ($rules->isEmpty()) {
+            return "No active tax rules for \"{$purpose}\".";
+        }
+
+        $monthly = ($rules->first()->basis ?? 'annual') === 'monthly';
+        $amount = $monthly ? $taxable : $taxable * 12;
+        $money = fn($value) => number_format((float) $value, 2);
+        $lead = "{$purpose} (" . ($monthly ? 'monthly table' : 'annual table: ₱' . $money($taxable) . ' × 12 = ₱' . $money($amount)) . '): ';
+
+        if ($rules->first()->tax_mode !== 'progressive') {
+            $rule = $rules->filter(fn($r) => $amount >= (float) $r->min_annual && ($r->max_annual === null || $amount <= (float) $r->max_annual))->last();
+            return $lead . ($rule ? sprintf('%g', (float) $rule->rate_percent) . '% × ₱' . $money($amount) : 'no bracket matches');
+        }
+
+        $base = 0.0;
+        $bracket = null;
+        foreach ($rules as $rule) {
+            $min = (float) $rule->min_annual;
+            $max = $rule->max_annual !== null ? (float) $rule->max_annual : INF;
+            if ($amount <= $min) {
+                break;
+            }
+            $bracket = $rule;
+            if ($amount > $max) {
+                $base += ($max - $min) * (float) $rule->rate_percent / 100;
+            }
+        }
+        if (!$bracket || (float) $bracket->rate_percent == 0.0) {
+            return $lead . '₱' . $money($amount) . ' is within the tax-exempt bracket.';
+        }
+
+        $text = '₱' . $money($base) . ' + ' . sprintf('%g', (float) $bracket->rate_percent) . '% × (₱' . $money($amount) . ' − ₱' . $money($bracket->min_annual) . ')';
+
+        return $lead . $text . ($monthly ? '' : ', ÷ 12');
+    }
+
     public function exportRegularPayroll($payrollEmployees, $exportPath, $payroll = null)
     {
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
