@@ -3,7 +3,7 @@
     <div class="page-head">
         <div>
             <h1>Taxation</h1>
-            <p class="page-sub">Withholding tax brackets by annual taxable income, rate and purpose. Payroll uses the active rules for the payroll's purpose.</p>
+            <p class="page-sub">Withholding tax brackets, rate and purpose. Payroll uses the active rules for the payroll's purpose. Monthly-basis brackets (the BIR monthly table) apply to the month's taxable pay as-is; annual-basis brackets apply to it &times; 12, then &divide; 12.</p>
         </div>
         <button type="button" class="btn btn-primary" id="btn_add_tax_rule">
             <i class="bi bi-plus-lg me-1"></i> Add rule
@@ -17,11 +17,12 @@
                 <thead>
                 <tr>
                     <th style="width: 20%;">Purpose</th>
-                    <th style="width: 12%;">Min Annual</th>
-                    <th style="width: 12%;">Max Annual</th>
+                    <th style="width: 10%;">Basis</th>
+                    <th style="width: 12%;">Min</th>
+                    <th style="width: 12%;">Max</th>
                     <th style="width: 10%;">Rate (%)</th>
                     <th style="width: 12%;">Mode</th>
-                    <th style="width: 10%;">Active</th>
+                    <th style="width: 8%;">Active</th>
                     <th style="width: 10%;"></th>
                 </tr>
                 </thead>
@@ -39,7 +40,7 @@
                         <div class="modal-icon"><i class="bi bi-percent"></i></div>
                         <div>
                             <h5 class="modal-title" id="taxRuleModalLabel">Add Tax Rule</h5>
-                            <p class="modal-sub">One bracket of annual taxable income and its rate.</p>
+                            <p class="modal-sub">One bracket of taxable income (monthly or annual) and its rate.</p>
                         </div>
                     </div>
                     <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -52,11 +53,11 @@
                             <input type="text" class="form-control" id="tax_purpose_input" placeholder="Payroll Monthly Salary">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Min Annual</label>
+                            <label class="form-label">Min</label>
                             <input type="number" class="form-control" id="tax_min_annual" value="0">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Max Annual</label>
+                            <label class="form-label">Max</label>
                             <input type="number" class="form-control" id="tax_max_annual" placeholder="Leave blank for no limit">
                         </div>
                         <div class="col-md-3">
@@ -68,6 +69,13 @@
                             <select class="form-control" id="tax_mode">
                                 <option value="flat">Flat</option>
                                 <option value="progressive">Progressive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Basis</label>
+                            <select class="form-control" id="tax_basis" title="Monthly: the brackets are monthly amounts, applied to the month's taxable pay as-is. Annual: applied to the month's taxable pay x 12, then / 12.">
+                                <option value="monthly">Monthly</option>
+                                <option value="annual">Annual</option>
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
@@ -145,7 +153,7 @@
             $body.empty();
 
             if (!taxRules.length) {
-                $body.append("<tr><td colspan='7' class='text-muted text-center py-3'>No tax rules configured.</td></tr>");
+                $body.append("<tr><td colspan='8' class='text-muted text-center py-3'>No tax rules configured.</td></tr>");
                 return;
             }
 
@@ -159,6 +167,7 @@
                 const row = `
                     <tr>
                         <td>${rule.purpose}</td>
+                        <td>${rule.basis === "monthly" ? "Monthly" : "Annual"}</td>
                         <td>${minAnnual}</td>
                         <td>${maxAnnual}</td>
                         <td>${rate}</td>
@@ -185,6 +194,7 @@
             $("#tax_max_annual").val(rule && rule.max_annual !== null ? rule.max_annual : "");
             $("#tax_rate_percent").val(rule ? rule.rate_percent : 0);
             $("#tax_mode").val(rule ? rule.tax_mode : "flat");
+            $("#tax_basis").val(rule ? (rule.basis || "annual") : "monthly");
             $("#tax_active").prop("checked", rule ? !!rule.is_active : true);
             $("#tax_remarks").val(rule ? (rule.remarks || "") : "");
             $("#tax_rule_modal").modal("show");
@@ -212,6 +222,7 @@
                 max_annual: maxAnnual === "" ? null : parseFloat(maxAnnual),
                 rate_percent: ratePercent === "" ? 0 : parseFloat(ratePercent),
                 tax_mode: mode,
+                basis: $("#tax_basis").val(),
                 is_active: active,
                 remarks: remarks
             }];

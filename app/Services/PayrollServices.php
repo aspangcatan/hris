@@ -326,7 +326,37 @@ class PayrollServices
         return $list;
     }
 
-    /** @param \Illuminate\Support\Collection|null $snapshotRules tax rules saved with the cutoff; null reads the live table */
+    /**
+     * Monthly withholding tax on a month's taxable compensation, by the purpose's
+     * rules. Monthly-basis rules (the BIR monthly table) apply to it as-is;
+     * annual-basis rules apply to it x 12, and the result is divided by 12.
+     * Rules saved before the basis existed are annual.
+     *
+     * @param \Illuminate\Support\Collection|null $snapshotRules tax rules saved with the cutoff; null reads the live table
+     */
+    public function withholdingTax(float $monthlyTaxable, string $purpose, $snapshotRules = null): float
+    {
+        $rules = $snapshotRules !== null
+            ? collect($snapshotRules)->where('purpose', $purpose)->sortBy(fn($rule) => (float) $rule->min_annual)->values()
+            : DB::table('hris.payroll_tax_rules')->where('is_active', 1)->where('purpose', $purpose)->orderBy('min_annual')->get();
+        if ($rules->isEmpty()) {
+            return 0.0;
+        }
+
+        $basisOf = fn($rule) => ($rule->basis ?? 'annual') === 'monthly' ? 'monthly' : 'annual';
+        $basis = $basisOf($rules->first());
+        if ($rules->contains(fn($rule) => $basisOf($rule) !== $basis)) {
+            // Data anomaly (savePayrollTaxRules blocks it): use the lowest bracket's basis.
+            \Illuminate\Support\Facades\Log::warning("Payroll tax rules for purpose \"{$purpose}\" mix annual and monthly bases; using {$basis}.");
+            $rules = $rules->filter(fn($rule) => $basisOf($rule) === $basis)->values();
+        }
+
+        return $basis === 'monthly'
+            ? (float) $this->computeWithholdingTax($monthlyTaxable, $purpose, $rules)
+            : (float) $this->computeWithholdingTax($monthlyTaxable * 12, $purpose, $rules) / 12;
+    }
+
+    /** Tax on $annualGross - or on any amount in the rules' own basis - by the purpose's brackets. */
     private function computeWithholdingTax($annualGross, $purpose, $snapshotRules = null)
     {
         $rules = $snapshotRules !== null
@@ -411,6 +441,11 @@ class PayrollServices
         $modes = collect($activeRules)->pluck('tax_mode')->unique();
         if ($modes->count() > 1) {
             return "Tax rules for purpose \"{$purpose}\" mix tax modes (" . $modes->implode(', ') . "). All active rules for a purpose must use the same tax mode.";
+        }
+
+        $bases = collect($activeRules)->map(fn($rule) => ($rule['basis'] ?? 'annual') === 'monthly' ? 'monthly' : 'annual')->unique();
+        if ($bases->count() > 1) {
+            return "Tax rules for purpose \"{$purpose}\" mix annual and monthly basis. All active rules for a purpose must use the same basis.";
         }
 
         foreach ($activeRules as $rule) {
@@ -821,8 +856,7 @@ class PayrollServices
 
         // ---- Withholding Tax ----
         $taxPurpose = $period->tax_purpose ?? 'Payroll Monthly Salary';
-        $annualGross = $taxableGrossPay * 12;
-        $withholding_tax = $this->computeWithholdingTax($annualGross, $taxPurpose, $snapshot['tax_rules'] ?? null) / 12;
+        $withholding_tax = $this->withholdingTax($taxableGrossPay, $taxPurpose, $snapshot['tax_rules'] ?? null);
 
         // ---- Final Deductions ----
         $withholdingComponent = (object) [

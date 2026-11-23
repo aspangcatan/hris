@@ -341,7 +341,7 @@ class CutoffSnapshotService
             'pay_computations' => DB::table('hris.pay_computations')->orderBy('id')
                 ->get(['id', 'name', 'working_days_per_month', 'standard_hours_per_day', 'is_default']),
             'tax_rules' => DB::table('hris.payroll_tax_rules')->where('is_active', 1)->orderBy('purpose')->orderBy('sort_order')
-                ->get(['purpose', 'min_annual', 'max_annual', 'rate_percent', 'tax_mode']),
+                ->get(['purpose', 'min_annual', 'max_annual', 'rate_percent', 'tax_mode', 'basis']),
             'leave_types' => DB::table('hris.leave_types')->orderBy('id')->get(['id', 'code', 'monthly_earned', 'deduction_unit']),
             'pay_divisor' => [
                 'working_days_per_month' => (float) $this->payrollServices->defaultComputation()->working_days_per_month,

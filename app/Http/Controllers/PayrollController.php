@@ -430,6 +430,8 @@ class PayrollController extends Controller
                     'max_annual' => $maxAnnual === '' || $maxAnnual === null ? null : (float) $maxAnnual,
                     'rate_percent' => isset($rule['rate_percent']) ? (float) $rule['rate_percent'] : 0,
                     'tax_mode' => strtolower((string) ($rule['tax_mode'] ?? 'flat')) === 'progressive' ? 'progressive' : 'flat',
+                    // 'monthly': brackets apply to the monthly taxable as-is (the BIR monthly table).
+                    'basis' => strtolower((string) ($rule['basis'] ?? 'annual')) === 'monthly' ? 'monthly' : 'annual',
                     'is_active' => array_key_exists('is_active', $rule) ? (bool) $rule['is_active'] : true,
                     'sort_order' => isset($rule['sort_order']) ? (int) $rule['sort_order'] : 0,
                     'remarks' => $rule['remarks'] ?? null,
@@ -446,7 +448,7 @@ class PayrollController extends Controller
                     ->where('purpose', $purpose)
                     ->where('is_active', 1)
                     ->when(!empty($incomingIds), fn($q) => $q->whereNotIn('id', $incomingIds))
-                    ->get(['min_annual', 'max_annual', 'tax_mode'])
+                    ->get(['min_annual', 'max_annual', 'tax_mode', 'basis'])
                     ->map(fn($row) => (array) $row)
                     ->all();
 
@@ -456,6 +458,7 @@ class PayrollController extends Controller
                         'min_annual' => $rule['min_annual'],
                         'max_annual' => $rule['max_annual'],
                         'tax_mode' => $rule['tax_mode'],
+                        'basis' => $rule['basis'],
                     ])
                     ->all();
 
@@ -481,6 +484,7 @@ class PayrollController extends Controller
                     'max_annual' => $rule['max_annual'],
                     'rate_percent' => $rule['rate_percent'],
                     'tax_mode' => $rule['tax_mode'],
+                    'basis' => $rule['basis'],
                     'is_active' => $rule['is_active'] ? 1 : 0,
                     'sort_order' => $rule['sort_order'],
                     'remarks' => $rule['remarks'],
