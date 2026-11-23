@@ -98,7 +98,111 @@ class PayrollReviewViewTest extends TestCase
         $data = $this->withoutMiddleware()->getJson('/get_payroll_employee?payroll_id=' . $payrollId)->assertOk()->json();
         $rowId = DB::table('hris.payroll_employees')->where('payroll_id', $payrollId)->value('id');
 
+        $this->lastPayrollId = $payrollId;
+
         return [$data, $data['review'][$rowId] ?? null];
+    }
+
+    private ?int $lastPayrollId = null;
+
+    /** A computed payroll for the same employee, earlier pay period, with this net pay. */
+    private function seedEarlierPayroll(float $netPay): void
+    {
+        $id = DB::table('hris.payrolls')->insertGetId([
+            'title' => 'Earlier Payroll', 'start_date' => '2027-11-01', 'end_date' => '2027-11-30', 'payroll_type' => 'Regular',
+            'status' => 'released', 'prepared_by' => $this->userId, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        DB::table('hris.payroll_employees')->insert([
+            'payroll_id' => $id, 'employee_id' => $this->userId, 'division' => 0, 'section' => 0,
+            'basic_salary' => 42178, 'net_pay' => $netPay, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    private function fullCutoff(): void
+    {
+        $this->seedCutoff(42178);
+        $this->snapshotLine('PERA', 'earning', false, 2000);
+        $this->snapshotLine('HAZARD', 'earning', true, 10544.50);
+        $this->snapshotLine('GSIS_PS', 'deduction', true, 3796.02);
+        $this->snapshotLine('PHIC', 'deduction', true, 1054.45);
+        $this->snapshotLine('HDMF', 'deduction', true, 200);
+        $this->snapshotLine('TDHEA', 'deduction', false, 220);
+        $this->snapshotLine('GSIS_GS', 'employer_share', false, 5061.36);
+    }
+
+    /** @test */
+    public function employer_shares_have_their_own_columns_and_total()
+    {
+        $this->fullCutoff();
+
+        [$data, $review] = $this->computeAndView();
+
+        $this->assertContains('GSIS_GS', collect($data['employerShareComponents'])->pluck('code')->all());
+        $this->assertEqualsWithDelta(5061.36, $review['employer_share_total'], 0.005);
+    }
+
+    /** @test */
+    public function the_summary_shows_the_pay_and_dtr_periods_and_tax_purpose()
+    {
+        $this->fullCutoff();
+
+        [$data] = $this->computeAndView();
+
+        $this->assertSame('2027-12-01', $data['meta']['start_date']);
+        $this->assertSame('2027-11-01', $data['meta']['cutoff_start_date']);
+        $this->assertSame($this->purpose, $data['meta']['tax_purpose']);
+    }
+
+    /** @test */
+    public function each_line_says_where_its_amount_came_from()
+    {
+        $this->fullCutoff();
+
+        [, $review] = $this->computeAndView();
+        $lines = collect($review['lines'])->keyBy('code');
+
+        $this->assertStringContainsString('42,178.00', $review['basic_source']);
+        $this->assertEqualsWithDelta(10544.50, $lines['HAZARD']['amount'], 0.005);
+        $this->assertNotEmpty($lines['HAZARD']['source']);
+        $this->assertStringContainsString('20%', $lines['WITHHOLDING_TAX']['source']);
+        $this->assertSame('employer_share', $lines['GSIS_GS']['type']);
+    }
+
+    /** @test */
+    public function net_pay_is_compared_with_the_last_payroll()
+    {
+        config(['hris.payroll_net_change_alert_percent' => 10]);
+        $this->fullCutoff();
+        $this->seedEarlierPayroll(30000);
+
+        [, $review] = $this->computeAndView();
+
+        $this->assertSame('Earlier Payroll', $review['previous']['title']);
+        $this->assertEqualsWithDelta(30000, $review['previous']['net_pay'], 0.005);
+        $this->assertGreaterThan(10, $review['previous']['change_percent']);
+        $this->assertStringContainsString('last payroll', implode(' | ', $review['warnings']));
+    }
+
+    /** @test */
+    public function the_excel_export_matches_the_view()
+    {
+        $this->fullCutoff();
+        [$data] = $this->computeAndView();
+
+        $path = tempnam(sys_get_temp_dir(), 'payroll') . '.xlsx';
+        try {
+            $service = app(\App\Services\PayrollServices::class);
+            $employees = $service->getPayrollEmployee($this->lastPayrollId);
+            $service->exportRegularPayroll($employees, $path, $service->getPayrollPeriod($this->lastPayrollId));
+
+            $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path)->getActiveSheet();
+            $cells = collect($sheet->toArray(null, true, false, false))->flatten()->filter(fn($v) => is_string($v))->map(fn($v) => strtoupper($v));
+            foreach (['BASIC EARNED', 'GROSS PAY', 'TAXABLE INCOME', 'TOTAL DEDUCTION', 'NET PAY', 'MANDATORY DEDUCTIONS (BEFORE TAX)', 'EMPLOYER SHARES (NOT DEDUCTED)', 'GSIS_GS'] as $header) {
+                $this->assertTrue($cells->contains(fn($v) => strpos($v, $header) !== false), "Export is missing \"{$header}\".");
+            }
+        } finally {
+            @unlink($path);
+        }
     }
 
     /** @test */

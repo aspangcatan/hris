@@ -602,20 +602,26 @@ class PayrollSnapshotTest extends TestCase
         $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path)->getActiveSheet();
         @unlink($path);
 
+        // Two header rows: a grouped column's name is on row 6 under its group (row 5);
+        // an ungrouped column's name spans both, so it is on row 5. Data starts on row 7.
         $headers = [];
-        for ($col = 1; ($value = $sheet->getCellByColumnAndRow($col, 4)->getValue()) !== null; $col++) {
-            $headers[$value] = $col;
+        $highest = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($sheet->getHighestColumn());
+        for ($col = 1; $col <= $highest; $col++) {
+            $value = $sheet->getCellByColumnAndRow($col, 6)->getValue() ?? $sheet->getCellByColumnAndRow($col, 5)->getValue();
+            if ($value !== null) {
+                $headers[$value] = $col;
+            }
         }
         $this->assertArrayHasKey('PRIOR_PERIOD_REFUND', $headers);
         $this->assertArrayHasKey('GSIS_PS', $headers);
         $this->assertArrayNotHasKey('ADDED LATER', $headers);
         $this->assertArrayNotHasKey('STAT', $headers);
-        $cell = fn($header) => (float) $sheet->getCellByColumnAndRow($headers[$header], 5)->getValue();
+        $cell = fn($header) => (float) $sheet->getCellByColumnAndRow($headers[$header], 7)->getValue();
         $this->assertEquals(500, $cell('PRIOR_PERIOD_REFUND'));
         $this->assertEquals(1980, $cell('GSIS_PS'));
 
         // Every amount has a column, so the row adds up to net pay.
-        $earned = $cell('BASIC PAY') - $cell('LATE / ABSENT / LWOP') + $cell('PERA') + $cell('PRIOR_PERIOD_REFUND');
+        $earned = $cell('BASIC PAY') - $cell('LESS: LATE / ABSENT / LWOP') + $cell('PERA') + $cell('PRIOR_PERIOD_REFUND');
         $this->assertEqualsWithDelta($earned - $cell('TOTAL DEDUCTION'), $cell('NET PAY'), 0.01);
     }
 

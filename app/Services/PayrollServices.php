@@ -121,6 +121,17 @@ class PayrollServices
         $mandatory = $beforeTaxCodes->map($columnOf)->sortBy($order)->values();
         $other = $deductions->pluck('code')->unique()->diff($beforeTaxCodes)->map($columnOf)->sortBy($order)->values();
 
+        // Employer shares (GSIS GS, EC): their own columns, never part of the employee's pay.
+        $shares = $lines->flatten(1)->where('type', 'employer_share');
+        $employerShares = $shares->pluck('code')
+            ->merge($catalog->where('type', 'employer_share')->where('is_active', 1)->keys())
+            ->unique()
+            ->map(fn($code) => (object) [
+                'code' => $code,
+                'name' => optional($shares->firstWhere('code', $code))->name ?? optional($catalog->get($code))->name ?? $code,
+                'type' => 'employer_share',
+            ])->sortBy($order)->values();
+
         // Cutoff data behind the amounts.
         $cutoffId = $payroll->cutoff_id ?? null;
         $summaries = $cutoffId ? DB::table($this->resolveCutoffSummaryTable())->where('cutoff_id', $cutoffId)
@@ -137,7 +148,23 @@ class PayrollServices
         $types = DB::table('hris.employees')->whereIn('user_id', $employees->pluck('employee_id'))->pluck('employee_type', 'user_id');
         $earningCodes = $lines->flatten(1)->where('type', 'earning')->pluck('code')->unique();
         $floor = (float) config('hris.payroll_net_pay_floor', 5000);
+        $alertPercent = (float) config('hris.payroll_net_change_alert_percent', 10);
         $money = fn($value) => number_format((float) $value, 2);
+
+        // Each line's saved computation basis (e.g. a leave reduction) from the cutoff snapshot.
+        $bases = $cutoffId ? DB::table('hris.cutoff_payroll_components')->where('cutoff_id', $cutoffId)
+            ->whereIn('employee_id', $employees->pluck('employee_id'))->whereNotNull('computation_basis')
+            ->get(['employee_id', 'code', 'computation_basis'])->groupBy('employee_id') : collect();
+
+        // The employee's latest payroll for an earlier pay period, for the net pay comparison.
+        $previous = empty($payroll->start_date) ? collect() : DB::table('hris.payroll_employees as pe')
+            ->join('hris.payrolls as p', 'p.id', '=', 'pe.payroll_id')
+            ->whereIn('pe.employee_id', $employees->pluck('employee_id'))
+            ->where('p.id', '<>', (int) ($payroll->id ?? 0))
+            ->where('p.start_date', '<', $payroll->start_date)
+            ->orderByDesc('p.start_date')->orderByDesc('p.id')
+            ->get(['pe.employee_id', 'pe.net_pay', 'p.title', 'p.start_date', 'p.end_date'])
+            ->groupBy('employee_id')->map(fn($rows) => $rows->first());
 
         $review = [];
         foreach ($employees as $employee) {
@@ -211,6 +238,38 @@ class PayrollServices
                 $warnings[] = 'Net pay ₱' . $money($employee->net_pay) . ' is below ₱' . $money($floor) . '.';
             }
 
+            // Net pay against the last payroll.
+            $last = $previous->get($employee->employee_id);
+            $comparison = null;
+            if ($last) {
+                $change = round((float) $employee->net_pay - (float) $last->net_pay, 2);
+                $percent = (float) $last->net_pay != 0.0 ? round($change / (float) $last->net_pay * 100, 2) : null;
+                $comparison = ['title' => $last->title, 'start_date' => $last->start_date, 'end_date' => $last->end_date,
+                    'net_pay' => round((float) $last->net_pay, 2), 'change' => $change, 'change_percent' => $percent];
+                if ($percent !== null && abs($percent) > $alertPercent) {
+                    $warnings[] = 'Net pay changed ' . ($change > 0 ? '+' : '') . $percent . '% from the last payroll ("' . $last->title . '": ₱' . $money($last->net_pay) . ').';
+                }
+            }
+
+            // Every line with where its amount came from, for the employee breakdown.
+            $ownBases = collect($bases->get($employee->employee_id))->pluck('computation_basis', 'code');
+            $ownSettings = collect($settings->get($employee->employee_id))->keyBy('payroll_component_id');
+            $breakdown = $own->map(function ($line) use ($catalog, $ownBases, $ownSettings, $notes) {
+                return [
+                    'code' => $line->code,
+                    'name' => $line->name ?: $line->code,
+                    'type' => $line->type,
+                    'taxable' => (bool) $line->taxable,
+                    'amount' => round((float) $line->amount, 2),
+                    'source' => $this->lineSource($line, $catalog->get($line->code), $ownSettings, $ownBases, $notes),
+                ];
+            })->values();
+            $basicSource = $snapshot
+                ? 'Monthly basic ₱' . $money($snapshot->monthly_salary) . ' (SG ' . ($snapshot->salary_grade ?? '?') . '-' . ($snapshot->salary_step ?? '?') . ') saved with the cutoff'
+                    . ($snapshot->salary_source ? ', from ' . $snapshot->salary_source : '')
+                    . ($snapshot->salary_effective_date ? ', effective ' . $snapshot->salary_effective_date : '')
+                : 'Monthly basic ₱' . $money($employee->basic_salary) . ' from Payroll Settings (no cutoff snapshot)';
+
             $review[$employee->id] = [
                 'basic_earned' => round($basic - $lateAbsent, 2),
                 'gross_pay' => round((float) $employee->gross_pay, 2),
@@ -221,12 +280,62 @@ class PayrollServices
                     'net_balanced' => abs(round((float) $employee->gross_pay - (float) $employee->deductions, 2) - (float) $employee->net_pay) < 0.015,
                     'halves_balanced' => abs((float) $employee->first_half_10th + (float) $employee->second_half_25th - (float) $employee->net_pay) < 0.015,
                 ],
+                'employer_share_total' => round($own->where('type', 'employer_share')->sum('amount'), 2),
+                'previous' => $comparison,
+                'basic_source' => $basicSource,
+                'lines' => $breakdown,
                 'notes' => $notes,
                 'warnings' => $warnings,
             ];
         }
 
-        return ['mandatoryComponents' => $mandatory, 'otherDeductionComponents' => $other, 'review' => $review];
+        return [
+            'mandatoryComponents' => $mandatory,
+            'otherDeductionComponents' => $other,
+            'employerShareComponents' => $employerShares,
+            'meta' => [
+                'title' => $payroll->title ?? null,
+                'status' => $payroll->status ?? null,
+                'start_date' => $payroll->start_date ?? null,
+                'end_date' => $payroll->end_date ?? null,
+                'cutoff_title' => $payroll->cutoff_title ?? null,
+                'cutoff_start_date' => $payroll->cutoff_start_date ?? null,
+                'cutoff_end_date' => $payroll->cutoff_end_date ?? null,
+                'tax_purpose' => $purpose,
+                'net_change_alert_percent' => $alertPercent,
+            ],
+            'review' => $review,
+        ];
+    }
+
+    /** Where a payroll line's amount came from, in words, for the employee breakdown. */
+    private function lineSource(object $line, ?object $component, $settings, $bases, array $notes): string
+    {
+        $setting = $component ? $settings->get($component->id) : null;
+
+        if ($line->code === 'WITHHOLDING_TAX') {
+            return $notes['withholding_tax'];
+        }
+        if ($bases->has($line->code)) {
+            return $bases[$line->code];
+        }
+        if (preg_match('/_ADJUSTMENT$/', $line->code)) {
+            return 'Cutoff adjustment entered when the payroll was computed';
+        }
+        if ($setting && $setting->amount_override !== null) {
+            return 'Amount set for this employee in Payroll Settings';
+        }
+        if ($setting && $setting->rate_percent_override !== null) {
+            return sprintf('%g', (float) $setting->rate_percent_override) . '% of basic salary (rate set for this employee)';
+        }
+        if ($component && $component->calculation_type === 'percentage') {
+            return sprintf('%g', (float) $component->rate_percent) . '% of ' . ($component->base_type === 'component' ? $component->base_component_code : 'basic salary');
+        }
+        if ($component && $component->is_global) {
+            return 'Default amount for everyone (Earnings & Deductions)';
+        }
+
+        return 'Saved with the cutoff snapshot';
     }
 
     /** The bracket and formula a withholding tax came from, for the view's tooltip. */
@@ -271,6 +380,13 @@ class PayrollServices
         return $lead . $text . ($monthly ? '' : ', ÷ 12');
     }
 
+    /**
+     * Payroll Summary workbook laid out like the Regular Payroll view: columns in
+     * computation order with subtotals (Basic Earned, Gross Pay, Taxable Income,
+     * Total Deduction, Net Pay), deductions grouped mandatory / loans & other,
+     * employer shares apart, a totals row for every money column, and the row
+     * checks and warnings - so the printed copy can be checked the same way.
+     */
     public function exportRegularPayroll($payrollEmployees, $exportPath, $payroll = null)
     {
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -278,67 +394,107 @@ class PayrollServices
         $sheet->setTitle('Payroll Summary');
 
         $breakdown = $this->payrollComponentColumns($payrollEmployees);
+        $review = $payroll ? $this->payrollReview($payroll, $payrollEmployees)
+            : ['mandatoryComponents' => collect(), 'otherDeductionComponents' => collect($breakdown['deduction']), 'employerShareComponents' => collect(), 'review' => []];
         $amount = fn($item, $code) => (float) (($breakdown['amounts']->get($item->id) ?? collect())[$code] ?? 0);
+        $rev = fn($item) => $review['review'][$item->id] ?? [];
 
-        // [header, value, kind]: kind is text, plain (centred number) or money (summed in the totals row).
+        // [group, header, value, kind]: kind is text, plain (centred), money or subtotal (both totalled).
         $columns = [
-            ['No.', null, 'plain'],
-            ['NAME', fn($item) => $this->formatEmployeeName($item), 'text'],
-            ['FAMILY NAME', fn($item) => $item->lname ?? '', 'text'],
-            ['FIRST NAME', fn($item) => $item->fname ?? '', 'text'],
-            ['MIDDLE NAME', fn($item) => $item->mname ?? '', 'text'],
-            ['SUFFIX', fn($item) => $item->suffix ?? '', 'text'],
-            ['MI', fn($item) => !empty($item->mname) ? strtoupper(substr($item->mname, 0, 1)) . '.' : '', 'text'],
-            ['DIVISION', fn($item) => $item->division ?? '', 'text'],
-            ['DESIGNATION', fn($item) => $item->designation ?? '', 'text'],
-            ['zz', fn($item) => $this->generateAcronym($item->designation ?? ''), 'text'],
-            ['SG', fn($item) => $item->salary_grade ?? '', 'plain'],
-            ['Step', fn($item) => $item->step ?? '', 'plain'],
-            ['BASIC PAY', fn($item) => (float) $item->basic_salary, 'money'],
-            ['LATE / ABSENT / LWOP', fn($item) => (float) $item->late_absent, 'money'],
+            [null, 'No.', null, 'plain'],
+            [null, 'NAME', fn($item) => $this->formatEmployeeName($item), 'text'],
+            [null, 'FAMILY NAME', fn($item) => $item->lname ?? '', 'text'],
+            [null, 'FIRST NAME', fn($item) => $item->fname ?? '', 'text'],
+            [null, 'MIDDLE NAME', fn($item) => $item->mname ?? '', 'text'],
+            [null, 'SUFFIX', fn($item) => $item->suffix ?? '', 'text'],
+            [null, 'MI', fn($item) => !empty($item->mname) ? strtoupper(substr($item->mname, 0, 1)) . '.' : '', 'text'],
+            [null, 'DIVISION', fn($item) => $item->division ?? '', 'text'],
+            [null, 'DESIGNATION', fn($item) => $item->designation ?? '', 'text'],
+            [null, 'zz', fn($item) => $this->generateAcronym($item->designation ?? ''), 'text'],
+            [null, 'SG', fn($item) => $item->salary_grade ?? '', 'plain'],
+            [null, 'Step', fn($item) => $item->step ?? '', 'plain'],
+            ['BASIC', 'BASIC PAY', fn($item) => (float) $item->basic_salary, 'money'],
+            ['BASIC', 'LESS: LATE / ABSENT / LWOP', fn($item) => (float) $item->late_absent, 'money'],
+            ['BASIC', 'BASIC EARNED', fn($item) => (float) ($rev($item)['basic_earned'] ?? ((float) $item->basic_salary - (float) $item->late_absent)), 'subtotal'],
         ];
         foreach ($breakdown['earning'] as $component) {
-            $columns[] = [strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
+            $columns[] = ['EARNINGS', strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
         }
-        $columns[] = ['GROSS PAY', fn($item) => (float) $item->gross_pay, 'money'];
-        $columns[] = ['WITHHOLDING TAX', fn($item) => $amount($item, 'WITHHOLDING_TAX'), 'money'];
-        foreach ($breakdown['deduction'] as $component) {
-            $columns[] = [strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
+        $columns[] = [null, 'GROSS PAY', fn($item) => (float) $item->gross_pay, 'subtotal'];
+        foreach ($review['mandatoryComponents'] as $component) {
+            $columns[] = ['MANDATORY DEDUCTIONS (BEFORE TAX)', strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
         }
-        $columns[] = ['TOTAL DEDUCTION', fn($item) => (float) $item->deductions, 'money'];
-        $columns[] = ['NET PAY', fn($item) => (float) $item->net_pay, 'money'];
-        $columns[] = ['1ST HALF 10TH', fn($item) => (float) $item->first_half_10th, 'money'];
-        $columns[] = ['2ND HALF 25TH', fn($item) => (float) $item->second_half_25th, 'money'];
+        $columns[] = [null, 'TAXABLE INCOME', fn($item) => (float) ($rev($item)['taxable_income'] ?? 0), 'subtotal'];
+        $columns[] = [null, 'WITHHOLDING TAX', fn($item) => $amount($item, 'WITHHOLDING_TAX'), 'money'];
+        foreach ($review['otherDeductionComponents'] as $component) {
+            $columns[] = ['LOANS & OTHER DEDUCTIONS', strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
+        }
+        $columns[] = [null, 'TOTAL DEDUCTION', fn($item) => (float) $item->deductions, 'subtotal'];
+        $columns[] = [null, 'NET PAY', fn($item) => (float) $item->net_pay, 'subtotal'];
+        $columns[] = ['PAY DATES', '1ST HALF 10TH', fn($item) => (float) $item->first_half_10th, 'money'];
+        $columns[] = ['PAY DATES', '2ND HALF 25TH', fn($item) => (float) $item->second_half_25th, 'money'];
+        foreach ($review['employerShareComponents'] as $component) {
+            $columns[] = ['EMPLOYER SHARES (NOT DEDUCTED)', strtoupper($component->name), fn($item) => $amount($item, $component->code), 'money'];
+        }
+        $columns[] = [null, 'NET VS LAST PAYROLL', fn($item) => isset($rev($item)['previous']['change']) ? (float) $rev($item)['previous']['change'] : '', 'plainmoney'];
+        $columns[] = [null, 'CHECK / WARNINGS', function ($item) use ($rev) {
+            $r = $rev($item);
+            $problems = [];
+            if (($r['checks']['net_balanced'] ?? true) === false) $problems[] = 'Gross - Total Deduction does not equal Net Pay.';
+            if (($r['checks']['halves_balanced'] ?? true) === false) $problems[] = '10th + 25th does not equal Net Pay.';
+            $problems = array_merge($problems, $r['warnings'] ?? []);
+
+            return empty($problems) ? 'OK' : implode("\n", $problems);
+        }, 'text'];
 
         $letter = fn(int $index) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
         $lastColLetter = $letter(count($columns) - 1);
+        $groupRow = 5;
+        $headerRow = 6;
+        $dataStartRow = 7;
+        $center = \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER;
 
-        $titleRow = 1;
-        $periodRow = 2;
-        $headerRow = 4;
-        $dataStartRow = 5;
-
-        $titleText = 'PAYROLL SUMMARY' . (!empty($payroll->title) ? ' - ' . strtoupper($payroll->title) : '');
-        $sheet->setCellValue("A{$titleRow}", $titleText);
-        $sheet->mergeCells("A{$titleRow}:{$lastColLetter}{$titleRow}");
-        $sheet->getStyle("A{$titleRow}")->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle("A{$titleRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
+        // Title and the summary lines a reviewer checks first.
+        $lines = ['PAYROLL SUMMARY' . (!empty($payroll->title) ? ' - ' . strtoupper($payroll->title) : '')];
         if (!empty($payroll->start_date) && !empty($payroll->end_date)) {
-            $periodText = 'For the period of ' . Carbon::parse($payroll->start_date)->format('F j') . ' to ' . Carbon::parse($payroll->end_date)->format('F j, Y');
-            $sheet->setCellValue("A{$periodRow}", $periodText);
-            $sheet->mergeCells("A{$periodRow}:{$lastColLetter}{$periodRow}");
-            $sheet->getStyle("A{$periodRow}")->getFont()->setItalic(true)->setSize(10);
-            $sheet->getStyle("A{$periodRow}")->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $lines[] = 'Pay period: ' . Carbon::parse($payroll->start_date)->format('F j') . ' to ' . Carbon::parse($payroll->end_date)->format('F j, Y')
+                . (!empty($payroll->cutoff_start_date) ? '   |   DTR (cutoff): ' . Carbon::parse($payroll->cutoff_start_date)->format('F j') . ' to ' . Carbon::parse($payroll->cutoff_end_date)->format('F j, Y') : '');
+        }
+        $lines[] = 'Tax purpose: ' . ($payroll->tax_purpose ?? 'Payroll Monthly Salary') . '   |   Status: ' . ucfirst(str_replace('_', ' ', (string) ($payroll->status ?? ''))) . '   |   Employees: ' . count($payrollEmployees);
+        foreach ($lines as $i => $text) {
+            $r = $i + 1;
+            $sheet->setCellValue("A{$r}", $text);
+            $sheet->mergeCells("A{$r}:{$lastColLetter}{$r}");
+            $sheet->getStyle("A{$r}")->getAlignment()->setHorizontal($center);
+            $sheet->getStyle("A{$r}")->getFont()->setBold($i === 0)->setSize($i === 0 ? 14 : 10)->setItalic($i > 0);
         }
 
-        foreach ($columns as $index => [$header]) {
-            $sheet->setCellValue($letter($index) . $headerRow, $header);
+        // Two header rows: group names (merged across their columns), then column names.
+        for ($index = 0; $index < count($columns);) {
+            $group = $columns[$index][0];
+            $span = 1;
+            while ($group !== null && $index + $span < count($columns) && $columns[$index + $span][0] === $group) {
+                $span++;
+            }
+            $from = $letter($index);
+            if ($group === null) {
+                $sheet->setCellValue("{$from}{$groupRow}", $columns[$index][1]);
+                $sheet->mergeCells("{$from}{$groupRow}:{$from}{$headerRow}");
+            } else {
+                $sheet->setCellValue("{$from}{$groupRow}", $group);
+                if ($span > 1) {
+                    $sheet->mergeCells("{$from}{$groupRow}:" . $letter($index + $span - 1) . $groupRow);
+                }
+                for ($j = $index; $j < $index + $span; $j++) {
+                    $sheet->setCellValue($letter($j) . $headerRow, $columns[$j][1]);
+                }
+            }
+            $index += $span;
         }
 
         $row = $dataStartRow;
         foreach (collect($payrollEmployees)->values() as $number => $item) {
-            foreach ($columns as $index => [, $value]) {
+            foreach ($columns as $index => [, , $value]) {
                 $sheet->setCellValue($letter($index) . $row, $value === null ? $number + 1 : $value($item));
             }
             $row++;
@@ -347,20 +503,20 @@ class PayrollServices
         $lastDataRow = $row - 1;
         $totalsRow = $row;
         $sheet->setCellValue("A{$totalsRow}", 'TOTAL (' . count($payrollEmployees) . ' employees)');
-        $firstMoney = collect($columns)->search(fn($column) => $column[2] === 'money');
+        $firstMoney = collect($columns)->search(fn($column) => in_array($column[3], ['money', 'subtotal'], true));
         $sheet->mergeCells("A{$totalsRow}:" . $letter(max(0, $firstMoney - 1)) . $totalsRow);
-        foreach ($columns as $index => [, , $kind]) {
-            if ($kind === 'money' && $lastDataRow >= $dataStartRow) {
+        foreach ($columns as $index => [, , , $kind]) {
+            if (in_array($kind, ['money', 'subtotal'], true) && $lastDataRow >= $dataStartRow) {
                 $col = $letter($index);
                 $sheet->setCellValue("{$col}{$totalsRow}", "=SUM({$col}{$dataStartRow}:{$col}{$lastDataRow})");
             }
         }
 
         // Header styling
-        $headerRange = "A{$headerRow}:{$lastColLetter}{$headerRow}";
+        $headerRange = "A{$groupRow}:{$lastColLetter}{$headerRow}";
         $sheet->getStyle($headerRange)->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
         $sheet->getStyle($headerRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('1F4E78');
-        $sheet->getStyle($headerRange)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $sheet->getStyle($headerRange)->getAlignment()->setHorizontal($center)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER)->setWrapText(true);
         $sheet->getRowDimension($headerRow)->setRowHeight(32);
 
         // Totals row styling
@@ -368,21 +524,28 @@ class PayrollServices
         $sheet->getStyle($totalsRange)->getFont()->setBold(true);
         $sheet->getStyle($totalsRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('DDEBF7');
 
-        // Borders around the whole table (header through totals)
-        $sheet->getStyle("A{$headerRow}:{$lastColLetter}{$totalsRow}")
+        $sheet->getStyle("A{$groupRow}:{$lastColLetter}{$totalsRow}")
             ->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-        // Per-column alignment, number format, and auto width
-        foreach ($columns as $index => [, , $kind]) {
+        // Per-column alignment, number format, subtotal shading, employer shares greyed.
+        foreach ($columns as $index => [$group, , , $kind]) {
             $col = $letter($index);
             $range = "{$col}{$dataStartRow}:{$col}{$totalsRow}";
             if ($kind === 'text') {
-                $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT);
+                $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT)->setWrapText(true);
             } elseif ($kind === 'plain') {
-                $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle($range)->getAlignment()->setHorizontal($center);
             } else {
                 $sheet->getStyle($range)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
                 $sheet->getStyle($range)->getNumberFormat()->setFormatCode('#,##0.00');
+            }
+            if ($kind === 'subtotal') {
+                $sheet->getStyle("{$col}{$dataStartRow}:{$col}{$lastDataRow}")->getFill()
+                    ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('EEF2FF');
+                $sheet->getStyle("{$col}{$dataStartRow}:{$col}{$lastDataRow}")->getFont()->setBold(true);
+            }
+            if ($group === 'EMPLOYER SHARES (NOT DEDUCTED)') {
+                $sheet->getStyle("{$col}{$dataStartRow}:{$col}{$lastDataRow}")->getFont()->getColor()->setRGB('64748B');
             }
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }

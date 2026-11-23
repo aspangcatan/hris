@@ -336,6 +336,26 @@
     </div>
 </div>
 
+<!-- One employee's payroll breakdown, opened from a family name in the Regular Payroll table -->
+<div class="modal fade payroll-modal-theme" id="payroll_breakdown_modal" tabindex="-1" aria-labelledby="payroll_breakdown_title" aria-hidden="true"
+     style="z-index: 1070;">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title" id="payroll_breakdown_title">Employee</h5>
+                    <div class="small text-muted" id="payroll_breakdown_sub"></div>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="payroll_breakdown_body"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-modal-close" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade payroll-modal-theme" id="regular_payroll_modal" tabindex="-1" aria-labelledby="updateModalLabel" aria-hidden="true"
      data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xxl">
@@ -350,10 +370,11 @@
 
             <!-- Scrollable Body -->
             <div class="modal-body p-3">
+                <div class="mb-3" id="regular_payroll_summary"></div>
                 <div class="d-flex flex-wrap justify-content-between gap-2 small mb-2">
                     <span class="text-muted">
                         Columns follow the computation; <span class="payroll-subtotal px-1">shaded</span> columns are subtotals of the ones before them.
-                        Hover a <span class="payroll-note">dotted</span> amount to see how it was computed.
+                        Hover a <span class="payroll-note">dotted</span> amount to see how it was computed. Click a family name for the employee's full breakdown.
                     </span>
                     <span class="fw-semibold" id="regular_payroll_flagged"></span>
                 </div>

@@ -89,6 +89,39 @@
         #regular_payroll_modal .payroll-check {
             cursor: help;
         }
+        #regular_payroll_modal .payroll-employer {
+            background-color: #f1f5f9 !important;
+            color: #64748b !important;
+        }
+        #regular_payroll_modal .payroll-breakdown-link {
+            font-weight: 600;
+            text-decoration: underline;
+        }
+        .payroll-summary-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            background: #fff;
+            min-width: 9rem;
+        }
+        .payroll-summary-box .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+        .payroll-summary-box .value {
+            font-weight: 700;
+        }
+        .payroll-summary-box.is-net .value {
+            color: #dc2626;
+        }
+        .payroll-summary-box.is-employer .value {
+            color: #64748b;
+        }
+        #payroll_breakdown_modal .payroll-subtotal {
+            background-color: #eef2ff;
+        }
     </style>
 
     <div class="payroll-board">
@@ -666,7 +699,8 @@
 
             const columns = [
                 {group: null, header: "No.", kind: "text", value: (item, i) => i + 1},
-                {group: null, header: "Family Name", kind: "text", value: item => item.lname},
+                {group: null, header: "Family Name", kind: "text",
+                    value: item => `<a href="#" class="payroll-breakdown-link" data-id="${item.id}" title="Open this employee's breakdown">${item.lname}</a>`},
                 {group: null, header: "First Name", kind: "text", value: item => item.fname},
                 {group: null, header: "Middle Name", kind: "text", value: item => item.mname ?? ""},
                 {group: null, header: "Suffix", kind: "text", value: item => item.suffix ?? ""},
@@ -702,10 +736,104 @@
                     note: () => "Gross Pay − Total Deduction"},
                 {group: "Pay Dates", header: "1st Half 10th", kind: "money", value: item => num(item.first_half_10th)},
                 {group: "Pay Dates", header: "2nd Half 25th", kind: "money", value: item => num(item.second_half_25th)},
+            );
+            (payload.employerShareComponents || []).forEach(c => columns.push({
+                group: "Employer Shares (not deducted)", header: c.name, kind: "money", employer: true, value: amount(c.code),
+                note: () => "Government share, for remittance. Not taken from the employee's pay.",
+            }));
+            columns.push(
+                {group: null, header: "Net vs Last Payroll", kind: "compare", value: item => review(item).previous},
                 {group: null, header: "Check", kind: "check", value: item => review(item)},
             );
             return columns;
         }
+
+        function compareCell(previous, alertPercent) {
+            if (!previous) {
+                return `<td class="text-center text-muted" title="No earlier payroll for this employee">—</td>`;
+            }
+            const pct = previous.change_percent;
+            const sign = previous.change > 0 ? "+" : "";
+            const alert = pct !== null && Math.abs(pct) > alertPercent;
+            const title = `Last payroll: ${previous.title} (${previous.start_date} to ${previous.end_date}), net ${formatCurrency(previous.net_pay)}`;
+            return `<td class="text-end payroll-note ${alert ? "text-warning fw-bold" : ""}" title="${escapeAttr(title)}">
+                        ${sign}${formatCurrency(previous.change)}<div class="small">${pct === null ? "" : sign + pct + "%"}</div></td>`;
+        }
+
+        function renderPayrollSummary(payload, totals) {
+            const meta = payload.meta || {};
+            const range = (a, b) => (a && b) ? `${moment(a).format("MMM D")} – ${moment(b).format("MMM D, YYYY")}` : "—";
+            const box = (label, value, extra = "") => `
+                <div class="payroll-summary-box ${extra}"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+            $("#regular_payroll_summary").html(`
+                <div class="fw-bold mb-2">${meta.title ?? ""} <span class="badge bg-secondary ms-1 text-capitalize">${String(meta.status ?? "").replace("_", " ")}</span></div>
+                <div class="d-flex flex-wrap gap-2">
+                    ${box("Pay period", range(meta.start_date, meta.end_date))}
+                    ${box("DTR (cutoff) period", range(meta.cutoff_start_date, meta.cutoff_end_date))}
+                    ${box("Tax purpose", meta.tax_purpose ?? "—")}
+                    ${box("Employees", payload.employees.length)}
+                    ${box("Total gross", formatCurrency(totals.gross))}
+                    ${box("Total deductions", formatCurrency(totals.deductions))}
+                    ${box("Total net", formatCurrency(totals.net), "is-net")}
+                    ${box("Employer shares", formatCurrency(totals.employer), "is-employer")}
+                </div>`);
+        }
+
+        function showEmployeeBreakdown(payrollEmployeeId) {
+            const payload = window.regularPayrollPayload || {};
+            const item = (payload.employees || []).find(e => String(e.id) === String(payrollEmployeeId));
+            const review = (payload.review || {})[payrollEmployeeId];
+            if (!item || !review) return;
+
+            const lines = review.lines || [];
+            const section = (title, type, filter = () => true) => {
+                const rows = lines.filter(l => l.type === type && filter(l));
+                if (!rows.length) return "";
+                return `<tr class="table-light"><th colspan="3">${title}</th></tr>` + rows.map(l => `
+                    <tr><td>${l.name}${l.taxable && type === "earning" ? ' <span class="badge bg-light text-dark border">taxable</span>' : ""}${l.taxable && type === "deduction" ? ' <span class="badge bg-light text-dark border">before tax</span>' : ""}</td>
+                        <td class="small text-muted">${l.source ?? ""}</td><td class="text-end">${formatCurrency(l.amount)}</td></tr>`).join("");
+            };
+            const total = (label, value, cls = "") => `<tr class="fw-bold ${cls}"><td>${label}</td><td></td><td class="text-end">${formatCurrency(value)}</td></tr>`;
+            const notes = review.notes || {};
+
+            $("#payroll_breakdown_title").text(`${item.lname}, ${item.fname} ${item.mname ?? ""}`.trim());
+            $("#payroll_breakdown_sub").text(`${item.designation ?? ""} · SG ${item.salary_grade ?? "?"}-${item.step ?? "?"}`);
+            $("#payroll_breakdown_body").html(`
+                <table class="table table-sm align-middle mb-3">
+                    <thead><tr><th>Item</th><th>Where it came from</th><th class="text-end">Amount</th></tr></thead>
+                    <tbody>
+                        <tr><td>Basic Pay</td><td class="small text-muted">${review.basic_source ?? ""}</td><td class="text-end">${formatCurrency(item.basic_salary)}</td></tr>
+                        <tr><td>Less: Late / Absent / LWOP</td><td class="small text-muted">${notes.late_absent ?? ""}</td><td class="text-end">(${formatCurrency(item.late_absent)})</td></tr>
+                        ${total("Basic Earned", review.basic_earned, "payroll-subtotal")}
+                        ${section("Earnings", "earning")}
+                        ${total("GROSS PAY", item.gross_pay, "payroll-subtotal")}
+                        ${section("Mandatory Deductions (before tax)", "deduction", l => l.taxable)}
+                        ${total("Taxable Income", review.taxable_income, "payroll-subtotal")}
+                        ${section("Withholding Tax", "deduction", l => l.code === "WITHHOLDING_TAX")}
+                        ${section("Loans & Other Deductions", "deduction", l => !l.taxable && l.code !== "WITHHOLDING_TAX")}
+                        ${total("TOTAL DEDUCTION", item.deductions, "payroll-subtotal")}
+                        ${total("NET PAY", item.net_pay, "payroll-subtotal text-danger")}
+                        <tr><td>1st Half (10th) / 2nd Half (25th)</td><td></td><td class="text-end">${formatCurrency(item.first_half_10th)} / ${formatCurrency(item.second_half_25th)}</td></tr>
+                        ${section("Employer Shares (not deducted from pay)", "employer_share")}
+                    </tbody>
+                </table>
+                ${review.previous ? `<div class="small mb-2"><strong>Last payroll:</strong> ${review.previous.title} — net ${formatCurrency(review.previous.net_pay)}
+                    (${review.previous.change > 0 ? "+" : ""}${formatCurrency(review.previous.change)}${review.previous.change_percent === null ? "" : ", " + review.previous.change_percent + "%"})</div>` : ""}
+                ${(review.warnings || []).length ? `<div class="alert alert-warning small mb-0"><strong>To double-check:</strong><ul class="mb-0">${review.warnings.map(w => `<li>${w}</li>`).join("")}</ul></div>`
+                    : `<div class="alert alert-success small mb-0">No warnings for this employee.</div>`}`);
+            $("#payroll_breakdown_modal").modal("show");
+        }
+
+        $(document).on("click", ".payroll-breakdown-link", function (e) {
+            e.preventDefault();
+            showEmployeeBreakdown($(this).data("id"));
+        });
+        // The breakdown opens over the payroll window; closing it must keep that window scrollable.
+        $(document).on("hidden.bs.modal", "#payroll_breakdown_modal", function () {
+            if ($("#regular_payroll_modal").hasClass("show")) {
+                $("body").addClass("modal-open");
+            }
+        });
 
         function checkCell(review) {
             const checks = review.checks || {};
@@ -725,7 +853,10 @@
         function populateRegularRows(tbody, payload) {
             payload.mandatoryComponents = payload.mandatoryComponents || [];
             payload.otherDeductionComponents = payload.otherDeductionComponents || payload.deductionComponents || [];
+            window.regularPayrollPayload = payload; // for the per-employee breakdown
+            const alertPercent = parseFloat((payload.meta || {}).net_change_alert_percent ?? 10);
             const columns = regularPayrollColumns(payload);
+            const isLeftAligned = col => col.kind === "text" || col.kind === "check";
 
             // Header: group row (consecutive columns of a group share one cell), then column names.
             let groupRow = "", nameRow = "";
@@ -736,11 +867,11 @@
                 if (group) {
                     groupRow += `<th colspan="${span}" class="text-center">${group}</th>`;
                     for (let j = i; j < i + span; j++) {
-                        nameRow += `<th class="${columns[j].kind === "text" ? "" : "text-end"} ${columns[j].kind === "subtotal" ? "payroll-subtotal" : ""}">${columns[j].header}</th>`;
+                        nameRow += `<th class="${isLeftAligned(columns[j]) ? "" : "text-end"} ${columns[j].kind === "subtotal" ? "payroll-subtotal" : ""} ${columns[j].employer ? "payroll-employer" : ""}">${columns[j].header}</th>`;
                     }
                 } else {
                     const col = columns[i];
-                    groupRow += `<th rowspan="2" class="${col.kind === "text" || col.kind === "check" ? "" : "text-end"} ${col.kind === "subtotal" ? "payroll-subtotal" : ""}">${col.header}</th>`;
+                    groupRow += `<th rowspan="2" class="${isLeftAligned(col) ? "" : "text-end"} ${col.kind === "subtotal" ? "payroll-subtotal" : ""}">${col.header}</th>`;
                 }
                 i += span;
             }
@@ -757,9 +888,11 @@
                         if ((value.warnings || []).length || (value.checks || {}).net_balanced === false || (value.checks || {}).halves_balanced === false) flagged++;
                         return `<td class="text-center">${checkCell(value)}</td>`;
                     }
+                    if (col.kind === "compare") return compareCell(value, alertPercent);
                     totals[c] += value;
                     const note = col.note ? col.note(item) : null;
-                    const classes = ["text-end", col.kind === "subtotal" ? "payroll-subtotal" : "", col.net ? "text-danger" : "", note ? "payroll-note" : ""].join(" ");
+                    const classes = ["text-end", col.kind === "subtotal" ? "payroll-subtotal" : "", col.net ? "text-danger" : "",
+                        col.employer ? "payroll-employer" : "", note ? "payroll-note" : ""].join(" ");
                     return `<td class="${classes}" ${note ? `title="${escapeAttr(note)}"` : ""}>${formatCurrency(value)}</td>`;
                 });
                 tbody.append(`<tr>${cells.join("")}</tr>`);
@@ -769,10 +902,18 @@
             const textCount = columns.findIndex(col => col.kind !== "text");
             const footer = columns.slice(textCount).map((col, k) => {
                 const c = textCount + k;
-                if (col.kind === "check") return `<td></td>`;
-                return `<td class="text-end ${col.kind === "subtotal" ? "payroll-subtotal" : ""}">${formatCurrency(totals[c])}</td>`;
+                if (col.kind === "check" || col.kind === "compare") return `<td></td>`;
+                return `<td class="text-end ${col.kind === "subtotal" ? "payroll-subtotal" : ""} ${col.employer ? "payroll-employer" : ""}">${formatCurrency(totals[c])}</td>`;
             }).join("");
             $("#regular_payroll_tfoot").html(`<tr><td colspan="${textCount}" class="text-end">TOTAL (${payload.employees.length}):</td>${footer}</tr>`);
+
+            const totalOf = header => totals[columns.findIndex(col => col.header === header)] || 0;
+            renderPayrollSummary(payload, {
+                gross: totalOf("GROSS PAY"),
+                deductions: totalOf("TOTAL DEDUCTION"),
+                net: totalOf("NET PAY"),
+                employer: columns.reduce((sum, col, c) => sum + (col.employer ? totals[c] : 0), 0),
+            });
 
             $("#regular_payroll_flagged").text(flagged
                 ? `${flagged} employee(s) flagged for double-checking — hover the ⚠ badge to see why.`

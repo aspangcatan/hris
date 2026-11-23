@@ -73,4 +73,7 @@ return [
 
     'payroll_net_pay_floor' => (float) env('PAYROLL_NET_PAY_FLOOR', 5000),
 
+    // Flag an employee whose net pay moved more than this % from their last payroll.
+    'payroll_net_change_alert_percent' => (float) env('PAYROLL_NET_CHANGE_ALERT_PERCENT', 10),
+
 ];
