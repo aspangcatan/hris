@@ -139,6 +139,7 @@ class PayrollApprovalChainTest extends TestCase
             'cutoff_id' => $this->masterId,
             'payroll_type' => 'Regular',
             'rate_type' => 'Non Pro-rated',
+            'tax_purpose' => $this->testTaxPurpose(),
         ]);
         $saveResponse->assertOk();
 

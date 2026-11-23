@@ -293,7 +293,7 @@
                 const payroll_type = $("#payroll_type").val();
                 const rate_type    = $("#rate_type").val();
                 const remarks      = $("#remarks").val().trim();
-                const tax_purpose  = $("#tax_purpose").val().trim();
+                const tax_purpose  = ($("#tax_purpose").val() || "").trim();
                 const start_date   = $("#start_date").val();
                 const end_date     = $("#end_date").val();
 
@@ -307,6 +307,10 @@
                 }
                 if (!start_date || !end_date || end_date < start_date) {
                     toastr.error("Enter a valid Start Date and End Date for the period paid.", "Validation");
+                    return;
+                }
+                if (!tax_purpose) {
+                    toastr.error("Please select a Tax Purpose.", "Validation");
                     return;
                 }
 

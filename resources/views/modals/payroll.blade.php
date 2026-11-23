@@ -213,8 +213,8 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label for="tax_purpose" class="form-label">Tax Purpose</label>
-                        <select class="form-control" id="tax_purpose">
+                        <label for="tax_purpose" class="form-label">Tax Purpose <span class="text-danger">*</span></label>
+                        <select class="form-control" id="tax_purpose" required>
                             <option value="">Select tax purpose</option>
                         </select>
                     </div>

@@ -321,7 +321,12 @@ class PayrollController extends Controller
                 'payroll_type' => 'nullable|string|max:50',
                 'rate_type'    => 'nullable|string|max:50',
                 'remarks'      => 'nullable|string',
-                'tax_purpose'  => 'nullable|string|max:150',
+                // Required, and it must have active tax rules - otherwise withholding tax would be 0.
+                'tax_purpose'  => ['required', 'string', 'max:150', function ($attribute, $value, $fail) {
+                    if (!DB::table('hris.payroll_tax_rules')->where('purpose', $value)->where('is_active', 1)->exists()) {
+                        $fail("The tax purpose \"{$value}\" has no active tax rules. Choose another or activate its rules on the Taxation page.");
+                    }
+                }],
                 // The period paid, set on the form; the DTR still comes from the cutoff.
                 'start_date'   => 'nullable|required_with:end_date|date_format:Y-m-d',
                 'end_date'     => 'nullable|required_with:start_date|date_format:Y-m-d|after_or_equal:start_date',

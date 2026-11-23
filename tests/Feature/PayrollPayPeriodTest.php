@@ -39,7 +39,7 @@ class PayrollPayPeriodTest extends TestCase
     private function create(array $input = [])
     {
         return $this->withoutMiddleware()->postJson('/save_payroll', array_merge([
-            'title' => 'Pay Period Test', 'cutoff_id' => $this->cutoffId,
+            'title' => 'Pay Period Test', 'cutoff_id' => $this->cutoffId, 'tax_purpose' => $this->testTaxPurpose(),
         ], $input));
     }
 

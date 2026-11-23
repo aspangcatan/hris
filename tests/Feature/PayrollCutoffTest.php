@@ -123,6 +123,7 @@ class PayrollCutoffTest extends TestCase
         $response = $this->withoutMiddleware()->postJson('/save_payroll', [
             'title'        => 'June Payroll',
             'cutoff_id'    => $masterId,
+            'tax_purpose'  => $this->testTaxPurpose(),
             'payroll_type' => 'Regular',
             'rate_type'    => 'Non Pro-rated',
         ]);
@@ -282,6 +283,7 @@ class PayrollCutoffTest extends TestCase
         $saveResponse = $this->withoutMiddleware()->postJson('/save_payroll', [
             'title'        => 'Smoke Test Payroll',
             'cutoff_id'    => $masterId,
+            'tax_purpose'  => $this->testTaxPurpose(),
             'payroll_type' => 'Regular',
             'rate_type'    => 'Non Pro-rated',
         ]);

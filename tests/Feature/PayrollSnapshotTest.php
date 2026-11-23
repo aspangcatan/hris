@@ -111,7 +111,7 @@ class PayrollSnapshotTest extends TestCase
     public function a_new_payroll_needs_a_whole_month_cutoff()
     {
         $this->seedCutoff();
-        $create = fn() => $this->withoutMiddleware()->postJson('/save_payroll', ['title' => 'Month check', 'cutoff_id' => $this->cutoffId]);
+        $create = fn() => $this->withoutMiddleware()->postJson('/save_payroll', ['title' => 'Month check', 'cutoff_id' => $this->cutoffId, 'tax_purpose' => $this->purpose]);
 
         $create()->assertOk();
 

@@ -119,10 +119,10 @@ class PayrollFinalizedCutoffTest extends TestCase
         $draft = $this->seedCutoff('draft');
         $finalized = $this->seedCutoff('finalized');
 
-        $this->withoutMiddleware()->postJson('/save_payroll', ['title' => 'X', 'cutoff_id' => $draft])
+        $this->withoutMiddleware()->postJson('/save_payroll', ['title' => 'X', 'cutoff_id' => $draft, 'tax_purpose' => $this->testTaxPurpose()])
             ->assertStatus(422)->assertSee('still a draft', false);
 
-        $this->withoutMiddleware()->postJson('/save_payroll', ['title' => 'X', 'cutoff_id' => $finalized])
+        $this->withoutMiddleware()->postJson('/save_payroll', ['title' => 'X', 'cutoff_id' => $finalized, 'tax_purpose' => $this->testTaxPurpose()])
             ->assertOk();
         $this->assertTrue(DB::table('hris.payrolls')->where('cutoff_id', $finalized)->exists());
     }
