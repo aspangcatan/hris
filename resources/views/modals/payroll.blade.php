@@ -121,6 +121,31 @@
                             Global: leave Amount blank to use the default. Non-global: leave Amount blank to leave it unassigned for this employee. Rate Override % only applies to percentage-based components and replaces the catalog's rate while still computing off basic salary.
                         </div>
                     </div>
+
+                    <!-- EMPLOYER SHARES -->
+                    <div class="payset-panel mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <h5 class="payset-panel-title mb-0">Employer Shares</h5>
+                            <span class="small text-muted">The government's share (GSIS GS, EC). Recorded with the payroll for remittance; not deducted from this employee's pay.</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead class="table-light">
+                                <tr>
+                                    <th style="width: 16%;">Employer Share</th>
+                                    <th style="width: 7%;">Global</th>
+                                    <th style="width: 11%;">Default</th>
+                                    <th style="width: 12%;">Amount</th>
+                                    <th style="width: 12%;">Rate Override %</th>
+                                    <th style="width: 8%;">Exclude</th>
+                                    <th style="width: 13%;">Effective From</th>
+                                    <th style="width: 13%;">Effective To</th>
+                                </tr>
+                                </thead>
+                                <tbody id="dynamic_components_employer_shares_body"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 

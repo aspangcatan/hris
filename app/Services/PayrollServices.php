@@ -8,6 +8,16 @@ use Illuminate\Support\Facades\Schema;
 
 class PayrollServices
 {
+    public const COMPONENT_TYPES = ['earning', 'deduction', 'employer_share'];
+
+    /** A component type from a request: one of COMPONENT_TYPES, else an earning. */
+    public function normalizeComponentType($type): string
+    {
+        $type = strtolower(trim((string) $type));
+
+        return in_array($type, self::COMPONENT_TYPES, true) ? $type : 'earning';
+    }
+
     public function getPayroll($id)
     {
         return DB::table('hris.payrolls')->where('id', $id)->first();
@@ -48,7 +58,7 @@ class PayrollServices
             if (strpos($code, 'PRIOR_PERIOD_') === 0) {
                 return [3, 0, $code, 0];                                // last
             }
-            $base = preg_replace('/_ADJUSTMENT$/', '', $code);
+            $base = preg_replace('/_(ADJUSTMENT|LEAVE_REDUCTION)$/', '', $code);
             if ($sortOrder->has($base)) {
                 return [1, (int) $sortOrder[$base], $base, $code === $base ? 0 : 1]; // an adjustment follows its component
             }
@@ -923,6 +933,8 @@ class PayrollServices
             'basic_salary' => round($basic, 2),
             'earnings' => $rows->where('type', 'earning')->values(),
             'deductions' => $rows->where('type', 'deduction')->values(),
+            // Not taken from pay; listed for reference only.
+            'employer_shares' => $rows->where('type', 'employer_share')->values(),
             'total_earnings' => round($rows->where('type', 'earning')->sum('amount'), 2),
             'total_deductions' => round($rows->where('type', 'deduction')->sum('amount'), 2),
         ];
@@ -946,8 +958,21 @@ class PayrollServices
             ->count();
     }
 
+    /**
+     * Employee types a permanent_only component (the Magna Carta benefits) is
+     * paid to; hris.employees.employee_type.
+     */
+    public const PERMANENT_EMPLOYEE_TYPES = ['Permanent'];
+
     public function getEmployeeDynamicComponents($userId, $periodStart, $periodEnd, float $basicSalary)
     {
+        $isPermanent = in_array(
+            DB::table('hris.employees')->where('user_id', $userId)->value('employee_type'),
+            self::PERMANENT_EMPLOYEE_TYPES,
+            true
+        );
+        $eligible = fn($row) => !$row->permanent_only || $isPermanent;
+
         $globalRows = DB::table('hris.payroll_components as pc')
             ->leftJoin('hris.employee_payroll_components as epc', function ($join) use ($userId) {
                 $join->on('epc.payroll_component_id', '=', 'pc.id')
@@ -966,6 +991,9 @@ class PayrollServices
                 'pc.base_type',
                 'pc.base_component_code',
                 'pc.rate_percent',
+                'pc.permanent_only',
+                'pc.absence_reduction',
+                'pc.absence_reduction_rate',
                 'epc.amount_override',
                 'epc.rate_percent_override',
                 'epc.is_active as employee_active',
@@ -974,6 +1002,7 @@ class PayrollServices
                 'epc.effective_to'
             )
             ->get()
+            ->filter($eligible)
             ->filter(function ($row) use ($periodStart, $periodEnd) {
                 if ($row->is_excluded || $row->employee_active === 0) {
                     return false;
@@ -997,6 +1026,8 @@ class PayrollServices
                     'type' => $row->type,
                     'taxable' => $row->taxable,
                     'amount' => $row->amount,
+                    'absence_reduction' => $row->absence_reduction ?? 'none',
+                    'absence_reduction_rate' => $row->absence_reduction_rate,
                 ];
             });
 
@@ -1014,12 +1045,16 @@ class PayrollServices
                 'pc.name',
                 'pc.type',
                 'pc.taxable',
+                'pc.permanent_only',
+                'pc.absence_reduction',
+                'pc.absence_reduction_rate',
                 'epc.amount_override',
                 'epc.amount',
                 'epc.effective_from',
                 'epc.effective_to'
             )
             ->get()
+            ->filter($eligible)
             ->filter(function ($row) use ($periodStart, $periodEnd) {
                 if ($periodStart && $row->effective_to && $row->effective_to < $periodStart) {
                     return false;
@@ -1036,10 +1071,55 @@ class PayrollServices
                     'type' => $row->type,
                     'taxable' => $row->taxable,
                     'amount' => $amount ?? 0,
+                    'absence_reduction' => $row->absence_reduction ?? 'none',
+                    'absence_reduction_rate' => $row->absence_reduction_rate,
                 ];
             });
 
         return $globals->merge($employeeSpecific);
+    }
+
+    /**
+     * The reduction of each earning for days the employee was not on duty -
+     * paid leave, absences and LWOP - by the rule HR set on its component:
+     * 'prorate' takes (amount / working days per month) a day, 'per_day' a
+     * fixed amount a day. One negative earning line per reduced component,
+     * never more than the component itself, with the same tax treatment.
+     *
+     * @param \Illuminate\Support\Collection $components objects from getEmployeeDynamicComponents()
+     * @return \Illuminate\Support\Collection objects shaped like those components, plus computation_basis
+     */
+    public function absenceReductions(\Illuminate\Support\Collection $components, float $daysOff, float $workingDaysPerMonth): \Illuminate\Support\Collection
+    {
+        if ($daysOff <= 0) {
+            return collect();
+        }
+
+        return $components
+            ->filter(fn($component) => $component->type === 'earning' && (float) $component->amount > 0
+                && in_array($component->absence_reduction ?? 'none', ['prorate', 'per_day'], true))
+            ->map(function ($component) use ($daysOff, $workingDaysPerMonth) {
+                $amount = (float) $component->amount;
+                $perDay = ($component->absence_reduction === 'prorate')
+                    ? ($workingDaysPerMonth > 0 ? $amount / $workingDaysPerMonth : 0.0)
+                    : (float) ($component->absence_reduction_rate ?? 0);
+                $reduction = round(min($amount, $perDay * $daysOff), 2);
+                $days = rtrim(rtrim(number_format($daysOff, 3, '.', ''), '0'), '.');
+
+                return (object) [
+                    'payroll_component_id' => $component->payroll_component_id,
+                    'code' => $component->code . '_LEAVE_REDUCTION',
+                    'name' => $component->name . ' (Leave/Absence Reduction)',
+                    'type' => 'earning',
+                    'taxable' => (bool) $component->taxable,
+                    'amount' => -$reduction,
+                    'computation_basis' => $component->absence_reduction === 'prorate'
+                        ? "{$days} day(s) off x " . number_format($amount, 2) . " / " . rtrim(rtrim(number_format($workingDaysPerMonth, 2, '.', ''), '0'), '.') . " days"
+                        : "{$days} day(s) off x " . number_format($perDay, 2) . " a day",
+                ];
+            })
+            ->filter(fn($line) => $line->amount < 0)
+            ->values();
     }
 
     /**
@@ -1167,7 +1247,8 @@ class PayrollServices
                 'code' => 'SALARY_ADJUSTMENT',
                 'name' => 'Basic Pay Adjustment',
                 'type' => 'earning',
-                'taxable' => false,
+                // Basic pay differentials are compensation: taxed like basic salary.
+                'taxable' => true,
                 'amount' => $salaryAdjustment,
             ];
         }

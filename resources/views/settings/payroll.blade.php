@@ -81,6 +81,7 @@
         let employee_id = 0;
         let catalogEarnings = [];
         let catalogDeductions = [];
+        let catalogEmployerShares = [];
         let payrollCatalogLoaded = false;
         $(document).ready(function () {
             getEmployee({fname: "", lname: "", page: page});
@@ -213,12 +214,22 @@
 
             if (!catalogDeductions.length) {
                 $deductionsBody.append("<tr><td colspan='8' class='text-muted text-center py-3'>No deductions configured.</td></tr>");
-                return;
+            } else {
+                catalogDeductions.forEach(component => {
+                    const override = employeeComponentMap[component.code] || {};
+                    addDynamicComponentRow(component, override, $deductionsBody);
+                });
             }
 
-            catalogDeductions.forEach(component => {
+            const $employerBody = $("#dynamic_components_employer_shares_body");
+            $employerBody.empty();
+            if (!catalogEmployerShares.length) {
+                $employerBody.append("<tr><td colspan='8' class='text-muted text-center py-3'>No employer shares configured.</td></tr>");
+                return;
+            }
+            catalogEmployerShares.forEach(component => {
                 const override = employeeComponentMap[component.code] || {};
-                addDynamicComponentRow(component, override, $deductionsBody);
+                addDynamicComponentRow(component, override, $employerBody);
             });
         }
 
@@ -272,6 +283,7 @@
             const components = [];
             components.push(...collectDynamicOverrides($("#dynamic_components_earnings_body tr"), catalogEarnings));
             components.push(...collectDynamicOverrides($("#dynamic_components_deductions_body tr"), catalogDeductions));
+            components.push(...collectDynamicOverrides($("#dynamic_components_employer_shares_body tr"), catalogEmployerShares));
             return components;
         }
 
@@ -332,6 +344,7 @@
                     const items = data.data || [];
                     catalogEarnings = items.filter(item => item.type === 'earning');
                     catalogDeductions = items.filter(item => item.type === 'deduction');
+                    catalogEmployerShares = items.filter(item => item.type === 'employer_share');
                     payrollCatalogLoaded = true;
                 })
                 .catch(err => {

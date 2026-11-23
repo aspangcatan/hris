@@ -292,7 +292,9 @@ class CutoffSnapshotService
             $summary = DB::table($summaryTable)->where('cutoff_id', $cutoffId)->where('employee_id', $employeeId)->first();
             $leaveRows = $this->insertLeaves($cutoffId, $employeeId, $leaves->get($employeeId, collect()), $days, $start, $end, $summary, $exceptions);
             $this->insertBalances($cutoffId, $employeeId, $leaveRows, $openings, $movements->get($employeeId, collect()), $earningTypes, $typeCodes, $exceptions);
-            $this->insertPayComponents($cutoffId, $employeeId, $salary, $start, $end);
+            // Days not on duty, for the allowances HR set to be reduced for them.
+            $daysOff = (float) $summary->days_absent + (float) $summary->lwop_days + (float) collect($leaveRows)->sum('paid_days');
+            $this->insertPayComponents($cutoffId, $employeeId, $salary, $start, $end, $daysOff);
             $carried = $adjustments->includeIn($cutoffId, $employeeId, $start);
             if (!empty($carried)) {
                 $exceptions[] = ['type' => 'late_changes_included', 'detail' => count($carried) . ' late change(s) from earlier cutoffs are included in this one.'];
@@ -762,12 +764,20 @@ class CutoffSnapshotService
         }
     }
 
-    private function insertPayComponents(int $cutoffId, int $employeeId, ?array $salary, string $start, string $end): void
+    /**
+     * The employee's earnings, deductions and employer shares for the cutoff,
+     * plus a reduction line for each allowance reduced for the $daysOff
+     * (paid leave + absences + LWOP) by its component's rule.
+     */
+    private function insertPayComponents(int $cutoffId, int $employeeId, ?array $salary, string $start, string $end, float $daysOff = 0.0): void
     {
-        $components = $this->payrollServices->getEmployeeDynamicComponents($employeeId, $start, $end, (float) ($salary['amount'] ?? 0));
+        $components = $this->payrollServices->getEmployeeDynamicComponents($employeeId, $start, $end, (float) ($salary['amount'] ?? 0))
+            ->keyBy('code');
+        $workingDays = (float) $this->payrollServices->defaultComputation()->working_days_per_month;
+        $components = $components->merge($this->payrollServices->absenceReductions($components->values(), $daysOff, $workingDays)->keyBy('code'));
         $now = now();
 
-        foreach ($components->keyBy('code') as $component) {
+        foreach ($components as $component) {
             DB::table('hris.cutoff_payroll_components')->insert([
                 'cutoff_id' => $cutoffId,
                 'employee_id' => $employeeId,
@@ -777,6 +787,7 @@ class CutoffSnapshotService
                 'type' => $component->type,
                 'taxable' => $component->taxable ? 1 : 0,
                 'amount' => round((float) $component->amount, 2),
+                'computation_basis' => $component->computation_basis ?? null,
                 'source_reference_id' => $component->payroll_component_id,
                 'created_at' => $now,
                 'updated_at' => $now,

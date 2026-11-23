@@ -26,9 +26,9 @@ class PayrollComponentSeeder extends Seeder
         $earnings = [
             ['code' => 'PERA',                 'name' => 'Personal Economic Relief Allowance', 'is_global' => true,  'taxable' => false, 'default_amount' => 2000, 'adjustable' => true],
             ['code' => 'RATA',                  'name' => 'Representation and Transportation Allowance', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => false],
-            ['code' => 'SUBSISTENCE',           'name' => 'Subsistence Allowance', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => true],
-            ['code' => 'LAUNDRY',               'name' => 'Laundry Allowance', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => true],
-            ['code' => 'HAZARD',                'name' => 'Hazard Pay', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => true],
+            ['code' => 'SUBSISTENCE',           'name' => 'Subsistence Allowance', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => true, 'permanent_only' => true],
+            ['code' => 'LAUNDRY',               'name' => 'Laundry Allowance', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => true, 'permanent_only' => true],
+            ['code' => 'HAZARD',                'name' => 'Hazard Pay', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => true, 'permanent_only' => true],
             ['code' => 'LONGEVITY',             'name' => 'Longevity Pay', 'is_global' => false, 'taxable' => true,  'default_amount' => 0, 'adjustable' => false],
             ['code' => 'CELLPHONE_ALLOWANCE',   'name' => 'Cellphone Allowance', 'is_global' => false, 'taxable' => false, 'default_amount' => 0, 'adjustable' => false],
         ];
@@ -39,8 +39,8 @@ class PayrollComponentSeeder extends Seeder
         // getComputedComponents() and PayrollController::getCutoffEmployeesForPayroll().
         $deductions = [
             ['code' => 'GSIS_PS',               'name' => 'GSIS Personal Share', 'adjustable' => true, 'before_tax' => true],
-            ['code' => 'GSIS_GS',                'name' => 'GSIS GSIS Share (Employer)', 'adjustable' => true],
-            ['code' => 'GSIS_EC',                'name' => 'GSIS Employees Compensation', 'adjustable' => false],
+            ['code' => 'GSIS_GS',                'name' => 'GSIS GSIS Share (Employer)', 'adjustable' => true, 'type' => 'employer_share'],
+            ['code' => 'GSIS_EC',                'name' => 'GSIS Employees Compensation', 'adjustable' => false, 'type' => 'employer_share'],
             ['code' => 'HDMF',                   'name' => 'Pag-IBIG (HDMF) Contribution', 'adjustable' => false, 'before_tax' => true],
             ['code' => 'PHIC',                    'name' => 'PhilHealth (PHIC) Contribution', 'adjustable' => true, 'before_tax' => true],
             ['code' => 'PAGIBIG_CAL',             'name' => 'Pag-IBIG Calamity Loan', 'adjustable' => false],
@@ -74,6 +74,7 @@ class PayrollComponentSeeder extends Seeder
                 [
                     'name'                => $component['name'],
                     'type'                => 'earning',
+                    'permanent_only'      => $component['permanent_only'] ?? false,
                     'is_global'           => $component['is_global'],
                     'taxable'             => $component['taxable'],
                     'default_amount'      => $component['default_amount'],
@@ -91,7 +92,8 @@ class PayrollComponentSeeder extends Seeder
                 ['code' => $component['code']],
                 [
                     'name'                => $component['name'],
-                    'type'                => 'deduction',
+                    // Employer shares (GSIS GS, EC) are recorded, never taken from pay.
+                    'type'                => $component['type'] ?? 'deduction',
                     'is_global'           => false,
                     // On a deduction, taxable = "Before tax": employee shares of
                     // GSIS/PhilHealth/Pag-IBIG are excluded from taxable

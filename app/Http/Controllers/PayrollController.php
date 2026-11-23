@@ -137,7 +137,7 @@ class PayrollController extends Controller
 
                 $code = strtoupper(trim((string) $component['code']));
                 $name = trim((string) $component['name']);
-                $type = strtolower(trim((string) $component['type'])) === 'deduction' ? 'deduction' : 'earning';
+                $type = $this->payrollServices->normalizeComponentType($component['type']);
                 $taxable = !empty($component['taxable']);
                 $amount = isset($component['amount']) ? (float) $component['amount'] : 0;
                 $amountOverride = array_key_exists('amount_override', $component) ? $component['amount_override'] : null;
@@ -235,15 +235,28 @@ class PayrollController extends Controller
                 $baseType = in_array($baseType, ['basic_salary', 'component'], true) ? $baseType : null;
                 $baseComponentCode = !empty($component['base_component_code']) ? strtoupper(trim((string) $component['base_component_code'])) : null;
                 $ratePercent = isset($component['rate_percent']) && $component['rate_percent'] !== '' ? (float) $component['rate_percent'] : null;
+                $type = $this->payrollServices->normalizeComponentType($component['type']);
+
+                // Only an earning is reduced for days on leave, absent or LWOP.
+                $reduction = $component['absence_reduction'] ?? 'none';
+                $reduction = $type === 'earning' && in_array($reduction, ['prorate', 'per_day'], true) ? $reduction : 'none';
+                $reductionRateRaw = $component['absence_reduction_rate'] ?? null;
+                $reductionRate = ($reductionRateRaw === null || $reductionRateRaw === '') ? null : $reductionRateRaw;
+                if ($reduction === 'per_day' && (!is_numeric($reductionRate) || (float) $reductionRate < 0)) {
+                    return response()->json(['success' => false, 'message' => "Component \"{$code}\" is reduced per day off but has no valid amount per day."], 422);
+                }
 
                 $normalized[$code] = [
                     'name' => trim((string) $component['name']),
-                    'type' => strtolower(trim((string) $component['type'])) === 'deduction' ? 'deduction' : 'earning',
+                    'type' => $type,
                     'taxable' => !empty($component['taxable']),
                     'default_amount' => isset($component['default_amount']) ? (float) $component['default_amount'] : 0,
                     'is_global' => !empty($component['is_global']),
                     'is_active' => array_key_exists('is_active', $component) ? (bool) $component['is_active'] : true,
                     'is_cutoff_adjustable' => !empty($component['is_cutoff_adjustable']),
+                    'permanent_only' => !empty($component['permanent_only']),
+                    'absence_reduction' => $reduction,
+                    'absence_reduction_rate' => $reduction === 'per_day' ? (float) $reductionRate : null,
                     'calculation_type' => $calculationType,
                     'base_type' => $calculationType === 'percentage' ? $baseType : null,
                     'base_component_code' => $calculationType === 'percentage' && $baseType === 'component' ? $baseComponentCode : null,
@@ -284,6 +297,9 @@ class PayrollController extends Controller
                         'rate_percent' => $component['rate_percent'],
                         'is_active' => $component['is_active'] ? 1 : 0,
                         'is_cutoff_adjustable' => $component['is_cutoff_adjustable'] ? 1 : 0,
+                        'permanent_only' => $component['permanent_only'] ? 1 : 0,
+                        'absence_reduction' => $component['absence_reduction'],
+                        'absence_reduction_rate' => $component['absence_reduction_rate'],
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]
