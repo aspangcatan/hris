@@ -1150,7 +1150,7 @@ class PayrollServices
             ->where('is_active', 1)
             ->where('is_cutoff_adjustable', 1)
             ->orderBy('sort_order')
-            ->get(['code', 'name', 'type', 'sort_order']);
+            ->get(['code', 'name', 'type', 'taxable', 'sort_order']);
     }
 
     private function getComputedComponents($employee, $totalTardinessDeductions)
@@ -1189,12 +1189,15 @@ class PayrollServices
                 continue;
             }
 
+            // Same tax treatment as the component it adjusts: arrears of a
+            // before-tax contribution (GSIS PS, PhilHealth, Pag-IBIG) also come
+            // off before tax, and an adjustment to a taxable earning is taxed.
             $components[] = (object) [
                 'payroll_component_id' => null,
                 'code' => $component->code . '_ADJUSTMENT',
                 'name' => $component->name . ' (Cutoff Adjustment)',
                 'type' => $component->type,
-                'taxable' => false,
+                'taxable' => (bool) $component->taxable,
                 'amount' => $amount,
             ];
         }

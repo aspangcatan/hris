@@ -38,11 +38,11 @@ class PayrollComponentSeeder extends Seeder
         // deduction, negative refunds/credits it). See PayrollServices::
         // getComputedComponents() and PayrollController::getCutoffEmployeesForPayroll().
         $deductions = [
-            ['code' => 'GSIS_PS',               'name' => 'GSIS Personal Share', 'adjustable' => true],
+            ['code' => 'GSIS_PS',               'name' => 'GSIS Personal Share', 'adjustable' => true, 'before_tax' => true],
             ['code' => 'GSIS_GS',                'name' => 'GSIS GSIS Share (Employer)', 'adjustable' => true],
             ['code' => 'GSIS_EC',                'name' => 'GSIS Employees Compensation', 'adjustable' => false],
-            ['code' => 'HDMF',                   'name' => 'Pag-IBIG (HDMF) Contribution', 'adjustable' => false],
-            ['code' => 'PHIC',                    'name' => 'PhilHealth (PHIC) Contribution', 'adjustable' => true],
+            ['code' => 'HDMF',                   'name' => 'Pag-IBIG (HDMF) Contribution', 'adjustable' => false, 'before_tax' => true],
+            ['code' => 'PHIC',                    'name' => 'PhilHealth (PHIC) Contribution', 'adjustable' => true, 'before_tax' => true],
             ['code' => 'PAGIBIG_CAL',             'name' => 'Pag-IBIG Calamity Loan', 'adjustable' => false],
             ['code' => 'PAGIBIG_MPL',             'name' => 'Pag-IBIG Multi-Purpose Loan', 'adjustable' => false],
             ['code' => 'PAGIBIG_MP2',             'name' => 'Pag-IBIG MP2 Savings', 'adjustable' => false],
@@ -93,7 +93,10 @@ class PayrollComponentSeeder extends Seeder
                     'name'                => $component['name'],
                     'type'                => 'deduction',
                     'is_global'           => false,
-                    'taxable'             => false,
+                    // On a deduction, taxable = "Before tax": employee shares of
+                    // GSIS/PhilHealth/Pag-IBIG are excluded from taxable
+                    // compensation (NIRC Sec. 32(B)(7)(f)).
+                    'taxable'             => $component['before_tax'] ?? false,
                     'default_amount'      => 0,
                     'is_active'           => true,
                     'is_cutoff_adjustable' => $component['adjustable'],

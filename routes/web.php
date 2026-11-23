@@ -269,15 +269,15 @@ Route::group(['middleware' => 'auth'], function () {
     Route::delete('/delete/leave_type', [\App\Http\Controllers\LeaveController::class, 'deleteLeaveType'])->name('deleteLeaveType')->middleware('permission:leave.manage_types');
 
     //PAYROLL SETTINGS
-    Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings');
-    Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings');
-    Route::get('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'getPayrollComponents'])->name('getPayrollComponents');
-    Route::post('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'savePayrollComponents'])->name('savePayrollComponents');
+    Route::get('/payroll-settings', [\App\Http\Controllers\PayrollController::class, 'getPayrollSettings'])->name('getPayrollSettings')->middleware('permission:payroll.settings|payroll.manage');
+    Route::post('/save_payroll_settings', [\App\Http\Controllers\PayrollController::class, 'savePayrollSettings'])->name('savePayrollSettings')->middleware('permission:payroll.settings|payroll.manage');
+    Route::get('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'getPayrollComponents'])->name('getPayrollComponents')->middleware('permission:payroll.view|payroll.manage|payroll.settings');
+    Route::post('/payroll-components', [\App\Http\Controllers\PayrollController::class, 'savePayrollComponents'])->name('savePayrollComponents')->middleware('permission:payroll.settings');
     Route::get('/payroll-tax-rules/manage', function () {
         return view('settings.payroll_tax_rules');
     })->name('payroll_tax_rules')->middleware('permission:payroll.settings');
-    Route::get('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'getPayrollTaxRules'])->name('getPayrollTaxRules');
-    Route::post('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'savePayrollTaxRules'])->name('savePayrollTaxRules');
+    Route::get('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'getPayrollTaxRules'])->name('getPayrollTaxRules')->middleware('permission:payroll.view|payroll.manage|payroll.settings');
+    Route::post('/payroll-tax-rules', [\App\Http\Controllers\PayrollController::class, 'savePayrollTaxRules'])->name('savePayrollTaxRules')->middleware('permission:payroll.settings');
     Route::get('/payroll-assignatories/manage', function () {
         return view('settings.payroll_assignatories');
     })->name('payroll_assignatories')->middleware('permission:payroll.settings');
@@ -301,9 +301,9 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot/finish', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshotFinish'])->name('cutoff_lifecycle.generate_finish')->middleware('permission:payroll.settings');
     Route::post('/cutoff-summaries/{cutoff_id}/generate-snapshot/abandon', [\App\Http\Controllers\CutoffLifecycleController::class, 'generateSnapshotAbandon'])->name('cutoff_lifecycle.generate_abandon')->middleware('permission:payroll.settings');
     Route::post('/cutoff-summaries/{cutoff_id}/return-to-draft', [\App\Http\Controllers\CutoffLifecycleController::class, 'returnToDraft'])->name('cutoff_lifecycle.return')->middleware('permission:payroll.settings');
-    Route::get('/cutoff-periods',[\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods');
+    Route::get('/cutoff-periods',[\App\Http\Controllers\PayrollController::class, 'getCutoffPeriods'])->name('getCutoffPeriods')->middleware('permission:payroll.view|payroll.manage|payroll.settings|cutoff.finalize|cutoff.reopen');
     Route::get('/cutoff-summary-preview', [\App\Http\Controllers\PayrollController::class, 'getCutoffSummaryPreview'])->name('getCutoffSummaryPreview')->middleware('permission:payroll.settings|cutoff.finalize|cutoff.reopen');
-    Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll');
+    Route::get('/payroll/{payroll_id}/cutoff-employees', [\App\Http\Controllers\PayrollController::class, 'getCutoffEmployeesForPayroll'])->name('getCutoffEmployeesForPayroll')->middleware('permission:payroll.manage|payroll.settings');
     Route::get('/payroll/{payroll_id}/employees/{employee_id}/components', [\App\Http\Controllers\PayrollController::class, 'getEmployeeComponentReference'])
         ->name('getEmployeeComponentReference')->whereNumber('payroll_id')->whereNumber('employee_id')
         ->middleware('permission:payroll.view|payroll.manage|payroll.settings');
@@ -325,16 +325,16 @@ Route::group(['middleware' => 'auth'], function () {
     Route::post('/leave-credits-earned/post', [\App\Http\Controllers\CreditController::class, 'postMonthLeaveCredits'])->name('leave_credits_earned.post')->middleware('permission:leave.manage_credits');
 
     //PAYROLL
-    Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll');
-    Route::post('/save_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'savePayrollEmployee'])->name('savePayrollEmployee');
-    Route::post('/payroll/submit_for_approval', [\App\Http\Controllers\PayrollController::class, 'submitForApproval'])->name('submitPayrollForApproval');
-    Route::post('/payroll/approval_action', [\App\Http\Controllers\PayrollController::class, 'approvalAction'])->name('payrollApprovalAction');
-    Route::post('/payroll/release', [\App\Http\Controllers\PayrollController::class, 'releasePayroll'])->name('releasePayroll');
-    Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll');
+    Route::post('/save_payroll', [\App\Http\Controllers\PayrollController::class, 'savePayroll'])->name('savePayroll')->middleware('permission:payroll.manage');
+    Route::post('/save_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'savePayrollEmployee'])->name('savePayrollEmployee')->middleware('permission:payroll.manage');
+    Route::post('/payroll/submit_for_approval', [\App\Http\Controllers\PayrollController::class, 'submitForApproval'])->name('submitPayrollForApproval')->middleware('permission:payroll.manage');
+    Route::post('/payroll/approval_action', [\App\Http\Controllers\PayrollController::class, 'approvalAction'])->name('payrollApprovalAction')->middleware('permission:payroll.view|payroll.manage');
+    Route::post('/payroll/release', [\App\Http\Controllers\PayrollController::class, 'releasePayroll'])->name('releasePayroll')->middleware('permission:payroll.manage');
+    Route::get('/get_payroll', [\App\Http\Controllers\PayrollController::class, 'getPayroll'])->name('getPayroll')->middleware('permission:payroll.view|payroll.manage|payroll.settings');
     Route::get('/get_employee_division_section', [\App\Http\Controllers\EmployeeController::class, 'getEmployeeByDivisionSection'])->name('getEmployeeByDivisionSection');
-    Route::get('/get_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'getPayrollEmployee'])->name('getPayrollEmployee');
-    Route::get('/payroll/export/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'export'])->name('exportPayroll');
-    Route::get('/payroll/payslip/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payslip'])->name('payrollPayslip');
+    Route::get('/get_payroll_employee', [\App\Http\Controllers\PayrollController::class, 'getPayrollEmployee'])->name('getPayrollEmployee')->middleware('permission:payroll.view|payroll.manage|payroll.settings');
+    Route::get('/payroll/export/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'export'])->name('exportPayroll')->middleware('permission:payroll.view|payroll.manage|payroll.settings');
+    Route::get('/payroll/payslip/{payroll_id}', [\App\Http\Controllers\PayrollController::class, 'payslip'])->name('payrollPayslip')->middleware('permission:payroll.view|payroll.manage|payroll.settings');
 //    Route::delete('/delete/dtr', [\App\Http\Controllers\DTRController::class, 'delete'])->name('deleteDtr');
 
     #EMPLOYEE
