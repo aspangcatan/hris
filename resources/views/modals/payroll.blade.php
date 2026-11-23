@@ -59,10 +59,6 @@
                                 <label class="form-label">Basic Salary</label>
                                 <input type="number" class="form-control" placeholder="₱ e.g. 42178.00" id="basic_salary" min="0" step="0.01">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label" for="salary_effective_date">Salary effective date</label>
-                                <input type="date" class="form-control" id="salary_effective_date" title="Only used when the salary changes. Leave blank for today.">
-                            </div>
                         </div>
                     </div>
 
