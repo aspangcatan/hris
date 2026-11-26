@@ -65,12 +65,20 @@
         .schedule-table-shell {
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            overflow: hidden;
+            /* Scroll both ways: a month has up to 31 day columns. The max-height
+               also lets the sticky header stay in view while scrolling down. */
+            overflow: auto;
+            max-height: 70vh;
             background: #fff;
         }
 
         .schedule-table-shell table {
             margin-bottom: 0;
+        }
+
+        .schedule-table-shell table th,
+        .schedule-table-shell table td {
+            white-space: nowrap;
         }
 
         .schedule-table-shell table thead th {

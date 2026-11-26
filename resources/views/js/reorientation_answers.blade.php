@@ -34,8 +34,17 @@
         return $('input[name="reoans_status"]:checked').val();
     }
 
+    function reoansYear() {
+        return parseInt($('#reoans_year').val());
+    }
+
     $(function () {
         getReoAnswers();
+
+        $('#reoans_year').on('change', function () {
+            reoansPage = 1;
+            getReoAnswers();
+        });
 
         $('#reoans_tabs').on('click', '.nav-link', function () {
             $('#reoans_tabs .nav-link').removeClass('active');
@@ -105,6 +114,7 @@
 
         const params = new URLSearchParams({
             module_no: reoansModule,
+            year: reoansYear(),
             status: status,
             search: $('#reoans_search').val().trim(),
             page: reoansPage,
@@ -115,7 +125,8 @@
             const json = await res.json();
             if (!res.ok) throw new Error(json.error);
             // Ignore a late response for a tab or filter the user already left
-            if (parseInt(params.get('module_no')) !== reoansModule || params.get('status') !== reoansStatus()) return;
+            if (parseInt(params.get('module_no')) !== reoansModule || params.get('status') !== reoansStatus()
+                || parseInt(params.get('year')) !== reoansYear()) return;
             renderReoCounts(json.counts);
             renderReoAnswers(json.data, json.pagination, checkable);
         } catch (e) {
@@ -202,7 +213,7 @@
         const r = reoansRows[submissionId];
         if (!r) return;
         try {
-            const res = await fetch(ROUTE_REOANS_SUBMISSION + '?user_id=' + r.user_id + '&module_no=' + reoansModule);
+            const res = await fetch(ROUTE_REOANS_SUBMISSION + '?user_id=' + r.user_id + '&module_no=' + reoansModule + '&year=' + reoansYear());
             const data = await res.json();
             if (!res.ok) {
                 toastr.error(data.error || 'Something went wrong, please try again');
@@ -212,7 +223,7 @@
             reoansViewId = data.submission_id;
             const s = REOANS_STATUS[data.status] || REOANS_STATUS.not_started;
             $('#reoans_view_name').text(reoansName(r));
-            $('#reoans_view_title').html(`Module ${data.module_no}: ${reoansEscape(data.title)} <span class="badge ${s.cls} ms-1">${s.label}</span>`
+            $('#reoans_view_title').html(`${data.year} · Module ${data.module_no}: ${reoansEscape(data.title)} <span class="badge ${s.cls} ms-1">${s.label}</span>`
                 + (data.attempt_no > 1 ? ` <span class="ms-1">Attempt ${data.attempt_no}</span>` : ''));
 
             let html = '';
@@ -244,7 +255,7 @@
             : `${ids.length} employees`;
 
         $('#reoans_action_title').text(failed ? 'Mark as Failed' : 'Mark as Passed');
-        $('#reoans_action_text').html(`Mark the Module ${reoansModule} post test of <strong>${reoansEscape(who)}</strong> as <strong>${failed ? 'FAILED' : 'PASSED'}</strong>?`);
+        $('#reoans_action_text').html(`Mark the ${reoansYear()} Module ${reoansModule} post test of <strong>${reoansEscape(who)}</strong> as <strong>${failed ? 'FAILED' : 'PASSED'}</strong>?`);
         $('#reoans_action_required').toggle(failed);
         $('#reoans_action_hint').text(failed
             ? 'Required. The same remarks are sent to every selected employee so they know what to improve.'

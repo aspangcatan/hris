@@ -8,6 +8,11 @@
     .reo-head-eyebrow { display:inline-flex; align-items:center; gap:.35rem; font-size:.7rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#0f766e; background:#f0fdfa; border:1px solid #ccfbf1; padding:.25rem .65rem; border-radius:999px; margin-bottom:.45rem; }
     .reo-head h4 { font-size:1.5rem; }
     .reo-progress { min-width:240px; flex:0 1 300px; }
+    .reo-year { display:flex; flex-direction:column; gap:.3rem; margin-left:auto; }
+    .reo-year label { font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#64748b; }
+    .reo-year .form-select { border-radius:10px; min-width:150px; }
+    .reo-history-note { display:flex; align-items:center; gap:.6rem; margin:0 0 1rem; padding:.75rem 1rem; border-radius:12px;
+                        background:#eff6ff; border:1px solid #bfdbfe; color:#1e3a8a; font-size:.88rem; }
     .reo-progress-label { display:flex; justify-content:space-between; align-items:baseline; font-size:.85rem; color:#64748b; margin-bottom:.4rem; }
     .reo-progress-label strong { color:#0f766e; font-size:1rem; }
     .reo-progress-track { height:10px; border-radius:999px; background:#e2e8f0; overflow:hidden; }
@@ -121,6 +126,16 @@
             <h4>Re-Orientation</h4>
             <span>Read each module, then answer its post test. Modules open in order after you submit the previous post test.</span>
         </div>
+        <div class="reo-year">
+            <label for="reo_year"><i class="bi bi-clock-history"></i> Year</label>
+            <select class="form-select form-select-sm" id="reo_year">
+                @foreach($years as $year)
+                    <option value="{{ $year }}" {{ $year === $currentYear ? 'selected' : '' }}>
+                        {{ $year }}{{ $year === $currentYear ? ' (current)' : '' }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <div class="reo-progress">
             <div class="reo-progress-label">
                 <span id="reo_progress_text">&nbsp;</span>
@@ -136,6 +151,11 @@
         </button>
         @endpermission
         @endif
+    </div>
+
+    <div class="reo-history-note d-none" id="reo_history_note">
+        <i class="bi bi-clock-history"></i>
+        <span>You are viewing your <strong id="reo_history_year"></strong> re-orientation answers. Past years are view only.</span>
     </div>
 
     <div class="reo-steps" id="reo_module_tabs" style="--reo-steps: {{ count($modules) }}">

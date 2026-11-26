@@ -371,8 +371,8 @@
                 </a>
             </li>
             @endpermission
-            {{-- Same permissions as the page itself (route: cutoff_summaries). --}}
-            @if(permission_check('payroll.settings') || permission_check('cutoff.finalize') || permission_check('cutoff.reopen'))
+            {{-- Same permissions as the page itself (route: cutoff_summaries). Hidden for now. --}}
+            @if(false && (permission_check('payroll.settings') || permission_check('cutoff.finalize') || permission_check('cutoff.reopen')))
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('cutoff_summaries') ? '' : 'collapsed' }}"
                     href="{{ route('cutoff_summaries') }}">
@@ -398,6 +398,8 @@
                     <span>Bulk Leave Credits</span>
                 </a>
             </li>
+            {{-- Leave Credits Earned: hidden for now --}}
+            @if(false)
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('leave_credits_earned') ? '' : 'collapsed' }}"
                     href="{{ route('leave_credits_earned') }}">
@@ -405,6 +407,7 @@
                     <span>Leave Credits Earned</span>
                 </a>
             </li>
+            @endif
             @endpermission
         @endif
 

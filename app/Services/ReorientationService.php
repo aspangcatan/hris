@@ -22,12 +22,46 @@ class ReorientationService
         return resource_path($this->modules()[$moduleNo]['pdf']);
     }
 
+    // Re-orientation recurs every year. Each year has its own submissions; earlier
+    // years are kept as read-only history.
+    public function currentYear(): int
+    {
+        return (int) now()->year;
+    }
+
+    // A requested year, falling back to the current year when missing or out of range
+    public function resolveYear($year): int
+    {
+        $year = (int) $year;
+        return ($year >= 2000 && $year <= $this->currentYear()) ? $year : $this->currentYear();
+    }
+
+    // Years one employee has submissions in, plus the current year, newest first
+    public function getEmployeeYears(int $userId): array
+    {
+        return $this->yearsWithCurrent(
+            DB::table('hris.reorientation_submissions')->where('user_id', $userId)->distinct()->pluck('year')
+        );
+    }
+
+    // Years with any submission, plus the current year, newest first
+    public function getAllYears(): array
+    {
+        return $this->yearsWithCurrent(DB::table('hris.reorientation_submissions')->distinct()->pluck('year'));
+    }
+
+    private function yearsWithCurrent($years): array
+    {
+        return collect($years)->map(fn($y) => (int) $y)->push($this->currentYear())
+            ->unique()->sortDesc()->values()->all();
+    }
+
     // Modules are taken in order: a module opens once the one before it has been
-    // submitted at least once (any status other than not started).
-    public function isModuleUnlocked(int $userId, int $moduleNo): bool
+    // submitted at least once this year (any status other than not started).
+    public function isModuleUnlocked(int $userId, int $moduleNo, ?int $year = null): bool
     {
         $previous = $this->previousModule($moduleNo);
-        return $previous === null || (bool) $this->getSubmission($userId, $previous);
+        return $previous === null || (bool) $this->getSubmission($userId, $previous, $year);
     }
 
     private function previousModule(int $moduleNo): ?int
@@ -123,11 +157,12 @@ class ReorientationService
     // Employee post test
     // -----------------------------------------------------------------------
 
-    public function getSubmission(int $userId, int $moduleNo)
+    public function getSubmission(int $userId, int $moduleNo, ?int $year = null)
     {
         return DB::table('hris.reorientation_submissions')
             ->where('user_id', $userId)
             ->where('module_no', $moduleNo)
+            ->where('year', $year ?? $this->currentYear())
             ->first();
     }
 
@@ -140,11 +175,13 @@ class ReorientationService
             ->keyBy('question_id');
     }
 
-    // Module list with each module's status for one employee
-    public function getModuleSummaries(int $userId): array
+    // Module list with each module's status for one employee in one year
+    public function getModuleSummaries(int $userId, ?int $year = null): array
     {
+        $year = $year ?? $this->currentYear();
         $submissions = DB::table('hris.reorientation_submissions')
             ->where('user_id', $userId)
+            ->where('year', $year)
             ->get()
             ->keyBy('module_no');
 
@@ -153,6 +190,9 @@ class ReorientationService
             ->whereIn('id', $checkerIds)
             ->get(['id', 'fname', 'lname'])
             ->keyBy('id');
+
+        // A past year is history: nothing can be submitted, so nothing is locked
+        $isHistory = $year < $this->currentYear();
 
         $result = [];
         $previousSubmitted = true;
@@ -164,7 +204,7 @@ class ReorientationService
                 'module_no'     => $no,
                 'title'         => $module['title'],
                 'read_url'      => route('reorientation.read', $no),
-                'locked'        => !$previousSubmitted,
+                'locked'        => !$isHistory && !$previousSubmitted,
                 'status'        => $sub->status ?? 'not_started',
                 'attempt_no'    => $sub->attempt_no ?? 0,
                 'remarks'       => $sub->remarks ?? null,
@@ -180,12 +220,15 @@ class ReorientationService
     }
 
     // Questions merged with the employee's answers. For a locked submission
-    // (submitted/passed) the answered snapshot is shown, not the current questions.
-    public function getPostTest(int $userId, int $moduleNo): array
+    // (submitted/passed, or anything in a past year) the answered snapshot is
+    // shown, not the current questions.
+    public function getPostTest(int $userId, int $moduleNo, ?int $year = null): array
     {
-        $submission = $this->getSubmission($userId, $moduleNo);
+        $year       = $year ?? $this->currentYear();
+        $isHistory  = $year < $this->currentYear();
+        $submission = $this->getSubmission($userId, $moduleNo, $year);
         $answers    = $submission ? $this->getAnswers($submission->id) : collect();
-        $locked     = $submission && in_array($submission->status, ['submitted', 'passed'], true);
+        $locked     = $isHistory || ($submission && in_array($submission->status, ['submitted', 'passed'], true));
 
         if ($locked) {
             $items = $answers->values()->map(fn($a) => [
@@ -203,6 +246,8 @@ class ReorientationService
 
         return [
             'module_no'  => $moduleNo,
+            'year'       => $year,
+            'is_history' => $isHistory,
             'status'     => $submission->status ?? 'not_started',
             'attempt_no' => $submission->attempt_no ?? 0,
             'remarks'    => $submission->remarks ?? null,
@@ -252,6 +297,7 @@ class ReorientationService
                 $submissionId = DB::table('hris.reorientation_submissions')->insertGetId([
                     'user_id'      => $userId,
                     'module_no'    => $moduleNo,
+                    'year'         => $this->currentYear(),
                     'status'       => 'submitted',
                     'attempt_no'   => 1,
                     'submitted_at' => now(),
@@ -277,9 +323,9 @@ class ReorientationService
     // Checking (HR)
     // -----------------------------------------------------------------------
 
-    public function getSubmissionForChecking(int $userId, int $moduleNo): ?array
+    public function getSubmissionForChecking(int $userId, int $moduleNo, ?int $year = null): ?array
     {
-        $submission = $this->getSubmission($userId, $moduleNo);
+        $submission = $this->getSubmission($userId, $moduleNo, $year);
         if (!$submission) {
             return null;
         }
@@ -287,6 +333,7 @@ class ReorientationService
         return [
             'submission_id' => $submission->id,
             'module_no'     => $moduleNo,
+            'year'          => (int) $submission->year,
             'title'         => $this->modules()[$moduleNo]['title'],
             'status'        => $submission->status,
             'attempt_no'    => $submission->attempt_no,
@@ -328,15 +375,18 @@ class ReorientationService
             ->whereIn('u.status', ['1', 'JO']);
     }
 
-    // Employees for one module filtered by status. "not_started" lists active
-    // employees with no submission for that module yet.
-    public function getAnswerList(int $moduleNo, string $status, string $search = '', int $perPage = 25)
+    // Employees for one module and year filtered by status. "not_started" lists
+    // active employees with no submission for that module in that year.
+    public function getAnswerList(int $moduleNo, string $status, string $search = '', int $perPage = 25, ?int $year = null)
     {
+        $year = $year ?? $this->currentYear();
         $query = DB::table('hris.employees as e')
             ->join('tdh_user.users as u', 'e.user_id', '=', 'u.id')
             ->leftJoin('tdh_user.section as s', 'u.section', '=', 's.id')
-            ->leftJoin('hris.reorientation_submissions as rs', function ($join) use ($moduleNo) {
-                $join->on('rs.user_id', '=', 'e.user_id')->where('rs.module_no', '=', $moduleNo);
+            ->leftJoin('hris.reorientation_submissions as rs', function ($join) use ($moduleNo, $year) {
+                $join->on('rs.user_id', '=', 'e.user_id')
+                     ->where('rs.module_no', '=', $moduleNo)
+                     ->where('rs.year', '=', $year);
             })
             ->leftJoin('tdh_user.users as c', 'rs.checked_by', '=', 'c.id');
 
@@ -367,16 +417,19 @@ class ReorientationService
         ]);
     }
 
-    // Per-module count of each status, for the tab and filter badges
-    public function getAnswerCounts(): array
+    // Per-module count of each status in one year, for the tab and filter badges
+    public function getAnswerCounts(?int $year = null): array
     {
+        $year = $year ?? $this->currentYear();
         $rows = DB::table('hris.reorientation_submissions')
+            ->where('year', $year)
             ->select('module_no', 'status', DB::raw('COUNT(*) as total'))
             ->groupBy('module_no', 'status')
             ->get();
 
         $submittedActive = $this->activeEmployeesQuery()
             ->join('hris.reorientation_submissions as rs', 'rs.user_id', '=', 'e.user_id')
+            ->where('rs.year', $year)
             ->select('rs.module_no', DB::raw('COUNT(*) as total'))
             ->groupBy('rs.module_no')
             ->pluck('total', 'module_no');

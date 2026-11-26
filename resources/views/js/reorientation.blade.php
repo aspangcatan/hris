@@ -17,9 +17,17 @@
         failed:      {label: 'Failed — resubmit',  cls: 'bg-danger',            icon: 'arrow-counterclockwise'},
     };
 
+    // Re-orientation recurs yearly; earlier years are view-only history
+    const REO_CURRENT_YEAR = {{ (int) $currentYear }};
+    let reoYear = REO_CURRENT_YEAR;
+
     let reoModules = [];
     let reoCurrentModule = 1;
     let mqEditingId = null;
+
+    function reoIsHistory() {
+        return reoYear < REO_CURRENT_YEAR;
+    }
 
     function reoAllSubmitted() {
         return reoModules.length > 0 && reoModules.every(m => m.status !== 'not_started');
@@ -29,9 +37,18 @@
         return $('<div>').text(value == null ? '' : String(value)).html();
     }
 
+    // In a past year there is nothing left to do, so "resubmit" / "not started" read as final
+    function reoStatusLabel(status) {
+        if (reoIsHistory()) {
+            if (status === 'failed') return 'Failed';
+            if (status === 'not_started') return 'Not taken';
+        }
+        return (REO_STATUS[status] || REO_STATUS.not_started).label;
+    }
+
     function reoBadge(status) {
         const s = REO_STATUS[status] || REO_STATUS.not_started;
-        return `<span class="badge ${s.cls}">${s.label}</span>`;
+        return `<span class="badge ${s.cls}">${reoStatusLabel(status)}</span>`;
     }
 
     function reoHeaders() {
@@ -41,10 +58,11 @@
     $(function () {
         bootstrap.Modal.getOrCreateInstance(document.getElementById('reoIntroModal')).show();
 
-        loadModules().then(() => {
-            // Open on the first module still waiting for a submission
-            const next = reoModules.find(m => !m.locked && m.status === 'not_started');
-            selectModule(next ? next.module_no : reoCurrentModule);
+        loadYear();
+
+        $('#reo_year').on('change', function () {
+            reoYear = parseInt($(this).val()) || REO_CURRENT_YEAR;
+            loadYear();
         });
 
         $('#reo_module_tabs').on('click', '.reo-step', function () {
@@ -85,9 +103,22 @@
     // -----------------------------------------------------------------------
     // Employee view
     // -----------------------------------------------------------------------
+    async function loadYear() {
+        const history = reoIsHistory();
+        $('#reo_history_note').toggleClass('d-none', !history);
+        $('#reo_history_year').text(reoYear);
+        $('#reo_read_link').toggleClass('d-none', history);
+
+        await loadModules();
+        // Current year: open on the first module still waiting for a submission.
+        // Past year: open on the first module.
+        const next = history ? null : reoModules.find(m => !m.locked && m.status === 'not_started');
+        selectModule(next ? next.module_no : (history ? reoModules[0]?.module_no || 1 : reoCurrentModule));
+    }
+
     async function loadModules() {
         try {
-            reoModules = await (await fetch(ROUTE_REO_MY_MODULES)).json();
+            reoModules = await (await fetch(ROUTE_REO_MY_MODULES + '?year=' + reoYear)).json();
             reoModules.forEach(m => {
                 const s = REO_STATUS[m.status] || REO_STATUS.not_started;
                 const icon = m.locked ? 'lock-fill' : s.icon;
@@ -99,7 +130,7 @@
                 $step.find('.reo-step-dot').html(icon ? `<i class="bi bi-${icon}"></i>` : m.module_no);
                 $step.find('.reo-step-status').html(m.locked
                     ? '<i class="bi bi-lock-fill"></i> Locked'
-                    : (s.icon ? `<i class="bi bi-${s.icon}"></i> ` : '') + s.label);
+                    : (s.icon ? `<i class="bi bi-${s.icon}"></i> ` : '') + reoStatusLabel(m.status));
             });
 
             const submitted = reoModules.filter(m => m.status !== 'not_started').length;
@@ -131,16 +162,18 @@
         $('#reo_remarks').empty();
         $('#reo_submit_wrap').addClass('d-none');
 
+        const year = reoYear;
         let data;
         try {
-            const res = await fetch(ROUTE_REO_MY_POST_TEST + '?module_no=' + moduleNo);
+            const res = await fetch(ROUTE_REO_MY_POST_TEST + '?module_no=' + moduleNo + '&year=' + year);
             data = await res.json();
             if (!res.ok) throw new Error(data.error);
         } catch (e) {
             $('#reo_post_test').html('<div class="text-danger text-center py-4">Could not load the post test.</div>');
             return;
         }
-        if (moduleNo !== reoCurrentModule) return;
+        // Ignore a late response for a module or year the user already left
+        if (moduleNo !== reoCurrentModule || year !== reoYear) return;
 
         $('#reo_status_badge').html(reoBadge(data.status) +
             (data.attempt_no > 1 ? ` <span class="small text-muted ms-1">Attempt ${data.attempt_no}</span>` : ''));
@@ -151,12 +184,16 @@
         }
 
         if (!data.items.length) {
-            $('#reo_post_test').html('<div class="text-muted text-center py-4">No post test questions for this module yet.</div>');
+            $('#reo_post_test').html(data.is_history
+                ? `<div class="text-muted text-center py-4">You did not submit this module's post test in ${data.year}.</div>`
+                : '<div class="text-muted text-center py-4">No post test questions for this module yet.</div>');
             return;
         }
 
         let html = '';
-        if (data.status === 'submitted') {
+        if (data.is_history) {
+            // No action prompts for a past year
+        } else if (data.status === 'submitted') {
             html += '<div class="alert alert-warning small">Your answers have been submitted and are waiting for HR to check them.</div>';
         } else if (data.status === 'failed') {
             html += '<div class="alert alert-info small">Review the remarks, revise your answers, and submit again.</div>';

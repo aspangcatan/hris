@@ -17,16 +17,21 @@ class ReorientationController extends Controller
 
     public function index()
     {
-        return view('reorientation', ['modules' => $this->service->modules()]);
+        return view('reorientation', [
+            'modules'     => $this->service->modules(),
+            'years'       => $this->service->getEmployeeYears(Auth::id()),
+            'currentYear' => $this->service->currentYear(),
+        ]);
     }
 
     // -----------------------------------------------------------------------
     // Employee
     // -----------------------------------------------------------------------
 
-    public function getMyModules()
+    public function getMyModules(Request $request)
     {
-        return response()->json($this->service->getModuleSummaries(Auth::id()));
+        $year = $this->service->resolveYear($request->input('year'));
+        return response()->json($this->service->getModuleSummaries(Auth::id(), $year));
     }
 
     public function getMyPostTest(Request $request)
@@ -36,11 +41,13 @@ class ReorientationController extends Controller
             return response()->json(['error' => 'Invalid module.'], 422);
         }
 
-        if (!$this->service->isModuleUnlocked(Auth::id(), $moduleNo)) {
+        // Past years are read-only history, so the module order no longer applies
+        $year = $this->service->resolveYear($request->input('year'));
+        if ($year === $this->service->currentYear() && !$this->service->isModuleUnlocked(Auth::id(), $moduleNo)) {
             return response()->json(['error' => 'Please submit the previous module\'s post test first.'], 403);
         }
 
-        return response()->json($this->service->getPostTest(Auth::id(), $moduleNo));
+        return response()->json($this->service->getPostTest(Auth::id(), $moduleNo, $year));
     }
 
     // View-only reader page, opened in a new tab from the Re-Orientation page
@@ -158,7 +165,10 @@ class ReorientationController extends Controller
 
     public function getEmployeeModules(Request $request)
     {
-        return response()->json($this->service->getModuleSummaries((int) $request->input('user_id')));
+        return response()->json($this->service->getModuleSummaries(
+            (int) $request->input('user_id'),
+            $this->service->resolveYear($request->input('year'))
+        ));
     }
 
     public function getEmployeeSubmission(Request $request)
@@ -168,7 +178,11 @@ class ReorientationController extends Controller
             return response()->json(['error' => 'Invalid module.'], 422);
         }
 
-        $data = $this->service->getSubmissionForChecking((int) $request->input('user_id'), $moduleNo);
+        $data = $this->service->getSubmissionForChecking(
+            (int) $request->input('user_id'),
+            $moduleNo,
+            $this->service->resolveYear($request->input('year'))
+        );
         if (!$data) {
             return response()->json(['error' => 'No submission for this module yet.'], 404);
         }
@@ -209,7 +223,11 @@ class ReorientationController extends Controller
 
     public function answersPage()
     {
-        return view('reorientation_answers', ['modules' => $this->service->modules()]);
+        return view('reorientation_answers', [
+            'modules'     => $this->service->modules(),
+            'years'       => $this->service->getAllYears(),
+            'currentYear' => $this->service->currentYear(),
+        ]);
     }
 
     public function getAnswerList(Request $request)
@@ -224,11 +242,12 @@ class ReorientationController extends Controller
             return response()->json(['error' => 'Invalid status.'], 422);
         }
 
-        $paginator = $this->service->getAnswerList($moduleNo, $status, trim((string) $request->input('search', '')));
+        $year      = $this->service->resolveYear($request->input('year'));
+        $paginator = $this->service->getAnswerList($moduleNo, $status, trim((string) $request->input('search', '')), 25, $year);
 
         return response()->json([
             'data'       => $paginator->items(),
-            'counts'     => $this->service->getAnswerCounts(),
+            'counts'     => $this->service->getAnswerCounts($year),
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page'    => $paginator->lastPage(),

@@ -12,7 +12,7 @@
     .reoans-tabs .nav-link.active { color:#00236f; border-bottom-color:#00236f; background:transparent; }
 
     .reoans-filter { background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px; padding:1rem; margin-bottom:1rem; }
-    .reoans-filter .form-control { border-radius:12px; border:1px solid #d8e1ee; background:#fff; }
+    .reoans-filter .form-control, .reoans-filter .form-select { border-radius:12px; border:1px solid #d8e1ee; background:#fff; }
     .reoans-status .btn { border-radius:999px !important; margin-right:.35rem; font-weight:600; }
     .reoans-status .badge { margin-left:.25rem; }
 
@@ -32,7 +32,7 @@
     <div class="reoans-head">
         <div>
             <h4>Reorientation Answers</h4>
-            <span>Check the employees' post test answers per module and mark them Passed or Failed.</span>
+            <span>Check the employees' post test answers per module and mark them Passed or Failed. Re-orientation is taken every year; pick a year to see its answers.</span>
         </div>
     </div>
 
@@ -51,7 +51,16 @@
     {{-- Filters --}}
     <div class="reoans-filter">
         <div class="row g-3 align-items-center">
-            <div class="col-lg-8">
+            <div class="col-lg-2">
+                <select class="form-select form-select-sm" id="reoans_year" aria-label="Year" title="Re-orientation year">
+                    @foreach($years as $year)
+                        <option value="{{ $year }}" {{ $year === $currentYear ? 'selected' : '' }}>
+                            {{ $year }}{{ $year === $currentYear ? ' (current)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-lg-6">
                 <div class="btn-group reoans-status flex-wrap" role="group" aria-label="Status filter">
                     <input type="radio" class="btn-check" name="reoans_status" id="reoans_status_not_started" value="not_started">
                     <label class="btn btn-sm btn-outline-secondary" for="reoans_status_not_started">Not yet <span class="badge bg-secondary" data-count="not_started">0</span></label>
