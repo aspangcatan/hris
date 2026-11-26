@@ -870,7 +870,8 @@
             const tbody = document.querySelector(badge.dataset.sfCount);
             if (!tbody) return;
             const refresh = () => {
-                const n = tbody.querySelectorAll('tr:not(.saln-inline-row[data-id="0"])').length;
+                // Skip the unsaved new row and the global "No records found" placeholder row
+                const n = tbody.querySelectorAll(':scope > tr:not(.saln-inline-row[data-id="0"]):not(.empty-record-row)').length;
                 badge.textContent = n > 0 ? n : '';
             };
             new MutationObserver(refresh).observe(tbody, { childList: true });
@@ -1842,7 +1843,12 @@
     /** ================================================
      *  SALN INLINE EDITING ENGINE
      * ================================================ */
-    let _salnInlineActive = false;
+    // A table is "busy" while it has an open inline row (new or being edited).
+    // Read from the DOM, not a flag: the lists are re-rendered on prefill/reload,
+    // which drops an open row, and a flag would then stay stuck and block every add.
+    function salnInlineBusy(cfgKey) {
+        return $(SALN_INLINE_CFG[cfgKey].tbody).find('tr.saln-inline-row').length > 0;
+    }
 
     const SALN_INLINE_CFG = {
         children: {
@@ -1990,13 +1996,12 @@
     });
 
     function salnAddInlineRow(cfgKey) {
-        if (_salnInlineActive) {
+        if (salnInlineBusy(cfgKey)) {
             toastr.warning('Please confirm or cancel the current row first.', 'In Progress');
+            $(SALN_INLINE_CFG[cfgKey].tbody).find('tr.saln-inline-row input').first().focus();
             return;
         }
         const cfg = SALN_INLINE_CFG[cfgKey];
-        _salnInlineActive = true;
-        $(cfg.addBtn).prop('disabled', true);
 
         const inputCells = cfg.fields.map(f => {
             const extra  = f.step ? `step="${f.step}"` : '';
@@ -2006,7 +2011,7 @@
 
         const $row = $(`<tr class="saln-inline-row" data-id="0" data-cfg="${cfgKey}">
             ${inputCells}
-            <td class="text-center" style="white-space:nowrap">
+            <td class="text-center" style="white-space:nowrap" data-row-menu="off">
                 <button class="btn btn-action btn-edit" style="background:var(--primary);color:#fff;min-width:32px" title="Confirm"
                     onclick="salnConfirmInline(this,'${cfgKey}',0)">
                     <i class="bi bi-check-lg"></i>
@@ -2044,6 +2049,8 @@
 
         if (!valid) { toastr.error('Please fill in all required fields.', 'Required'); return; }
 
+        // Restore the button's own content after a failed save (it may carry a label)
+        const originalHtml = $(btn).html();
         const $btn = $(btn).prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
         fetch(cfg.endpoint, {
@@ -2055,24 +2062,20 @@
         .then(data => {
             if (data.code == 500) {
                 toastr.error(data.message, 'Error');
-                $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i>');
+                $btn.prop('disabled', false).html(originalHtml);
                 return;
             }
-            _salnInlineActive = false;
-            $(cfg.addBtn).prop('disabled', false);
             cfg.reload();
         })
         .catch(() => {
             toastr.error('Network error', 'Error');
-            $btn.prop('disabled', false).html('<i class="bi bi-check-lg"></i>');
+            $btn.prop('disabled', false).html(originalHtml);
         });
     }
 
     function salnCancelInline(btn, rowId, cfgKey) {
         const cfg  = SALN_INLINE_CFG[cfgKey];
         const $row = $(btn).closest('tr');
-        _salnInlineActive = false;
-        $(cfg.addBtn).prop('disabled', false);
 
         if (rowId == 0) {
             $row.remove();
@@ -2088,8 +2091,9 @@
     }
 
     function salnEditInline(btn, cfgKey) {
-        if (_salnInlineActive) {
+        if (salnInlineBusy(cfgKey)) {
             toastr.warning('Please confirm or cancel the current row first.', 'In Progress');
+            $(SALN_INLINE_CFG[cfgKey].tbody).find('tr.saln-inline-row input').first().focus();
             return;
         }
         const cfg     = SALN_INLINE_CFG[cfgKey];
@@ -2098,8 +2102,7 @@
         const rowId   = $row.data('id');
         if (!rowData) return;
 
-        _salnInlineActive = true;
-        $(cfg.addBtn).prop('disabled', true);
+        $row.addClass('saln-inline-row');
 
         const inputCells = cfg.fields.map(f => {
             const extra  = f.step ? `step="${f.step}"` : '';
@@ -2110,7 +2113,7 @@
         }).join('');
 
         $row.html(`${inputCells}
-            <td class="text-center" style="white-space:nowrap">
+            <td class="text-center" style="white-space:nowrap" data-row-menu="off">
                 <button class="btn btn-action btn-edit" style="background:var(--primary);color:#fff;min-width:32px" title="Confirm"
                     onclick="salnConfirmInline(this,'${cfgKey}',${rowId})">
                     <i class="bi bi-check-lg"></i>
